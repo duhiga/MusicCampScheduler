@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<meta name="viewport" content="initial-scale=1">
+<html>
+<head>
+    <link rel="stylesheet" href='/static/css/style.css' />
+</head>
+<body>
+    <h1>Listing for group {{ group.groupname }}</h1>
+    <table style="width:30%">
+        <tr>
+            <td>Name</td>
+            <td>{{ group.groupname }}
+        <tr>
+            <td>Start Time</td>
+            <td>{{ period.starttime }}
+        <tr>
+            <td>End Time</td>
+            <td>{{ period.endtime }}
+        <tr>
+            <td>Location</td>
+            <td>{{ location.locationname }}
+    </table>
+    <a href="/user/{{ user.userid }}/">Back to dashboard</a>
+    <br>
+    <table style="width:100%">
+        <caption>Players in {{ group.groupname }}</caption>
+        <tr>
+            <th>First Name</th>
+            <th>Last Name</th>
+            <th>Instrument</th>
+        </tr>
+        {% for p in players %}
+        <tr>
+            <td>{{ p.firstname }}</td>
+            <td>{{ p.lastname }}</td>
+            <td>{{ p.instrument }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    <a href="/user/{{ user.userid }}/">Back to dashboard</a>
+    <p>
+        If you can not make this group, it is your responsibility to find a substitute and notify them.
+        The following people are not playing in a group at this time and may be able to substitute.
+    </p>
+    <table style="width:100%">
+        <caption>Possible Substitutes for {{ group.groupname }}</caption>
+        <tr>
+            <th>First Name</th>
+            <th>Last Name</th>
+            <th>Instrument</th>
+        </tr>
+        {% for s in substitutes %}
+        <tr>
+            <td>{{ s.firstname }}</td>
+            <td>{{ s.lastname }}</td>
+            <td>{{ s.instrument }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    <a href="/user/{{ user.userid }}/">Back to dashboard</a>
+</body>
+</html>

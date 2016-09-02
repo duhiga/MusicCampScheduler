@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<meta name="viewport" content="initial-scale=1">
+<html>
+<head>
+    <link rel="stylesheet" href='/static/css/style.css' />
+</head>
+<body>
+    <h1> {{ user.firstname }} {{ user.lastname }}'s Dashboard</h1>
+    <p>{{ campname }}</p>
+    <p>You have played a total of {{ count }} times this camp</p>
+    <br>
+    <table style="width:100%">
+        <caption>
+            {% if previousday == today %}
+            <a href="/user/{{ user.userid }}/">Previous</a>
+            {% else %}
+            <a href="/user/{{ user.userid }}/date/{{ previousday }}/">Previous</a>
+            {% endif %}
+
+            <b>     Schedule for {{ weekday}}, {{ date }}     </b>
+            {% if nextday == today %}
+            <a href="/user/{{ user.userid }}/">Next</a>
+            {% else %}
+            <a href="/user/{{ user.userid }}/date/{{ nextday }}/">Next</a>
+            {% endif %}
+
+        </caption>
+        <!--Start of the table for group allocations for this day-->
+        <tr>
+            <th>Time</th>
+            <th>Name</th>
+            {% if date > today %}
+            <th>Status</th>
+            {% endif %}
+            <th>Instrument</th>
+            <th>Location</th>
+        </tr>
+        {% for p in periods %}
+        <tr>
+            <!--Time Column-->
+            <td>
+                {% if p.ismusical == 1 %}
+                <a href="/user/{{ user.userid }}/period/{{ p.periodid }}/">{{ p.starttime }} - {{ p.endtime }}</a>
+
+                {% else %}
+                {{ p.starttime }} - {{ p.endtime }}
+                {% endif %}
+            </td>
+            <!--Group Name Column-->
+            <td>
+                {% if not p.groupname and p.iseveryone %}
+                    {{ p.periodname }}
+                    {% else %}{% if p.ismusical == 1 %}
+                        <a href="/user/{{ user.userid }}/group/{{ p.groupid }}/">{{ p.groupname }}</a>
+                        {% else %}{% if p.groupname == "absent" %}
+                            {{ p.periodname }} - <button id={{ p.periodid }}>Currently marked as absent</button>
+                            {% else %}
+                                {{ p.groupname }}
+                        {% endif %}
+                    {% endif %}
+                {% endif %}
+            </td>
+            <!--Status Column - only appears if looking at a future date-->
+            {% if date > today %}
+                <td>
+                {% if not p.groupname or p.iseveryone %}
+                    <button id={{ p.periodid }}>Mark me as absent for {{ p.periodname }}</button>
+                    {% else %}
+                        Allocated
+                {% endif %}
+                </td>
+                {% endif %}
+            <td>{{ p.instrument }}</td>
+            <td>{{ p.location }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    </p>
+    <a href="/user/{{ user.userid }}/grouprequest/">Request a group</a></td></p>
+    <a href="/user/{{ user.userid }}/absentrequest/">Register your absence for one or more future sessions</a></td></p>
+</body>
+</html>

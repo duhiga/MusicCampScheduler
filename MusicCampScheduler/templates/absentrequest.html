@@ -1,0 +1,87 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Register your Absence</title>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"> </script>
+    <script>
+        $(document).ready(function () {
+            $("#hidebutton").click(function () {
+                event.preventDefault();
+                $(".disappear").hide();
+            });
+            $("#resetbutton").click(function () {
+                event.preventDefault();
+                $(".disappear").show();
+            });
+            $('#date_selection_dropdown').change(function () {
+
+                // grab value
+                var selecteddate = $("#date_selection_dropdown").val();
+
+                // send value via GET to URL /<category_id>
+                var get_request = $.ajax({
+                    type: 'GET',
+                    //data: 'JSON.stringify([selected_date])',
+                    url: '/return/periodlist/' + selecteddate + '/',
+                });
+
+                // handle response
+                get_request.done(function (periods) {
+
+                    // data
+                    console.log(periods)
+
+                    // add values to list 
+                    var listItems = "";
+                    for (var i = 0; i < periods.length; i++) {
+                        listItems += "<option value='" + periods[i].periodid + "'>" + periods[i].periodname + ": " + periods[i].starttime + " - " + periods[i].endtime + "</option>";
+                    }
+                    console.log(listItems)
+                    $("#periods_dropdown").html(listItems);
+
+                    // show model list
+                    $("#periods_dropdown").show();
+                });
+            });
+        });
+        
+    </script>
+    
+    <link rel="stylesheet" href='/static/css/style.css' />
+    
+</head>
+<body>
+    <a href="/user/{{ user.userid }}/">Back to dashboard</a>
+    <br />
+    <br />
+    <form>
+        Today is {{ weekday }} {{ today }} <br>
+        Select the date of your absence:
+        <select id="date_selection_dropdown">
+            {% for d in perioddates %}
+            <option value="{{ d.date }}">{{ d.date }}</option>
+            {% endfor %}
+        </select>
+        <br />
+        Select the session time of your absence:
+        <select id="periods_dropdown">
+            {% for p in periods %}
+            <option value="{{ p.periodid }}">{{ p.periodname }}: {{ p.starttime }} - {{ p.endtime }}</option>
+            {% endfor %}
+        </select>
+        <br />
+        <p class="disappear">If you click on the button, I will disappear.</p>
+        <br />
+        <button id="hidebutton">Hide!</button>
+        <input type="button" id="resetbutton" value="Reset">
+    </form>
+    <br><br>
+    <a href="/user/{{ user.userid }}/">Back to dashboard</a>
+</body>
+</html>

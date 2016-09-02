@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<meta name="viewport" content="initial-scale=1">
+<html>
+<head>
+    <link rel="stylesheet" href='/static/css/style.css' />
+</head>
+<body>
+    <h1>Listing for period starting {{ period.starttime }} and ending {{ period.endtime }}</h1>
+    <a href="/user/{{ user.userid }}/">Back to dashboard</a>
+    <br>
+    <table style="width:100%">
+        <tr>
+            <th>First Name</th>
+            <th>Last Name</th>
+            <th>Instrument</th>
+            <th>Group Name</th>
+            <th>Location</th>
+        </tr>
+        {% for p in players %}
+        <tr>
+            <td>{{ p.firstname }}</td>
+            <td>{{ p.lastname }}</td>
+            <td>{{ p.instrument }}</td>
+            <td>{{ p.groupname }}</td>
+            <td>{{ p.location }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    <a href="/user/{{ user.userid }}/">Back to dashboard</a>

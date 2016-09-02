@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<root>
+  <sql
+    host="10.1.1.10"
+    database="campq"
+    password="20162017campq#"
+    user="scheduler"
+    />
+  <debug
+    level="2"
+    />
+  <CampDetails
+    Name="Quaranup Music Camp 2016/2017"
+    SecretKey="QuaranupIsCool!"
+    />
+</root>

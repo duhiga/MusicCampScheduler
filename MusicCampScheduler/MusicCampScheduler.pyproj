@@ -32,7 +32,6 @@
     <Compile Include="SQL.py" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="config.xml" />
     <Content Include="requirements.txt" />
     <Content Include="static\css\style.css" />
     <Content Include="templates\absentrequest.html" />

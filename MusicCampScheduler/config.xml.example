@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<root>
+  <sql
+    host="DBHostname"
+    database="DBName"
+    password="DBPassword"
+    user="DBUser"
+    />
+  <debug
+    level="0"
+    />
+  <CampDetails
+    Name="This name is displayed on user dashboards"
+    SecretKey="Secret Key for Flask goes here, just write anything"
+    />
+</root>

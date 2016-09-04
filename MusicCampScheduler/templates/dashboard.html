@@ -1,8 +1,37 @@
 <!DOCTYPE html>
-<meta name="viewport" content="initial-scale=1">
 <html>
 <head>
     <link rel="stylesheet" href='/static/css/style.css' />
+    <meta name="viewport" content="initial-scale=1">
+    <title>{{ campname }} Dashboard</title>
+
+
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"> </script>
+    <script>
+        $(document).ready(function () {
+            $(".absent_request_button").click(function () {
+                // send value via POST to URL
+                var post_absent = $.ajax({
+                    type: 'POST',
+                    //data: 'JSON.stringify([selected_date])',
+                    url: '/user/{{ user.userid }}/period/' + this.id + '/absent/'
+                });
+
+                // handle response
+                post_absent.done(function (response) {
+                    console.log(response)
+
+                    $(this).replaceWith(response)
+                });
+            });
+        });
+
+    </script>
+
+
+
+
 </head>
 <body>
     <h1> {{ user.firstname }} {{ user.lastname }}'s Dashboard</h1>
@@ -64,7 +93,7 @@
             {% if date > today %}
                 <td>
                 {% if not p.groupname or p.iseveryone %}
-                    <button id={{ p.periodid }}>Mark me as absent for {{ p.periodname }}</button>
+                    <button id={{ p.periodid }} class="absent_request_button">Mark as absent for {{ p.periodname }}</button>
                     {% else %}
                         Allocated
                 {% endif %}
@@ -75,8 +104,7 @@
         </tr>
         {% endfor %}
     </table>
-    </p>
-    <a href="/user/{{ user.userid }}/grouprequest/">Request a group</a></td></p>
-    <a href="/user/{{ user.userid }}/absentrequest/">Register your absence for one or more future sessions</a></td></p>
+    <p><a href="/user/{{ user.userid }}/grouprequest/">Request a group</a></p>
+    <p><a href="mailto:{{ supportemailaddress }}">Bugs? Feedback? Complaints? Send an email to camp admin my clicking here!</a></p>
 </body>
 </html>

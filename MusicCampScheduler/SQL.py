@@ -18,6 +18,7 @@ def sql(query):
         db = MySQLdb.connect(host=obj.root.sql['host'], user=obj.root.sql['user'], passwd=obj.root.sql['password'], db=obj.root.sql['database']) #connect to database
         cur = db.cursor() #initiate a query cursor
         cur.execute(query) #execute the query
+        db.commit()
         data = cur.fetchall() #fetch all that match the query and store in data array
         log2('Printing output of query:')
         log2(data)

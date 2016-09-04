@@ -20,6 +20,7 @@ import datetime
 import re
 import json
 import untangle
+import uuid
 #import DBSetup
 from SQL import *
 from debug import *
@@ -28,39 +29,9 @@ from json import JSONEncoder, JSONDecoder
 
 # Make the WSGI interface available at the top level so wfastcgi can get it.
 app = Flask(__name__)
-obj = untangle.parse('config.xml')
-app.secret_key = obj.root.CampDetails['SecretKey']
+config = untangle.parse('config.xml')
+app.secret_key = config.root.CampDetails['SecretKey']
 wsgi_app = app.wsgi_app
-
-
-#the below two classes extend JSON to decode datetimes properly.  Use:
-#event = {'Timestamp': datetime.datetime.now(), 'Value': 10}
-#json_event = json.dumps(event, cls=WebAPIEncoder)
-#decoded_json_event = json.loads(json_event, cls=WebAPIDecoder)
-class WebAPIEncoder(JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, datetime.datetime):
-            return obj.isoformat()
-        return super(WebAPIEncoder, self).default(obj)
- 
- 
-class WebAPIDecoder(JSONDecoder):
-    def decode(self, obj):
-        decoded = super(WebAPIDecoder, self).decode(obj)
-        if isinstance(decoded, list):
-            pairs = enumerate(decoded)
-        elif isinstance(decoded, dict):
-            pairs = decoded.items()
-        result = []
-        for k, v in pairs:
-            if k == "Timestamp":
-                v = datetime.datetime.strptime(v, '%Y-%m-%dT%H:%M:%S.%f')
-            result.append((k, v))
-        if isinstance(decoded, list):
-            return [r[1] for r in result]
-        elif isinstance(decoded, dict):
-            return dict(result)
-        return decoded
 
 #the user object defines an individual user.  The user is an individual
 #attending the music camp
@@ -102,9 +73,28 @@ class group:
         self.cello = cello
         self.doublebass = doublebass
 
+class grouptemplate:
+    def __init__(self, grouptemplatename, minimumlevel, conductor, flute, oboe, clarinet, bassoon, horn, trumpet, trombone, tuba, percussion, violin, viola, cello, doublebass):
+        self.grouptemplatename = grouptemplatename
+        self.conductor = conductor
+        self.flute = flute
+        self.oboe = oboe
+        self.clarinet = clarinet
+        self.bassoon = bassoon
+        self.horn = horn
+        self.trumpet = trumpet
+        self.trombone = trombone
+        self.tuba = tuba
+        self.percussion = percussion
+        self.violin = violin
+        self.viola = viola
+        self.cello = cello
+        self.doublebass = doublebass
+
 #the player object defines a player sitting in a group
 class player:
-    def __init__(self, firstname, lastname, instrument, groupname, location, groupid):
+    def __init__(self, userid, firstname, lastname, instrument, groupname, location, groupid):
+        self.userid = userid
         self.firstname = firstname
         self.lastname = lastname
         self.instrument = instrument
@@ -184,6 +174,14 @@ def datatoclasslist(classtype,data):
         log1(data)
         return 'error'
 
+#generates a nember for the next free ID of a given table type
+def generateid(id):
+    currentmax = sql("SELECT t." + str(id) + "id FROM " + str(id) + "s t ORDER BY t." + str(id) + "id DESC LIMIT 1")
+    if currentmax == ():
+        return 0
+    else:
+        return int(currentmax[0][0]) + 1
+
 #looks up a list of players that aren't playing in any groups that share a period with the input group, and play one of the instruments in
 #the group.  Returns a list of player objects.
 def playersubstitutesforgroup(groupid):
@@ -195,7 +193,7 @@ def playersubstitutesforgroup(groupid):
         #the following query finds substitutes for this group.
         #i.e.  people who aren't currently playing, but play the same
         #instruments as those in the group
-        data = sql("""SELECT u.firstname,u.lastname,ga.instrument,null,null,null FROM groupassignments ga INNER JOIN (
+        data = sql("""SELECT u.userid,u.firstname,u.lastname,ga.instrument,null,null,null FROM groupassignments ga INNER JOIN (
                           SELECT si.userid,si.instrument FROM instruments si WHERE NOT EXISTS (
                               SELECT nu.userid FROM users nu
                               INNER JOIN groupassignments nga ON nga.userid = nu.userid
@@ -277,6 +275,9 @@ def dashboard(userid,date='none'):
         log1('dashboard fetch requested for user %s' % userid)
         log1('date modifier is currently set to %s' % date)
         user = datatoclass('user',sql("SELECT userid,firstname,lastname,age,email FROM users WHERE userid=\"" + userid + "\""),0)
+        #fetches the camp name and support email address from config.xml
+        campname = config.root.CampDetails['Name']
+        supportemailaddress = config.root.CampDetails['SupportEmailAddress']
         #find the number of times a user has played in groups in the past
         count = useridtonumberofplayings(userid)
         #find all periods today, and what this user is doing in each
@@ -295,7 +296,9 @@ def dashboard(userid,date='none'):
                             previousday=previousday, \
                             nextday=nextday, \
                             today=today, \
-                            weekday=weekday \
+                            weekday=weekday, \
+                            campname=campname, \
+                            supportemailaddress=supportemailaddress, \
                             )
     else:
         return 'You have submitted illegal characters in your URL. Any inputs must only contain letters, numbers and dashes.'
@@ -303,6 +306,44 @@ def dashboard(userid,date='none'):
 @app.route('/user/<userid>/date/<date>/')
 def dashboardDateModifier(userid,date):
     return dashboard(userid,date)
+
+#Makes a post query that marks a player adsent for a given period. This is triggered off the above (two) dashboard functions.
+@app.route("/user/<userid>/period/<periodid>/absent/", methods=["POST"])
+def mark_absent(userid,periodid):
+    if check(userid) and check(periodid):
+        user = datatoclass('user',sql("SELECT * FROM users WHERE userid=\"" + userid + "\""),0)
+        period = datatoclass('period',sql("SELECT * FROM periods WHERE periodid=\"" + periodid + "\""),0)
+        currentassignment = sql("""
+            SELECT p.starttime,p.endtime,g.groupname,ga.instrument,l.locationname,ga.groupid,g.ismusical,g.iseveryone,p.periodid,p.periodname
+            FROM users u 
+            INNER JOIN groupassignments ga ON u.userid = ga.userid
+            INNER JOIN groups g ON ga.groupid = g.groupid
+            INNER JOIN periods p ON p.periodid = g.periodid
+            INNER JOIN locations l ON l.locationid = g.locationid
+            WHERE u.userid = '""" + user.userid + "' AND p.periodid = '" + periodid + "'")
+        if currentassignment == ():
+            #get the groupid for the absent group associated with this period
+            absentgroup = sql("""
+                SELECT g.groupid FROM groups g INNER JOIN periods p ON g.periodid = p.periodid 
+                WHERE g.groupname = "absent" AND p.periodid = """ + periodid)
+            if absentgroup == (): #if there is no absent group for this period, create one
+                absentgroup = generateid('group')
+                response = sql("""INSERT INTO `groups` (`groupid`, `groupname`, `locationid`, `periodid`, `ismusical`) 
+                        VALUES ('""" + str(absentgroup) + """', 'absent', '0', '""" + str(periodid) + """', '0');""")
+            else: 
+                absentgroup = absentgroup[0][0]
+            #assign this person to the absent group
+            response = sql("""INSERT INTO `groupassignments` (`groupassignmentid`, `userid`, `groupid`) 
+                        VALUES ('""" + str(generateid('groupassignment')) + """', '""" + user.userid + """', '""" + str(absentgroup) + """');""")
+            return 'Now absent for ' + period.periodname
+        else:
+            currentassignment = datatoclass('perioddisplay',currentassignment,0)
+            if currentassignment.groupname == "Absent":
+                return 'Already absent for this group'
+            else:
+                return 'You are already assigned to a group for this period. You have NOT been marked absent. Talk to the adminsitrator to fix this.'
+    else:
+        return 'You have submitted illegal characters in your URL. Any inputs must only contain letters, numbers and dashes.'
 
 #this route is linked to from the user's dashboard.  When they click on a group name, they are taken to a page showing all the people
 #in that group, along with possible substitutes
@@ -315,17 +356,17 @@ def groupdetails(userid,groupid):
         #gets the data associated with this group ID
         group = datatoclass('group',sql("SELECT * FROM groups WHERE groupid=\"" + groupid + "\""),0)
         #gets the period that this group takes place
-        period = datatoclass('period',sql("SELECT * FROM periods WHERE periodid = " + group.periodid),0)
+        period = datatoclass('period',sql("SELECT * FROM periods WHERE periodid = " + str(group.periodid)),0)
         #gets the location that this group takes place
-        location = datatoclass('location',sql("SELECT * FROM locations WHERE locationid = " + group.locationid),0)
+        location = datatoclass('location',sql("SELECT * FROM locations WHERE locationid = " + str(group.locationid)),0)
         #gets the list of players playing in the given group
         data = sql("""
-            SELECT u.firstname,u.lastname,ga.instrument,g.groupname,l.locationname,g.groupid
+            SELECT u.userid,u.firstname,u.lastname,ga.instrument,g.groupname,l.locationname,g.groupid
             FROM groupassignments ga
             INNER JOIN users u ON ga.userid = u.userid
             INNER JOIN groups g ON ga.groupid = g.groupid
             INNER JOIN locations l ON g.locationid = l.locationid
-            WHERE ga.groupid=""" + groupid)
+            WHERE ga.groupid=""" + str(groupid))
         players = datatoclasslist('player',data)
         substitutes = playersubstitutesforgroup(groupid)
         return render_template('group.html', \
@@ -344,13 +385,33 @@ def grouprequestpage(userid):
     if check(userid):
         #gets the data associated with this user
         user = datatoclass('user',sql("SELECT * FROM users WHERE userid=\"" + userid + "\""),0)
+        grouptemplates = datatoclasslist('grouptemplate',sql("SELECT * FROM grouptemplates"))
+        instruments = []
+        instruments = config.root.CampDetails['Instruments'].split(",")
         return render_template('grouprequest.html', \
                             user=user, \
+                            grouptemplates=grouptemplates, \
+                            instruments=instruments, \
                             )
     else:
         return 'You have submitted illegal characters in your URL. Any inputs must only contain letters, numbers and dashes.'
 
-@app.route('/user/<userid>/absentrequest/')
+#Used in the grouprequest page to fill the instruments
+@app.route("/return/instrumentplayers/<instrument>/", methods=["GET"])
+def instrumentplayers_get(instrument):
+    if check(instrument):
+        players = (datatoclasslist('player',sql("""
+            SELECT u.userid,u.firstname,u.lastname,i.instrument,null,null,null FROM users u INNER JOIN instruments i ON u.userid=i.userid
+                 """)))
+        response = make_response(json.dumps([ob.__dict__ for ob in players]))
+        response.content_type = 'application/json'
+        log2(response)
+        return response
+    else:
+        return 'You have submitted illegal characters in your URL. Any inputs must only contain letters, numbers and dashes.'
+
+#NOT USED. Just keeping this for reference.
+@app.route('/user/<userid>/absentreq/')
 def absentrequestpage(userid):
     if check(userid):
         #gets the data associated with this user
@@ -372,11 +433,11 @@ def absentrequestpage(userid):
                             weekday=weekday, \
                             periods=periods, \
                             perioddates=perioddates, \
-                            campname=obj.root.CampDetails['Name'] \
                             )
     else:
         return 'You have submitted illegal characters in your URL. Any inputs must only contain letters, numbers and dashes.'
 
+#NOT USED - just keeping for reference
 #Returns data from a query from the page from the function above.
 @app.route("/return/periodlist/<date>/", methods=["GET"])
 def get_request(date):

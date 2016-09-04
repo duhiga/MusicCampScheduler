@@ -2,9 +2,45 @@
 <html>
 <head>
     <link rel="stylesheet" href='/static/css/style.css' />
+    <title>Register your Absence</title>
 </head>
 <body>
-    <h1>Welcome to the Quaranup Music Camp Scheduler</h1>
-    <p>To get to your dashboard, you need to visit a page in the form campquaranupmusic.mooo.com/user/yourname where "yourname" is your first name followed by your last name with no space. For example, if my name was "John Smith" I'd visit campquaranupmusic.mooo.com/user/johnsmith.
+    <h1>Request a Group</h1>
+    <p>Use this page to request a group. You can request a group of up to 10 people. Only the instrumentation is required, all other fields are optional and will be autofilled if left blank.</p>
+    
+
+    <br />
+    Optional: Select a group template to autofill the page
+    <select id="group_template_dropdown">
+        <option value=""></option>
+        {% for g in grouptemplates %}
+        <option value="{{ g.grouptemplatename }}">{{ g.grouptemplatename }}</option>
+        {% endfor %}
+    </select>
+    <br />
+    Optional: What music will be played?<input type="text" name="textbox_music">
+    <br /><br />
+    <table>
+        <tr>
+            <th>Instrument</th>
+            <th>Player Name</th>
+        </tr>
+        <tr>
+            <td>
+                <select id="instrument1">
+                    <option value=""></option>
+                    {% for i in instruments %}
+                    <option value="{{ i }}">{{ i }}</option>
+                    {% endfor %}
+                </select>
+            </td>
+            <td>
+                <select id="player1">
+                    <option value=""></option>
+                </select>
+            </td>
+        </tr>
+    </table>
+    <button id="add_player">Add a Player</button>
 </body>
 </html>

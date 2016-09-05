@@ -3,6 +3,7 @@
 <html>
 <head>
     <link rel="stylesheet" href='/static/css/style.css' />
+    <title>{{ campname }} Period Display</title>
 </head>
 <body>
     <h1>Listing for period starting {{ period.starttime }} and ending {{ period.endtime }}</h1>
@@ -25,6 +26,7 @@
             <td>{{ p.location }}</td>
         </tr>
         {% endfor %}
-        </tbody>
     </table>
     <a href="/user/{{ user.userid }}/">Back to dashboard</a>
+</body>
+<</html>

@@ -36,13 +36,16 @@ wsgi_app = app.wsgi_app
 #the user object defines an individual user.  The user is an individual
 #attending the music camp
 class user:
-    def __init__(self, userid, firstname, lastname, age, email):
+    def __init__(self, userid, firstname, lastname, age, email, announcer, conductor, admin):
         self.userid = userid
         self.firstname = firstname
         self.lastname = lastname
         self.age = age
         self.email = email
-
+        self.announcer = announcer
+        self.conductor = conductor
+        self.admin = admin
+        
 #the group object defines an instance of a group of player()s playing music,
 #having a meal, or being absent.  These objects are either generated
 #by users through a web GUI, or by the scheduler.  A group object with an empty
@@ -116,6 +119,11 @@ class perioddisplay:
         self.iseveryone = iseveryone
         self.periodid = periodid
         self.periodname = periodname
+
+class assignment:
+    def __init__(self, groupname, groupassignmentid):
+        self.groupname = groupname
+        self.groupassignmentid = groupassignmentid
 
 class period:
     def __init__(self, periodid, starttime, endtime, periodname):
@@ -274,7 +282,7 @@ def dashboard(userid,date='none'):
     if check(userid) and check(date):
         log1('dashboard fetch requested for user %s' % userid)
         log1('date modifier is currently set to %s' % date)
-        user = datatoclass('user',sql("SELECT userid,firstname,lastname,age,email FROM users WHERE userid=\"" + userid + "\""),0)
+        user = datatoclass('user',sql("SELECT * FROM users WHERE userid=\"" + userid + "\""),0)
         #fetches the camp name and support email address from config.xml
         campname = config.root.CampDetails['Name']
         supportemailaddress = config.root.CampDetails['SupportEmailAddress']
@@ -308,18 +316,17 @@ def dashboardDateModifier(userid,date):
     return dashboard(userid,date)
 
 #Makes a post query that marks a player adsent for a given period. This is triggered off the above (two) dashboard functions.
-@app.route("/user/<userid>/period/<periodid>/absent/", methods=["POST"])
-def mark_absent(userid,periodid):
-    if check(userid) and check(periodid):
+@app.route("/user/<userid>/period/<periodid>/absent/<command>/", methods=["POST"])
+def mark_absent(userid,periodid,command):
+    if check(userid) and check(periodid) and check(command):
         user = datatoclass('user',sql("SELECT * FROM users WHERE userid=\"" + userid + "\""),0)
         period = datatoclass('period',sql("SELECT * FROM periods WHERE periodid=\"" + periodid + "\""),0)
         currentassignment = sql("""
-            SELECT p.starttime,p.endtime,g.groupname,ga.instrument,l.locationname,ga.groupid,g.ismusical,g.iseveryone,p.periodid,p.periodname
+            SELECT g.groupname, ga.groupassignmentid
             FROM users u 
             INNER JOIN groupassignments ga ON u.userid = ga.userid
             INNER JOIN groups g ON ga.groupid = g.groupid
             INNER JOIN periods p ON p.periodid = g.periodid
-            INNER JOIN locations l ON l.locationid = g.locationid
             WHERE u.userid = '""" + user.userid + "' AND p.periodid = '" + periodid + "'")
         if currentassignment == ():
             #get the groupid for the absent group associated with this period
@@ -337,9 +344,13 @@ def mark_absent(userid,periodid):
                         VALUES ('""" + str(generateid('groupassignment')) + """', '""" + user.userid + """', '""" + str(absentgroup) + """');""")
             return 'Now absent for ' + period.periodname
         else:
-            currentassignment = datatoclass('perioddisplay',currentassignment,0)
-            if currentassignment.groupname == "Absent":
-                return 'Already absent for this group'
+            currentassignment = datatoclass('assignment',currentassignment,0)
+            if currentassignment.groupname == "absent":
+                if command == "cancel":  
+                    sql("DELETE FROM `groupassignments` WHERE `groupassignmentid`='" + str(currentassignment.groupassignmentid) + "';")
+                    return 'Removed absent request for ' + period.periodname
+                if command == "confirm":
+                    return 'Already marked absent for ' + period.periodname
             else:
                 return 'You are already assigned to a group for this period. You have NOT been marked absent. Talk to the adminsitrator to fix this.'
     else:
@@ -396,19 +407,31 @@ def grouprequestpage(userid):
     else:
         return 'You have submitted illegal characters in your URL. Any inputs must only contain letters, numbers and dashes.'
 
+#NOT FINISHED - SEE BELOW
 #Used in the grouprequest page to fill the instruments
 @app.route("/return/instrumentplayers/<instrument>/", methods=["GET"])
-def instrumentplayers_get(instrument):
-    if check(instrument):
-        players = (datatoclasslist('player',sql("""
-            SELECT u.userid,u.firstname,u.lastname,i.instrument,null,null,null FROM users u INNER JOIN instruments i ON u.userid=i.userid
-                 """)))
+def instrumentplayers_get(instrument,periodid='none'):
+    if check(instrument) and check(periodid):
+        if periodid == 'none':
+            players = (datatoclasslist('player',sql("""
+                SELECT u.userid,u.firstname,u.lastname,i.instrument,null,null,null 
+                FROM users u INNER JOIN instruments i ON u.userid=i.userid 
+                WHERE i.instrument = '""" + instrument + "'")))
+        else:
+            #NOT FINISHED to do: write the below SQL to find all available players for a particular instrument during a period
+            players = (datatoclasslist('player',sql("""
+                SELECT u.userid,u.firstname,u.lastname,i.instrument,null,null,null
+                FROM users u"""))) #not finished
         response = make_response(json.dumps([ob.__dict__ for ob in players]))
         response.content_type = 'application/json'
         log2(response)
         return response
     else:
         return 'You have submitted illegal characters in your URL. Any inputs must only contain letters, numbers and dashes.'
+
+@app.route('/return/instrumentplayers/<instrument>/period/<periodid>/', methods=["GET"])
+def instrumentplayers_get_period(instrument,periodid):
+    return instrumentplayers_get(instrument,periodid)
 
 #NOT USED. Just keeping this for reference.
 @app.route('/user/<userid>/absentreq/')

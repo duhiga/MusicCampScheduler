@@ -2,12 +2,54 @@
 <html>
 <head>
     <link rel="stylesheet" href='/static/css/style.css' />
-    <title>Register your Absence</title>
+    <title>{{ campname }} Request a Group</title>
+
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"> </script>
+    <script>
+        $(document).ready(function () {
+            $('.instrument_dropdown').change(function () {
+
+                // grab value
+                var selectedinstrument = $(this).val();
+
+                // send value via GET to URL /<category_id>
+                var get_request = $.ajax({
+                    type: 'GET',
+                    url: '/return/instrumentplayers/' + selectedinstrument + '/',
+                });
+
+                // handle response
+                get_request.done(function (players) {
+
+                    // data
+                    console.log(players)
+
+                    // add values to list 
+                    var listItems = "<option value='null'></option>";
+                    for (var i = 0; i < players.length; i++) {
+                        listItems += "<option value='" + players[i].userid + "'>" + players[i].firstname + " " + players[i].lastname + "</option>";
+                    }
+                    console.log(listItems)
+                    $("#player1").html(listItems);
+
+                    // show model list
+                    $("#player1").show();
+                });
+            });
+        });
+
+    </script>
+
+
+
+
+
 </head>
 <body>
     <h1>Request a Group</h1>
     <p>Use this page to request a group. You can request a group of up to 10 people. Only the instrumentation is required, all other fields are optional and will be autofilled if left blank.</p>
-    
+
 
     <br />
     Optional: Select a group template to autofill the page
@@ -27,7 +69,7 @@
         </tr>
         <tr>
             <td>
-                <select id="instrument1">
+                <select class="instrument_dropdown" id="instrument1">
                     <option value=""></option>
                     {% for i in instruments %}
                     <option value="{{ i }}">{{ i }}</option>

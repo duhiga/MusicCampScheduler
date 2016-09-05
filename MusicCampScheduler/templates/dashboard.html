@@ -10,21 +10,46 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"> </script>
     <script>
         $(document).ready(function () {
+            //handler for user clicking the button requesting an absence
             $(".absent_request_button").click(function () {
-                // send value via POST to URL
-                var post_absent = $.ajax({
-                    type: 'POST',
-                    //data: 'JSON.stringify([selected_date])',
-                    url: '/user/{{ user.userid }}/period/' + this.id + '/absent/'
-                });
+                var r = confirm("Press OK to mark yourself as absent for " + $(this).data('periodname') + ". This means that you will not be allocated to any groups or meals during this period.");
+                if (r == true) {
+                    console.log("User pressed OK");
+                    var post_absent = $.ajax({
+                        type: 'POST',
+                        url: '/user/{{ user.userid }}/period/' + this.id + '/absent/confirm/'
+                    });
 
-                // handle response
-                post_absent.done(function (response) {
-                    console.log(response)
-
-                    $(this).replaceWith(response)
-                });
+                    // handle response
+                    post_absent.done(function (response) {
+                        console.log(response);
+                        location.reload();
+                    });
+                } else {
+                    console.log("User pressed Cancel");
+                }
             });
+
+            //handler for user clicking the button requesting to cancel an absence
+            $(".absent_cancel_button").click(function () {
+                var r = confirm("You are currently marked absent for " + $(this).data('periodname') + ". Press OK be marked as present again.");
+                if (r == true) {
+                    console.log("User pressed OK");
+                    var post_absent = $.ajax({
+                        type: 'POST',
+                        url: '/user/{{ user.userid }}/period/' + this.id + '/absent/cancel/'
+                    });
+
+                    // handle response
+                    post_absent.done(function (response) {
+                        console.log(response);
+                        location.reload();
+                    });
+                } else {
+                    console.log("User pressed Cancel");
+                }
+            });
+
         });
 
     </script>
@@ -36,21 +61,27 @@
 <body>
     <h1> {{ user.firstname }} {{ user.lastname }}'s Dashboard</h1>
     <p>{{ campname }}</p>
-    <p>You have played a total of {{ count }} times this camp</p>
-    <br>
+    
+    <h2>Announcements</h2>
+
+    <br />
+    <h2>Your Schedule</h2>
+    {% if date > today %}
+    <p>To mark yourself as absent for any period, select one of the corresponding buttons.</p>
+    {% endif %}
     <table style="width:100%">
         <caption>
             {% if previousday == today %}
-            <a href="/user/{{ user.userid }}/">Previous</a>
+            <a href="/user/{{ user.userid }}/">Previous Day</a>
             {% else %}
-            <a href="/user/{{ user.userid }}/date/{{ previousday }}/">Previous</a>
+            <a href="/user/{{ user.userid }}/date/{{ previousday }}/">Previous Day</a>
             {% endif %}
 
             <b>     Schedule for {{ weekday}}, {{ date }}     </b>
             {% if nextday == today %}
-            <a href="/user/{{ user.userid }}/">Next</a>
+            <a href="/user/{{ user.userid }}/">Next Day</a>
             {% else %}
-            <a href="/user/{{ user.userid }}/date/{{ nextday }}/">Next</a>
+            <a href="/user/{{ user.userid }}/date/{{ nextday }}/">Next Day</a>
             {% endif %}
 
         </caption>
@@ -59,7 +90,7 @@
             <th>Time</th>
             <th>Name</th>
             {% if date > today %}
-            <th>Status</th>
+            <th>Mark as Absent</th>
             {% endif %}
             <th>Instrument</th>
             <th>Location</th>
@@ -82,20 +113,24 @@
                     {% else %}{% if p.ismusical == 1 %}
                         <a href="/user/{{ user.userid }}/group/{{ p.groupid }}/">{{ p.groupname }}</a>
                         {% else %}{% if p.groupname == "absent" %}
-                            {{ p.periodname }} - <button id={{ p.periodid }}>Currently marked as absent</button>
+                            ABSENT
                             {% else %}
                                 {{ p.groupname }}
                         {% endif %}
                     {% endif %}
                 {% endif %}
             </td>
-            <!--Status Column - only appears if looking at a future date-->
+            <!--Options Column - only appears if looking at a future date-->
             {% if date > today %}
                 <td>
                 {% if not p.groupname or p.iseveryone %}
-                    <button id={{ p.periodid }} class="absent_request_button">Mark as absent for {{ p.periodname }}</button>
+                    <button id={{ p.periodid }} data-periodname="{{ p.periodname }}" class="absent_request_button">{{ p.periodname }} - Present</button>
                     {% else %}
-                        Allocated
+                        {% if p.groupname == "absent" %}
+                        <button id={{ p.periodid }} data-periodname="{{ p.periodname }}" class="absent_cancel_button">{{ p.periodname }} - ABSENT</button>
+                        {% else %}
+                            Allocated
+                    {% endif %}
                 {% endif %}
                 </td>
                 {% endif %}
@@ -104,7 +139,9 @@
         </tr>
         {% endfor %}
     </table>
+    <h2>Your Options</h2>
     <p><a href="/user/{{ user.userid }}/grouprequest/">Request a group</a></p>
+    <p>You have played a total of {{ count }} times this camp</p>
     <p><a href="mailto:{{ supportemailaddress }}">Bugs? Feedback? Complaints? Send an email to camp admin my clicking here!</a></p>
 </body>
 </html>

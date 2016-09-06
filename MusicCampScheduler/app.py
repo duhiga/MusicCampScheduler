@@ -21,18 +21,22 @@ import re
 import json
 import untangle
 import uuid
+import sqlalchemy
 #import DBSetup
+from DBSetup import *
 from SQL import *
 from debug import *
-#from DBSetup import *
 from json import JSONEncoder, JSONDecoder
+from sqlalchemy import *
 
 # Make the WSGI interface available at the top level so wfastcgi can get it.
 app = Flask(__name__)
 config = untangle.parse('config.xml')
 app.secret_key = config.root.CampDetails['SecretKey']
 wsgi_app = app.wsgi_app
+Session = sessionmaker(bind=engine)
 
+"""
 #the user object defines an individual user.  The user is an individual
 #attending the music camp
 class user:
@@ -45,6 +49,12 @@ class user:
         self.announcer = announcer
         self.conductor = conductor
         self.admin = admin
+    def add(self):
+        try:
+            sql(INSERT INTO `users` (`userid`, `firstname`, `lastname`, `age`, `email`, `announcer`, `conductor`, `admin`) 
+                        VALUES (' + str(self.userid) + "','" + str(self.firstname) + "','" + str(self.lastname) + "','" + str(self.age) + "','" + str(self.email) + "','" + str(self.announcer) + "','" + str(self.conductor) + "','" + str(self.admin) + "';")
+        except Exception as ex:
+            log1('Failed to add user with exception: %s:' % ex)
         
 #the group object defines an instance of a group of player()s playing music,
 #having a meal, or being absent.  These objects are either generated
@@ -75,6 +85,38 @@ class group:
         self.viola = viola
         self.cello = cello
         self.doublebass = doublebass
+    #unfininshed, the proper things need to be written in the right places below
+    def add(self):
+        try:
+            sql(INSERT INTO `groups` (`groupid`, `groupname`, `locationid`, `requesttime`, `periodid`, `music`, `ismusical`, \
+                                        `iseveryone`, `conductor`, `flute`, `oboe`, `clarinet`, `bassoon`, `horn`, `trumpet`, \
+                                        `trombone`, `tuba`, `percussion`, `violin`, `viola`, `cello`, `doublebass`) 
+
+
+                        VALUES (' + str(self.userid) + "','" + str(self.firstname) + "','" + str(self.lastname) + "','" + str(self.age) + "','" + str(self.email) + "','" + str(self.announcer) + "','" + str(self.conductor) + "','" + str(self.admin) + "';")
+            return self
+        except Exception as ex:
+            log1('Failed to add group with exception: %s:' % ex)
+            return ex
+
+class groupassignment:
+    def __init__(self,groupassignmentid,userid,groupid,instrument):
+        self.groupassignmentid = groupassignmentid
+        self.userid = userid
+        self.groupid = groupid
+        self.instrument = instrument
+    def add(self):
+        try:
+            id = generateid('groupassignment')
+            sql(INSERT INTO `groupassignments` (`groupassignmentid`, `userid`, `groupid`, `instrument`) 
+                VALUES (' + str(id) + "','" + str(self.userid) + "','" + str(self.groupid) + "','" + str(self.instrument) + "';")
+        except Exception as ex:
+            log1('Failed to add groupassignment with exception: %s:' % ex)
+    def remove(self):
+        try:
+            sql("DELETE FROM `groupassignments` WHERE `groupassignmentid`='" + str(self.groupassignmentid) + "';")
+        except Exception as ex:
+            log1('Failed to remove groupassignment with exception: %s:' % ex)
 
 class grouptemplate:
     def __init__(self, grouptemplatename, minimumlevel, conductor, flute, oboe, clarinet, bassoon, horn, trumpet, trombone, tuba, percussion, violin, viola, cello, doublebass):
@@ -93,7 +135,7 @@ class grouptemplate:
         self.viola = viola
         self.cello = cello
         self.doublebass = doublebass
-
+        """
 #the player object defines a player sitting in a group
 class player:
     def __init__(self, userid, firstname, lastname, instrument, groupname, location, groupid):
@@ -124,21 +166,21 @@ class assignment:
     def __init__(self, groupname, groupassignmentid):
         self.groupname = groupname
         self.groupassignmentid = groupassignmentid
-
+        """
 class period:
     def __init__(self, periodid, starttime, endtime, periodname):
         self.periodid = periodid
         self.starttime = starttime
         self.endtime = endtime
         self.periodname = periodname
-
+        
 #the location object describes a location that people can play in, eat or have fun
 class location:
     def __init__(self, locationid, locationname, capacity):
         self.locationid = locationid
         self.locationname = locationname
         self.capacity = capacity
-
+        """
 class date:
     def __init__(self, date):
         self.date = date
@@ -273,6 +315,7 @@ def periodidtoplayerlist(periodid):
 #tells them how to get to their user dashboard.
 @app.route('/')
 def rootpage():
+
     return render_template('index.html')
 
 #upon the URL request in the form domain/user/<userid> the user receives their dashboard.  This updates every day with the groups they 
@@ -334,9 +377,8 @@ def mark_absent(userid,periodid,command):
                 SELECT g.groupid FROM groups g INNER JOIN periods p ON g.periodid = p.periodid 
                 WHERE g.groupname = "absent" AND p.periodid = """ + periodid)
             if absentgroup == (): #if there is no absent group for this period, create one
-                absentgroup = generateid('group')
-                response = sql("""INSERT INTO `groups` (`groupid`, `groupname`, `locationid`, `periodid`, `ismusical`) 
-                        VALUES ('""" + str(absentgroup) + """', 'absent', '0', '""" + str(periodid) + """', '0');""")
+                absentgroup = group(generateid('group'),'absent',0,None,periodid,None,0,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None)
+                response = absentgroup.add
             else: 
                 absentgroup = absentgroup[0][0]
             #assign this person to the absent group
@@ -415,13 +457,16 @@ def instrumentplayers_get(instrument,periodid='none'):
         if periodid == 'none':
             players = (datatoclasslist('player',sql("""
                 SELECT u.userid,u.firstname,u.lastname,i.instrument,null,null,null 
-                FROM users u INNER JOIN instruments i ON u.userid=i.userid 
-                WHERE i.instrument = '""" + instrument + "'")))
+                FROM instruments i INNER JOIN users u ON u.userid=i.userid""")))
         else:
             #NOT FINISHED to do: write the below SQL to find all available players for a particular instrument during a period
             players = (datatoclasslist('player',sql("""
-                SELECT u.userid,u.firstname,u.lastname,i.instrument,null,null,null
-                FROM users u"""))) #not finished
+                SELECT u.userid,u.firstname,u.lastname,i.instrument,null,null,null FROM users u 
+                INNER JOIN instruments i ON u.userid = i.userid
+                INNER JOIN groupassignments ga ON ga.userid = u.userid
+                INNER JOIN groups g ON ga.groupid = g.groupid
+                INNER JOIN periods p ON g.periodid = p.periodid
+                WHERE p.periodid != """ + str(periodid) + " AND i.instrument = '" + str(instrument) + "'"))) #not finished
         response = make_response(json.dumps([ob.__dict__ for ob in players]))
         response.content_type = 'application/json'
         log2(response)
@@ -490,6 +535,15 @@ def periodpage(userid,periodid):
                             )
     else:
         return 'You have submitted illegal characters in your URL. Any inputs must only contain letters, numbers and dashes.'
+
+@app.route('/new/user/<firstname>/<lastname>/<age>/<email>/<isannouncer>/<isconductor>/<isadmin>/')
+def new_user(firstname,lastname,age,email,isannouncer,isconductor,isadmin):
+    newuser = user(firstname=firstname, lastname=lastname, age=age, email=email, isannouncer=isannouncer, isconductor=isconductor, isadmin=isadmin)
+    session = Session()
+    session.add(newuser)
+    session.commit()
+    return render_template('index.html')
+    
 
 if __name__ == '__main__':
     app.run(debug=True, \

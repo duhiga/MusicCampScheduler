@@ -323,24 +323,35 @@ def rootpage():
 @app.route('/user/<userid>/')
 def dashboard(userid,date='none'):
     if check(userid) and check(date):
+        session = Session()
         log1('dashboard fetch requested for user %s' % userid)
         log1('date modifier is currently set to %s' % date)
-        user = datatoclass('user',sql("SELECT * FROM users WHERE userid=\"" + userid + "\""),0)
+        thisuser = session.query(user).filter(user.userid == userid).first()
         #fetches the camp name and support email address from config.xml
         campname = config.root.CampDetails['Name']
         supportemailaddress = config.root.CampDetails['SupportEmailAddress']
         #find the number of times a user has played in groups in the past
-        count = useridtonumberofplayings(userid)
+        count = 'need function to count playings'
         #find all periods today, and what this user is doing in each
-        today = "2016-12-29" #time.strftime("%Y-%m-%d")
-        if date == 'none':
+        today = datetime.datetime.strptime("2016-12-29", '%Y-%m-%d')#time.strftime("%Y-%m-%d")
+        if date != 'none':
+            date = datetime.datetime.strptime(date, '%Y-%m-%d')
+        else:
             date = today
-        weekday = datetime.datetime.strftime((datetime.datetime.strptime(date, '%Y-%m-%d')), '%A')
-        periods = useridanddatetoperiods(userid,date)
-        previousday = datetime.datetime.strftime((datetime.datetime.strptime(date, '%Y-%m-%d') + datetime.timedelta(days=-1)), '%Y-%m-%d')
-        nextday = datetime.datetime.strftime((datetime.datetime.strptime(date, '%Y-%m-%d') + datetime.timedelta(days=1)), '%Y-%m-%d')
+        weekday = datetime.datetime.strftime(date, '%A')
+        previousday = datetime.datetime.strftime((date + datetime.timedelta(days=-1)), '%Y-%m-%d')
+        nextday = datetime.datetime.strftime((date + datetime.timedelta(days=1)), '%Y-%m-%d')
+        #OLD dateperiods = useridanddatetoperiods(userid,date)
+        periods = session.query(period.starttime, period.endtime, group.groupname, groupassignment.instrument, \
+                                location.locationname, group.groupid, group.ismusical, group.iseveryone, period.periodid, period.periodname).\
+                                        join(group).join(groupassignment).join(user).join(location).\
+                                        filter(period.starttime > date, period.endtime < nextday, user.userid == userid).all()
+
+
+        log2(periods)
+        session.close()
         return render_template('dashboard.html', \
-                            user=user, \
+                            user=thisuser, \
                             count=count, \
                             date=date,\
                             periods=periods, \
@@ -351,6 +362,18 @@ def dashboard(userid,date='none'):
                             campname=campname, \
                             supportemailaddress=supportemailaddress, \
                             )
+
+        """self.starttime = starttime
+        self.endtime = endtime
+        self.groupname = groupname
+        self.instrument = instrument
+        self.location = locationname
+        self.groupid = groupid
+        self.ismusical = ismusical
+        self.iseveryone = iseveryone
+        self.periodid = periodid
+        self.periodname = periodname"""
+        
     else:
         return 'You have submitted illegal characters in your URL. Any inputs must only contain letters, numbers and dashes.'
 
@@ -542,7 +565,7 @@ def new_user(firstname,lastname,age,email,isannouncer,isconductor,isadmin):
     session = Session()
     session.add(newuser)
     session.commit()
-    return render_template('index.html')
+    return 'user created'
     
 
 if __name__ == '__main__':

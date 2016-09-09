@@ -1,4 +1,6 @@
 # MusicCampScheduler
 Scheduler and dashboard applicaiton for a music camp
 
-This application is still very beta, and requires manual creation of the back-end Databases. It will be finished by the end of 2016, but still may have some manual work to set up the DB. I've also put very little information about the DB setup in this, it is my intention to write code to set it up. This will be done later in the year or sometime in 2017.
+This application is still very, very alpha. It is a learning activity for me, I've not done any development in a number of years and wanted to do something on the web. It will be functional with a 1.0 release by the end of 2016, but won't look very pretty. More features and functionality will be written in 2017 when I learn CSS/HTML/JS properly.
+
+Before using this applicaiton, you need to configure your own config.xml. There's an example in here, with all the information you should need. The application is pretty flexible on how long your camp is, and which sessions are held throughout the day.

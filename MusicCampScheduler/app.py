@@ -342,10 +342,24 @@ def dashboard(userid,date='none'):
         previousday = datetime.datetime.strftime((date + datetime.timedelta(days=-1)), '%Y-%m-%d')
         nextday = datetime.datetime.strftime((date + datetime.timedelta(days=1)), '%Y-%m-%d')
         #OLD dateperiods = useridanddatetoperiods(userid,date)
-        periods = session.query(period.starttime, period.endtime, group.groupname, groupassignment.instrument, \
-                                location.locationname, group.groupid, group.ismusical, group.iseveryone, period.periodid, period.periodname).\
-                                        join(group).join(groupassignment).join(user).join(location).\
-                                        filter(period.starttime > date, period.endtime < nextday, user.userid == userid).all()
+        periods = session.query(period.starttime, period.endtime, group.groupname, location.locationname, group.groupid, group.ismusical, \
+                                group.iseveryone, period.periodid, period.periodname, groupassignment.instrument).\
+                                join(group).join(groupassignment).join(user).join(location).\
+                                filter(period.starttime > date, period.endtime < nextday, user.userid == userid).all()
+        everyoneperiods = session.query(period.starttime, period.endtime, group.groupname, location.locationname, group.groupid, group.ismusical, \
+                                group.iseveryone, period.periodid, period.periodname).\
+                                join(group).join(location).\
+                                filter(period.starttime > date, period.endtime < nextday, group.iseveryone == 1).all()
+
+        for e in everyoneperiods:
+            duplicate = 'undetected'
+            for p in periods:
+                log2('testing ' + str(e) + ' against ' + str(p))
+                if e.periodid == p.periodid:
+                    duplicate = 'detected'
+            if duplicate == 'undetected':
+                periods.append(e)
+        
 
 
         log2(periods)
@@ -362,17 +376,6 @@ def dashboard(userid,date='none'):
                             campname=campname, \
                             supportemailaddress=supportemailaddress, \
                             )
-
-        """self.starttime = starttime
-        self.endtime = endtime
-        self.groupname = groupname
-        self.instrument = instrument
-        self.location = locationname
-        self.groupid = groupid
-        self.ismusical = ismusical
-        self.iseveryone = iseveryone
-        self.periodid = periodid
-        self.periodname = periodname"""
         
     else:
         return 'You have submitted illegal characters in your URL. Any inputs must only contain letters, numbers and dashes.'

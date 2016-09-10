@@ -25,7 +25,6 @@ import sqlalchemy
 #import DBSetup
 from DBSetup import *
 from SQL import *
-from debug import *
 from json import JSONEncoder, JSONDecoder
 from sqlalchemy import *
 
@@ -36,106 +35,16 @@ app.secret_key = config.root.CampDetails['SecretKey']
 wsgi_app = app.wsgi_app
 Session = sessionmaker(bind=engine)
 
-"""
-#the user object defines an individual user.  The user is an individual
-#attending the music camp
-class user:
-    def __init__(self, userid, firstname, lastname, age, email, announcer, conductor, admin):
-        self.userid = userid
-        self.firstname = firstname
-        self.lastname = lastname
-        self.age = age
-        self.email = email
-        self.announcer = announcer
-        self.conductor = conductor
-        self.admin = admin
-    def add(self):
-        try:
-            sql(INSERT INTO `users` (`userid`, `firstname`, `lastname`, `age`, `email`, `announcer`, `conductor`, `admin`) 
-                        VALUES (' + str(self.userid) + "','" + str(self.firstname) + "','" + str(self.lastname) + "','" + str(self.age) + "','" + str(self.email) + "','" + str(self.announcer) + "','" + str(self.conductor) + "','" + str(self.admin) + "';")
-        except Exception as ex:
-            log1('Failed to add user with exception: %s:' % ex)
-        
-#the group object defines an instance of a group of player()s playing music,
-#having a meal, or being absent.  These objects are either generated
-#by users through a web GUI, or by the scheduler.  A group object with an empty
-#periodid indicates that it has not been scheduled yet.
-class group:
-    def __init__(self, groupid, groupname, locationid, requesttime, periodid, music, ismusical, iseveryone, conductor, flute, oboe, \
-                 clarinet, bassoon, horn, trumpet, trombone, tuba, percussion, violin, viola, cello, doublebass):
-        self.groupid = groupid
-        self.groupname = groupname
-        self.locationid = locationid
-        self.requesttime = requesttime
-        self.periodid = periodid
-        self.music = music
-        self.ismusical = ismusical
-        self.iseveryone = iseveryone
-        self.conductor = conductor
-        self.flute = flute
-        self.oboe = oboe
-        self.clarinet = clarinet
-        self.bassoon = bassoon
-        self.horn = horn
-        self.trumpet = trumpet
-        self.trombone = trombone
-        self.tuba = tuba
-        self.percussion = percussion
-        self.violin = violin
-        self.viola = viola
-        self.cello = cello
-        self.doublebass = doublebass
-    #unfininshed, the proper things need to be written in the right places below
-    def add(self):
-        try:
-            sql(INSERT INTO `groups` (`groupid`, `groupname`, `locationid`, `requesttime`, `periodid`, `music`, `ismusical`, \
-                                        `iseveryone`, `conductor`, `flute`, `oboe`, `clarinet`, `bassoon`, `horn`, `trumpet`, \
-                                        `trombone`, `tuba`, `percussion`, `violin`, `viola`, `cello`, `doublebass`) 
+#sets up debugging
+debug = config.root.Application['Debug']
+def log1(string):
+    if debug >= 1:
+        print(string)
+def log2(string):
+    if debug >= 2:
+        print(string)
+print('Debug level set to %s' % debug)
 
-
-                        VALUES (' + str(self.userid) + "','" + str(self.firstname) + "','" + str(self.lastname) + "','" + str(self.age) + "','" + str(self.email) + "','" + str(self.announcer) + "','" + str(self.conductor) + "','" + str(self.admin) + "';")
-            return self
-        except Exception as ex:
-            log1('Failed to add group with exception: %s:' % ex)
-            return ex
-
-class groupassignment:
-    def __init__(self,groupassignmentid,userid,groupid,instrument):
-        self.groupassignmentid = groupassignmentid
-        self.userid = userid
-        self.groupid = groupid
-        self.instrument = instrument
-    def add(self):
-        try:
-            id = generateid('groupassignment')
-            sql(INSERT INTO `groupassignments` (`groupassignmentid`, `userid`, `groupid`, `instrument`) 
-                VALUES (' + str(id) + "','" + str(self.userid) + "','" + str(self.groupid) + "','" + str(self.instrument) + "';")
-        except Exception as ex:
-            log1('Failed to add groupassignment with exception: %s:' % ex)
-    def remove(self):
-        try:
-            sql("DELETE FROM `groupassignments` WHERE `groupassignmentid`='" + str(self.groupassignmentid) + "';")
-        except Exception as ex:
-            log1('Failed to remove groupassignment with exception: %s:' % ex)
-
-class grouptemplate:
-    def __init__(self, grouptemplatename, minimumlevel, conductor, flute, oboe, clarinet, bassoon, horn, trumpet, trombone, tuba, percussion, violin, viola, cello, doublebass):
-        self.grouptemplatename = grouptemplatename
-        self.conductor = conductor
-        self.flute = flute
-        self.oboe = oboe
-        self.clarinet = clarinet
-        self.bassoon = bassoon
-        self.horn = horn
-        self.trumpet = trumpet
-        self.trombone = trombone
-        self.tuba = tuba
-        self.percussion = percussion
-        self.violin = violin
-        self.viola = viola
-        self.cello = cello
-        self.doublebass = doublebass
-        """
 #the player object defines a player sitting in a group
 class player:
     def __init__(self, userid, firstname, lastname, instrument, groupname, location, groupid):
@@ -166,24 +75,6 @@ class assignment:
     def __init__(self, groupname, groupassignmentid):
         self.groupname = groupname
         self.groupassignmentid = groupassignmentid
-        """
-class period:
-    def __init__(self, periodid, starttime, endtime, periodname):
-        self.periodid = periodid
-        self.starttime = starttime
-        self.endtime = endtime
-        self.periodname = periodname
-        
-#the location object describes a location that people can play in, eat or have fun
-class location:
-    def __init__(self, locationid, locationname, capacity):
-        self.locationid = locationid
-        self.locationname = locationname
-        self.capacity = capacity
-        """
-class date:
-    def __init__(self, date):
-        self.date = date
 
 log2('   Python version: %s' % sys.version)
 
@@ -197,40 +88,6 @@ def check(string):
         log1('%s fails the check' % string)
         tf = False
     return tf
-    
-#turns data extracted from a SQL query into a specified object
-def datatoclass(classtype,data,row):
-    try:
-        generatedclass = getattr(sys.modules[__name__], classtype) #convert the classtype string into a class
-    except AttributeError:
-        raise NameError("datatoclass failed because %s doesn't exist." % objecttype)
-    if isinstance(generatedclass, (types.ClassType, types.TypeType)):
-        c = (generatedclass(*[data[row][column] for column in range(0,len(data[row]))])) #insert data from SQL statement into the chosen class
-        return c
-    raise TypeError("datatoclass failed because %s is not a class." % classtype)
-
-#turns data extracted from a SQL query into a list of specified objects
-def datatoclasslist(classtype,data):
-    try:
-        log2('Forming %s %s objects that match the query' % (len(data),classtype))
-        classlist = []
-        for row in range(0,len(data)):
-            classlist.append(datatoclass(classtype,data,row))
-        log2('created %s list with length %s' % (classtype,len(classlist)))
-        return classlist
-    except Exception as ex:
-        log1('datatoclasslist failed while trying to convert to a %s class with exception: %s' % (classtype,ex))
-        log1('The data it was trying to convert was:')
-        log1(data)
-        return 'error'
-
-#generates a nember for the next free ID of a given table type
-def generateid(id):
-    currentmax = sql("SELECT t." + str(id) + "id FROM " + str(id) + "s t ORDER BY t." + str(id) + "id DESC LIMIT 1")
-    if currentmax == ():
-        return 0
-    else:
-        return int(currentmax[0][0]) + 1
 
 #looks up a list of players that aren't playing in any groups that share a period with the input group, and play one of the instruments in
 #the group.  Returns a list of player objects.
@@ -259,57 +116,50 @@ def playersubstitutesforgroup(groupid):
         return 'error'
 
 #Looks up the amount of times a user has participated in an "ismusical" group during the camp
-def useridtonumberofplayings(userid):
-    try:
-        log2('finding number of group plays for user %s' % userid)
-        data = sql("""
-            SELECT COUNT(g.ismusical) FROM groups g
-            INNER JOIN groupassignments ga ON g.groupid = ga.groupid
-            INNER JOIN periods p on g.periodid = p.periodid
-            WHERE g.ismusical = 1 AND p.endtime < NOW() AND ga.userid = \'""" + userid + "\'")
-        groupcount = data[0][0]
-        log2('found %s playings for user %s' % (groupcount,userid))
-        return groupcount
-    except Exception as ex:
-        log1('useridtonumberofplayings failed on userid %s with exception: %s' % (userid,ex))
-        return 'error'
+def playcount(session,userid):
+    playcount = session.query(groupassignment).join(group).join(user).filter(user.userid == userid, group.ismusical == 1).count()
+    return playcount
 
 #gets a list of periods corresponding to the requested userid and date
-def useridanddatetoperiods(userid,date):
-    data = sql("""
-        SELECT TIME_FORMAT(p.starttime,'%H:%i'),TIME_FORMAT(p.endtime,'%H:%i'),b.groupname,b.instrument,b.locationname,b.groupid,b.ismusical,b.iseveryone,p.periodid,p.periodname
-        FROM periods p
-        LEFT JOIN(
-        SELECT g.periodid,g.groupname,ga.instrument,l.locationname,g.groupid,g.ismusical,g.iseveryone
-        FROM groupassignments ga
-        RIGHT JOIN groups g ON g.groupid = ga.groupid
-        INNER JOIN locations l ON g.locationid = l.locationid
-        WHERE ga.userid = '""" + userid + """' OR g.iseveryone = 1
-        ORDER BY g.iseveryone
-        ) b ON b.periodid = p.periodid
-        WHERE CAST(p.starttime AS DATE) = '""" + date + """'
-        GROUP BY p.starttime""")
-    p = datatoclasslist('perioddisplay',data)
-    return p
+def useridanddatetoperiods(session,userid,date):
+    #old SQL, for reference. Used this before switching to SQLalchemy:
+    """
+    SELECT TIME_FORMAT(p.starttime,'%H:%i'),TIME_FORMAT(p.endtime,'%H:%i'),b.groupname,b.instrument,b.locationname,b.groupid,b.ismusical,b.iseveryone,p.periodid,p.periodname
+    FROM periods p
+    LEFT JOIN(
+    SELECT g.periodid,g.groupname,ga.instrument,l.locationname,g.groupid,g.ismusical,g.iseveryone
+    FROM groupassignments ga
+    RIGHT JOIN groups g ON g.groupid = ga.groupid
+    INNER JOIN locations l ON g.locationid = l.locationid
+    WHERE ga.userid = ' + userid + ' OR g.iseveryone = 1
+    ORDER BY g.iseveryone
+    ) b ON b.periodid = p.periodid
+    WHERE CAST(p.starttime AS DATE) = ' + date + '
+    GROUP BY p.starttime)
+    """
+    nextday = date + datetime.timedelta(days=1)
+    #---------------   
+    #the below two queries and 1 loop could be optimized with a single query, but I don't know exactly how to do embedded queries in sqlalchemy  
+    #get this user's assigned periods today
+    periods = []
+    for p in session.query(period).filter(period.starttime > date, period.endtime < nextday).all():
+        g = session.query(group.groupname, period.starttime, period.endtime, location.locationname, group.groupid, group.ismusical, \
+                            group.iseveryone, period.periodid, period.periodname, groupassignment.instrument).\
+                            join(period).join(groupassignment).join(user).outerjoin(instrument).outerjoin(location).filter(user.userid == userid,group.periodid == p.periodid).first()
+        if g == None:
+            periods.append(p)
+        if g != None:
+            periods.append(g)
+
+    return periods
 
 #looks up the whole list of players in a given periodID
-def periodidtoplayerlist(periodid):
-    try:
-        log2('Looking up all players playing in periodID %s' % periodid)
-        data = sql("""
-            SELECT u.firstname,u.lastname,ga.instrument,g.groupname,l.locationname,g.groupid
-            FROM groups g
-            LEFT JOIN groupassignments ga ON g.groupid = ga.groupid
-            LEFT JOIN locations l ON g.locationid = l.locationid
-            LEFT JOIN users u ON ga.userid = u.userid
-            WHERE g.periodid = """ + periodid + """
-            ORDER BY CASE WHEN g.groupname='absent' THEN 1 ELSE 0 END,g.groupname, FIELD(instrument,'flute','oboe','clarinet','bassoon','horn',
-            'trumpet','trombone','tuba','percussion','violin','cello','doublebass')""")
-        playerlist = datatoclasslist('player',data)
-        return playerlist
-    except Exception as ex:
-        log1('periodidtoplayerlist failed on groupID %s with exception: %s' % (groupid,ex))
-        return 'error'
+def periodidtoplayerlist(session, periodid):
+    playerlist = session.query(user.firstname, user.lastname, period.starttime, period.endtime, user.userid, groupassignment.instrument, group.groupname, location.locationname).\
+                              outerjoin(groupassignment).outerjoin(group).outerjoin(period).outerjoin(location).\
+                              filter(periodid == periodid).order_by(group.groupname,groupassignment.instrument)    
+    log2(str(playerlist))
+    return playerlist
 
 #the root page isn't meant to be navigable.  It shows the user an error and
 #tells them how to get to their user dashboard.
@@ -321,60 +171,44 @@ def rootpage():
 #upon the URL request in the form domain/user/<userid> the user receives their dashboard.  This updates every day with the groups they 
 #are playing in.
 @app.route('/user/<userid>/')
-def dashboard(userid,date='none'):
-    if check(userid) and check(date):
-        session = Session()
+def dashboard(userid,inputdate='n'):
+    if check(userid) and check(inputdate):
         log1('dashboard fetch requested for user %s' % userid)
-        log1('date modifier is currently set to %s' % date)
+        log1('date modifier is currently set to %s' % inputdate)
+        session = Session()
         thisuser = session.query(user).filter(user.userid == userid).first()
-        #fetches the camp name and support email address from config.xml
-        campname = config.root.CampDetails['Name']
-        supportemailaddress = config.root.CampDetails['SupportEmailAddress']
+       
         #find the number of times a user has played in groups in the past
-        count = 'need function to count playings'
-        #find all periods today, and what this user is doing in each
-        today = datetime.datetime.strptime("2016-12-29", '%Y-%m-%d')#time.strftime("%Y-%m-%d")
-        if date != 'none':
-            date = datetime.datetime.strptime(date, '%Y-%m-%d')
+        count = playcount(session, userid)
+
+        #get impontant datetimes
+        today = datetime.datetime.combine(datetime.date.today(), datetime.time.min) #get today's date
+        #if the suer has submitted a date, convert it to a datetime and use it as the display date
+        if inputdate != 'n': 
+            displaydate = datetime.datetime.strptime(inputdate, '%Y-%m-%d')
+        #if the user has not submitted a date and today is before the start of camp, use the first day of camp as the display date
+        elif today < datetime.datetime.strptime(config.root.CampDetails['StartTime'], '%Y-%m-%d %H:%M'): 
+            displaydate = datetime.datetime.strptime(config.root.CampDetails['StartTime'].split()[0], '%Y-%m-%d')
+            log2(displaydate)
+        #if today is after the start of camp, use today as the display date
         else:
-            date = today
-        weekday = datetime.datetime.strftime(date, '%A')
-        previousday = datetime.datetime.strftime((date + datetime.timedelta(days=-1)), '%Y-%m-%d')
-        nextday = datetime.datetime.strftime((date + datetime.timedelta(days=1)), '%Y-%m-%d')
-        #OLD dateperiods = useridanddatetoperiods(userid,date)
-        periods = session.query(period.starttime, period.endtime, group.groupname, location.locationname, group.groupid, group.ismusical, \
-                                group.iseveryone, period.periodid, period.periodname, groupassignment.instrument).\
-                                join(group).join(groupassignment).join(user).join(location).\
-                                filter(period.starttime > date, period.endtime < nextday, user.userid == userid).all()
-        everyoneperiods = session.query(period.starttime, period.endtime, group.groupname, location.locationname, group.groupid, group.ismusical, \
-                                group.iseveryone, period.periodid, period.periodname).\
-                                join(group).join(location).\
-                                filter(period.starttime > date, period.endtime < nextday, group.iseveryone == 1).all()
-
-        for e in everyoneperiods:
-            duplicate = 'undetected'
-            for p in periods:
-                log2('testing ' + str(e) + ' against ' + str(p))
-                if e.periodid == p.periodid:
-                    duplicate = 'detected'
-            if duplicate == 'undetected':
-                periods.append(e)
+            displaydate = today
         
-
-
-        log2(periods)
+        previousday = displaydate + datetime.timedelta(days=-1)
+        nextday = displaydate + datetime.timedelta(days=1)
+        periods = useridanddatetoperiods(session,userid,displaydate)
         session.close()
         return render_template('dashboard.html', \
                             user=thisuser, \
                             count=count, \
-                            date=date,\
+                            date=displaydate,\
                             periods=periods, \
-                            previousday=previousday, \
-                            nextday=nextday, \
+                            previousday=datetime.datetime.strftime(previousday, '%Y-%m-%d'), \
+                            nextday=datetime.datetime.strftime(nextday, '%Y-%m-%d'), \
                             today=today, \
-                            weekday=weekday, \
-                            campname=campname, \
-                            supportemailaddress=supportemailaddress, \
+                            weekday=datetime.datetime.strftime(displaydate, '%A'), \
+                            campname=config.root.CampDetails['Name'], \
+                            supportemailaddress=config.root.CampDetails['SupportEmailAddress'], \
                             )
         
     else:
@@ -388,39 +222,49 @@ def dashboardDateModifier(userid,date):
 @app.route("/user/<userid>/period/<periodid>/absent/<command>/", methods=["POST"])
 def mark_absent(userid,periodid,command):
     if check(userid) and check(periodid) and check(command):
-        user = datatoclass('user',sql("SELECT * FROM users WHERE userid=\"" + userid + "\""),0)
-        period = datatoclass('period',sql("SELECT * FROM periods WHERE periodid=\"" + periodid + "\""),0)
-        currentassignment = sql("""
-            SELECT g.groupname, ga.groupassignmentid
-            FROM users u 
-            INNER JOIN groupassignments ga ON u.userid = ga.userid
-            INNER JOIN groups g ON ga.groupid = g.groupid
-            INNER JOIN periods p ON p.periodid = g.periodid
-            WHERE u.userid = '""" + user.userid + "' AND p.periodid = '" + periodid + "'")
-        if currentassignment == ():
+        session = Session()
+        currentassignment = session.query(group.groupname, groupassignment.groupassignmentid).\
+                        join(groupassignment).join(user).join(period).\
+                        filter(period.periodid == periodid, user.userid == userid).first()
+        log2('User is currently assigned to ' + str(currentassignment))
+        #case if the user is not assigned to anything, and attempted to mark themselves as absent
+        if currentassignment == None and command == 'confirm':
+            log2('user is not assigned to anything and is requesting an absence')
             #get the groupid for the absent group associated with this period
-            absentgroup = sql("""
-                SELECT g.groupid FROM groups g INNER JOIN periods p ON g.periodid = p.periodid 
-                WHERE g.groupname = "absent" AND p.periodid = """ + periodid)
-            if absentgroup == (): #if there is no absent group for this period, create one
-                absentgroup = group(generateid('group'),'absent',0,None,periodid,None,0,None,None,None,None,None,None,None,None,None,None,None,None,None,None,None)
-                response = absentgroup.add
-            else: 
-                absentgroup = absentgroup[0][0]
+            absentgroup = session.query(group.groupid).join(period).filter(group.groupname == 'absent', period.periodid == periodid).first()
+            log2('found absent group %s' % absentgroup)
             #assign this person to the absent group
-            response = sql("""INSERT INTO `groupassignments` (`groupassignmentid`, `userid`, `groupid`) 
-                        VALUES ('""" + str(generateid('groupassignment')) + """', '""" + user.userid + """', '""" + str(absentgroup) + """');""")
-            return 'Now absent for ' + period.periodname
+            try:
+                session.add(groupassignment(userid = userid, groupid = absentgroup.groupid))
+                session.commit()
+                session.close()
+                return 'Now user marked absent for periodid ' + periodid
+            except Exception as ex:
+                log1('failed to allocate user as absent for period %s with exception: %s' % (periodid,ex))
+                session.rollback()
+                session.close()
+                return 'error'
+        #case if the user is already marked absent and they tried to mark themselves as absent again
+        if currentassignment != None:
+            if currentassignment.groupname == 'absent' and command == 'confirm':
+                session.close()
+                return 'Already marked absent for period with id ' + periodid
+            #case if the user is already marked absent and their tried to cancel their absent request
+            elif currentassignment.groupname == 'absent' and command == 'cancel':            
+                try:
+                    session.delete(session.query(groupassignment).filter(groupassignment.groupassignmentid == currentassignment.groupassignmentid).first())
+                    session.commit()
+                    session.close()
+                    return 'Removed absent request for ' + periodid
+                except Exception as ex:
+                    log1('failed to remove absent request for period %s with exception: %s' % (periodid,ex))
+                    session.rollback()
+                    session.close()
+                    return 'error'
+        #catch-all case. You'd get here if the adminsitrator was changing the back-end while the user was on their dashboard page
         else:
-            currentassignment = datatoclass('assignment',currentassignment,0)
-            if currentassignment.groupname == "absent":
-                if command == "cancel":  
-                    sql("DELETE FROM `groupassignments` WHERE `groupassignmentid`='" + str(currentassignment.groupassignmentid) + "';")
-                    return 'Removed absent request for ' + period.periodname
-                if command == "confirm":
-                    return 'Already marked absent for ' + period.periodname
-            else:
-                return 'You are already assigned to a group for this period. You have NOT been marked absent. Talk to the adminsitrator to fix this.'
+            session.close()
+            return 'You are already assigned to a group for this period. You have NOT been marked absent. Talk to the adminsitrator to fix this.'
     else:
         return 'You have submitted illegal characters in your URL. Any inputs must only contain letters, numbers and dashes.'
 
@@ -430,32 +274,52 @@ def mark_absent(userid,periodid,command):
 def groupdetails(userid,groupid):
     if check(userid) and check(groupid):
         log1('Group page requested by %s for groupID %s' % (userid,groupid))
+        session = Session()
         #gets the data associated with this user
-        user = datatoclass('user',sql("SELECT * FROM users WHERE userid=\"" + userid + "\""),0)
-        #gets the data associated with this group ID
-        group = datatoclass('group',sql("SELECT * FROM groups WHERE groupid=\"" + groupid + "\""),0)
-        #gets the period that this group takes place
-        period = datatoclass('period',sql("SELECT * FROM periods WHERE periodid = " + str(group.periodid)),0)
-        #gets the location that this group takes place
-        location = datatoclass('location',sql("SELECT * FROM locations WHERE locationid = " + str(group.locationid)),0)
+        thisuser = session.query(user).filter(user.userid == userid).first()
+        thisgroup = session.query(group, location.locationname).filter(group.groupid == groupid).join(location).first()
+        thisperiod = session.query(period).filter(period.periodid == group.periodid).first()
+        
         #gets the list of players playing in the given group
-        data = sql("""
-            SELECT u.userid,u.firstname,u.lastname,ga.instrument,g.groupname,l.locationname,g.groupid
-            FROM groupassignments ga
-            INNER JOIN users u ON ga.userid = u.userid
-            INNER JOIN groups g ON ga.groupid = g.groupid
-            INNER JOIN locations l ON g.locationid = l.locationid
-            WHERE ga.groupid=""" + str(groupid))
-        players = datatoclasslist('player',data)
-        substitutes = playersubstitutesforgroup(groupid)
+        players = session.query(user.firstname, user.lastname, groupassignment.instrument).join(groupassignment).join(group).\
+                                filter(group.groupid == groupid).order_by(groupassignment.instrument).all()
+        """
+        #VERY unfinished. Need data to test this to continue.
+        everyoneplayingquery = session.query(user.userid).join(groupassignment).join(group).join(period).filter(period.periodid == thisperiod.periodid)
+        everyoneNOTplayingquery = session.query(user.userid).filter(~user.in_(everyoneplayingquery))
+
+        #the below is probably junk
+        substitutes = session.query(user.firstname, user.lastname, instrument.instrumentname).\
+                                join(instrument).outerjoin(groupassignment).outerjoin(group).outerjoin(period).\
+                                filter(period.periodid == thisperiod.periodid)
+        """
+        session.close()
         return render_template('group.html', \
-                            period=period, \
-                            group=group, \
+                            period=thisperiod, \
+                            group=thisgroup, \
                             location=location, \
                             players=players, \
-                            substitutes=substitutes, \
-                            user=user \
+                            #substitutes=substitutes, \
+                            user=thisuser \
                             )
+
+        """
+        data = sql(SELECT u.userid,u.firstname,u.lastname,ga.instrument,null,null,null FROM groupassignments ga INNER JOIN (
+                                SELECT si.userid,si.instrument FROM instruments si WHERE NOT EXISTS (
+                                    SELECT nu.userid FROM users nu
+                                    INNER JOIN groupassignments nga ON nga.userid = nu.userid
+                                    INNER JOIN groups ng ON nga.groupid = ng.groupid
+                                    WHERE nu.userid = si.userid AND ng.periodid =  + g.periodid + )) n
+                            ON ga.instrument = n.instrument
+                            INNER JOIN users u ON n.userid = u.userid
+                            WHERE ga.groupid =  + g.groupid)
+        """
+
+
+
+
+
+
     else:
         return 'You have submitted illegal characters in your URL. Any inputs must only contain letters, numbers and dashes.'
 
@@ -504,60 +368,19 @@ def instrumentplayers_get(instrument,periodid='none'):
 def instrumentplayers_get_period(instrument,periodid):
     return instrumentplayers_get(instrument,periodid)
 
-#NOT USED. Just keeping this for reference.
-@app.route('/user/<userid>/absentreq/')
-def absentrequestpage(userid):
-    if check(userid):
-        #gets the data associated with this user
-        user = datatoclass('user',sql("SELECT * FROM users WHERE userid=\"" + userid + "\""),0)
-        today = time.strftime("%Y-%m-%d")
-        weekday = time.strftime("%A")
-        nextday = datetime.datetime.strftime((datetime.datetime.strptime(today, '%Y-%m-%d') + datetime.timedelta(days=1)), '%Y-%m-%d')
-        #look up all dates in the future containing periods
-        perioddates = datatoclasslist('date',sql("""
-                SELECT DISTINCT DATE_FORMAT(starttime,'%Y-%m-%d') FROM periods WHERE starttime >= '""" + today + "'"))
-        #look up all sessions on the user's requested day
-        periods = datatoclasslist('period',sql("""
-                SELECT periodid,TIME_FORMAT(starttime,'%H:%i'),TIME_FORMAT(endtime,'%H:%i'),periodname
-                FROM periods
-                WHERE starttime >= '""" + nextday + "'"))
-        return render_template('absentrequest.html', \
-                            user=user, \
-                            today=today, \
-                            weekday=weekday, \
-                            periods=periods, \
-                            perioddates=perioddates, \
-                            )
-    else:
-        return 'You have submitted illegal characters in your URL. Any inputs must only contain letters, numbers and dashes.'
-
-#NOT USED - just keeping for reference
-#Returns data from a query from the page from the function above.
-@app.route("/return/periodlist/<date>/", methods=["GET"])
-def get_request(date):
-    if check(date):
-        periods = (datatoclasslist('period',sql("""
-                SELECT periodid,TIME_FORMAT(starttime,'%H:%i'),TIME_FORMAT(endtime,'%H:%i'),periodname
-                FROM periods
-                WHERE DATE_FORMAT(starttime,'%Y-%m-%d') = '""" + date + "'")))
-        response = make_response(json.dumps([ob.__dict__ for ob in periods]))
-        response.content_type = 'application/json'
-        log2(response)
-        return response
-    else:
-        return 'You have submitted illegal characters in your URL. Any inputs must only contain letters, numbers and dashes.'
-
 #this page is the full report for any given period
 @app.route('/user/<userid>/period/<periodid>/')
 def periodpage(userid,periodid):
     if check(userid) and check(periodid):
-        players = periodidtoplayerlist(periodid)
-        user = datatoclass('user',sql("SELECT * FROM users WHERE userid=\"" + userid + "\""),0)
-        period = datatoclass('period',sql("SELECT * FROM periods WHERE periodid = " + periodid),0)
+        session = Session()
+        players = periodidtoplayerlist(session, periodid)
+        thisuser = session.query(user).filter(user.userid == userid).first()
+        thisperiod = session.query(period).filter(period.periodid == periodid).first()
+        session.close()
         return render_template('period.html', \
                             players=players, \
-                            user=user, \
-                            period=period \
+                            user=thisuser, \
+                            period=thisperiod \
                             )
     else:
         return 'You have submitted illegal characters in your URL. Any inputs must only contain letters, numbers and dashes.'

@@ -19,7 +19,7 @@
             <td>{{ period.endtime }}
         <tr>
             <td>Location</td>
-            <td>{{ location.locationname }}
+            <td>{{ group.locationname }}
     </table>
     <a href="/user/{{ user.userid }}/">Back to dashboard</a>
     <br>
@@ -37,7 +37,7 @@
             <td>{{ p.instrument }}</td>
         </tr>
         {% endfor %}
-        </tbody>
+
     </table>
     <a href="/user/{{ user.userid }}/">Back to dashboard</a>
     <p>
@@ -59,7 +59,7 @@
         </tr>
         {% endfor %}
         
-    </table></tbody>
+    </table>
     <a href="/user/{{ user.userid }}/">Back to dashboard</a>
 </body>
 </html>

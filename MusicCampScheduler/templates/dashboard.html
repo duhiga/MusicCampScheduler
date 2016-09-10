@@ -108,7 +108,7 @@
             </td>
             <!--Group Name Column-->
             <td>
-                {% if not p.groupname and p.iseveryone %}
+                {% if not p.groupname %}
                     {{ p.periodname }}
                     {% else %}{% if p.ismusical == 1 %}
                         <a href="/user/{{ user.userid }}/group/{{ p.groupid }}/">{{ p.groupname }}</a>

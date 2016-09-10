@@ -4,19 +4,48 @@ import sqlalchemy
 import untangle
 import time
 import datetime
-from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey, exists, Enum
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship, aliased
 from debug import *
 config = untangle.parse('config.xml')
-if obj.root.Application['Debug'] >= 2:
-        debug=True
+
+#sets up debugging
+debug = config.root.Application['Debug']
+def log1(string):
+    if debug >= 1:
+        print(string)
+def log2(string):
+    if debug >= 2:
+        print(string)
+print('Debug level set to %s' % debug)
+
+if config.root.Application['Debug'] >= 3:
+    sqldebug=True
+else:
+    sqldebug=False
 log2('sqlalchemy version: %s' % sqlalchemy.__version__)
 Session = sessionmaker()
-engine = create_engine("sqlite:///" + obj.root.Application['DBPath'], echo=debug)
+engine = create_engine("sqlite:///" + config.root.Application['DBPath'])#, echo=sqldebug)
 Session.configure(bind=engine)
 Base = declarative_base()
-
+"""
+class instrumentlist(Enum):
+    Conductor = "Conductor"
+    Flute = "Flute"
+    Oboe = "Oboe"
+    Clarinet = "Clarinet"
+    Bassoon = "Bassoon"
+    Horn = "Horn"
+    Trumpet = "Trumpet"
+    Trombone = "Trombone"
+    Tuba = "Tuba"
+    Percussion = "Percussion"
+    Violin = "Violin"
+    Viola = "Viola"
+    Cello = "Cello"
+    DoubleBass = "DoubleBass"
+"""
 class user(Base):
     __tablename__ = 'users'
 
@@ -98,7 +127,7 @@ class groupassignment(Base):
     groupassignmentid = Column(Integer, primary_key=True)
     userid = Column(Integer, ForeignKey('users.userid'))
     groupid = Column(Integer, ForeignKey('groups.groupid'))
-    instrument = Column(String, ForeignKey('instruments.instrumentname'))
+    instrument = Column(Enum('conductor','flute','oboe','clarinet','bassoon','horn','trumpet','trombone','tuba','percussion','violin','viola','cello','doublebass','absent'), ForeignKey('instruments.instrumentname'))
 
     def __repr__(self):
         return "<User(name='%s', fullname='%s', password='%s')>" % (
@@ -109,13 +138,13 @@ class instrument(Base):
 
     instrumentid = Column(Integer, primary_key=True)
     userid = Column(Integer, ForeignKey('users.userid'))
-    instrumentname = Column(String)
+    instrumentname = Column(Enum('conductor','flute','oboe','clarinet','bassoon','horn','trumpet','trombone','tuba','percussion','violin','viola','cello','doublebass','absent'))
     grade = Column(Integer)
     isprimary = Column(Integer)
 
     def __repr__(self):
         return "<User(name='%s', fullname='%s', password='%s')>" % (
-            self.instrumentid,self.instrumentname,self.userid,self.isprimary)
+            self.instrumentid,self.userid,self.instrumentname,self.grade,self.isprimary)
 
 class location(Base):
     __tablename__ = 'locations'
@@ -144,7 +173,7 @@ class period(Base):
 #create all tables if needed
 Base.metadata.create_all(engine)
 
-if obj.root.Application['DBBuildRequired'] == 'Yes':
+if config.root.Application['DBBuildRequired'] == 'Yes':
     #Grab the camp start and end times from the config file
     CampStartTime = datetime.datetime.strptime(config.root.CampDetails['StartTime'], '%Y-%m-%d %H:%M')
     CampEndTime = datetime.datetime.strptime(config.root.CampDetails['EndTime'], '%Y-%m-%d %H:%M')
@@ -160,28 +189,35 @@ if obj.root.Application['DBBuildRequired'] == 'Yes':
             find_location = location(locationname = config.root.CampDetails.Locations.Location[x]['Name'],capacity = config.root.CampDetails.Locations.Location[x]['Capacity'])
             session.add(find_location)
     meallocation = session.query(location).filter(location.locationname == config.root.CampDetails.Locations['MealLocation']).first()
-    while loop == 'start': #this loop keeps incrementing the day until it attempts to create periods which happen     
+    #For each day covered by the camp start and end time
+    while loop == 'start':
         log2('now looping for %s' % ThisDay)
+        #For each period covered by the camp's configured period list
         for x in xrange(0,len(config.root.CampDetails.Periods.Period)):
             ThisStartTime = datetime.datetime.strptime((datetime.datetime.strftime(ThisDay, '%Y-%m-%d') + ' ' + config.root.CampDetails.Periods.Period[x]['StartTime']),'%Y-%m-%d %H:%M')
             ThisEndTime = datetime.datetime.strptime((datetime.datetime.strftime(ThisDay, '%Y-%m-%d') + ' ' + config.root.CampDetails.Periods.Period[x]['EndTime']),'%Y-%m-%d %H:%M')
             ThisPeriodName = config.root.CampDetails.Periods.Period[x]['Name']
             ThisPeriodMeal = config.root.CampDetails.Periods.Period[x]['Meal']
             find_period = session.query(period).filter(period.periodname == ThisPeriodName,period.starttime == ThisStartTime,period.endtime == ThisEndTime).first()
+            #only create periods and groups if we are inside the specific camp start and end time
             if ThisStartTime < CampEndTime and ThisStartTime > CampStartTime:
                 find_period = session.query(period).filter(period.periodname == ThisPeriodName,period.starttime == ThisStartTime,period.endtime == ThisEndTime).first()
+                #if no period exists in the database, create it
                 if find_period is None:
                     log2('Period not found. Creating period instance with details ' + datetime.datetime.strftime(ThisStartTime, '%Y-%m-%d %H:%M') + datetime.datetime.strftime(ThisStartTime, '%Y-%m-%d %H:%M') + ThisPeriodName)
                     find_period = period(periodname = ThisPeriodName,starttime = ThisStartTime,endtime = ThisEndTime,meal=ThisPeriodMeal)
                     session.add(find_period)
                 find_mealgroup = session.query(group).filter(group.groupname == find_period.periodname,group.periodid == find_period.periodid,group.iseveryone == 1,group.ismusical == 0).first()
+                #if no mealgroup exists in the database, create it
                 if find_mealgroup is None and find_period.meal == 1:
                     find_mealgroup = group(groupname = find_period.periodname,periodid = find_period.periodid,iseveryone = 1,ismusical = 0,locationid = meallocation.locationid)
                     session.add(find_mealgroup)
                 find_absent_group = session.query(group).filter(group.groupname == 'absent',group.periodid == find_period.periodid).first()
+                #if no absentgroup exists in the database, create it
                 if find_absent_group is None:
-                    find_absent_group = group(groupname = 'absent',periodid = find_period.periodid,locationid=0,ismusical=0)
+                    find_absent_group = group(groupname = 'absent',periodid = find_period.periodid,ismusical=0)
                     session.add(find_absent_group)
+            #if we hit the camp's configured end time, then stop looping
             if ThisStartTime > CampEndTime:
                 loop = 'stop'
         ThisDay = ThisDay + datetime.timedelta(days=1)    

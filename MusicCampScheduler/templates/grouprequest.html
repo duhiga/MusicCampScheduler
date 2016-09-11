@@ -3,52 +3,68 @@
 <head>
     <link rel="stylesheet" href='/static/css/style.css' />
     <title>{{ campname }} Request a Group</title>
-
-
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"> </script>
     <script>
         $(document).ready(function () {
-            $('.instrument_dropdown').change(function () {
-
+            var players = {{ playersdump|tojson }};
+            console.log(players)
+            // dump is not serialised. Each row has the form:
+            // [0] = userid
+            // [1] = firstname
+            // [2] = lastname
+            // [3] = instrument
+            // [4] = grade
+            // [5] = isprimary
+            
+            $(document).on("change", '.instrument_dropdown', function () {
                 // grab value
                 var selectedinstrument = $(this).val();
-
-                // send value via GET to URL /<category_id>
-                var get_request = $.ajax({
-                    type: 'GET',
-                    url: '/return/instrumentplayers/' + selectedinstrument + '/',
-                });
-
-                // handle response
-                get_request.done(function (players) {
-
-                    // data
-                    console.log(players)
-
-                    // add values to list 
-                    var listItems = "<option value='null'></option>";
-                    for (var i = 0; i < players.length; i++) {
-                        listItems += "<option value='" + players[i].userid + "'>" + players[i].firstname + " " + players[i].lastname + "</option>";
+                console.log(selectedinstrument)
+                // add values to list 
+                var listItems = "<option value='null'></option>";
+                for (var i = 0; i < players.length; i++) {
+                    if (players[i][3] == selectedinstrument) {
+                        listItems += "<option value='" + players[i][0] + "'>" + players[i][1] + " " + players[i][2] + "</option>";
                     }
-                    console.log(listItems)
-                    $("#player1").html(listItems);
+                }
+                console.log(listItems)
+                $("#player" + $(this).data("pairing")).html(listItems);
+            });
 
-                    // show model list
-                    $("#player1").show();
+            $("#add_player").click(function () {
+                event.preventDefault();
+                boxNumber = $('.instrument_dropdown').length
+                console.log(boxNumber)
+                if (boxNumber < {{ playerlimit }}) {
+                    $('#playersTable tr:last').after('\
+                        <tr>\
+                            <td>\
+                                <select class="instrument_dropdown" id="instrument' + boxNumber + '" data-pairing="' + boxNumber + '">\
+                                    <option value=""></option>\
+                                    {% for i in instrumentlist %}<option value="{{ i }}">{{ i }}</option>{% endfor %}\
+                                </select>\
+                            </td>\
+                            <td>\
+                                <select class="player_dropdown" id="player' + boxNumber + '" data-pairing="' + boxNumber + '">\
+                                    <option value=""></option>\
+                                </select>\
+                            </td>\
+                        </tr>');
+                }
                 });
+
+            $("#remove_player").click(function () {
+                if ($('.instrument_dropdown').length > 1) {
+                    $('#playersTable tr:last').remove();
+                }
             });
         });
-
     </script>
-
-
-
-
-
 </head>
+
 <body>
     <h1>Request a Group</h1>
-    <p>Use this page to request a group. You can request a group of up to 10 people. Only the instrumentation is required, all other fields are optional and will be autofilled if left blank.</p>
+    <p>Use this page to request a group. You can request a group of up to {{ playerlimit }} people. Only the instrumentation is required, all other fields are optional and will be autofilled if left blank.</p>
 
 
     <br />
@@ -62,27 +78,41 @@
     <br />
     Optional: What music will be played?<input type="text" name="textbox_music">
     <br /><br />
-    <table>
+    <table id="playersTable">
         <tr>
             <th>Instrument</th>
             <th>Player Name</th>
         </tr>
         <tr>
             <td>
-                <select class="instrument_dropdown" id="instrument1">
+                <select class="instrument_dropdown" id="instrument0" data-pairing="0">
+                    {% for i in thisuserinstruments %}
+                    <option value="{{ i.instrumentname }}">{{ i.instrumentname }}</option>
+                    {% endfor %}
+                </select>
+            </td>
+            <td>{{ thisuser.firstname }} {{ thisuser.lastname }}</td>
+        </tr>
+        <tr>
+            <td>
+                <select class="instrument_dropdown" id="instrument1" data-pairing="1">
                     <option value=""></option>
-                    {% for i in instruments %}
+                    {% for i in instrumentlist %}
                     <option value="{{ i }}">{{ i }}</option>
                     {% endfor %}
                 </select>
             </td>
             <td>
-                <select id="player1">
+                <select class="player_dropdown" id="player1" data-pairing="1">
                     <option value=""></option>
                 </select>
             </td>
         </tr>
     </table>
     <button id="add_player">Add a Player</button>
+    <button id="remove_player">Remove a Player</button>
+    <br />
+    <br />
+    <input type='submit' name='submit' id='submitBtn' class='enableOnInput' disabled='disabled' />
 </body>
 </html>

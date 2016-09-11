@@ -90,3 +90,54 @@ def get_request(date):
         return response
     else:
         return 'You have submitted illegal characters in your URL. Any inputs must only contain letters, numbers and dashes.'
+
+#NOT FINISHED - SEE BELOW
+#Used in the grouprequest page to fill the instruments
+#@app.route("/return/instrumentplayers/<instrument>/", methods=["GET"])
+def instrumentplayers_get(instrument,periodid='none'):
+    if check(instrument) and check(periodid):
+        if periodid == 'none':
+            players = (datatoclasslist('player',sql("""
+                SELECT u.userid,u.firstname,u.lastname,i.instrument,null,null,null 
+                FROM instruments i INNER JOIN users u ON u.userid=i.userid""")))
+        else:
+            #NOT FINISHED to do: write the below SQL to find all available players for a particular instrument during a period
+            players = (datatoclasslist('player',sql("""
+                SELECT u.userid,u.firstname,u.lastname,i.instrument,null,null,null FROM users u 
+                INNER JOIN instruments i ON u.userid = i.userid
+                INNER JOIN groupassignments ga ON ga.userid = u.userid
+                INNER JOIN groups g ON ga.groupid = g.groupid
+                INNER JOIN periods p ON g.periodid = p.periodid
+                WHERE p.periodid != """ + str(periodid) + " AND i.instrument = '" + str(instrument) + "'"))) #not finished
+        response = make_response(json.dumps([ob.__dict__ for ob in players]))
+        response.content_type = 'application/json'
+        log2(response)
+        return response
+    else:
+        return 'You have submitted illegal characters in your URL. Any inputs must only contain letters, numbers and dashes.'
+
+#looks up a list of players that aren't playing in any groups that share a period with the input group, and play one of the instruments in
+#the group.  Returns a list of player objects.
+def playersubstitutesforgroup(groupid):
+    try:
+        log2('looking up the session ID for group with groupid %s' % groupid)
+        g = datatoclass('group',sql("SELECT * FROM groups WHERE groupid=\"" + groupid + "\""),0)
+        log2('this group sessionid is %s' % g.periodid)
+        log2('looking up all free players in session with sessionid %s' % g.periodid)
+        #the following query finds substitutes for this group.
+        #i.e.  people who aren't currently playing, but play the same
+        #instruments as those in the group
+        data = sql("""SELECT u.userid,u.firstname,u.lastname,ga.instrument,null,null,null FROM groupassignments ga INNER JOIN (
+                          SELECT si.userid,si.instrument FROM instruments si WHERE NOT EXISTS (
+                              SELECT nu.userid FROM users nu
+                              INNER JOIN groupassignments nga ON nga.userid = nu.userid
+                              INNER JOIN groups ng ON nga.groupid = ng.groupid
+                              WHERE nu.userid = si.userid AND ng.periodid = """ + g.periodid + """)) n
+                        ON ga.instrument = n.instrument
+                        INNER JOIN users u ON n.userid = u.userid
+                        WHERE ga.groupid = """ + g.groupid)
+        substitutelist = datatoclasslist('player',data)
+        return substitutelist
+    except Exception as ex:
+        log1('playersubstitutesforgroup failed on groupID %s with exception: %s' % (groupid,ex))
+        return 'error'

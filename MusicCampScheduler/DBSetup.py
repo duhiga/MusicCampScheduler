@@ -21,31 +21,14 @@ def log2(string):
 print('Debug level set to %s' % debug)
 
 if config.root.Application['Debug'] >= 3:
-    sqldebug=True
+    engine = create_engine("sqlite:///" + config.root.Application['DBPath'], echo=True)
 else:
-    sqldebug=False
+    engine = create_engine("sqlite:///" + config.root.Application['DBPath'])
 log2('sqlalchemy version: %s' % sqlalchemy.__version__)
 Session = sessionmaker()
-engine = create_engine("sqlite:///" + config.root.Application['DBPath'])#, echo=sqldebug)
 Session.configure(bind=engine)
 Base = declarative_base()
-"""
-class instrumentlist(Enum):
-    Conductor = "Conductor"
-    Flute = "Flute"
-    Oboe = "Oboe"
-    Clarinet = "Clarinet"
-    Bassoon = "Bassoon"
-    Horn = "Horn"
-    Trumpet = "Trumpet"
-    Trombone = "Trombone"
-    Tuba = "Tuba"
-    Percussion = "Percussion"
-    Violin = "Violin"
-    Viola = "Viola"
-    Cello = "Cello"
-    DoubleBass = "DoubleBass"
-"""
+
 class user(Base):
     __tablename__ = 'users'
 
@@ -53,14 +36,13 @@ class user(Base):
     firstname = Column(String)
     lastname = Column(String)
     age = Column(Integer)
-    email = Column(String)
     isannouncer = Column(Integer)
     isconductor = Column(Integer)
     isadmin = Column(Integer)
 
     def __repr__(self):
-        return "<User(name='%s', fullname='%s', password='%s')>" % (
-            self.userid, self.firstname, self.lastname, self.age, self.email, self.announcer, self.conductor, self.admin)
+        return "<user(userid='%s', firstname='%s', lastname='%s', age='%s', isannouncer='%s', isconductor='%s', isadmin='%s')>" % (
+            self.userid, self.firstname, self.lastname, self.age, self.announcer, self.conductor, self.admin)
 
 class group(Base):
     __tablename__ = 'groups'
@@ -74,51 +56,62 @@ class group(Base):
     music = Column(String)
     ismusical = Column(Integer)
     iseveryone = Column(Integer)
-    conductor = Column(Integer)
-    flute = Column(Integer)
-    oboe = Column(Integer)
-    clarinet = Column(Integer)
-    bassoon = Column(Integer)
-    horn = Column(Integer)
-    trumpet = Column(Integer)
-    trombone = Column(Integer)
-    tuba = Column(Integer)
-    percussion = Column(Integer)
-    violin = Column(Integer)
-    viola = Column(Integer)
-    cello = Column(Integer)
-    doublebass = Column(Integer)
+    Conductor = Column(Integer)
+    Flute = Column(Integer)
+    Oboe = Column(Integer)
+    Clarinet = Column(Integer)
+    Bassoon = Column(Integer)
+    Horn = Column(Integer)
+    Trumpet = Column(Integer)
+    Trombone = Column(Integer)
+    Tuba = Column(Integer)
+    Percussion = Column(Integer)
+    Piano = Column(Integer)
+    Violin = Column(Integer)
+    Viola = Column(Integer)
+    Cello = Column(Integer)
+    DoubleBass = Column(Integer)
 
     def __repr__(self):
-        return "<User(name='%s', fullname='%s', password='%s')>" % (
+        return """<group(groupid='%s', groupname='%s', locationid='%s', requesttime='%s', requesteduserid='%s', periodid='%s',
+                        music='%s', ismusical='%s', iseveryone='%s', Conductor='%s', Flute='%s', Oboe='%s',
+                        Clarinet='%s', Bassoon='%s', Horn='%s', Trumpet='%s', Trombone='%s', Tuba='%s',
+                        Percussion='%s', Piano='%s', Violin='%s', Viola='%s', Cello='%s', DoubleBass='%s')>""" % (
             self.groupid,self.groupname,self.locationid,self.requesttime,self.periodid,self.music,self.ismusical,
-            self.iseveryone,self.conductor,self.flute,self.oboe,self.clarinet,self.bassoon,self.horn,self.trumpet,
-            self.trombone,self.tuba,self.percussion,self.violin,self.viola,self.cello,self.doublebass)
+            self.iseveryone,self.Conductor,self.Flute,self.Oboe,self.Clarinet,self.Bassoon,self.Horn,self.Trumpet,
+            self.Trombone,self.Tuba,self.Percussion,self.Piano,self.Violin,self.Viola,self.Cello,self.DoubleBass)
 
 class grouptemplate(Base):
     __tablename__ = 'grouptemplates'
 
     grouptemplateid = Column(Integer, primary_key=True)
     grouptemplatename = Column(String)
-    conductor = Column(Integer)
-    flute = Column(Integer)
-    oboe = Column(Integer)
-    clarinet = Column(Integer)
-    bassoon = Column(Integer)
-    horn = Column(Integer)
-    trumpet = Column(Integer)
-    trombone = Column(Integer)
-    tuba = Column(Integer)
-    percussion = Column(Integer)
-    violin = Column(Integer)
-    viola = Column(Integer)
-    cello = Column(Integer)
-    doublebass = Column(Integer)
+    size = Column(String)
+    Conductor = Column(Integer)
+    Flute = Column(Integer)
+    Oboe = Column(Integer)
+    Clarinet = Column(Integer)
+    Bassoon = Column(Integer)
+    Horn = Column(Integer)
+    Trumpet = Column(Integer)
+    Trombone = Column(Integer)
+    Tuba = Column(Integer)
+    Percussion = Column(Integer)
+    Piano = Column(Integer)
+    Violin = Column(Integer)
+    Viola = Column(Integer)
+    Cello = Column(Integer)
+    DoubleBass = Column(Integer)
+
+    def as_dict(self):
+       return {c.name: getattr(self, c.name) for c in self.__table__.columns}
 
     def __repr__(self):
-        return "<User(name='%s', fullname='%s', password='%s')>" % (
-            self.grouptemplateid,self.grouptemplatename,self.conductor,self.flute,self.oboe,self.clarinet,self.bassoon,
-            self.horn,self.trumpet,self.trombone,self.tuba,self.percussion,self.violin,self.viola,self.cello,self.doublebass)
+        return """<grouptemplate(grouptemplateid='%s', grouptemplatename='%s', size='%s', Conductor='%s', Flute='%s', Oboe='%s',
+                        Clarinet='%s', Bassoon='%s', Horn='%s', Trumpet='%s', Trombone='%s', Tuba='%s',
+                        Percussion='%s', Piano='%s', Violin='%s', Viola='%s', Cello='%s', DoubleBass='%s')>""" % (
+            self.grouptemplateid,self.grouptemplatename,self.size,self.Conductor,self.Flute,self.Oboe,self.Clarinet,self.Bassoon,
+            self.Horn,self.Trumpet,self.Trombone,self.Tuba,self.Percussion,self.Piano,self.Violin,self.Viola,self.Cello,self.DoubleBass)
 
 
 class groupassignment(Base):
@@ -127,10 +120,10 @@ class groupassignment(Base):
     groupassignmentid = Column(Integer, primary_key=True)
     userid = Column(Integer, ForeignKey('users.userid'))
     groupid = Column(Integer, ForeignKey('groups.groupid'))
-    instrument = Column(Enum('conductor','flute','oboe','clarinet','bassoon','horn','trumpet','trombone','tuba','percussion','violin','viola','cello','doublebass','absent'), ForeignKey('instruments.instrumentname'))
+    instrument = Column(Enum('Conductor','Flute','Oboe','Clarinet','Bassoon','Horn','Trumpet','Trombone','Tuba','Percussion','Piano','Violin','Viola','Cello','DoubleBass','absent'), ForeignKey('instruments.instrumentname'))
 
     def __repr__(self):
-        return "<User(name='%s', fullname='%s', password='%s')>" % (
+        return "<groupassignment(groupassignmentid='%s', userid='%s', groupid='%s', instrument='%s')>" % (
             self.groupassignmentid,self.userid,self.groupid,self.instrument)
 
 class instrument(Base):
@@ -138,12 +131,12 @@ class instrument(Base):
 
     instrumentid = Column(Integer, primary_key=True)
     userid = Column(Integer, ForeignKey('users.userid'))
-    instrumentname = Column(Enum('conductor','flute','oboe','clarinet','bassoon','horn','trumpet','trombone','tuba','percussion','violin','viola','cello','doublebass','absent'))
+    instrumentname = Column(Enum('Conductor','Flute','Oboe','Clarinet','Bassoon','Horn','Trumpet','Trombone','Tuba','Percussion','Piano','Violin','Viola','Cello','DoubleBass','absent'))
     grade = Column(Integer)
     isprimary = Column(Integer)
 
     def __repr__(self):
-        return "<User(name='%s', fullname='%s', password='%s')>" % (
+        return "<instrument(instrumentid='%s', userid='%s', instrumentname='%s', grade='%s', isprimary='%s')>" % (
             self.instrumentid,self.userid,self.instrumentname,self.grade,self.isprimary)
 
 class location(Base):
@@ -154,7 +147,7 @@ class location(Base):
     capacity = Column(Integer)
 
     def __repr__(self):
-        return "<User(name='%s', fullname='%s', password='%s')>" % (
+        return "<location(locationid='%s', locationname='%s', capacity='%s')>" % (
             self.locationid,self.locationname,self.capacity)
 
 class period(Base):
@@ -167,13 +160,13 @@ class period(Base):
     meal = Column(Integer)
 
     def __repr__(self):
-        return "<User(name='%s', fullname='%s', password='%s')>" % (
-            self.periodid,self.starttime,self.endtime,self.periodname)
+        return "<period(periodid='%s', starttime='%s', endtime='%s', periodname='%s', meal='%s')>" % (
+            self.periodid,self.starttime,self.endtime,self.periodname,self.meal)
 
 #create all tables if needed
 Base.metadata.create_all(engine)
 
-if config.root.Application['DBBuildRequired'] == 'Yes':
+if config.root.Application['DBBuildRequired'] == 'Y':
     #Grab the camp start and end times from the config file
     CampStartTime = datetime.datetime.strptime(config.root.CampDetails['StartTime'], '%Y-%m-%d %H:%M')
     CampEndTime = datetime.datetime.strptime(config.root.CampDetails['EndTime'], '%Y-%m-%d %H:%M')
@@ -221,6 +214,29 @@ if config.root.Application['DBBuildRequired'] == 'Yes':
             if ThisStartTime > CampEndTime:
                 loop = 'stop'
         ThisDay = ThisDay + datetime.timedelta(days=1)    
+    #create group templates
+    for x in xrange(0,len(config.root.CampDetails.GroupTemplates.GroupTemplate)):
+        log2(config.root.CampDetails.GroupTemplates.GroupTemplate[x])
+        find_template = session.query(grouptemplate).filter(grouptemplate.grouptemplatename == config.root.CampDetails.GroupTemplates.GroupTemplate[x]['grouptemplatename']).first()
+        if find_template is None:
+            template = grouptemplate(\
+                            grouptemplatename=config.root.CampDetails.GroupTemplates.GroupTemplate[x]['Name'],\
+                            size=config.root.CampDetails.GroupTemplates.GroupTemplate[x]['Size'],\
+                            Conductor=config.root.CampDetails.GroupTemplates.GroupTemplate[x]['Conductor'],\
+                            Flute=config.root.CampDetails.GroupTemplates.GroupTemplate[x]['Flute'],\
+                            Oboe=config.root.CampDetails.GroupTemplates.GroupTemplate[x]['Oboe'],\
+                            Clarinet=config.root.CampDetails.GroupTemplates.GroupTemplate[x]['Clarinet'],\
+                            Bassoon=config.root.CampDetails.GroupTemplates.GroupTemplate[x]['Bassoon'],\
+                            Horn=config.root.CampDetails.GroupTemplates.GroupTemplate[x]['Horn'],\
+                            Trombone=config.root.CampDetails.GroupTemplates.GroupTemplate[x]['Trombone'],\
+                            Tuba=config.root.CampDetails.GroupTemplates.GroupTemplate[x]['Tuba'],\
+                            Percussion=config.root.CampDetails.GroupTemplates.GroupTemplate[x]['Percussion'],\
+                            Piano=config.root.CampDetails.GroupTemplates.GroupTemplate[x]['Piano'],\
+                            Violin=config.root.CampDetails.GroupTemplates.GroupTemplate[x]['Violin'],\
+                            Viola=config.root.CampDetails.GroupTemplates.GroupTemplate[x]['Viola'],\
+                            Cello=config.root.CampDetails.GroupTemplates.GroupTemplate[x]['Cello'],\
+                            DoubleBass=config.root.CampDetails.GroupTemplates.GroupTemplate[x]['DoubleBass'])
+            session.add(template)
     session.commit()
     session.close()
     log2('Finished Database Build!')

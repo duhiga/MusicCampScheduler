@@ -1,8 +1,9 @@
 <?xml version="1.0"?>
 <root>
   <!-- Fill in the below section with the details of your camp. Note the times - formatting is strictly YYYY-MM-DD HH:mm 
-              When entering camp times ensure your StartTime is right before the first period of the camp and your EndTime 
-              is right after the START TIME of the last period of the camp. This is used when creating the database. -->
+       When entering camp times ensure your StartTime is right before the first period of the camp and your EndTime is 
+       right after the START TIME of the last period of the camp. This is used when creating the database.
+       GroupRequeLimit is the maximum number of times a normal user can request a group per day -->
   <CampDetails
     Name="Name of the camp goes here. This will be on people's dashboards and titles of pages"
     SecretKey="This can be anything, but put something in here to make it secure"
@@ -10,34 +11,42 @@
     SupportEmailAddress="PutYourEmailHereIt'sUsedInTheSupportLinkOnTheDashboard@website.com"
     StartTime="2016-12-28 18:00"
     EndTime="2017-01-05 07:45"
+    GroupRequestLimit="1"
+    SmallGroupPlayerLimit="8"
     >
-    <!-- Fill in the below section with period names and times. Note the time format, ensure you enter it in the format 
-              HH:mm (in 24 hour time). Each of these periods will recur every day that is covered by your start and end
-              time. -->
-    <Periods>
-      <Period Name="Breakfast" StartTime="07:30" EndTime="09:00" Meal="1"></Period>
-      <Period Name="Newbies Group" StartTime="08:00" EndTime="09:00" Meal="0"></Period>
-      <Period Name="Period 1" StartTime="09:00" EndTime="10:15" Meal="0"></Period>
-      <Period Name="Period 2" StartTime="10:45" EndTime="12:00" Meal="0"></Period>
-      <Period Name="Lunch" StartTime="12:00" EndTime="13:00" Meal="1"></Period>
-      <Period Name="Period 3" StartTime="15:00" EndTime="16:15" Meal="0"></Period>
-      <Period Name="Period 4" StartTime="16:15" EndTime="17:30" Meal="0"></Period>
-      <Period Name="Dinner" StartTime="18:30" EndTime="19:30" Meal="1"></Period>
-      <Period Name="Period 5" StartTime="19:30" EndTime="21:00" Meal="0"></Period>
-    </Periods>
-    <!-- Fill in the below section with location names. Locations are places that groups can rehearse -->
-    <Locations MealLocation="Dining Room">
-      <Location Name="Dining Room" Capacity="100"></Location>
-      <Location Name="Rec Room" Capacity="60"></Location>
-      <Location Name="Eclipse" Capacity="5"></Location>
-      <Location Name="Geake" Capacity="5"></Location>
-    </Locations>
+    <!-- Fill in the each period object with period names and times. Note the time format, ensure you enter it in the 
+         format HH:mm (in 24 hour time). Each of these periods will recur every day that is covered by your start and 
+         end time. -->
+    <Period Name="Breakfast" StartTime="07:30" EndTime="09:00" Meal="1"></Period>
+    <Period Name="Newbies" StartTime="08:00" EndTime="09:00" Meal="0"></Period>
+    <Period Name="Period 1" StartTime="09:00" EndTime="10:15" Meal="0"></Period>
+    <Period Name="Period 2" StartTime="10:45" EndTime="12:00" Meal="0"></Period>
+    <Period Name="Lunch" StartTime="12:00" EndTime="13:00" Meal="1"></Period>
+    <Period Name="Period 3" StartTime="15:00" EndTime="16:15" Meal="0"></Period>
+    <Period Name="Period 4" StartTime="16:15" EndTime="17:30" Meal="0"></Period>
+    <Period Name="Dinner" StartTime="18:30" EndTime="19:30" Meal="1"></Period>
+    <Period Name="Period 5" StartTime="19:30" EndTime="21:00" Meal="0"></Period>
+    <!-- Fill in the location objects with location names and maximum capacities. Locations are places that groups 
+         can rehearse -->
+    <Location Name="Dining Room" Capacity="100"></Location>
+    <Location Name="Green Room" Capacity="60"></Location>
+    <Location Name="Room 1" Capacity="5"></Location>
+    <Location Name="Room 2" Capacity="5"></Location>
+    <!-- Templates that users can pick from when requesting groups go here. Note that
+         1. Everything is case sensitive, and
+         2. You don't need to put every instrument name in, just the ones that are used in the group
+         3. Sizes: S = everyone can request this group. L = Only conductors can request this group -->
+    <GroupTemplate Name="Red Orchestra" Size="L" Conductor="1" Flute="2" Oboe="2" Clarinet="2" Bassoon="2"
+      Horn="2" Trombone="2" Tuba="1" Percussion="1" Violin="8" Viola="4" Cello="4" DoubleBass="2"></GroupTemplate>
+    <GroupTemplate Name="String Quartet" Size="S" Violin="2" Viola="1" Cello="1"></GroupTemplate>
+    <GroupTemplate Name="Wind Quintet" Size="S" Conductor="0" Flute="1" Oboe="1" Clarinet="1" Bassoon="1" Horn="1"></GroupTemplate>
   </CampDetails>
-  <!-- Fill in your Database name, if it needs to be built (you can leave this on yes, it's just slower to start the app
-              and your debug level. 0 = off, 1 = debug, 2 = verbose -->
+  <!-- Fill in your Database name, if it needs to be built (you can leave this on 'Y', it's just slower to start the app)
+       and set your debug level. 0 = off, 1 = debug, 2 = verbose, 3 = all SQL code is printed to log. This should be 0 
+       unless you're troubleshooting. -->
   <Application
     DBPath="MusicCampDatabase.db"
-    DBBuildRequired="No"
-    Debug="2"
-    />
+    DBBuildRequired="Y"
+    Debug="0">
+  </Application>
 </root>

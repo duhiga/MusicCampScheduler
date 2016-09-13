@@ -45,22 +45,6 @@ def log2(string):
         print(string)
 print('Debug level set to %s' % debug)
 
-#the player object defines a player sitting in a group
-class player:
-    def __init__(self, userid, firstname, lastname, instrument, groupname, location, groupid):
-        self.userid = userid
-        self.firstname = firstname
-        self.lastname = lastname
-        self.instrument = instrument
-        self.groupname = groupname
-        self.location = location
-        self.groupid = groupid
-
-class assignment:
-    def __init__(self, groupname, groupassignmentid):
-        self.groupname = groupname
-        self.groupassignmentid = groupassignmentid
-
 log2('Python version: %s' % sys.version)
 
 #checks a user entry for bad characters.  Users are only allowed to submit inputs in their URLs with letters and numbers and dashes.
@@ -73,6 +57,25 @@ def check(string):
         log1('%s fails the check' % string)
         tf = False
     return tf
+
+from sqlalchemy.ext.declarative import DeclarativeMeta
+class AlchemyEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj.__class__, DeclarativeMeta):
+            # an SQLAlchemy class
+            fields = {}
+            for field in [x for x in dir(obj) if not x.startswith('_') and x != 'metadata']:
+                data = obj.__getattribute__(field)
+                try:
+                    json.dumps(data) # this will fail on non-encodable values, like other classes
+                    fields[field] = data
+                except TypeError:
+                    fields[field] = None
+            # a json-encodable dict
+            return fields
+
+        return json.JSONEncoder.default(self, obj)
+
 
 #Looks up the amount of times a user has participated in an "ismusical" group during the camp
 def playcount(session,userid):
@@ -120,11 +123,12 @@ def dashboard(userid,inputdate='n'):
         log1('dashboard fetch requested for user %s' % userid)
         log1('date modifier is currently set to %s' % inputdate)
         session = Session()
+        #gets the data associated with this user
         thisuser = session.query(user).filter(user.userid == userid).first()
-       
+        if thisuser is None:
+            return ('Did not find user %s in database. You have entered an incorrect URL address.' % userid)       
         #find the number of times a user has played in groups in the past
         count = playcount(session, userid)
-
         #get impontant datetimes
         today = datetime.datetime.combine(datetime.date.today(), datetime.time.min) #get today's date
         #if the suer has submitted a date, convert it to a datetime and use it as the display date
@@ -167,6 +171,10 @@ def dashboardDateModifier(userid,date):
 def mark_absent(userid,periodid,command):
     if check(userid) and check(periodid) and check(command):
         session = Session()
+        #gets the data associated with this user
+        thisuser = session.query(user).filter(user.userid == userid).first()
+        if thisuser is None:
+            return ('Did not find user %s in database. You have entered an incorrect URL address.' % userid)
         currentassignment = session.query(group.groupname, groupassignment.groupassignmentid).\
                         join(groupassignment).join(user).join(period).\
                         filter(period.periodid == periodid, user.userid == userid).first()
@@ -221,6 +229,8 @@ def groupdetails(userid,groupid):
         session = Session()
         #gets the data associated with this user
         thisuser = session.query(user).filter(user.userid == userid).first()
+        if thisuser is None:
+            return ('Did not find user %s in database. You have entered an incorrect URL address.' % userid)
         thisgroup = session.query(group, location.locationname).filter(group.groupid == groupid).join(location).first()
         thisperiod = session.query(period).filter(period.periodid == group.periodid).first()
         
@@ -269,11 +279,16 @@ def grouprequestpage(userid):
         session = Session()
         #gets the data associated with this user
         thisuser = session.query(user).filter(user.userid == userid).first()
+        if thisuser is None:
+            return ('Did not find user %s in database. You have entered an incorrect URL address.' % userid)
         thisuserinstruments = session.query(instrument.instrumentname).join(user).filter(user.userid == userid).all()
         grouptemplates = session.query(grouptemplate).all()
+        grouptemplates = json.dumps(grouptemplates, cls=AlchemyEncoder)
+        log2(grouptemplates)
         instruments = []
         instrumentlist = config.root.CampDetails['Instruments'].split(",")
         playersdump = session.query(user.userid,user.firstname,user.lastname,instrument.instrumentname,instrument.grade,instrument.isprimary).join(instrument).all()
+        
         log2('Players dump is: %s' % playersdump)
         session.close()
         return render_template('grouprequest.html', \
@@ -287,17 +302,16 @@ def grouprequestpage(userid):
     else:
         return 'You have submitted illegal characters in your URL. Any inputs must only contain letters, numbers and dashes.'
     
-@app.route('/return/instrumentplayers/<instrument>/period/<periodid>/', methods=["GET"])
-def instrumentplayers_get_period(instrument,periodid):
-    return instrumentplayers_get(instrument,periodid)
-
 #this page is the full report for any given period
 @app.route('/user/<userid>/period/<periodid>/')
 def periodpage(userid,periodid):
     if check(userid) and check(periodid):
         session = Session()
-        players = periodidtoplayerlist(session, periodid)
+        #gets the data associated with this user
         thisuser = session.query(user).filter(user.userid == userid).first()
+        if thisuser is None:
+            return ('Did not find user %s in database. You have entered an incorrect URL address.' % userid)
+        players = periodidtoplayerlist(session, periodid)        
         thisperiod = session.query(period).filter(period.periodid == periodid).first()
         session.close()
         return render_template('period.html', \
@@ -315,8 +329,7 @@ def new_user(firstname,lastname,age,isannouncer,isconductor,isadmin):
     session.add(newuser)
     session.commit()
     session.close()
-    return 'user created'
-    
+    return 'user created'    
 
 if __name__ == '__main__':
     app.run(debug=True, \

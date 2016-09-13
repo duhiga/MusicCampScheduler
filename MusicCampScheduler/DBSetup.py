@@ -29,6 +29,12 @@ Session = sessionmaker()
 Session.configure(bind=engine)
 Base = declarative_base()
 
+def dump_datetime(value):
+    """Deserialize datetime object into string form for JSON processing."""
+    if value is None:
+        return None
+    return [value.strftime("%Y-%m-%d"), value.strftime("%H:%M:%S")]
+
 class user(Base):
     __tablename__ = 'users'
 
@@ -103,8 +109,28 @@ class grouptemplate(Base):
     Cello = Column(Integer)
     DoubleBass = Column(Integer)
 
-    def as_dict(self):
-       return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+    """
+    DONT THINK I NEED THIS...
+    
+    def dump(self):
+        return {"IpPortList": {'grouptemplateid': self.grouptemplateid,
+                               'grouptemplatename': self.grouptemplatename,
+                               'size': self.size,
+                               'Conductor': self.Conductor,
+                               'Flute': self.Flute,
+                               'Oboe': self.Oboe,
+                               'Clarinet': self.Clarinet,
+                               'Bassoon': self.Bassoon,
+                               'Horn': self.Horn,
+                               'Trumpet': self.Trumpet,
+                               'Tuba': self.Tuba,
+                               'Percussion': self.Percussion,
+                               'Piano': self.Piano,
+                               'Violin': self.Violin,
+                               'Viola': self.Viola,
+                               'Cello': self.Cello,
+                               'DoubleBass': self.DoubleBass}}
+    """
 
     def __repr__(self):
         return """<grouptemplate(grouptemplateid='%s', grouptemplatename='%s', size='%s', Conductor='%s', Flute='%s', Oboe='%s',

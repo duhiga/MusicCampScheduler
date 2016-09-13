@@ -7,7 +7,9 @@
     <script>
         $(document).ready(function () {
             var players = {{ playersdump|tojson }};
-            console.log(players)
+            var grouptemplates = {{ grouptemplates }}
+            console.log(players);
+            console.log(grouptemplates)
             // dump is not serialised. Each row has the form:
             // [0] = userid
             // [1] = firstname
@@ -25,8 +27,8 @@
                 for (var i = 0; i < players.length; i++) {
                     if (players[i][3] == selectedinstrument) {
                         listItems += "<option value='" + players[i][0] + "'>" + players[i][1] + " " + players[i][2] + "</option>";
-                    }
-                }
+                    };
+                };
                 console.log(listItems)
                 $("#player" + $(this).data("pairing")).html(listItems);
             });
@@ -50,8 +52,8 @@
                                 </select>\
                             </td>\
                         </tr>');
-                }
-                });
+                };
+             });
 
             $("#remove_player").click(function () {
                 if ($('.instrument_dropdown').length > 1) {

@@ -11,8 +11,8 @@ levels are 0=none, 1=debug, 2=verbose.
 """
 
 
-from flask import Flask, render_template, redirect, jsonify, make_response, json
-import scss
+from flask import Flask, render_template, redirect, jsonify, make_response, json, request, url_for
+#import scss
 import sys
 import types
 import time
@@ -24,8 +24,8 @@ import uuid
 import sqlalchemy
 #import DBSetup
 from DBSetup import *
-from SQL import *
-from json import JSONEncoder, JSONDecoder
+#from SQL import *
+#from json import JSONEncoder, JSONDecoder
 from sqlalchemy import *
 
 # Make the WSGI interface available at the top level so wfastcgi can get it.
@@ -231,8 +231,10 @@ def groupdetails(userid,groupid):
         thisuser = session.query(user).filter(user.userid == userid).first()
         if thisuser is None:
             return ('Did not find user %s in database. You have entered an incorrect URL address.' % userid)
-        thisgroup = session.query(group, location.locationname).filter(group.groupid == groupid).join(location).first()
-        thisperiod = session.query(period).filter(period.periodid == group.periodid).first()
+        thisgroup = session.query(group.groupid, group.groupname, group.periodid, location.locationname).join(location).filter(group.groupid == groupid).first()
+        if thisgroup is None:
+            return ('Did not find group with id %s in database. You have entered an incorrect URL address.' % groupid)
+        thisperiod = session.query(period).filter(period.periodid == thisgroup.periodid).first()
         
         #gets the list of players playing in the given group
         players = session.query(user.firstname, user.lastname, groupassignment.instrument).join(groupassignment).join(group).\
@@ -263,6 +265,7 @@ def groupdetails(userid,groupid):
         session.close()
         return render_template('group.html', \
                             period=thisperiod, \
+                            campname=config.root.CampDetails['Name'], \
                             group=thisgroup, \
                             location=location, \
                             players=players, \
@@ -273,35 +276,43 @@ def groupdetails(userid,groupid):
         return 'You have submitted illegal characters in your URL. Any inputs must only contain letters, numbers and dashes.'
 
 #UNFINISHED - still need to work on the form submission, and the group template autofill. Also greying out of buttons when it hits the limits
-@app.route('/user/<userid>/grouprequest/')
+@app.route('/user/<userid>/grouprequest/', methods=['GET', 'POST'])
 def grouprequestpage(userid):
-    if check(userid):
+    if request.method == 'GET':
         session = Session()
         #gets the data associated with this user
         thisuser = session.query(user).filter(user.userid == userid).first()
         if thisuser is None:
             return ('Did not find user %s in database. You have entered an incorrect URL address.' % userid)
         thisuserinstruments = session.query(instrument.instrumentname).join(user).filter(user.userid == userid).all()
-        grouptemplates = session.query(grouptemplate).all()
-        grouptemplates = json.dumps(grouptemplates, cls=AlchemyEncoder)
-        log2(grouptemplates)
+        grouptemplates = session.query(grouptemplate).filter(grouptemplate.size == 'S').all()
+        grouptemplates_serialized = []
+        grouptemplates_serialized = [i.serialize for i in grouptemplates]
+        log2(grouptemplates_serialized)
         instruments = []
         instrumentlist = config.root.CampDetails['Instruments'].split(",")
         playersdump = session.query(user.userid,user.firstname,user.lastname,instrument.instrumentname,instrument.grade,instrument.isprimary).join(instrument).all()
-        
+        playersdump_serialized = []
+        for p in playersdump:
+            playersdump_serialized.append({'userid': p.userid, 'firstname': p.firstname, 'lastname': p.lastname,
+                                            'instrumentname': p.instrumentname, 'grade': p.grade, 'isprimary': p.isprimary})
         log2('Players dump is: %s' % playersdump)
         session.close()
         return render_template('grouprequest.html', \
-                            thisuser=thisuser, \
+                            user=thisuser, \
                             thisuserinstruments=thisuserinstruments, \
                             playerlimit = config.root.CampDetails['SmallGroupPlayerLimit'], \
-                            grouptemplates=grouptemplates, \
+                            grouptemplates = grouptemplates, \
+                            grouptemplates_serialized=grouptemplates_serialized, \
+                            campname=config.root.CampDetails['Name'], \
                             instrumentlist=instrumentlist, \
-                            playersdump=playersdump, \
+                            playersdump_serialized=playersdump_serialized, \
                             )
-    else:
-        return 'You have submitted illegal characters in your URL. Any inputs must only contain letters, numbers and dashes.'
-    
+    if request.method == 'POST':
+        content = request.get_json
+        print content
+        return 'success message here'
+
 #this page is the full report for any given period
 @app.route('/user/<userid>/period/<periodid>/')
 def periodpage(userid,periodid):
@@ -316,15 +327,27 @@ def periodpage(userid,periodid):
         session.close()
         return render_template('period.html', \
                             players=players, \
+                            campname=config.root.CampDetails['Name'], \
                             user=thisuser, \
                             period=thisperiod \
                             )
     else:
         return 'You have submitted illegal characters in your URL. Any inputs must only contain letters, numbers and dashes.'
 
-@app.route('/new/user/<firstname>/<lastname>/<age>/<email>/<isannouncer>/<isconductor>/<isadmin>/')
+@app.route('/user/godpage/')
+def godpage():
+    session = Session()
+    users = session.query(user).all()
+    session.close()
+    return render_template('godpage.html', \
+                            users=users, \
+                            campname=config.root.CampDetails['Name'], \
+                            )
+
+
+@app.route('/new/user/<firstname>/<lastname>/<age>/<isannouncer>/<isconductor>/<isadmin>/')
 def new_user(firstname,lastname,age,isannouncer,isconductor,isadmin):
-    newuser = user(firstname=firstname, lastname=lastname, age=age, isannouncer=isannouncer, isconductor=isconductor, isadmin=isadmin)
+    newuser = user(userid=str(uuid.uuid4()),firstname=firstname, lastname=lastname, age=age, isannouncer=isannouncer, isconductor=isconductor, isadmin=isadmin)
     session = Session()
     session.add(newuser)
     session.commit()

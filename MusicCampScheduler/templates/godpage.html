@@ -1,0 +1,26 @@
+﻿<!DOCTYPE html>
+<meta name="viewport" content="initial-scale=1">
+<html>
+<head>
+    <link rel="stylesheet" href='/static/css/style.css' />
+    <title>{{ campname }} God Page</title>
+</head>
+<body>
+    <h1>{{ campname }} God Page</h1>
+    <br>
+    <table style="width:100%">
+        <tr>
+            <th>First Name</th>
+            <th>Last Name</th>
+            <th>UserID</th>
+        </tr>
+        {% for u in users %}
+        <tr>
+            <td>{{ u.firstname }}</td>
+            <td>{{ u.lastname }}</td>
+            <td><a href="/user/{{ u.userid }}/">{{ u.userid }}</a></td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>

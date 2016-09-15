@@ -42,6 +42,7 @@
     <Content Include="templates\grouprequest.html" />
     <Content Include="templates\index.html" />
     <Content Include="templates\period.html" />
+    <Content Include="templates\godpage.html" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="static\" />

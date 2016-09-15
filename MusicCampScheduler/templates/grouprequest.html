@@ -6,17 +6,10 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"> </script>
     <script>
         $(document).ready(function () {
-            var players = {{ playersdump|tojson }};
-            var grouptemplates = {{ grouptemplates }}
+            var players = {{ playersdump_serialized|tojson }};
+            var grouptemplates = {{ grouptemplates_serialized|tojson }}
             console.log(players);
             console.log(grouptemplates)
-            // dump is not serialised. Each row has the form:
-            // [0] = userid
-            // [1] = firstname
-            // [2] = lastname
-            // [3] = instrument
-            // [4] = grade
-            // [5] = isprimary
             
             $(document).on("change", '.instrument_dropdown', function () {
                 // grab value
@@ -25,8 +18,8 @@
                 // add values to list 
                 var listItems = "<option value='null'></option>";
                 for (var i = 0; i < players.length; i++) {
-                    if (players[i][3] == selectedinstrument) {
-                        listItems += "<option value='" + players[i][0] + "'>" + players[i][1] + " " + players[i][2] + "</option>";
+                    if (players[i].instrumentname == selectedinstrument) {
+                        listItems += "<option value='" + players[i].userid + "'>" + players[i].firstname + " " + players[i].lastname + "</option>";
                     };
                 };
                 console.log(listItems)
@@ -60,16 +53,42 @@
                     $('#playersTable tr:last').remove();
                 }
             });
+
+            $("#submit_button").click(function () {
+                var request_json = {}
+                request_json.music = $('#textbox_music').val();
+                for (var i = 0; i < $('.instrument_dropdown').length; i++) {
+                    request_json.music
+                };
+
+                
+                
+                console.log($('form#group_request_form').serialize());
+                
+                
+                
+                $.ajax({
+                    url: ('/user/' + {{ user.userid }} + '/grouprequest/'),
+                        type: 'post',
+                        dataType: 'application/json',
+                        data: $('form#group_request_form').serialize(),
+                        success: function(data) {
+                            var r = confirm("Success!" + data);
+                            }
+                    });
+            });
         });
     </script>
 </head>
 
 <body>
     <h1>Request a Group</h1>
-    <p>Use this page to request a group. You can request a group of up to {{ playerlimit }} people. Only the instrumentation is required, all other fields are optional and will be autofilled if left blank.</p>
-
-
-    <br />
+    <a href="/user/{{ user.userid }}/">Back to dashboard</a>
+    <p>Use this page to request a group. You can request a group of up to {{ playerlimit }} people. Only the 
+    instrumentation is required, all other fields are optional and will be autofilled if left blank.</p>
+    <p>For example, if you want to play in a wind quintet, but don't care who you play with, just select the instrumentation
+    for a wind quintet (or use the template), ensure you're playing the instrument you want to play, then click "Submit", 
+    leaving all other player names empty. You'll be matched up with other players automatically!</p>
     Optional: Select a group template to autofill the page
     <select id="group_template_dropdown">
         <option value=""></option>
@@ -77,15 +96,17 @@
         <option value="{{ g.grouptemplatename }}">{{ g.grouptemplatename }}</option>
         {% endfor %}
     </select>
-    <br />
-    Optional: What music will be played?<input type="text" name="textbox_music">
+    <button id="apply_template">Apply</button>
+    Optional: What music will be played?<input type="text" id="textbox_music">
     <br /><br />
     <table id="playersTable">
+        <!--Table Headers-->
         <tr>
             <th>Instrument</th>
             <th>Player Name</th>
         </tr>
         <tr>
+            <!--Instrument Column-->
             <td>
                 <select class="instrument_dropdown" id="instrument0" data-pairing="0">
                     {% for i in thisuserinstruments %}
@@ -93,9 +114,10 @@
                     {% endfor %}
                 </select>
             </td>
-            <td>{{ thisuser.firstname }} {{ thisuser.lastname }}</td>
+            <td>{{ user.firstname }} {{ user.lastname }}</td>
         </tr>
         <tr>
+            <!--Player Name Column-->
             <td>
                 <select class="instrument_dropdown" id="instrument1" data-pairing="1">
                     <option value=""></option>
@@ -115,6 +137,8 @@
     <button id="remove_player">Remove a Player</button>
     <br />
     <br />
-    <input type='submit' name='submit' id='submitBtn' class='enableOnInput' disabled='disabled' />
+    <button id="sumbit_button">Submit</button>
+    <br />
+    <a href="/user/{{ user.userid }}/">Back to dashboard</a>
 </body>
 </html>

@@ -77,7 +77,7 @@
             <a href="/user/{{ user.userid }}/date/{{ previousday }}/">Previous Day</a>
             {% endif %}
 
-            <b>     Schedule for {{ weekday}}, {{ date }}     </b>
+            <b>     Schedule for {{ weekday }}, {{ date.strftime('%Y-%m-%d') }}     </b>
             {% if nextday == today %}
             <a href="/user/{{ user.userid }}/">Next Day</a>
             {% else %}
@@ -100,10 +100,10 @@
             <!--Time Column-->
             <td>
                 {% if p.ismusical == 1 %}
-                <a href="/user/{{ user.userid }}/period/{{ p.periodid }}/">{{ p.starttime }} - {{ p.endtime }}</a>
+                <a href="/user/{{ user.userid }}/period/{{ p.periodid }}/">{{ p.starttime.strftime('%H:%M') }} - {{ p.endtime.strftime('%H:%M') }}</a>
 
                 {% else %}
-                {{ p.starttime }} - {{ p.endtime }}
+                {{ p.starttime.strftime('%H:%M') }} - {{ p.endtime.strftime('%H:%M') }}
                 {% endif %}
             </td>
             <!--Group Name Column-->

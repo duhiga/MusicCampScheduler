@@ -10,16 +10,24 @@
     <table style="width:30%">
         <tr>
             <td>Name</td>
-            <td>{{ group.groupname }}
+            <td>{{ group.groupname }}</td>
+        </tr>
+        <tr>
+            <td>Date</td>
+            <td>{{ period.starttime.strftime('%Y-%m-%d') }}</td>
+        </tr>
         <tr>
             <td>Start Time</td>
-            <td>{{ period.starttime }}
+            <td>{{ period.starttime.strftime('%H:%M') }}</td>
+        </tr>
         <tr>
             <td>End Time</td>
-            <td>{{ period.endtime }}
+            <td>{{ period.endtime.strftime('%H:%M') }}</td>
+        </tr>
         <tr>
             <td>Location</td>
-            <td>{{ group.locationname }}
+            <td>{{ group.locationname }}</td>
+        </tr>
     </table>
     <a href="/user/{{ user.userid }}/">Back to dashboard</a>
     <br>

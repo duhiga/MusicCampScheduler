@@ -6,7 +6,7 @@
     <title>{{ campname }} Period Display</title>
 </head>
 <body>
-    <h1>Listing for period starting {{ period.starttime }} and ending {{ period.endtime }}</h1>
+    <h1>Listing for {{ period.periodname }} on {{ period.starttime.strftime('%Y-%m-%d') }} starting {{ period.starttime.strftime('%H:%M') }} and ending {{ period.endtime.strftime('%H:%M') }}</h1>
     <a href="/user/{{ user.userid }}/">Back to dashboard</a>
     <br>
     <table style="width:100%">
@@ -29,4 +29,4 @@
     </table>
     <a href="/user/{{ user.userid }}/">Back to dashboard</a>
 </body>
-<</html>
+</html>

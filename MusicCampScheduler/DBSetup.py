@@ -4,10 +4,13 @@ import sqlalchemy
 import untangle
 import time
 import datetime
-from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey, exists, Enum
+from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey, exists, Enum, types
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship, aliased
+from sqlalchemy.dialects.mysql.base import MSBinary
+from sqlalchemy.schema import Column
 from debug import *
+import uuid
 config = untangle.parse('config.xml')
 
 #sets up debugging
@@ -29,22 +32,29 @@ Session = sessionmaker()
 Session.configure(bind=engine)
 Base = declarative_base()
 
+"""
 def dump_datetime(value):
-    """Deserialize datetime object into string form for JSON processing."""
+    #Deserialize datetime object into string form for JSON processing.
     if value is None:
         return None
     return [value.strftime("%Y-%m-%d"), value.strftime("%H:%M:%S")]
+"""
 
 class user(Base):
     __tablename__ = 'users'
 
-    userid = Column(Integer, primary_key=True)
+    userid = Column(String, primary_key=True)
     firstname = Column(String)
     lastname = Column(String)
     age = Column(Integer)
     isannouncer = Column(Integer)
     isconductor = Column(Integer)
     isadmin = Column(Integer)
+
+    @property
+    def serialize(self):
+        return {'userid': self.userid, 'firstname': self.firstname, 'lastname': self.lastname, 'age': self.age,
+                'isannouncer': self.isannouncer, 'isconductor': self.isconductor, 'isadmin': self.isadmin}
 
     def __repr__(self):
         return "<user(userid='%s', firstname='%s', lastname='%s', age='%s', isannouncer='%s', isconductor='%s', isadmin='%s')>" % (
@@ -57,7 +67,7 @@ class group(Base):
     groupname = Column(String)
     locationid = Column(Integer, ForeignKey('locations.locationid'))
     requesttime = Column(DateTime)
-    requesteduserid = Column(Integer, ForeignKey('users.userid'))
+    requesteduserid = Column(String, ForeignKey('users.userid'))
     periodid = Column(Integer, ForeignKey('periods.periodid'))
     music = Column(String)
     ismusical = Column(Integer)
@@ -78,14 +88,22 @@ class group(Base):
     Cello = Column(Integer)
     DoubleBass = Column(Integer)
 
+    @property
+    def serialize(self):
+        return {'groupid': self.grouptemplateid, 'groupname': self.grouptemplatename, 'locationid': self.locationid,
+                'requesttime': self.requesttime, 'requesteduserid': self.requesteduserid, 'periodid': self.periodid, 'music': self.music,
+                'ismusical': self.ismusical, 'iseveryone': self.iseveryone, 'Conductor': self.Conductor, 'Flute': self.Flute,
+                'Oboe': self.Oboe, 'Clarinet': self.Clarinet, 'Bassoon': self.Bassoon, 'Horn': self.Horn, 'Trumpet': self.Trumpet,
+                'Tuba': self.Tuba, 'Percussion': self.Percussion, 'Piano': self.Piano, 'Violin': self.Violin, 'Viola': self.Viola,
+                'Cello': self.Cello, 'DoubleBass': self.DoubleBass}
+
     def __repr__(self):
-        return """<group(groupid='%s', groupname='%s', locationid='%s', requesttime='%s', requesteduserid='%s', periodid='%s',
-                        music='%s', ismusical='%s', iseveryone='%s', Conductor='%s', Flute='%s', Oboe='%s',
-                        Clarinet='%s', Bassoon='%s', Horn='%s', Trumpet='%s', Trombone='%s', Tuba='%s',
-                        Percussion='%s', Piano='%s', Violin='%s', Viola='%s', Cello='%s', DoubleBass='%s')>""" % (
-            self.groupid,self.groupname,self.locationid,self.requesttime,self.periodid,self.music,self.ismusical,
-            self.iseveryone,self.Conductor,self.Flute,self.Oboe,self.Clarinet,self.Bassoon,self.Horn,self.Trumpet,
-            self.Trombone,self.Tuba,self.Percussion,self.Piano,self.Violin,self.Viola,self.Cello,self.DoubleBass)
+        return """<group(groupid='%s', groupname='%s', locationid='%s', requesttime='%s', requesteduserid='%s', periodid='%s', music='%s', 
+                ismusical='%s', iseveryone='%s', Conductor='%s', Flute='%s', Oboe='%s', Clarinet='%s', Bassoon='%s', Horn='%s', Trumpet='%s', 
+                Trombone='%s', Tuba='%s', Percussion='%s', Piano='%s', Violin='%s', Viola='%s', Cello='%s', DoubleBass='%s')>""" % (
+                self.groupid,self.groupname,self.locationid,self.requesttime,self.periodid,self.music,self.ismusical,
+                self.iseveryone,self.Conductor,self.Flute,self.Oboe,self.Clarinet,self.Bassoon,self.Horn,self.Trumpet,
+                self.Trombone,self.Tuba,self.Percussion,self.Piano,self.Violin,self.Viola,self.Cello,self.DoubleBass)
 
 class grouptemplate(Base):
     __tablename__ = 'grouptemplates'
@@ -109,35 +127,19 @@ class grouptemplate(Base):
     Cello = Column(Integer)
     DoubleBass = Column(Integer)
 
-    """
-    DONT THINK I NEED THIS...
-    
-    def dump(self):
-        return {"IpPortList": {'grouptemplateid': self.grouptemplateid,
-                               'grouptemplatename': self.grouptemplatename,
-                               'size': self.size,
-                               'Conductor': self.Conductor,
-                               'Flute': self.Flute,
-                               'Oboe': self.Oboe,
-                               'Clarinet': self.Clarinet,
-                               'Bassoon': self.Bassoon,
-                               'Horn': self.Horn,
-                               'Trumpet': self.Trumpet,
-                               'Tuba': self.Tuba,
-                               'Percussion': self.Percussion,
-                               'Piano': self.Piano,
-                               'Violin': self.Violin,
-                               'Viola': self.Viola,
-                               'Cello': self.Cello,
-                               'DoubleBass': self.DoubleBass}}
-    """
+    @property
+    def serialize(self):
+        return {'grouptemplateid': self.grouptemplateid, 'grouptemplatename': self.grouptemplatename, 'size': self.size,
+                'Conductor': self.Conductor, 'Flute': self.Flute, 'Oboe': self.Oboe, 'Clarinet': self.Clarinet, 'Bassoon': self.Bassoon,
+                'Horn': self.Horn, 'Trumpet': self.Trumpet, 'Tuba': self.Tuba, 'Percussion': self.Percussion, 'Piano': self.Piano,
+                'Violin': self.Violin, 'Viola': self.Viola, 'Cello': self.Cello, 'DoubleBass': self.DoubleBass}
 
     def __repr__(self):
         return """<grouptemplate(grouptemplateid='%s', grouptemplatename='%s', size='%s', Conductor='%s', Flute='%s', Oboe='%s',
-                        Clarinet='%s', Bassoon='%s', Horn='%s', Trumpet='%s', Trombone='%s', Tuba='%s',
-                        Percussion='%s', Piano='%s', Violin='%s', Viola='%s', Cello='%s', DoubleBass='%s')>""" % (
-            self.grouptemplateid,self.grouptemplatename,self.size,self.Conductor,self.Flute,self.Oboe,self.Clarinet,self.Bassoon,
-            self.Horn,self.Trumpet,self.Trombone,self.Tuba,self.Percussion,self.Piano,self.Violin,self.Viola,self.Cello,self.DoubleBass)
+                Clarinet='%s', Bassoon='%s', Horn='%s', Trumpet='%s', Trombone='%s', Tuba='%s', Percussion='%s', Piano='%s', Violin='%s', 
+                Viola='%s', Cello='%s', DoubleBass='%s')>""" % (
+                self.grouptemplateid,self.grouptemplatename,self.size,self.Conductor,self.Flute,self.Oboe,self.Clarinet,self.Bassoon,
+                self.Horn,self.Trumpet,self.Trombone,self.Tuba,self.Percussion,self.Piano,self.Violin,self.Viola,self.Cello,self.DoubleBass)
 
 
 class groupassignment(Base):
@@ -202,21 +204,21 @@ if config.root.Application['DBBuildRequired'] == 'Y':
     #start our session, then go through the loop
     session = Session()
     loop = 'start'
-    for x in xrange(0,len(config.root.CampDetails.Locations.Location)):
-        find_location = session.query(location).filter(location.locationname == config.root.CampDetails.Locations.Location[x]['Name']).first()
+    for x in xrange(0,len(config.root.CampDetails.Location)):
+        find_location = session.query(location).filter(location.locationname == config.root.CampDetails.Location[x]['Name']).first()
         if find_location is None:
-            find_location = location(locationname = config.root.CampDetails.Locations.Location[x]['Name'],capacity = config.root.CampDetails.Locations.Location[x]['Capacity'])
+            find_location = location(locationname = config.root.CampDetails.Location[x]['Name'],capacity = config.root.CampDetails.Location[x]['Capacity'])
             session.add(find_location)
-    meallocation = session.query(location).filter(location.locationname == config.root.CampDetails.Locations['MealLocation']).first()
+    meallocation = session.query(location).filter(location.locationname == config.root.CampDetails['MealLocation']).first()
     #For each day covered by the camp start and end time
     while loop == 'start':
         log2('now looping for %s' % ThisDay)
         #For each period covered by the camp's configured period list
-        for x in xrange(0,len(config.root.CampDetails.Periods.Period)):
-            ThisStartTime = datetime.datetime.strptime((datetime.datetime.strftime(ThisDay, '%Y-%m-%d') + ' ' + config.root.CampDetails.Periods.Period[x]['StartTime']),'%Y-%m-%d %H:%M')
-            ThisEndTime = datetime.datetime.strptime((datetime.datetime.strftime(ThisDay, '%Y-%m-%d') + ' ' + config.root.CampDetails.Periods.Period[x]['EndTime']),'%Y-%m-%d %H:%M')
-            ThisPeriodName = config.root.CampDetails.Periods.Period[x]['Name']
-            ThisPeriodMeal = config.root.CampDetails.Periods.Period[x]['Meal']
+        for x in xrange(0,len(config.root.CampDetails.Period)):
+            ThisStartTime = datetime.datetime.strptime((datetime.datetime.strftime(ThisDay, '%Y-%m-%d') + ' ' + config.root.CampDetails.Period[x]['StartTime']),'%Y-%m-%d %H:%M')
+            ThisEndTime = datetime.datetime.strptime((datetime.datetime.strftime(ThisDay, '%Y-%m-%d') + ' ' + config.root.CampDetails.Period[x]['EndTime']),'%Y-%m-%d %H:%M')
+            ThisPeriodName = config.root.CampDetails.Period[x]['Name']
+            ThisPeriodMeal = config.root.CampDetails.Period[x]['Meal']
             find_period = session.query(period).filter(period.periodname == ThisPeriodName,period.starttime == ThisStartTime,period.endtime == ThisEndTime).first()
             #only create periods and groups if we are inside the specific camp start and end time
             if ThisStartTime < CampEndTime and ThisStartTime > CampStartTime:
@@ -241,27 +243,27 @@ if config.root.Application['DBBuildRequired'] == 'Y':
                 loop = 'stop'
         ThisDay = ThisDay + datetime.timedelta(days=1)    
     #create group templates
-    for x in xrange(0,len(config.root.CampDetails.GroupTemplates.GroupTemplate)):
-        log2(config.root.CampDetails.GroupTemplates.GroupTemplate[x])
-        find_template = session.query(grouptemplate).filter(grouptemplate.grouptemplatename == config.root.CampDetails.GroupTemplates.GroupTemplate[x]['grouptemplatename']).first()
+    for x in xrange(0,len(config.root.CampDetails.GroupTemplate)):
+        log2(config.root.CampDetails.GroupTemplate[x])
+        find_template = session.query(grouptemplate).filter(grouptemplate.grouptemplatename == config.root.CampDetails.GroupTemplate[x]['grouptemplatename']).first()
         if find_template is None:
             template = grouptemplate(\
-                            grouptemplatename=config.root.CampDetails.GroupTemplates.GroupTemplate[x]['Name'],\
-                            size=config.root.CampDetails.GroupTemplates.GroupTemplate[x]['Size'],\
-                            Conductor=config.root.CampDetails.GroupTemplates.GroupTemplate[x]['Conductor'],\
-                            Flute=config.root.CampDetails.GroupTemplates.GroupTemplate[x]['Flute'],\
-                            Oboe=config.root.CampDetails.GroupTemplates.GroupTemplate[x]['Oboe'],\
-                            Clarinet=config.root.CampDetails.GroupTemplates.GroupTemplate[x]['Clarinet'],\
-                            Bassoon=config.root.CampDetails.GroupTemplates.GroupTemplate[x]['Bassoon'],\
-                            Horn=config.root.CampDetails.GroupTemplates.GroupTemplate[x]['Horn'],\
-                            Trombone=config.root.CampDetails.GroupTemplates.GroupTemplate[x]['Trombone'],\
-                            Tuba=config.root.CampDetails.GroupTemplates.GroupTemplate[x]['Tuba'],\
-                            Percussion=config.root.CampDetails.GroupTemplates.GroupTemplate[x]['Percussion'],\
-                            Piano=config.root.CampDetails.GroupTemplates.GroupTemplate[x]['Piano'],\
-                            Violin=config.root.CampDetails.GroupTemplates.GroupTemplate[x]['Violin'],\
-                            Viola=config.root.CampDetails.GroupTemplates.GroupTemplate[x]['Viola'],\
-                            Cello=config.root.CampDetails.GroupTemplates.GroupTemplate[x]['Cello'],\
-                            DoubleBass=config.root.CampDetails.GroupTemplates.GroupTemplate[x]['DoubleBass'])
+                            grouptemplatename=config.root.CampDetails.GroupTemplate[x]['Name'],\
+                            size=config.root.CampDetails.GroupTemplate[x]['Size'],\
+                            Conductor=config.root.CampDetails.GroupTemplate[x]['Conductor'],\
+                            Flute=config.root.CampDetails.GroupTemplate[x]['Flute'],\
+                            Oboe=config.root.CampDetails.GroupTemplate[x]['Oboe'],\
+                            Clarinet=config.root.CampDetails.GroupTemplate[x]['Clarinet'],\
+                            Bassoon=config.root.CampDetails.GroupTemplate[x]['Bassoon'],\
+                            Horn=config.root.CampDetails.GroupTemplate[x]['Horn'],\
+                            Trombone=config.root.CampDetails.GroupTemplate[x]['Trombone'],\
+                            Tuba=config.root.CampDetails.GroupTemplate[x]['Tuba'],\
+                            Percussion=config.root.CampDetails.GroupTemplate[x]['Percussion'],\
+                            Piano=config.root.CampDetails.GroupTemplate[x]['Piano'],\
+                            Violin=config.root.CampDetails.GroupTemplate[x]['Violin'],\
+                            Viola=config.root.CampDetails.GroupTemplate[x]['Viola'],\
+                            Cello=config.root.CampDetails.GroupTemplate[x]['Cello'],\
+                            DoubleBass=config.root.CampDetails.GroupTemplate[x]['DoubleBass'])
             session.add(template)
     session.commit()
     session.close()

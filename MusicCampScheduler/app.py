@@ -345,11 +345,20 @@ def godpage():
                             )
 
 
-@app.route('/new/user/<firstname>/<lastname>/<age>/<isannouncer>/<isconductor>/<isadmin>/')
-def new_user(firstname,lastname,age,isannouncer,isconductor,isadmin):
-    newuser = user(userid=str(uuid.uuid4()),firstname=firstname, lastname=lastname, age=age, isannouncer=isannouncer, isconductor=isconductor, isadmin=isadmin)
+@app.route('/new/user/<firstname>/<lastname>/<age>/<arrival>/<departure>/<isannouncer>/<isconductor>/<isadmin>/')
+def new_user(firstname,lastname,age,arrival,departure,isannouncer,isconductor,isadmin):
     session = Session()
+    arrival = datetime.datetime.strptime(arrival, '%Y-%m-%d %H:%M')
+    departure = datetime.datetime.strptime(departure, '%Y-%m-%d %H:%M')
+    log2('user is staying at camp starting %s and ending %s' % (arrival,departure))
+    userid = str(uuid.uuid4())
+    newuser = user(userid=userid, firstname=firstname, lastname=lastname, age=age, arrival=arrival, departure=departure, isannouncer=isannouncer, isconductor=isconductor, isadmin=isadmin)
     session.add(newuser)
+    absentgroups = session.query(group.groupid).join(period).filter(or_(period.starttime < arrival, period.starttime > departure)).all()
+    for g in absentgroups:
+        log2('assigning user to absent group with id %s' % g.groupid)
+        ga = groupassignment(userid = userid, groupid = g.groupid, instrument = 'absent')
+        session.add(ga)
     session.commit()
     session.close()
     return 'user created'    

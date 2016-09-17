@@ -29,7 +29,6 @@
     <Compile Include="app.py" />
     <Compile Include="DBSetup.py" />
     <Compile Include="debug.py" />
-    <Compile Include="SQL.py" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="config.xml" />

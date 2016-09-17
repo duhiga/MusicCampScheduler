@@ -47,18 +47,20 @@ class user(Base):
     firstname = Column(String)
     lastname = Column(String)
     age = Column(Integer)
+    arrival = Column(DateTime)
+    departure = Column(DateTime)
     isannouncer = Column(Integer)
     isconductor = Column(Integer)
     isadmin = Column(Integer)
 
     @property
     def serialize(self):
-        return {'userid': self.userid, 'firstname': self.firstname, 'lastname': self.lastname, 'age': self.age,
-                'isannouncer': self.isannouncer, 'isconductor': self.isconductor, 'isadmin': self.isadmin}
+        return {'userid': self.userid, 'firstname': self.firstname, 'lastname': self.lastname, 'age': self.age, 'arrival': self.arrival,
+                'departure': self.departure, 'isannouncer': self.isannouncer, 'isconductor': self.isconductor, 'isadmin': self.isadmin}
 
     def __repr__(self):
-        return "<user(userid='%s', firstname='%s', lastname='%s', age='%s', isannouncer='%s', isconductor='%s', isadmin='%s')>" % (
-            self.userid, self.firstname, self.lastname, self.age, self.announcer, self.conductor, self.admin)
+        return "<user(userid='%s', firstname='%s', lastname='%s', age='%s', arrival='%s', departure='%s', isannouncer='%s', isconductor='%s', isadmin='%s')>" % (
+            self.userid, self.firstname, self.lastname, self.age, self.arrival, self, departure, self.isannouncer, self.isconductor, self.isadmin)
 
 class group(Base):
     __tablename__ = 'groups'

@@ -1,12 +1,11 @@
 """
 
-This app runs the music camp scheduler site the target audience for this site is around 100 people for a camp around 1 week
+This app runs the music camp scheduler site. The original target audience for this site is around 100 people for a camp around 1 week
 long. The intended model for the music camp is that people are allocated into groups like orchestras, bands, quartets, etc
 over several periods in a day. People can mark themselves as "absent" at least one day in advance and will not be allocated 
 to groups in the session. Once running, the website must be maintained by an adminstrator, and conductors to confirm groups.
 
-Before use, you need to open up config.xml and point it to a SQL database, and configure any other needed information. Debug
-levels are 0=none, 1=debug, 2=verbose.
+Before use, you need to open up config.xml and point it to a SQL database, and configure any other needed information.
 
 """
 
@@ -276,6 +275,7 @@ def groupdetails(userid,groupid):
         return 'You have submitted illegal characters in your URL. Any inputs must only contain letters, numbers and dashes.'
 
 #UNFINISHED - still need to work on the form submission, and the group template autofill. Also greying out of buttons when it hits the limits
+#experimenting with making the grouptemplates a list. This will make it a lot easier to deal with in JS... a bit lazy though.
 @app.route('/user/<userid>/grouprequest/', methods=['GET', 'POST'])
 def grouprequestpage(userid):
     if request.method == 'GET':
@@ -284,13 +284,16 @@ def grouprequestpage(userid):
         thisuser = session.query(user).filter(user.userid == userid).first()
         if thisuser is None:
             return ('Did not find user %s in database. You have entered an incorrect URL address.' % userid)
+        #find the instruments this user plays
         thisuserinstruments = session.query(instrument.instrumentname).join(user).filter(user.userid == userid).all()
+        #find all group templates and serialize them to prepare to inject into the javascript
         grouptemplates = session.query(grouptemplate).filter(grouptemplate.size == 'S').all()
         grouptemplates_serialized = []
         grouptemplates_serialized = [i.serialize for i in grouptemplates]
         log2(grouptemplates_serialized)
-        instruments = []
+        #get the list of instruments from the config file
         instrumentlist = config.root.CampDetails['Instruments'].split(",")
+        #find all the instruments that everyone plays and serialize them to prepare to inject into the javascript
         playersdump = session.query(user.userid,user.firstname,user.lastname,instrument.instrumentname,instrument.grade,instrument.isprimary).join(instrument).all()
         playersdump_serialized = []
         for p in playersdump:
@@ -298,6 +301,7 @@ def grouprequestpage(userid):
                                             'instrumentname': p.instrumentname, 'grade': p.grade, 'isprimary': p.isprimary})
         log2('Players dump is: %s' % playersdump)
         session.close()
+        log2(instrumentlist)
         return render_template('grouprequest.html', \
                             user=thisuser, \
                             thisuserinstruments=thisuserinstruments, \
@@ -334,17 +338,27 @@ def periodpage(userid,periodid):
     else:
         return 'You have submitted illegal characters in your URL. Any inputs must only contain letters, numbers and dashes.'
 
-@app.route('/user/godpage/')
-def godpage():
+@app.route('/user/<userid>/godpage/')
+def godpage(userid):
     session = Session()
-    users = session.query(user).all()
-    session.close()
-    return render_template('godpage.html', \
+    thisuser = session.query(user).filter(user.userid == userid).first()    
+    if thisuser is None:
+        session.close()
+        return ('Did not find user %s in database. You have entered an incorrect URL address.' % userid)
+    if thisuser.isadmin == 1:
+        users = session.query(user).all()
+        session.close()
+        return render_template('godpage.html', \
+                            user=thisuser, \
                             users=users, \
                             campname=config.root.CampDetails['Name'], \
                             )
+    else:
+        session.close()
+        return ('You do not have permission to view this page')
 
-
+#the below creates a new user. The idea for this is that you could concatenate a string up in Excel with your user's details and click 
+#on all the links to create them.
 @app.route('/new/user/<firstname>/<lastname>/<age>/<arrival>/<departure>/<isannouncer>/<isconductor>/<isadmin>/')
 def new_user(firstname,lastname,age,arrival,departure,isannouncer,isconductor,isadmin):
     session = Session()
@@ -361,7 +375,37 @@ def new_user(firstname,lastname,age,arrival,departure,isannouncer,isconductor,is
         session.add(ga)
     session.commit()
     session.close()
-    return 'user created'    
+    return ('user created with id %s' % userid)
+
+#the below creates a new user-instrument relationship.
+@app.route('/new/instrument/<userid>/<instrumentname>/<grade>/<isprimary>/')
+def new_instrument(userid,instrumentname,grade,isprimary):
+    session = Session()
+    thisuser = session.query(user).filter(user.userid == userid).first()    
+    checkduplicate = session.query(instrument).filter(instrument.userid == thisuser.userid, instrument.instrumentname == instrumentname).first()
+    checkprimary = session.query(instrument).filter(instrument.userid == thisuser.userid, instrument.isprimary == 1).first()
+    if thisuser is None:
+        session.close()
+        return ('Did not find user %s in database. You have entered an incorrect URL address.' % userid)
+    elif checkduplicate is not None:
+        session.close()
+        return ('This user is already associated with this instrument.')
+    elif grade > 0 and grade <= 5:
+        session.close()
+        return ('incorrect grade. Grade should be between 1 and 5.')
+    elif isprimary >= 0 and isprimary <= 1:
+        session.close()
+        return ('incorrect isprimary value. isprimary should be a 0 or a 1.')
+    elif isprimary == 1 and checkprimary is not None:
+        session.close()
+        return ('This user already has a primary instrument. Cannot create another primary instrument record.')
+    else:
+        thisinstrument = instrument(userid = userid, instrumentname = instrumentname, grade = grade, isprimary = isprimary)
+        session.add(thisinstrument)
+        session.commit()
+        session.close()
+        return ('intsrument link created for user with id %s' % userid)
+    return ('something went wrong. you should never get this message. Inside new_instrument method with no caught errors.')
 
 if __name__ == '__main__':
     app.run(debug=True, \

@@ -61,7 +61,7 @@
 <body>
     <h1> {{ user.firstname }} {{ user.lastname }}'s Dashboard</h1>
     <p>{{ campname }}</p>
-    
+    <p>You have played a total of {{ count }} times this camp</p>
     <h2>Announcements</h2>
 
     <br />
@@ -140,8 +140,7 @@
         {% endfor %}
     </table>
     <h2>Your Options</h2>
-    <p><a href="/user/{{ user.userid }}/grouprequest/">Request a group</a></p>
-    <p>You have played a total of {{ count }} times this camp</p>
+    <p><a href="/user/{{ user.userid }}/grouprequest/">Request a group</a></p>    
     <p><a href="mailto:{{ supportemailaddress }}">Bugs? Feedback? Complaints? Send an email to camp admin my clicking here!</a></p>
 </body>
 </html>

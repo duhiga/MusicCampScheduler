@@ -7,9 +7,8 @@
     <script>
         $(document).ready(function () {
             var players = {{ playersdump_serialized|tojson }};
-            var grouptemplates = {{ grouptemplates_serialized|tojson }}
-            console.log(players);
-            console.log(grouptemplates)
+            var grouptemplates = {{ grouptemplates_serialized|tojson }};
+            console.log(grouptemplates);
             
             $(document).on("change", '.instrument_dropdown', function () {
                 // grab value
@@ -24,6 +23,10 @@
                 };
                 console.log(listItems)
                 $("#player" + $(this).data("pairing")).html(listItems);
+            });
+            //UNFINISHED - need to do the whole template application code. this is just the beginning
+            $("#apply_template").click(function () {
+                $("#playersTable").find("tr:gt(1)").remove();
             });
 
             $("#add_player").click(function () {
@@ -53,12 +56,12 @@
                     $('#playersTable tr:last').remove();
                 }
             });
-
+            /*
             $("#submit_button").click(function () {
                 var request_json = {}
                 request_json.music = $('#textbox_music').val();
                 for (var i = 0; i < $('.instrument_dropdown').length; i++) {
-                    request_json.music
+                //    request_json.music
                 };
 
                 
@@ -77,6 +80,7 @@
                             }
                     });
             });
+            */
         });
     </script>
 </head>
@@ -97,6 +101,7 @@
         {% endfor %}
     </select>
     <button id="apply_template">Apply</button>
+    <br />
     Optional: What music will be played?<input type="text" id="textbox_music">
     <br /><br />
     <table id="playersTable">

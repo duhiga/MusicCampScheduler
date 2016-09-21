@@ -136,22 +136,6 @@ class grouptemplate(Base):
                 'Horn': self.Horn, 'Trumpet': self.Trumpet, 'Tuba': self.Tuba, 'Percussion': self.Percussion, 'Piano': self.Piano,
                 'Violin': self.Violin, 'Viola': self.Viola, 'Cello': self.Cello, 'DoubleBass': self.DoubleBass}
 
-    @property
-    def to_instrument_list(self):
-        list = []
-        for i in self.Flute:
-            list.append('Flute')
-        for i in self.Oboe:
-            list.append('Oboe')
-        for i in self.Clarinet:
-            list.append('Clarinet')
-        for i in self.Bassoon:
-            list.append('Bassoon')
-        for i in self.Horn:
-            list.append('Horn')
-        return list
-
-
     def __repr__(self):
         return """<grouptemplate(grouptemplateid='%s', grouptemplatename='%s', size='%s', Conductor='%s', Flute='%s', Oboe='%s',
                 Clarinet='%s', Bassoon='%s', Horn='%s', Trumpet='%s', Trombone='%s', Tuba='%s', Percussion='%s', Piano='%s', Violin='%s', 

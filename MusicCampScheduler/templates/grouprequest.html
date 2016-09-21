@@ -27,6 +27,17 @@
             //UNFINISHED - need to do the whole template application code. this is just the beginning
             $("#apply_template").click(function () {
                 $("#playersTable").find("tr:gt(1)").remove();
+
+                var template = $.grep(grouptemplates, function (elt)
+                {
+                    return elt.grouptemplatename === $(group_template_dropdown).val();;
+                });
+                console.log('Selected template is:')
+                console.log(template)
+
+                jQuery.each(grouptemplates, function(name, value) {
+                    console.log(name + ": " + value);
+                });
             });
 
             $("#add_player").click(function () {
@@ -53,7 +64,7 @@
 
             $("#remove_player").click(function () {
                 if ($('.instrument_dropdown').length > 1) {
-                    $('#playersTable tr:last').remove();
+                    $('#playersTable tr:last').remove();                    
                 }
             });
             /*

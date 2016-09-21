@@ -141,3 +141,35 @@ def playersubstitutesforgroup(groupid):
     except Exception as ex:
         log1('playersubstitutesforgroup failed on groupID %s with exception: %s' % (groupid,ex))
         return 'error'
+
+
+#checks a user entry for bad characters.  Users are only allowed to submit inputs in their URLs with letters and numbers and dashes.
+def check(string):
+    log1('checking input %s' % string)
+    if re.match("^[a-zA-Z0-9-]*$",string):
+        log1('%s passes the check' % string)
+        tf = True
+    else:
+        log1('%s fails the check' % string)
+        tf = False
+    return tf
+
+"""
+from sqlalchemy.ext.declarative import DeclarativeMeta
+class AlchemyEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj.__class__, DeclarativeMeta):
+            # an SQLAlchemy class
+            fields = {}
+            for field in [x for x in dir(obj) if not x.startswith('_') and x != 'metadata']:
+                data = obj.__getattribute__(field)
+                try:
+                    json.dumps(data) # this will fail on non-encodable values, like other classes
+                    fields[field] = data
+                except TypeError:
+                    fields[field] = None
+            # a json-encodable dict
+            return fields
+
+        return json.JSONEncoder.default(self, obj)
+"""

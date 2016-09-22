@@ -10,6 +10,23 @@
             var grouptemplates = {{ grouptemplates_serialized|tojson }};
             console.log(grouptemplates);
             
+            function addRow() {
+                $('#playersTable tr:last').after('\
+                        <tr>\
+                            <td>\
+                                <select class="instrument_dropdown" id="instrument' + $('.instrument_dropdown').length + '" data-pairing="' + $('.instrument_dropdown').length + '">\
+                                    <option value=""></option>\
+                                    {% for i in instrumentlist %}<option value="{{ i }}">{{ i }}</option>{% endfor %}\
+                                </select>\
+                            </td>\
+                            <td>\
+                                <select class="player_dropdown" id="player' + $('.instrument_dropdown').length + '" data-pairing="' + $('.instrument_dropdown').length + '">\
+                                    <option value=""></option>\
+                                </select>\
+                            </td>\
+                        </tr>');
+            }
+
             $(document).on("change", '.instrument_dropdown', function () {
                 // grab value
                 var selectedinstrument = $(this).val();
@@ -24,41 +41,43 @@
                 console.log(listItems)
                 $("#player" + $(this).data("pairing")).html(listItems);
             });
-            //UNFINISHED - need to do the whole template application code. this is just the beginning
+            //UNFINISHED - halfway through writing this template application code. Can't get the values to change in the dropdown...
+            //also need to handle testing template for actually having the users instruments in it, and making the user one of the
+            //members of the group.
             $("#apply_template").click(function () {
                 $("#playersTable").find("tr:gt(1)").remove();
-
-                var template = $.grep(grouptemplates, function (elt)
-                {
-                    return elt.grouptemplatename === $(group_template_dropdown).val();;
+                console.log('Just before grep')
+                var grep_template = $.grep(grouptemplates, function (elt) {
+                    return elt.grouptemplatename === $(group_template_dropdown).val();
                 });
+                selectedTemplate = grep_template[0]
                 console.log('Selected template is:')
-                console.log(template)
+                console.log(selectedTemplate)
+                var s = "";
+                console.log('Printing instruments that are in the group')
+                $.each(selectedTemplate, function(key,value){
 
-                jQuery.each(grouptemplates, function(name, value) {
-                    console.log(name + ": " + value);
+                    if ( (key == 'Conductor' || key == 'Flute' || key == 'Oboe' || key == 'Clarinet' || key == 'Bassoon' ||
+                        key == 'Horn' || key == 'Trumpet' || key == 'Trombone' || key == 'Tuba' || key == 'Percussion' ||
+                        key == 'Piano' || key == 'Violin' || key == 'Viola' || key == 'Cello' || key == 'DoubleBass') 
+                        && (value > 0) && (key != $("#instrument0").val()) ) {
+                        console.log(s+key+": "+String(value));
+
+                        addRow();
+                        console.log($('.instrument_dropdown').length);
+                        //$("#instrument" + $('.instrument_dropdown').length).val(key).change();
+                        $('#instrument' + $('.instrument_dropbown').length + ' option[value=' + key + ']').attr('selected','selected');
+                        console.log('attempted to change instrument dropdown with id' + ($('.instrument_dropdown').length - 1) + ' to ' + key)
+                    }
+                                   
                 });
             });
+            
 
             $("#add_player").click(function () {
                 event.preventDefault();
-                boxNumber = $('.instrument_dropdown').length
-                console.log(boxNumber)
-                if (boxNumber < {{ playerlimit }}) {
-                    $('#playersTable tr:last').after('\
-                        <tr>\
-                            <td>\
-                                <select class="instrument_dropdown" id="instrument' + boxNumber + '" data-pairing="' + boxNumber + '">\
-                                    <option value=""></option>\
-                                    {% for i in instrumentlist %}<option value="{{ i }}">{{ i }}</option>{% endfor %}\
-                                </select>\
-                            </td>\
-                            <td>\
-                                <select class="player_dropdown" id="player' + boxNumber + '" data-pairing="' + boxNumber + '">\
-                                    <option value=""></option>\
-                                </select>\
-                            </td>\
-                        </tr>');
+                if ($('.instrument_dropdown').length < {{ playerlimit }}) {
+                    addRow()
                 };
              });
 

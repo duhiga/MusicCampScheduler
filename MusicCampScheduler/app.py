@@ -231,8 +231,7 @@ def groupdetails(userid,groupid):
                         user=thisuser \
                         )
 
-#UNFINISHED - still need to work on the form submission, and the group template autofill. Also greying out of buttons when it hits the limits
-#experimenting with making the grouptemplates a list. This will make it a lot easier to deal with in JS... a bit lazy though.
+#UNFINISHED - still need to work on the form submission, and the group template autofill.
 @app.route('/user/<userid>/grouprequest/', methods=['GET', 'POST'])
 def grouprequestpage(userid):
     if request.method == 'GET':

@@ -8,8 +8,16 @@
         $(document).ready(function () {
             var players = {{ playersdump_serialized|tojson }};
             var grouptemplates = {{ grouptemplates_serialized|tojson }};
+            var thisuserinstruments = {{ thisuserinstruments_serialized|tojson }};
+            console.log("Grouptemplates:");
             console.log(grouptemplates);
-            
+            console.log("Instruments played by this user:");
+            console.log(thisuserinstruments);
+            //get the user's primary instrument
+            var primaryinstrument = thisuserinstruments.filter(function( obj ) {
+                return obj.isprimary == 1;
+            })[0].instrumentname;
+            console.log('Primary instrument is: ' + primaryinstrument);
             function addRow() {
                 $('#playersTable tr:last').after('\
                         <tr>\
@@ -45,34 +53,57 @@
             //also need to handle testing template for actually having the users instruments in it, and making the user one of the
             //members of the group.
             $("#apply_template").click(function () {
+                //remove all rows excapt for the first row in the table (first row contains the user and respective instruments they play)
                 $("#playersTable").find("tr:gt(1)").remove();
-                console.log('Just before grep')
+                //get the user selected template and format it so we can iterate over it later
                 var grep_template = $.grep(grouptemplates, function (elt) {
                     return elt.grouptemplatename === $(group_template_dropdown).val();
                 });
-                selectedTemplate = grep_template[0]
-                console.log('Selected template is:')
-                console.log(selectedTemplate)
-                var s = "";
-                console.log('Printing instruments that are in the group')
-                $.each(selectedTemplate, function(key,value){
+                selectedTemplate = grep_template[0];
+                console.log('Selected template is:');
+                console.log(selectedTemplate);
 
+                var foundprimary = false
+
+                //check if the user's primary instrument is in this group. if it is, set it.
+                $.each(selectedTemplate, function(key,value){
+                    if ((key == primaryinstrument) && (value > 0)) {
+                        console.log('found that the users primary instrument is in this group. Key: ' + key)
+                        var foundprimary = true;
+                        $('#instrument0').val(key).change();
+                    }
+                });
+                //if the user's primary instrument is not in the group, find an instrument that is, and set it.
+                if (foundprimary == false) {
+                    $.each(selectedTemplate, function(key,value){
+                        for (var x = 1; x <= value; x++) {
+                            //get the first instrument that this user plays that matches this instrument
+                            matchinginstrument = thisuserinstruments.filter(function(obj){return obj.instrumentname == key;})[0]
+                            if (matchinginstrument) {
+                                $('#instrument0').val(key).change();
+                            }
+                        }
+                    });
+                }
+
+                //for each instrument type in the group template
+                $.each(selectedTemplate, function(key,value){
+                    //make sure it's an instrument type and not other associated metadata
                     if ( (key == 'Conductor' || key == 'Flute' || key == 'Oboe' || key == 'Clarinet' || key == 'Bassoon' ||
                         key == 'Horn' || key == 'Trumpet' || key == 'Trombone' || key == 'Tuba' || key == 'Percussion' ||
                         key == 'Piano' || key == 'Violin' || key == 'Viola' || key == 'Cello' || key == 'DoubleBass') 
                         && (value > 0) && (key != $("#instrument0").val()) ) {
-                        console.log(s+key+": "+String(value));
-
-                        addRow();
-                        console.log($('.instrument_dropdown').length);
-                        //$("#instrument" + $('.instrument_dropdown').length).val(key).change();
-                        $('#instrument' + $('.instrument_dropbown').length + ' option[value=' + key + ']').attr('selected','selected');
-                        console.log('attempted to change instrument dropdown with id' + ($('.instrument_dropdown').length - 1) + ' to ' + key)
+                        console.log(key + ": "+String(value));
+                        for (var i = 0; i < thisuserinstruments.length; i++) {
+                            addRow();
+                            var thisinstrumentdropdown = '#instrument' + String($('.instrument_dropdown').length - 1)
+                            console.log(thisinstrumentdropdown)
+                            $(thisinstrumentdropdown).val(key).change();
+                            console.log('attempted to change instrument dropdown with id ' + thisinstrumentdropdown + ' and resolved id ' + $(thisinstrumentdropdown).attr('id') + ' to ' + key);
+                        }
                     }
-                                   
                 });
             });
-            
 
             $("#add_player").click(function () {
                 event.preventDefault();

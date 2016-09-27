@@ -165,6 +165,10 @@ class instrument(Base):
     grade = Column(Integer)
     isprimary = Column(Integer)
 
+    @property
+    def serialize(self):
+        return {'instrumentid': self.instrumentid, 'userid': self.userid, 'instrumentname': self.instrumentname, 'grade': self.grade, 'isprimary': self.isprimary}
+
     def __repr__(self):
         return "<instrument(instrumentid='%s', userid='%s', instrumentname='%s', grade='%s', isprimary='%s')>" % (
             self.instrumentid,self.userid,self.instrumentname,self.grade,self.isprimary)

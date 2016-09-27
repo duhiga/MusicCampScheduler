@@ -89,7 +89,7 @@ def dashboard(userid,inputdate='n'):
     #gets the data associated with this user
     thisuser = session.query(user).filter(user.userid == userid).first()
     if thisuser is None:
-        return ('Did not find user %s in database. You have entered an incorrect URL address.' % userid)       
+        return ('Did not find user in database. You have entered an incorrect URL address.')       
     #find the number of times a user has played in groups in the past
     count = playcount(session, userid)
     #get impontant datetimes
@@ -135,7 +135,7 @@ def mark_absent(userid,periodid,command):
     #gets the data associated with this user
     thisuser = session.query(user).filter(user.userid == userid).first()
     if thisuser is None:
-        return ('Did not find user %s in database. You have entered an incorrect URL address.' % userid)
+        return ('Did not find user in database. You have entered an incorrect URL address.')
     currentassignment = session.query(group.groupname, groupassignment.groupassignmentid).\
                     join(groupassignment).join(user).join(period).\
                     filter(period.periodid == periodid, user.userid == userid).first()
@@ -151,7 +151,7 @@ def mark_absent(userid,periodid,command):
             session.add(groupassignment(userid = userid, groupid = absentgroup.groupid))
             session.commit()
             session.close()
-            return 'Now user marked absent for periodid ' + periodid
+            return 'Now user marked absent for period'
         except Exception as ex:
             log1('failed to allocate user as absent for period %s with exception: %s' % (periodid,ex))
             session.rollback()
@@ -161,7 +161,7 @@ def mark_absent(userid,periodid,command):
     if currentassignment != None:
         if currentassignment.groupname == 'absent' and command == 'confirm':
             session.close()
-            return 'Already marked absent for period with id ' + periodid
+            return 'Already marked absent for period'
         #case if the user is already marked absent and their tried to cancel their absent request
         elif currentassignment.groupname == 'absent' and command == 'cancel':            
             try:
@@ -170,7 +170,7 @@ def mark_absent(userid,periodid,command):
                 session.close()
                 return 'Removed absent request for ' + periodid
             except Exception as ex:
-                log1('failed to remove absent request for period %s with exception: %s' % (periodid,ex))
+                log1('failed to remove absent request for period with exception: %s' % ex)
                 session.rollback()
                 session.close()
                 return 'error'
@@ -188,10 +188,10 @@ def groupdetails(userid,groupid):
     #gets the data associated with this user
     thisuser = session.query(user).filter(user.userid == userid).first()
     if thisuser is None:
-        return ('Did not find user %s in database. You have entered an incorrect URL address.' % userid)
+        return ('Did not find user in database. You have entered an incorrect URL address.')
     thisgroup = session.query(group.groupid, group.groupname, group.periodid, location.locationname).join(location).filter(group.groupid == groupid).first()
     if thisgroup is None:
-        return ('Did not find group with id %s in database. You have entered an incorrect URL address.' % groupid)
+        return ('Did not find group in database. You have entered an incorrect URL address.')
     thisperiod = session.query(period).filter(period.periodid == thisgroup.periodid).first()
         
     #gets the list of players playing in the given group
@@ -239,9 +239,12 @@ def grouprequestpage(userid):
         #gets the data associated with this user
         thisuser = session.query(user).filter(user.userid == userid).first()
         if thisuser is None:
-            return ('Did not find user %s in database. You have entered an incorrect URL address.' % userid)
+            return ('Did not find user in database. You have entered an incorrect URL address.')
         #find the instruments this user plays
-        thisuserinstruments = session.query(instrument.instrumentname).join(user).filter(user.userid == userid).all()
+        thisuserinstruments = session.query(instrument).filter(instrument.userid == userid).all()
+        thisuserinstruments_serialized = []
+        thisuserinstruments_serialized = [i.serialize for i in thisuserinstruments]
+        log2(thisuserinstruments_serialized)
         #find all group templates and serialize them to prepare to inject into the javascript
         grouptemplates = session.query(grouptemplate).filter(grouptemplate.size == 'S').all()
         grouptemplates_serialized = []
@@ -261,6 +264,7 @@ def grouprequestpage(userid):
         return render_template('grouprequest.html', \
                             user=thisuser, \
                             thisuserinstruments=thisuserinstruments, \
+                            thisuserinstruments_serialized=thisuserinstruments_serialized, \
                             playerlimit = config.root.CampDetails['SmallGroupPlayerLimit'], \
                             grouptemplates = grouptemplates, \
                             grouptemplates_serialized=grouptemplates_serialized, \
@@ -281,7 +285,7 @@ def periodpage(userid,periodid):
     #gets the data associated with this user
     thisuser = session.query(user).filter(user.userid == userid).first()
     if thisuser is None:
-        return ('Did not find user %s in database. You have entered an incorrect URL address.' % userid)
+        return ('Did not find user in database. You have entered an incorrect URL address.')
     players = periodidtoplayerlist(session, periodid)        
     thisperiod = session.query(period).filter(period.periodid == periodid).first()
     session.close()
@@ -299,7 +303,7 @@ def godpage(userid):
     thisuser = session.query(user).filter(user.userid == userid).first()    
     if thisuser is None:
         session.close()
-        return ('Did not find user %s in database. You have entered an incorrect URL address.' % userid)
+        return ('Did not find user in database. You have entered an incorrect URL address.')
     if thisuser.isadmin == 1:
         users = session.query(user).all()
         session.close()
@@ -341,27 +345,30 @@ def new_instrument(userid,instrumentname,grade,isprimary):
     checkprimary = session.query(instrument).filter(instrument.userid == thisuser.userid, instrument.isprimary == 1).first()
     if thisuser is None:
         session.close()
-        return ('Did not find user %s in database. You have entered an incorrect URL address.' % userid)
+        return ('Did not find user in database. You have entered an incorrect URL address.')
     elif checkduplicate is not None:
         session.close()
         return ('This user is already associated with this instrument.')
-    elif grade > 0 and grade <= 5:
+    elif 1 > int(grade) > 5:
+        log2('User submitted grade of %s' % grade)
         session.close()
         return ('incorrect grade. Grade should be between 1 and 5.')
-    elif isprimary >= 0 and isprimary <= 1:
+    elif not (int(isprimary) == 0 or int(isprimary) == 1):
+        log2('User submitted isprimary of %s' % isprimary)
         session.close()
         return ('incorrect isprimary value. isprimary should be a 0 or a 1.')
-    elif isprimary == 1 and checkprimary is not None:
+    elif int(isprimary) == 1 and checkprimary is not None:
         session.close()
         return ('This user already has a primary instrument. Cannot create another primary instrument record.')
     else:
-        thisinstrument = instrument(userid = userid, instrumentname = instrumentname, grade = grade, isprimary = isprimary)
+        thisinstrument = instrument(userid = thisuser.userid, instrumentname = instrumentname, grade = grade, isprimary = isprimary)
         session.add(thisinstrument)
         session.commit()
+        return ('intsrument link created for user with id %s' % thisuser.userid)
         session.close()
-        return ('intsrument link created for user with id %s' % userid)
     return ('something went wrong. you should never get this message. Inside new_instrument method with no caught errors.')
 
 if __name__ == '__main__':
     app.run(debug=True, \
-            host='0.0.0.0')
+            #host='0.0.0.0'\
+            )

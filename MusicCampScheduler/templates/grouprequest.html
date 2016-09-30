@@ -5,7 +5,12 @@
     <title>{{ campname }} Request a Group</title>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"> </script>
     <script>
+        /* this script handles all user interaction in the group request page. Upon page load, it downloads all players
+        in the camp including the instruments they play, all templates as stated by the config.xml, and the instruments
+        this user plays. it uses all of this data to populate drop-down boxes, depending on what the user selects. */
         $(document).ready(function () {
+            
+            //these first few variables set up the rest of the script
             var players = {{ playersdump_serialized|tojson }};
             var grouptemplates = {{ grouptemplates_serialized|tojson }};
             var thisuserinstruments = {{ thisuserinstruments_serialized|tojson }};
@@ -13,30 +18,41 @@
             console.log(grouptemplates);
             console.log("Instruments played by this user:");
             console.log(thisuserinstruments);
+            
             //get the user's primary instrument
-            var primaryinstrument = thisuserinstruments.filter(function( obj ) {
-                return obj.isprimary == 1;
-            })[0].instrumentname;
+            var primaryinstrument = thisuserinstruments.filter(function( obj ) { return obj.isprimary == 1; })[0].instrumentname;
             console.log('Primary instrument is: ' + primaryinstrument);
+
+            //create a variable to keep track of the IDs of the rows, used in the addRow() function.
+            var rowId = 2;
+            //this function is called by a few other functions in this script, and adds another table row with appropriate
+            //drop down boxes in each cell. Every row's boxes have unique identifiers, because it increments each time it runs.
             function addRow() {
                 $('#playersTable tr:last').after('\
                         <tr>\
                             <td>\
-                                <select class="instrument_dropdown" id="instrument' + $('.instrument_dropdown').length + '" data-pairing="' + $('.instrument_dropdown').length + '">\
+                                <select class="instrument_dropdown" id="instrument' + rowId + '" data-pairing="' + rowId + '">\
                                     <option value=""></option>\
                                     {% for i in instrumentlist %}<option value="{{ i }}">{{ i }}</option>{% endfor %}\
                                 </select>\
                             </td>\
                             <td>\
-                                <select class="player_dropdown" id="player' + $('.instrument_dropdown').length + '" data-pairing="' + $('.instrument_dropdown').length + '">\
+                                <select class="player_dropdown" id="player' + rowId + '" data-pairing="' + rowId + '">\
                                     <option value=""></option>\
                                 </select>\
                             </td>\
+                            <td>\
+                                <button class="remove_player" id="remove_player' + rowId + '" data-pairing="' + rowId + '">X</button>\
+                                </select>\
+                            </td>\
                         </tr>');
+                rowId = rowId + 1;
             }
 
+            //run when user (or javascript) changes the content of an instrument dropdown. Populates the corresponding
+            //player dropdown with people that play that instrument that are not the current user.
             $(document).on("change", '.instrument_dropdown', function () {
-                // grab value
+                //grab value that was selected on the dropdown
                 var selectedinstrument = $(this).val();
 
                 // add values to list 
@@ -50,9 +66,23 @@
                 console.log('Setting ' + this.id + ' to ' + selectedinstrument)
                 $("#player" + $(this).data("pairing")).html(listItems);
             });
-            //UNFINISHED - halfway through writing this template application code. Can't get the values to change in the dropdown...
-            //also need to handle testing template for actually having the users instruments in it, and making the user one of the
-            //members of the group.
+
+            //run when user changes the content of a player dropdown. checks for other dropdown boxes that contain the
+            //name of the player that was selected and removes them.
+            $(document).on("change", '.player_dropdown', function (e) {
+                //grab value that was selected on the dropdown
+                var selectedplayer = $(this).val();
+                //only run the code if it's the original event to prevent recursion (this function would go infinite otherwise)
+                if (e.originalEvent) {
+                    $('.player_dropdown').not(this).each(function() {
+                        if ($(this).val() == selectedplayer) {
+                            $(this).val("").change();
+                        }
+                    });
+                }                
+            });
+
+            //run when a user clicks the "apply" button after selecting a template.
             $("#apply_template").click(function () {
                 //remove all rows excapt for the first row in the table (first row contains the user and respective instruments they play)
                 $("#playersTable").find("tr:gt(1)").remove();
@@ -86,6 +116,7 @@
                                 console.log('found this user plays intsrument ' + matchinginstrument.instrumentname + ' which matches instrument in group ' + key);
                                 console.log('setting this user instrument to ' + key)
                                 $('#instrument0').val(key).change();
+                                break;
                             }
                         }
                     });
@@ -97,30 +128,36 @@
                     if ( (key == 'Conductor' || key == 'Flute' || key == 'Oboe' || key == 'Clarinet' || key == 'Bassoon' ||
                         key == 'Horn' || key == 'Trumpet' || key == 'Trombone' || key == 'Tuba' || key == 'Percussion' ||
                         key == 'Piano' || key == 'Violin' || key == 'Viola' || key == 'Cello' || key == 'DoubleBass') 
-                        && (value > 0) && (key != $("#instrument0").val()) ) {
+                        && (value > 0)) {
                         console.log(key + ": "+String(value));
-                        for (var i = 0; i < thisuserinstruments.length; i++) {
-                            addRow();
-                            var thisinstrumentdropdown = '#instrument' + String($('.instrument_dropdown').length - 1)
-                            console.log(thisinstrumentdropdown)
-                            $(thisinstrumentdropdown).val(key).change();
-                            console.log('attempted to change instrument dropdown with id ' + thisinstrumentdropdown + ' and resolved id ' + $(thisinstrumentdropdown).attr('id') + ' to ' + key);
+                        //if the current instrument we're looking at is the same as the one that we selected for the user, decrement it because we already have one player
+                        if (key == $("#instrument0").val()) { value = value - 1; }
+                        if (value > 0) {
+                            for (var i = 0; i < value; i++) {
+                                addRow();
+                                var thisinstrumentdropdown = '#instrument' + String(rowId - 1);
+                                console.log(thisinstrumentdropdown)
+                                $(thisinstrumentdropdown).val(key).change();
+                                console.log('attempted to change instrument dropdown with id ' + thisinstrumentdropdown + ' and resolved id ' + $(thisinstrumentdropdown).attr('id') + ' to ' + key);
+                            }
                         }
+                        
                     }
                 });
             });
-
+            //run when user attempts to add another player row to the table
             $("#add_player").click(function () {
                 event.preventDefault();
                 if ($('.instrument_dropdown').length < {{ playerlimit }}) {
+                    console.log('Adding a player as requested by user')
                     addRow()
                 };
              });
 
-            $("#remove_player").click(function () {
-                if ($('.instrument_dropdown').length > 1) {
-                    $('#playersTable tr:last').remove();                    
-                }
+            //run when user attempts to remove a player row from the table
+            $(document).on('click', ".remove_player", function() {
+                console.log('Removing player as requested by user')
+                $(this).parents('tr').remove();
             });
             /*
             $("#submit_button").click(function () {
@@ -202,10 +239,13 @@
                     <option value=""></option>
                 </select>
             </td>
+            <td>
+                <button class="remove_player" id="remove_player1" data-pairing="1">X</button>
+            </td>
         </tr>
     </table>
     <button id="add_player">Add a Player</button>
-    <button id="remove_player">Remove a Player</button>
+    
     <br />
     <br />
     <button id="sumbit_button">Submit</button>

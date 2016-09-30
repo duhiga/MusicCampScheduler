@@ -253,7 +253,7 @@ def grouprequestpage(userid):
         #get the list of instruments from the config file
         instrumentlist = config.root.CampDetails['Instruments'].split(",")
         #find all the instruments that everyone plays and serialize them to prepare to inject into the javascript
-        playersdump = session.query(user.userid,user.firstname,user.lastname,instrument.instrumentname,instrument.grade,instrument.isprimary).join(instrument).all()
+        playersdump = session.query(user.userid,user.firstname,user.lastname,instrument.instrumentname,instrument.grade,instrument.isprimary).join(instrument).filter(user.userid != thisuser.userid).all()
         playersdump_serialized = []
         for p in playersdump:
             playersdump_serialized.append({'userid': p.userid, 'firstname': p.firstname, 'lastname': p.lastname,

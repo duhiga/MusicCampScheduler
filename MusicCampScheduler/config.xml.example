@@ -7,12 +7,13 @@
   <CampDetails
     Name="Name of the camp goes here. This will be on people's dashboards and titles of pages"
     SecretKey="This can be anything, but put something in here to make it secure"
-    Instruments="conductor,flute,oboe,clarinet,bassoon,horn,trumpet,trombone,tuba,percussion,violin,viola,cello,doublebass"
+    Instruments="Conductor,Flute,Oboe,Clarinet,Bassoon,Horn,Trumpet,Trombone,Tuba,Percussion,Piano,Violin,Viola,Cello,Doublebass"
     SupportEmailAddress="PutYourEmailHereIt'sUsedInTheSupportLinkOnTheDashboard@website.com"
     StartTime="2016-12-28 18:00"
     EndTime="2017-01-05 07:45"
-    GroupRequestLimit="1"
+    DailyGroupRequestLimit="1"
     SmallGroupPlayerLimit="8"
+    MealLocation="Dining Room"
     >
     <!-- Fill in the each period object with period names and times. Note the time format, ensure you enter it in the 
          format HH:mm (in 24 hour time). Each of these periods will recur every day that is covered by your start and 

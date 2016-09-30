@@ -1,5 +1,4 @@
-#VERY UNFINISHED
-#his file contains fuctions to initiate empty databases needed for the rest of the app
+#This file contains initial setup for the database
 import sqlalchemy
 import untangle
 import time
@@ -14,7 +13,7 @@ import uuid
 config = untangle.parse('config.xml')
 
 #sets up debugging
-debug = config.root.Application['Debug']
+debug = int(config.root.Application['Debug'])
 def log1(string):
     if debug >= 1:
         print(string)
@@ -23,7 +22,7 @@ def log2(string):
         print(string)
 print('Debug level set to %s' % debug)
 
-if config.root.Application['Debug'] >= 3:
+if debug >= 3:
     engine = create_engine("sqlite:///" + config.root.Application['DBPath'], echo=True)
 else:
     engine = create_engine("sqlite:///" + config.root.Application['DBPath'])
@@ -210,7 +209,7 @@ if config.root.Application['DBBuildRequired'] == 'Y':
     #start our session, then go through the loop
     session = Session()
     loop = 'start'
-    for x in xrange(0,len(config.root.CampDetails.Location)):
+    for x in range(0,len(config.root.CampDetails.Location)):
         find_location = session.query(location).filter(location.locationname == config.root.CampDetails.Location[x]['Name']).first()
         if find_location is None:
             find_location = location(locationname = config.root.CampDetails.Location[x]['Name'],capacity = config.root.CampDetails.Location[x]['Capacity'])
@@ -220,7 +219,7 @@ if config.root.Application['DBBuildRequired'] == 'Y':
     while loop == 'start':
         log2('now looping for %s' % ThisDay)
         #For each period covered by the camp's configured period list
-        for x in xrange(0,len(config.root.CampDetails.Period)):
+        for x in range(0,len(config.root.CampDetails.Period)):
             ThisStartTime = datetime.datetime.strptime((datetime.datetime.strftime(ThisDay, '%Y-%m-%d') + ' ' + config.root.CampDetails.Period[x]['StartTime']),'%Y-%m-%d %H:%M')
             ThisEndTime = datetime.datetime.strptime((datetime.datetime.strftime(ThisDay, '%Y-%m-%d') + ' ' + config.root.CampDetails.Period[x]['EndTime']),'%Y-%m-%d %H:%M')
             ThisPeriodName = config.root.CampDetails.Period[x]['Name']
@@ -249,7 +248,7 @@ if config.root.Application['DBBuildRequired'] == 'Y':
                 loop = 'stop'
         ThisDay = ThisDay + datetime.timedelta(days=1)    
     #create group templates
-    for x in xrange(0,len(config.root.CampDetails.GroupTemplate)):
+    for x in range(0,len(config.root.CampDetails.GroupTemplate)):
         log2(config.root.CampDetails.GroupTemplate[x])
         find_template = session.query(grouptemplate).filter(grouptemplate.grouptemplatename == config.root.CampDetails.GroupTemplate[x]['Name']).first()
         if find_template is None:

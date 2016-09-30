@@ -30,7 +30,7 @@ wsgi_app = app.wsgi_app
 Session = sessionmaker(bind=engine)
 
 #sets up debugging
-debug = config.root.Application['Debug']
+debug = int(config.root.Application['Debug'])
 def log1(string):
     if debug >= 1:
         print(string)
@@ -275,8 +275,8 @@ def grouprequestpage(userid):
     #UNFINISHED - need to work out how to process JSON sent back from the browser
     if request.method == 'POST':
         content = request.get_json
-        print content
-        return 'success message here'
+    #    print content
+    #    return 'success message here'
 
 #this page is the full report for any given period
 @app.route('/user/<userid>/period/<periodid>/')

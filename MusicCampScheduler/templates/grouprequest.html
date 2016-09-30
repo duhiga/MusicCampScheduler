@@ -38,7 +38,7 @@
             $(document).on("change", '.instrument_dropdown', function () {
                 // grab value
                 var selectedinstrument = $(this).val();
-                console.log(selectedinstrument)
+
                 // add values to list 
                 var listItems = "<option value='null'></option>";
                 for (var i = 0; i < players.length; i++) {
@@ -47,6 +47,7 @@
                     };
                 };
                 console.log(listItems)
+                console.log('Setting ' + this.id + ' to ' + selectedinstrument)
                 $("#player" + $(this).data("pairing")).html(listItems);
             });
             //UNFINISHED - halfway through writing this template application code. Can't get the values to change in the dropdown...
@@ -68,18 +69,22 @@
                 //check if the user's primary instrument is in this group. if it is, set it.
                 $.each(selectedTemplate, function(key,value){
                     if ((key == primaryinstrument) && (value > 0)) {
-                        console.log('found that the users primary instrument is in this group. Key: ' + key)
+                        console.log('found that the users primary instrument is in this group. Key: ' + key);
                         var foundprimary = true;
+                        console.log('Changing the associated user instrument to ' + key);
                         $('#instrument0').val(key).change();
                     }
                 });
                 //if the user's primary instrument is not in the group, find an instrument that is, and set it.
                 if (foundprimary == false) {
+                    console.log('Found the users primary instrument is not in the requested group. Iterating through the users instruments to see which one matches this group');
                     $.each(selectedTemplate, function(key,value){
                         for (var x = 1; x <= value; x++) {
                             //get the first instrument that this user plays that matches this instrument
                             matchinginstrument = thisuserinstruments.filter(function(obj){return obj.instrumentname == key;})[0]
                             if (matchinginstrument) {
+                                console.log('found this user plays intsrument ' + matchinginstrument.instrumentname + ' which matches instrument in group ' + key);
+                                console.log('setting this user instrument to ' + key)
                                 $('#instrument0').val(key).change();
                             }
                         }

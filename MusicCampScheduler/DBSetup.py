@@ -3,6 +3,7 @@ import sqlalchemy
 import untangle
 import time
 import datetime
+import csv
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey, exists, Enum, types
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship, aliased
@@ -63,7 +64,6 @@ class user(Base):
     userid = Column(String, primary_key=True)
     firstname = Column(String)
     lastname = Column(String)
-    age = Column(Integer)
     arrival = Column(DateTime)
     departure = Column(DateTime)
     isannouncer = Column(Integer)
@@ -135,7 +135,7 @@ class instrument(Base):
 
     instrumentid = Column(Integer, primary_key=True)
     userid = Column(Integer, ForeignKey('users.userid'))
-    instrumentname = Column(Enum('Conductor','Flute','Oboe','Clarinet','Bassoon','Horn','Trumpet','Trombone','Tuba','Percussion','Piano','Violin','Viola','Cello','DoubleBass','absent'))
+    instrumentname = Column(String)
     grade = Column(Integer)
     isprimary = Column(Integer)
 
@@ -246,6 +246,45 @@ if config.root.Application['DBBuildRequired'] == 'Y':
             setattr(template, 'grouptemplatename', config.root.CampDetails.GroupTemplate[x]['Name'])
             setattr(template, 'size', config.root.CampDetails.GroupTemplate[x]['Size'])
             session.add(template)
+
+    #the below reads the camp input file and creates the users and instrument bindings it finds there.
+    #UNFINISHED - creates duplicate users for some reason...
+    ifile  = open('campers.csv', "rb")
+    reader = csv.reader(ifile)
+    rownum = 0
+    for row in reader:
+        # Save header row.
+        if rownum == 0:
+            header = row
+        else:
+            log2(row)
+            thisuser = user()
+            thisuser.userid = str(uuid.uuid4())
+            thisuser.firstname = row[0]
+            thisuser.lastname = row[1][:1]
+            if row[2] is not '':
+                thisuser.arrival = row[2]
+            if row[2] is '':
+                thisuser.arrival = CampStartTime
+            if row[3] is not '':
+                thisuser.departure = row[3]
+            if row[3] is '':
+                thisuser.departure = CampEndTime
+            session.add(thisuser)
+            if row[4] is not 'Non-Player':
+                instrument1 = instrument(userid = thisuser.userid, instrumentname = row[4].capitalize().replace(" ", ""), grade = row[5], isprimary = 1)
+                session.add(instrument1)
+            if row[6] is not '':
+                instrument2 = instrument(userid = thisuser.userid, instrumentname = row[6].capitalize().replace(" ", ""), grade = row[7], isprimary = 0)
+                session.add(instrument2)
+            if row[8] is not '':
+                instrument3 = instrument(userid = thisuser.userid, instrumentname = row[8].capitalize().replace(" ", ""), grade = row[9], isprimary = 0)
+                session.add(instrument3)
+            if row[10] is not '':
+                instrument4 = instrument(userid = thisuser.userid, instrumentname = row[10].capitalize().replace(" ", ""), grade = row[11], isprimary = 0)
+                session.add(instrument4)
+        rownum += 1
+    ifile.close()
     session.commit()
     session.close()
     log2('Finished Database Build!')

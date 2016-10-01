@@ -7,7 +7,7 @@
   <CampDetails
     Name="Name of the camp goes here. This will be on people's dashboards and titles of pages"
     SecretKey="This can be anything, but put something in here to make it secure"
-    Instruments="Conductor,Flute,Oboe,Clarinet,Bassoon,Horn,Trumpet,Trombone,Tuba,Percussion,Piano,Violin,Viola,Cello,Doublebass"
+    Instruments="Conductor,Piccolo,Flute,Oboe,Clarinet,Bassoon,Horn,Trumpet,Trombone,Tuba,Percussion,Piano,Saxophone,Violin,Viola,Cello,DoubleBass"
     SupportEmailAddress="PutYourEmailHereIt'sUsedInTheSupportLinkOnTheDashboard@website.com"
     StartTime="2016-12-28 18:00"
     EndTime="2017-01-05 07:45"

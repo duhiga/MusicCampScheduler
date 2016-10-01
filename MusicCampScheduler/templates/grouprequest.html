@@ -125,10 +125,7 @@
                 //for each instrument type in the group template
                 $.each(selectedTemplate, function(key,value){
                     //make sure it's an instrument type and not other associated metadata
-                    if ( (key == 'Conductor' || key == 'Flute' || key == 'Oboe' || key == 'Clarinet' || key == 'Bassoon' ||
-                        key == 'Horn' || key == 'Trumpet' || key == 'Trombone' || key == 'Tuba' || key == 'Percussion' ||
-                        key == 'Piano' || key == 'Violin' || key == 'Viola' || key == 'Cello' || key == 'DoubleBass') 
-                        && (value > 0)) {
+                    if (key != 'grouptemplateid' && key != 'grouptemplatename' && key != 'size' && value > 0) {
                         console.log(key + ": "+String(value));
                         //if the current instrument we're looking at is the same as the one that we selected for the user, decrement it because we already have one player
                         if (key == $("#instrument0").val()) { value = value - 1; }

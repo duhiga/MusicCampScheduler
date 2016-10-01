@@ -39,6 +39,24 @@ def dump_datetime(value):
     return [value.strftime("%Y-%m-%d"), value.strftime("%H:%M:%S")]
 """
 
+def serialize_class(inst, cls):
+    convert = dict()
+    # add your coversions for things like datetime's 
+    # and what-not that aren't serializable.
+    d = dict()
+    for c in cls.__table__.columns:
+        v = getattr(inst, c.name)
+        if c.type in convert.keys() and v is not None:
+            try:
+                d[c.name] = convert[c.type](v)
+            except:
+                d[c.name] = "Error:  Failed to covert using ", str(convert[c.type])
+        elif v is None:
+            d[c.name] = str()
+        else:
+            d[c.name] = v
+    return d
+
 class user(Base):
     __tablename__ = 'users'
 
@@ -54,13 +72,13 @@ class user(Base):
 
     @property
     def serialize(self):
-        return {'userid': self.userid, 'firstname': self.firstname, 'lastname': self.lastname, 'age': self.age, 'arrival': self.arrival,
-                'departure': self.departure, 'isannouncer': self.isannouncer, 'isconductor': self.isconductor, 'isadmin': self.isadmin}
+        return serialize_class(self, self.__class__)
 
     def __repr__(self):
         return "<user(userid='%s', firstname='%s', lastname='%s', age='%s', arrival='%s', departure='%s', isannouncer='%s', isconductor='%s', isadmin='%s')>" % (
             self.userid, self.firstname, self.lastname, self.age, self.arrival, self, departure, self.isannouncer, self.isconductor, self.isadmin)
 
+#both group and grouptemplate tables and classes are initialized without the instrument columns
 class group(Base):
     __tablename__ = 'groups'
 
@@ -73,38 +91,10 @@ class group(Base):
     music = Column(String)
     ismusical = Column(Integer)
     iseveryone = Column(Integer)
-    Conductor = Column(Integer)
-    Flute = Column(Integer)
-    Oboe = Column(Integer)
-    Clarinet = Column(Integer)
-    Bassoon = Column(Integer)
-    Horn = Column(Integer)
-    Trumpet = Column(Integer)
-    Trombone = Column(Integer)
-    Tuba = Column(Integer)
-    Percussion = Column(Integer)
-    Piano = Column(Integer)
-    Violin = Column(Integer)
-    Viola = Column(Integer)
-    Cello = Column(Integer)
-    DoubleBass = Column(Integer)
 
     @property
     def serialize(self):
-        return {'groupid': self.grouptemplateid, 'groupname': self.grouptemplatename, 'locationid': self.locationid,
-                'requesttime': self.requesttime, 'requesteduserid': self.requesteduserid, 'periodid': self.periodid, 'music': self.music,
-                'ismusical': self.ismusical, 'iseveryone': self.iseveryone, 'Conductor': self.Conductor, 'Flute': self.Flute,
-                'Oboe': self.Oboe, 'Clarinet': self.Clarinet, 'Bassoon': self.Bassoon, 'Horn': self.Horn, 'Trumpet': self.Trumpet,
-                'Tuba': self.Tuba, 'Percussion': self.Percussion, 'Piano': self.Piano, 'Violin': self.Violin, 'Viola': self.Viola,
-                'Cello': self.Cello, 'DoubleBass': self.DoubleBass}
-
-    def __repr__(self):
-        return """<group(groupid='%s', groupname='%s', locationid='%s', requesttime='%s', requesteduserid='%s', periodid='%s', music='%s', 
-                ismusical='%s', iseveryone='%s', Conductor='%s', Flute='%s', Oboe='%s', Clarinet='%s', Bassoon='%s', Horn='%s', Trumpet='%s', 
-                Trombone='%s', Tuba='%s', Percussion='%s', Piano='%s', Violin='%s', Viola='%s', Cello='%s', DoubleBass='%s')>""" % (
-                self.groupid,self.groupname,self.locationid,self.requesttime,self.periodid,self.music,self.ismusical,
-                self.iseveryone,self.Conductor,self.Flute,self.Oboe,self.Clarinet,self.Bassoon,self.Horn,self.Trumpet,
-                self.Trombone,self.Tuba,self.Percussion,self.Piano,self.Violin,self.Viola,self.Cello,self.DoubleBass)
+        return serialize_class(self, self.__class__)
 
 class grouptemplate(Base):
     __tablename__ = 'grouptemplates'
@@ -112,36 +102,17 @@ class grouptemplate(Base):
     grouptemplateid = Column(Integer, primary_key=True)
     grouptemplatename = Column(String)
     size = Column(String)
-    Conductor = Column(Integer)
-    Flute = Column(Integer)
-    Oboe = Column(Integer)
-    Clarinet = Column(Integer)
-    Bassoon = Column(Integer)
-    Horn = Column(Integer)
-    Trumpet = Column(Integer)
-    Trombone = Column(Integer)
-    Tuba = Column(Integer)
-    Percussion = Column(Integer)
-    Piano = Column(Integer)
-    Violin = Column(Integer)
-    Viola = Column(Integer)
-    Cello = Column(Integer)
-    DoubleBass = Column(Integer)
 
     @property
     def serialize(self):
-        return {'grouptemplateid': self.grouptemplateid, 'grouptemplatename': self.grouptemplatename, 'size': self.size,
-                'Conductor': self.Conductor, 'Flute': self.Flute, 'Oboe': self.Oboe, 'Clarinet': self.Clarinet, 'Bassoon': self.Bassoon,
-                'Horn': self.Horn, 'Trumpet': self.Trumpet, 'Tuba': self.Tuba, 'Percussion': self.Percussion, 'Piano': self.Piano,
-                'Violin': self.Violin, 'Viola': self.Viola, 'Cello': self.Cello, 'DoubleBass': self.DoubleBass}
+        return serialize_class(self, self.__class__)
 
-    def __repr__(self):
-        return """<grouptemplate(grouptemplateid='%s', grouptemplatename='%s', size='%s', Conductor='%s', Flute='%s', Oboe='%s',
-                Clarinet='%s', Bassoon='%s', Horn='%s', Trumpet='%s', Trombone='%s', Tuba='%s', Percussion='%s', Piano='%s', Violin='%s', 
-                Viola='%s', Cello='%s', DoubleBass='%s')>""" % (
-                self.grouptemplateid,self.grouptemplatename,self.size,self.Conductor,self.Flute,self.Oboe,self.Clarinet,self.Bassoon,
-                self.Horn,self.Trumpet,self.Trombone,self.Tuba,self.Percussion,self.Piano,self.Violin,self.Viola,self.Cello,self.DoubleBass)
-
+#add columns to group and grouptemplate classes for each intsrument in the config file
+instrumentlist = config.root.CampDetails['Instruments'].split(",")
+for i in instrumentlist:
+    log2('Setting up columns for %s in database' % i)
+    setattr(group, i, Column(Integer))
+    setattr(grouptemplate, i, Column(Integer))
 
 class groupassignment(Base):
     __tablename__ = 'groupassignments'
@@ -149,7 +120,11 @@ class groupassignment(Base):
     groupassignmentid = Column(Integer, primary_key=True)
     userid = Column(Integer, ForeignKey('users.userid'))
     groupid = Column(Integer, ForeignKey('groups.groupid'))
-    instrument = Column(Enum('Conductor','Flute','Oboe','Clarinet','Bassoon','Horn','Trumpet','Trombone','Tuba','Percussion','Piano','Violin','Viola','Cello','DoubleBass','absent'), ForeignKey('instruments.instrumentname'))
+    instrument = Column(String, ForeignKey('instruments.instrumentname'))
+
+    @property
+    def serialize(self):
+        return serialize_class(self, self.__class__)
 
     def __repr__(self):
         return "<groupassignment(groupassignmentid='%s', userid='%s', groupid='%s', instrument='%s')>" % (
@@ -166,7 +141,7 @@ class instrument(Base):
 
     @property
     def serialize(self):
-        return {'instrumentid': self.instrumentid, 'userid': self.userid, 'instrumentname': self.instrumentname, 'grade': self.grade, 'isprimary': self.isprimary}
+        return serialize_class(self, self.__class__)
 
     def __repr__(self):
         return "<instrument(instrumentid='%s', userid='%s', instrumentname='%s', grade='%s', isprimary='%s')>" % (
@@ -178,6 +153,10 @@ class location(Base):
     locationid = Column(Integer, primary_key=True)
     locationname = Column(String)
     capacity = Column(Integer)
+
+    @property
+    def serialize(self):
+        return serialize_class(self, self.__class__)
 
     def __repr__(self):
         return "<location(locationid='%s', locationname='%s', capacity='%s')>" % (
@@ -192,6 +171,10 @@ class period(Base):
     periodname = Column(String)
     meal = Column(Integer)
 
+    @property
+    def serialize(self):
+        return serialize_class(self, self.__class__)
+
     def __repr__(self):
         return "<period(periodid='%s', starttime='%s', endtime='%s', periodname='%s', meal='%s')>" % (
             self.periodid,self.starttime,self.endtime,self.periodname,self.meal)
@@ -199,6 +182,7 @@ class period(Base):
 #create all tables if needed
 Base.metadata.create_all(engine)
 
+#Database Build section. The below configures periods and groups depending on how the config.xml is configured.
 if config.root.Application['DBBuildRequired'] == 'Y':
     #Grab the camp start and end times from the config file
     CampStartTime = datetime.datetime.strptime(config.root.CampDetails['StartTime'], '%Y-%m-%d %H:%M')
@@ -252,23 +236,15 @@ if config.root.Application['DBBuildRequired'] == 'Y':
         log2(config.root.CampDetails.GroupTemplate[x])
         find_template = session.query(grouptemplate).filter(grouptemplate.grouptemplatename == config.root.CampDetails.GroupTemplate[x]['Name']).first()
         if find_template is None:
-            template = grouptemplate(\
-                            grouptemplatename=config.root.CampDetails.GroupTemplate[x]['Name'],\
-                            size=config.root.CampDetails.GroupTemplate[x]['Size'],\
-                            Conductor=config.root.CampDetails.GroupTemplate[x]['Conductor'],\
-                            Flute=config.root.CampDetails.GroupTemplate[x]['Flute'],\
-                            Oboe=config.root.CampDetails.GroupTemplate[x]['Oboe'],\
-                            Clarinet=config.root.CampDetails.GroupTemplate[x]['Clarinet'],\
-                            Bassoon=config.root.CampDetails.GroupTemplate[x]['Bassoon'],\
-                            Horn=config.root.CampDetails.GroupTemplate[x]['Horn'],\
-                            Trombone=config.root.CampDetails.GroupTemplate[x]['Trombone'],\
-                            Tuba=config.root.CampDetails.GroupTemplate[x]['Tuba'],\
-                            Percussion=config.root.CampDetails.GroupTemplate[x]['Percussion'],\
-                            Piano=config.root.CampDetails.GroupTemplate[x]['Piano'],\
-                            Violin=config.root.CampDetails.GroupTemplate[x]['Violin'],\
-                            Viola=config.root.CampDetails.GroupTemplate[x]['Viola'],\
-                            Cello=config.root.CampDetails.GroupTemplate[x]['Cello'],\
-                            DoubleBass=config.root.CampDetails.GroupTemplate[x]['DoubleBass'])
+            template = grouptemplate()
+            attributelist = [a for a in dir(template) if not a.startswith('_') and not callable(getattr(template,a)) and not a == 'grouptemplateid' and not a == 'metadata' and not a == 'serialize']
+            log2('attributelist is:')
+            log2(attributelist)
+            for v in attributelist:
+                log2('Attempting to change template property %s to %s' % (v, config.root.CampDetails.GroupTemplate[x]['%s' % v]))
+                setattr(template, v, config.root.CampDetails.GroupTemplate[x]['%s' % v])
+            setattr(template, 'grouptemplatename', config.root.CampDetails.GroupTemplate[x]['Name'])
+            setattr(template, 'size', config.root.CampDetails.GroupTemplate[x]['Size'])
             session.add(template)
     session.commit()
     session.close()

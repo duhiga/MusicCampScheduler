@@ -88,6 +88,7 @@ class group(Base):
     requesttime = Column(DateTime)
     requesteduserid = Column(String, ForeignKey('users.userid'))
     periodid = Column(Integer, ForeignKey('periods.periodid'))
+    minimumlevel = Column(Integer)
     music = Column(String)
     ismusical = Column(Integer)
     iseveryone = Column(Integer)
@@ -262,6 +263,12 @@ if config.root.Application['DBBuildRequired'] == 'Y':
             thisuser.userid = str(uuid.uuid4())
             thisuser.firstname = row[0]
             thisuser.lastname = row[1][:1]
+            if row[12] is not '':
+                thisuser.isannouncer = row[12]
+            if row[13] is not '':
+                thisuser.isconductor = row[13]
+            if row[14] is not '':
+                thisuser.isadmin = row[14]
             if row[2] is not '':
                 thisuser.arrival = row[2]
             if row[2] is '':

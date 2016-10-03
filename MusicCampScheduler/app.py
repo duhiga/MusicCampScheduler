@@ -240,18 +240,21 @@ def grouprequestpage(userid):
         thisuser = session.query(user).filter(user.userid == userid).first()
         if thisuser is None:
             return ('Did not find user in database. You have entered an incorrect URL address.')
+        today = datetime.datetime.combine(datetime.date.today(), datetime.time.min) #get today's date
+        alreadyrequestedcheck = session.query(group).filter(group.requesteduserid == thisuser.userid, group.requesttime >= today).all()
+        if len(alreadyrequestedcheck) >= config.root.CampDetails['DailyGroupRequestLimit']:
+            return ('You have already requested %s, which is the maximum number of groups you can request in a single day. Please come back tomorrow!' % len(alreadyrequestedcheck))
         #find the instruments this user plays
         thisuserinstruments = session.query(instrument).filter(instrument.userid == userid).all()
-        thisuserinstruments_serialized = []
         thisuserinstruments_serialized = [i.serialize for i in thisuserinstruments]
         log2(thisuserinstruments_serialized)
         #find all group templates and serialize them to prepare to inject into the javascript
         grouptemplates = session.query(grouptemplate).filter(grouptemplate.size == 'S').all()
-        grouptemplates_serialized = []
         grouptemplates_serialized = [i.serialize for i in grouptemplates]
         log2(grouptemplates_serialized)
         #get the list of instruments from the config file
         instrumentlist = config.root.CampDetails['Instruments'].split(",")
+        levels = config.root.CampDetails['Levels'].split(",")
         #find all the instruments that everyone plays and serialize them to prepare to inject into the javascript
         playersdump = session.query(user.userid,user.firstname,user.lastname,instrument.instrumentname,instrument.grade,instrument.isprimary).join(instrument).filter(user.userid != thisuser.userid).all()
         playersdump_serialized = []
@@ -260,7 +263,6 @@ def grouprequestpage(userid):
                                             'instrumentname': p.instrumentname, 'grade': p.grade, 'isprimary': p.isprimary})
         log2('Players dump is: %s' % playersdump)
         session.close()
-        log2(instrumentlist)
         return render_template('grouprequest.html', \
                             user=thisuser, \
                             thisuserinstruments=thisuserinstruments, \
@@ -270,12 +272,13 @@ def grouprequestpage(userid):
                             grouptemplates_serialized=grouptemplates_serialized, \
                             campname=config.root.CampDetails['Name'], \
                             instrumentlist=instrumentlist, \
+                            levels=levels, \
                             playersdump_serialized=playersdump_serialized, \
                             )
     #UNFINISHED - need to work out how to process JSON sent back from the browser
     if request.method == 'POST':
         content = request.get_json
-    #    print content
+        print content
     #    return 'success message here'
 
 #this page is the full report for any given period
@@ -286,35 +289,40 @@ def periodpage(userid,periodid):
     thisuser = session.query(user).filter(user.userid == userid).first()
     if thisuser is None:
         return ('Did not find user in database. You have entered an incorrect URL address.')
-    players = periodidtoplayerlist(session, periodid)        
+    players = periodidtoplayerlist(session, periodid)
     thisperiod = session.query(period).filter(period.periodid == periodid).first()
     session.close()
     return render_template('period.html', \
-                        players=players, \
-                        campname=config.root.CampDetails['Name'], \
-                        user=thisuser, \
-                        period=thisperiod \
-                        )
+                            players=players, \
+                            campname=config.root.CampDetails['Name'], \
+                            user=thisuser, \
+                            period=thisperiod \
+                            )
 
-#Shows the godpage to the user. Godpage contains all user names and links to all their dashboards. User must be an admin to see it.
-@app.route('/user/<userid>/godpage/')
-def godpage(userid):
-    session = Session()
-    thisuser = session.query(user).filter(user.userid == userid).first()    
-    if thisuser is None:
-        session.close()
-        return ('Did not find user in database. You have entered an incorrect URL address.')
-    if thisuser.isadmin == 1:
+#Shows the godpage to the user. Godpage contains all user names and links to all their dashboards. Right now uses a shared password,
+#but would be better if tied to a user's admin account. However, there's no easy way to currently see what the userid of the admin is
+#after it's been created. Hmm... a conundrum.
+@app.route('/godpage/<password>/')
+def godpage(password):
+    if password != config.root.CampDetails['SecretKey']:
+        return 'Wrong password'
+    else:
+        session = Session()
+        #thisuser = session.query(user).filter(user.userid == userid).first()    
+        #if thisuser is None:
+        #    session.close()
+        #    return ('Did not find user in database. You have entered an incorrect URL address.')
+        #if thisuser.isadmin == 1:
         users = session.query(user).all()
         session.close()
         return render_template('godpage.html', \
-                            user=thisuser, \
-                            users=users, \
-                            campname=config.root.CampDetails['Name'], \
-                            )
-    else:
-        session.close()
-        return ('You do not have permission to view this page')
+                                #user=thisuser, \
+                                users=users, \
+                                campname=config.root.CampDetails['Name'], \
+                                )
+        #else:
+        #    session.close()
+        #    return ('You do not have permission to view this page')
 
 #the below creates a new user. The idea for this is that you could concatenate a string up in Excel with your user's details and click 
 #on all the links to create them.

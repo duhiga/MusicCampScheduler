@@ -146,41 +146,56 @@
             $("#add_player").click(function () {
                 event.preventDefault();
                 if ($('.instrument_dropdown').length < {{ playerlimit }}) {
-                    console.log('Adding a player as requested by user')
+                    console.log('Adding a player as requested by user');
                     addRow()
                 };
              });
 
             //run when user attempts to remove a player row from the table
             $(document).on('click', ".remove_player", function() {
-                console.log('Removing player as requested by user')
+                console.log('Removing player as requested by user');
                 $(this).parents('tr').remove();
             });
-            /*
-            $("#submit_button").click(function () {
-                var request_json = {}
-                request_json.music = $('#textbox_music').val();
-                for (var i = 0; i < $('.instrument_dropdown').length; i++) {
-                //    request_json.music
-                };
 
+            //run when user clicks the submit button
+            $("#submit_button").click(function () {
+                console.log('Submit button pressed');
+                //set up a variable to track invalid configuration and the JSON to send through to the server
+                var invalidConfig = false
+                var request_json = {};
+                //add the music name and minimum level to the JSON. Establish an array to contain the player names
+                request_json.music = $('#textbox_music').val();
+                request_json.minumumlevel = $('#level_dropdown').val();
+                request_json.player = []
+                var i = 0
+                $('.instrument_dropdown').each(function() {
+                    if ($(this).val() == "") {
+                        alert("Sumbission failed. Every instrument must be filled in! Make sure there are no empty boxes under the Instrument column. Empty boxes under the player names are ok though!");
+                        invalidConfig = true;
+                        return 'error';
+                    }
+                    var iplayer = {};
+                    iplayer.instrumentname = $(this).val();
+                    iplayer.playername = $(this).data("pairing");
+                    request_json.player.push(iplayer);
+                    i = i + 1
+                });
+                console.log('Pushing the following object to the server for processing:')
+                console.log(request_json);
                 
-                
-                console.log($('form#group_request_form').serialize());
-                
-                
-                
-                $.ajax({
-                    url: ('/user/' + {{ user.userid }} + '/grouprequest/'),
+                if (invalidConfig == false) {
+                    $.ajax({
+                        url: ('/user/{{ user.userid }}/grouprequest/'),
                         type: 'post',
                         dataType: 'application/json',
-                        data: $('form#group_request_form').serialize(),
+                        data: request_json,
                         success: function(data) {
                             var r = confirm("Success!" + data);
-                            }
+                        }
                     });
-            });
-            */
+                }
+                
+             });
         });
     </script>
 </head>
@@ -203,7 +218,15 @@
     <button id="apply_template">Apply</button>
     <br />
     Optional: What music will be played?<input type="text" id="textbox_music">
-    <br /><br />
+    <br />
+    Optional: Minimum level of auto-selected players in this group: 
+        <select id="level_dropdown">
+            {% for l in levels %}
+            <option value="{{ l }}">{{ l }}</option>
+            {% endfor %}
+        </select>
+    <br />
+    <br />
     <table id="playersTable">
         <!--Table Headers-->
         <tr>
@@ -245,7 +268,7 @@
     
     <br />
     <br />
-    <button id="sumbit_button">Submit</button>
+    <button id="submit_button">Submit</button>
     <br />
     <a href="/user/{{ user.userid }}/">Back to dashboard</a>
 </body>

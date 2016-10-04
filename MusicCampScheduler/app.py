@@ -10,6 +10,7 @@ Before use, you need to open up config.xml and point it to a SQL database, and c
 """
 
 from flask import Flask, render_template, redirect, jsonify, make_response, json, request, url_for
+from collections import namedtuple
 import sys
 import types
 import time
@@ -277,9 +278,10 @@ def grouprequestpage(userid):
                             )
     #UNFINISHED - need to work out how to process JSON sent back from the browser
     if request.method == 'POST':
-        content = request.get_json
-        print content
-    #    return 'success message here'
+        content = request.form
+        print 'Music is: %s' % content
+        print 'Player 0 plays: %s' % content
+        return 'Success'
 
 #this page is the full report for any given period
 @app.route('/user/<userid>/period/<periodid>/')

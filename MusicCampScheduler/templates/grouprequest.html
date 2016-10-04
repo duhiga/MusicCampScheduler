@@ -1,6 +1,7 @@
 <meta name="viewport" content="initial-scale=1">
 <html>
 <head>
+    
     <link rel="stylesheet" href='/static/css/style.css' />
     <title>{{ campname }} Request a Group</title>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"> </script>
@@ -162,11 +163,11 @@
                 console.log('Submit button pressed');
                 //set up a variable to track invalid configuration and the JSON to send through to the server
                 var invalidConfig = false
-                var request_json = {};
+                var request = {};
                 //add the music name and minimum level to the JSON. Establish an array to contain the player names
-                request_json.music = $('#textbox_music').val();
-                request_json.minumumlevel = $('#level_dropdown').val();
-                request_json.player = []
+                request.music = $('#textbox_music').val();
+                request.minumumlevel = $('#level_dropdown').val();
+                request.players = []
                 var i = 0
                 $('.instrument_dropdown').each(function() {
                     if ($(this).val() == "") {
@@ -176,21 +177,28 @@
                     }
                     var iplayer = {};
                     iplayer.instrumentname = $(this).val();
-                    iplayer.playername = $(this).data("pairing");
-                    request_json.player.push(iplayer);
+                    if ($(this).data("pairing") == 0) {
+                        iplayer.playerid = "{{ user.userid }}";
+                    }
+                    else {
+                        iplayer.playerid = $("#player" + $(this).data("pairing")).val();
+                    }
+                    
+                    request.players.push(iplayer);
                     i = i + 1
                 });
                 console.log('Pushing the following object to the server for processing:')
-                console.log(request_json);
+                console.log(JSON.stringify(request))
                 
                 if (invalidConfig == false) {
                     $.ajax({
                         url: ('/user/{{ user.userid }}/grouprequest/'),
-                        type: 'post',
-                        dataType: 'application/json',
-                        data: request_json,
+                        type: 'POST',
+                        contentType: 'application/json;charset=UTF-8',
+                        data: JSON.stringify(request, null, '/t'),
                         success: function(data) {
                             var r = confirm("Success!" + data);
+                            console.log(data)
                         }
                     });
                 }

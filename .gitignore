@@ -9,6 +9,7 @@
 config.xml
 MusicCampDatabase.db
 campers.csv
+favicon.ico
 web.debug.config
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs

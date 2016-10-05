@@ -166,7 +166,7 @@
                 var request = {};
                 //add the music name and minimum level to the JSON. Establish an array to contain the player names
                 request.music = $('#textbox_music').val();
-                request.minumumlevel = $('#level_dropdown').val();
+                request.minimumlevel = $('#level_dropdown').val();
                 request.players = []
                 var i = 0
                 $('.instrument_dropdown').each(function() {
@@ -195,10 +195,11 @@
                         url: ('/user/{{ user.userid }}/grouprequest/'),
                         type: 'POST',
                         contentType: 'application/json;charset=UTF-8',
-                        data: JSON.stringify(request, null, '/t'),
+                        data: JSON.stringify(request, null),
                         success: function(data) {
-                            var r = confirm("Success!" + data);
-                            console.log(data)
+                            var r = confirm(data);
+                            console.log(data);
+                            window.location = '/user/{{ user.userid }}';
                         }
                     });
                 }
@@ -227,8 +228,9 @@
     <br />
     Optional: What music will be played?<input type="text" id="textbox_music">
     <br />
-    Optional: Minimum level of auto-selected players in this group: 
+    Minimum level of auto-selected players in this group: 
         <select id="level_dropdown">
+            <option value=""></option>
             {% for l in levels %}
             <option value="{{ l }}">{{ l }}</option>
             {% endfor %}

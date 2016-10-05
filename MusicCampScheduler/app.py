@@ -232,7 +232,8 @@ def groupdetails(userid,groupid):
                         user=thisuser \
                         )
 
-#UNFINISHED - still need to work on the form submission, and the group template autofill.
+#Handlnes the group request page. If a user visits the page, it gives them a form to create a new group request. Pressing submit sends a post
+#containing configuration data. Their group request is queued until an adminsitrator approves it and assigns it to a period.
 @app.route('/user/<userid>/grouprequest/', methods=['GET', 'POST'])
 def grouprequestpage(userid):
     if request.method == 'GET':
@@ -244,7 +245,8 @@ def grouprequestpage(userid):
         today = datetime.datetime.combine(datetime.date.today(), datetime.time.min) #get today's date
         alreadyrequestedcheck = session.query(group).filter(group.requesteduserid == thisuser.userid, group.requesttime >= today).all()
         if len(alreadyrequestedcheck) >= config.root.CampDetails['DailyGroupRequestLimit']:
-            return ('You have already requested %s, which is the maximum number of groups you can request in a single day. Please come back tomorrow!' % len(alreadyrequestedcheck))
+            return ('You have already requested %s, which is the maximum number of groups you can request in a single day. Please come back\
+                tomorrow!' % len(alreadyrequestedcheck))
         #find the instruments this user plays
         thisuserinstruments = session.query(instrument).filter(instrument.userid == userid).all()
         thisuserinstruments_serialized = [i.serialize for i in thisuserinstruments]
@@ -257,7 +259,8 @@ def grouprequestpage(userid):
         instrumentlist = config.root.CampDetails['Instruments'].split(",")
         levels = config.root.CampDetails['Levels'].split(",")
         #find all the instruments that everyone plays and serialize them to prepare to inject into the javascript
-        playersdump = session.query(user.userid,user.firstname,user.lastname,instrument.instrumentname,instrument.grade,instrument.isprimary).join(instrument).filter(user.userid != thisuser.userid).all()
+        playersdump = session.query(user.userid,user.firstname,user.lastname,instrument.instrumentname,instrument.grade,instrument.isprimary).\
+            join(instrument).filter(user.userid != thisuser.userid).all()
         playersdump_serialized = []
         for p in playersdump:
             playersdump_serialized.append({'userid': p.userid, 'firstname': p.firstname, 'lastname': p.lastname,
@@ -276,12 +279,34 @@ def grouprequestpage(userid):
                             levels=levels, \
                             playersdump_serialized=playersdump_serialized, \
                             )
-    #UNFINISHED - need to work out how to process JSON sent back from the browser
+    
+    #Mostly finished. handles the POST by the group request page. It creates a group object with the configuraiton selected by the user, and
+    #creates groupassignments for all players they selected (and the user themselves)
     if request.method == 'POST':
-        content = request.form
-        print 'Music is: %s' % content
-        print 'Player 0 plays: %s' % content
-        return 'Success'
+        content = request.json
+        session = Session()
+        log2('Grouprequest received. Whole content of JSON returned is: %s' % content)
+        grouprequest = group(music = content['music'], minimumlevel = content['minimumlevel'], ismusical = 1, requesteduserid = userid, requesttime = datetime.datetime.now())
+        for p in content['players']:
+            log2('Performing action for instrument %s' % p['instrumentname'])
+            currentinstrumentcount = getattr(grouprequest, p['instrumentname'])
+            if currentinstrumentcount is None:
+                setattr(grouprequest, p['instrumentname'], 1)
+            else:
+                setattr(grouprequest, p['instrumentname'], (currentinstrumentcount + 1))
+        session.add(grouprequest)
+        for p in content['players']:
+            log2('Performing action for player with id %s' % p['playerid'])
+            if p['playerid'] != 'null':
+                playeruser = session.query(user).filter(user.userid == p['playerid']).first()
+                if playeruser is not None:
+                    playergroupassignment = groupassignment(userid = playeruser.userid, groupid = grouprequest.groupid, instrument = p['instrumentname'])
+                    session.add(playergroupassignment)
+                else:
+                    return ('Could not find one of your selected players in the database. Please refresh the page and try again.')
+        session.commit()
+        session.close()
+        return 'Your group request has been successfully created. When everyone in your group is avaliable, it will be scheduled to run.'
 
 #this page is the full report for any given period
 @app.route('/user/<userid>/period/<periodid>/')

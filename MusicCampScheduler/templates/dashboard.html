@@ -90,7 +90,10 @@
             <th>Time</th>
             <th>Name</th>
             {% if date > today %}
-            <th>Mark as Absent</th>
+            <th>Options</th>
+            {% endif %}
+            {% if user.isconductor == 1 %}
+            <th>Conductor</th>
             {% endif %}
             <th>Instrument</th>
             <th>Location</th>
@@ -110,6 +113,7 @@
             <td>
                 {% if not p.groupname %}
                     {{ p.periodname }}
+                    
                     {% else %}{% if p.ismusical == 1 %}
                         <a href="/user/{{ user.userid }}/group/{{ p.groupid }}/">{{ p.groupname }}</a>
                         {% else %}{% if p.groupname == "absent" %}
@@ -124,16 +128,22 @@
             {% if date > today %}
                 <td>
                 {% if not p.groupname or p.iseveryone %}
-                    <button id={{ p.periodid }} data-periodname="{{ p.periodname }}" class="absent_request_button">{{ p.periodname }} - Present</button>
+                    <button id={{ p.periodid }} data-periodname="{{ p.periodname }}" class="absent_request_button">Mark me as absent</button>
                     {% else %}
                         {% if p.groupname == "absent" %}
-                        <button id={{ p.periodid }} data-periodname="{{ p.periodname }}" class="absent_cancel_button">{{ p.periodname }} - ABSENT</button>
+                        <button id={{ p.periodid }} data-periodname="{{ p.periodname }}" class="absent_cancel_button">Mark me as present</button>
                         {% else %}
                             Allocated
                     {% endif %}
                 {% endif %}
                 </td>
-                {% endif %}
+            {% endif %}
+            <!--Conductor Column - only appears if the user is a conductor-->
+            {% if user.isconductor == 1 %}
+            <td>
+                <a href="/user/{{ user.userid }}/grouprequest/conductor/{{ p.periodid }}/">CONDUCTOR: Create a group here</a>
+            </td>
+            {% endif %}
             <td>{{ p.instrument }}</td>
             <td>{{ p.locationname }}</td>
         </tr>
@@ -141,6 +151,11 @@
     </table>
     <h2>Your Options</h2>
     <p><a href="/user/{{ user.userid }}/grouprequest/">Request a group</a></p>    
+
+    {% if user.isconductor == 1 %}
+    <p><a href="/user/{{ user.userid }}/grouprequest/conductor/">Elevated Conductor request a group</a></p> 
+    {% endif %}
+
     <p><a href="mailto:{{ supportemailaddress }}">Bugs? Feedback? Complaints? Send an email to camp admin my clicking here!</a></p>
 </body>
 </html>

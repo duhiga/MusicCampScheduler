@@ -73,11 +73,39 @@ def periodidtoplayerlist(session, periodid):
     log2(str(playerlist))
     return playerlist
 
+def getgroupname(g):
+    instrumentlist = config.root.CampDetails['Instruments'].split(",")
+    count = 0
+    for i in instrumentlist:
+        value = getattr(g, i)
+        log2('Instrument %s is value %s' % (i, value))
+        if value is not None:
+            count = count + int(getattr(g, i))
+    log2('Found %s instruments in group.' % value)
+    if count == 1:
+        name = 'Solo'
+    elif count == 2:
+        name = 'Duet'
+    elif count == 3:
+        name = 'Trio'
+    elif count == 4:
+        name = 'Quartet'
+    elif count == 5:
+        name = 'Quintet'
+    elif count == 6:
+        name = 'Sextet'
+    elif count == 7:
+        name = 'Septet'
+    elif count == 8:
+        name = 'Octet'
+    else:
+        name = 'Custom Group'
+    return name
+
 #the root page isn't meant to be navigable.  It shows the user an error and
 #tells them how to get to their user dashboard.
 @app.route('/')
 def rootpage():
-
     return render_template('index.html')
 
 #upon the URL request in the form domain/user/<userid> the user receives their dashboard.  This updates every day with the groups they 
@@ -202,23 +230,6 @@ def groupdetails(userid,groupid):
     #VERY unfinished. Need data to test this to continue.
     everyoneplayingquery = session.query(user.userid).join(groupassignment).join(group).join(period).filter(period.periodid == thisperiod.periodid)
     everyoneNOTplayingquery = session.query(user.userid).filter(~user.in_(everyoneplayingquery))
-
-    #the below is probably junk
-    substitutes = session.query(user.firstname, user.lastname, instrument.instrumentname).\
-                            join(instrument).outerjoin(groupassignment).outerjoin(group).outerjoin(period).\
-                            filter(period.periodid == thisperiod.periodid)
-    """
-        
-    """
-    data = sql(SELECT u.userid,u.firstname,u.lastname,ga.instrument,null,null,null FROM groupassignments ga INNER JOIN (
-                            SELECT si.userid,si.instrument FROM instruments si WHERE NOT EXISTS (
-                                SELECT nu.userid FROM users nu
-                                INNER JOIN groupassignments nga ON nga.userid = nu.userid
-                                INNER JOIN groups ng ON nga.groupid = ng.groupid
-                                WHERE nu.userid = si.userid AND ng.periodid =  + g.periodid + )) n
-                        ON ga.instrument = n.instrument
-                        INNER JOIN users u ON n.userid = u.userid
-                        WHERE ga.groupid =  + g.groupid)
     """
         
     session.close()
@@ -232,40 +243,62 @@ def groupdetails(userid,groupid):
                         user=thisuser \
                         )
 
+#UNFINISHED - need to test the "UNTESTED" query, and handle the post properly (currently the post doesn't support conductors at all)
 #Handlnes the group request page. If a user visits the page, it gives them a form to create a new group request. Pressing submit sends a post
 #containing configuration data. Their group request is queued until an adminsitrator approves it and assigns it to a period.
 @app.route('/user/<userid>/grouprequest/', methods=['GET', 'POST'])
-def grouprequestpage(userid):
+def grouprequestpage(userid,periodid=None):
+    session = Session()
+    #gets the data associated with this user
+    thisuser = session.query(user).filter(user.userid == userid).first()
+    if thisuser is None:
+        return ('Did not find user in database. You have entered an incorrect URL address.')
+    #check if this user is really a conductor and actually requested a conductorpage for a specific period
+    if thisuser.isconductor == 1 and periodid is not None:
+        conductorpage = True
+        thisperiod = session.query(period).filter(period.periodid == periodid).first()
+    else:
+        conductorpage = False
+        thisperiod = None
+    today = datetime.datetime.combine(datetime.date.today(), datetime.time.min) #get today's date
+    now = datetime.datetime.now() #get the time now
+    #if this user isn't a conductor and/or they didn't request the conductor page and they've already requested groups today, deny them.
+    if conductorpage == False:
+        alreadyrequestedcount = session.query(group).filter(group.requesteduserid == thisuser.userid, group.requesttime >= today).count()
+        log2('User has requested %s sessions today, and the limit is %s' % (alreadyrequestedcount, config.root.CampDetails['DailyGroupRequestLimit']))
+        if int(alreadyrequestedcount) >= int(config.root.CampDetails['DailyGroupRequestLimit']):
+            session.close()
+            return ('You have already requested the maximum number of groups you can request in a single day. Please come back tomorrow!')
+        
+    #The below runs when a user visits the grouprequest page    
     if request.method == 'GET':
-        session = Session()
-        #gets the data associated with this user
-        thisuser = session.query(user).filter(user.userid == userid).first()
-        if thisuser is None:
-            return ('Did not find user in database. You have entered an incorrect URL address.')
-        today = datetime.datetime.combine(datetime.date.today(), datetime.time.min) #get today's date
-        alreadyrequestedcheck = session.query(group).filter(group.requesteduserid == thisuser.userid, group.requesttime >= today).all()
-        if len(alreadyrequestedcheck) >= config.root.CampDetails['DailyGroupRequestLimit']:
-            return ('You have already requested %s, which is the maximum number of groups you can request in a single day. Please come back\
-                tomorrow!' % len(alreadyrequestedcheck))
-        #find the instruments this user plays
-        thisuserinstruments = session.query(instrument).filter(instrument.userid == userid).all()
-        thisuserinstruments_serialized = [i.serialize for i in thisuserinstruments]
-        log2(thisuserinstruments_serialized)
-        #find all group templates and serialize them to prepare to inject into the javascript
-        grouptemplates = session.query(grouptemplate).filter(grouptemplate.size == 'S').all()
-        grouptemplates_serialized = [i.serialize for i in grouptemplates]
-        log2(grouptemplates_serialized)
-        #get the list of instruments from the config file
-        instrumentlist = config.root.CampDetails['Instruments'].split(",")
-        levels = config.root.CampDetails['Levels'].split(",")
-        #find all the instruments that everyone plays and serialize them to prepare to inject into the javascript
-        playersdump = session.query(user.userid,user.firstname,user.lastname,instrument.instrumentname,instrument.grade,instrument.isprimary).\
-            join(instrument).filter(user.userid != thisuser.userid).all()
+        
+        if conductorpage == True:
+            #UNTESTED - finds all players who are playing in this period. It should find all other players.
+            playersPlayingInPeriod = session.query(user.userid).join(instrument).join(groupassignment).join(group).filter(group.periodid == periodid)
+            playersdump = session.query(user.userid,user.firstname,user.lastname,instrument.instrumentname,instrument.grade,instrument.isprimary).\
+                join(instrument).filter(~user.userid.in_(playersPlayingInPeriod))
+
+        else:
+            #find all the instruments that everyone plays and serialize them to prepare to inject into the javascript
+            playersdump = session.query(user.userid,user.firstname,user.lastname,instrument.instrumentname,instrument.grade,instrument.isprimary).\
+                join(instrument).filter(user.userid != thisuser.userid).all()
         playersdump_serialized = []
         for p in playersdump:
             playersdump_serialized.append({'userid': p.userid, 'firstname': p.firstname, 'lastname': p.lastname,
                                             'instrumentname': p.instrumentname, 'grade': p.grade, 'isprimary': p.isprimary})
         log2('Players dump is: %s' % playersdump)
+        #find the instruments this user plays
+        thisuserinstruments = session.query(instrument).filter(instrument.userid == userid).all()
+        thisuserinstruments_serialized = [i.serialize for i in thisuserinstruments]
+        log2(thisuserinstruments_serialized)
+        #get the list of instruments from the config file
+        instrumentlist = config.root.CampDetails['Instruments'].split(",")
+        levels = config.root.CampDetails['Levels'].split(",")
+        #find all group templates and serialize them to prepare to inject into the javascript
+        grouptemplates = session.query(grouptemplate).filter(grouptemplate.size == 'S').all()
+        grouptemplates_serialized = [i.serialize for i in grouptemplates]
+        log2(grouptemplates_serialized)
         session.close()
         return render_template('grouprequest.html', \
                             user=thisuser, \
@@ -278,15 +311,17 @@ def grouprequestpage(userid):
                             instrumentlist=instrumentlist, \
                             levels=levels, \
                             playersdump_serialized=playersdump_serialized, \
+                            conductorpage=conductorpage, \
+                            thisperiod=thisperiod
                             )
     
-    #Mostly finished. handles the POST by the group request page. It creates a group object with the configuraiton selected by the user, and
-    #creates groupassignments for all players they selected (and the user themselves)
+    #The below runs when a user presses "Submit" on the grouprequest page. It creates a group object with the configuraiton selected by 
+    #the user, and creates groupassignments for all players they selected (and the user themselves)
     if request.method == 'POST':
         content = request.json
         session = Session()
         log2('Grouprequest received. Whole content of JSON returned is: %s' % content)
-        grouprequest = group(music = content['music'], minimumlevel = content['minimumlevel'], ismusical = 1, requesteduserid = userid, requesttime = datetime.datetime.now())
+        grouprequest = group(music = content['music'], minimumlevel = content['minimumlevel'], ismusical = 1, requesteduserid = userid, requesttime = now)
         for p in content['players']:
             log2('Performing action for instrument %s' % p['instrumentname'])
             currentinstrumentcount = getattr(grouprequest, p['instrumentname'])
@@ -294,6 +329,7 @@ def grouprequestpage(userid):
                 setattr(grouprequest, p['instrumentname'], 1)
             else:
                 setattr(grouprequest, p['instrumentname'], (currentinstrumentcount + 1))
+        grouprequest.groupname = getgroupname(grouprequest)
         session.add(grouprequest)
         for p in content['players']:
             log2('Performing action for player with id %s' % p['playerid'])
@@ -307,6 +343,36 @@ def grouprequestpage(userid):
         session.commit()
         session.close()
         return 'Your group request has been successfully created. When everyone in your group is avaliable, it will be scheduled to run.'
+
+@app.route('/user/<userid>/grouprequest/conductor/<periodid>/')
+def conductorgrouprequestpage(userid,periodid):
+    session = Session()
+    #gets the data associated with this user
+    thisuser = session.query(user).filter(user.userid == userid).first()
+    if thisuser is None:
+        return ('Did not find user in database. You have entered an incorrect URL address.')
+    if thisuser.isconductor != 1:
+        return ('You are not a conductor and cannot visit this page.')
+    return grouprequestpage(userid,periodid)
+
+#This page is currently a placehoder for the large group instrumentation page, where conductors can choose instrumentation for their groups.
+@app.route('/user/<userid>/largegroupinstrumentation/')
+def largegroupinstrumentation(userid,periodid):
+    session = Session()
+    #gets the data associated with this user
+    thisuser = session.query(user).filter(user.userid == userid).first()
+    session.close()
+    return 'nothing'
+
+#This page is currently a placehoder for the announcement editor page. An "announcer" user can edit it and everyone else will see the
+#announcement on their dashboards.
+@app.route('/user/<userid>/announcement/')
+def announcementpage(userid):
+    session = Session()
+    #gets the data associated with this user
+    thisuser = session.query(user).filter(user.userid == userid).first()
+    session.close()
+    return 'nothing'
 
 #this page is the full report for any given period
 @app.route('/user/<userid>/period/<periodid>/')
@@ -335,11 +401,6 @@ def godpage(password):
         return 'Wrong password'
     else:
         session = Session()
-        #thisuser = session.query(user).filter(user.userid == userid).first()    
-        #if thisuser is None:
-        #    session.close()
-        #    return ('Did not find user in database. You have entered an incorrect URL address.')
-        #if thisuser.isadmin == 1:
         users = session.query(user).all()
         session.close()
         return render_template('godpage.html', \
@@ -347,9 +408,6 @@ def godpage(password):
                                 users=users, \
                                 campname=config.root.CampDetails['Name'], \
                                 )
-        #else:
-        #    session.close()
-        #    return ('You do not have permission to view this page')
 
 #the below creates a new user. The idea for this is that you could concatenate a string up in Excel with your user's details and click 
 #on all the links to create them.

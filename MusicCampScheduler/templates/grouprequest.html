@@ -210,33 +210,57 @@
 </head>
 
 <body>
+    {% if conductorpage %}
+    <h1>Conductor: Group Creation</h1>
+    <p>Creating a group for {{ thisperiod.periodname }} on {{ thisperiod.starttime.strftime('%A, %Y-%m-%d') }} at {{ thisperiod.starttime.strftime('%H:%M') }} - {{ thisperiod.endtime.strftime('%H:%M') }}</p>
+    {% else %}
     <h1>Request a Group</h1>
+    {% endif %}
     <a href="/user/{{ user.userid }}/">Back to dashboard</a>
-    <p>Use this page to request a group. You can request a group of up to {{ playerlimit }} people. Only the 
-    instrumentation is required, all other fields are optional and will be autofilled if left blank.</p>
-    <p>For example, if you want to play in a wind quintet, but don't care who you play with, just select the instrumentation
-    for a wind quintet (or use the template), ensure you're playing the instrument you want to play, then click "Submit", 
-    leaving all other player names empty. You'll be matched up with other players automatically!</p>
-    Optional: Select a group template to autofill the page
-    <select id="group_template_dropdown">
-        <option value=""></option>
-        {% for g in grouptemplates %}
-        <option value="{{ g.grouptemplatename }}">{{ g.grouptemplatename }}</option>
-        {% endfor %}
-    </select>
-    <button id="apply_template">Apply</button>
-    <br />
-    Optional: What music will be played?<input type="text" id="textbox_music">
-    <br />
-    Minimum level of auto-selected players in this group: 
+    
+    {% if conductorpage %}
+        <p>
+            This is a conductor group creation page. With great power comes great responsibility. Any group creation you make
+            here is instantly in the system, with no further approval. This is intended to be for either allocation of babysitters 
+            or other jobs, or other special groups. This is not intended to be where you request large groups, visit the 
+            <a href="/user/{{ user.userid }}/largegroupinstrumentation/">Large Group Instrumentation Page</a> instead. 
+            You cannot leave any blank fields on the table on this page.
+        </p>
+    {% endif %}
+
+    {% if not conductorpage %}
+    <p>
+        Use this page to request a group. You can request a group of up to {{ playerlimit }} people. Only the
+        instrumentation is required, all other fields are optional and will be autofilled if left blank.
+    </p>
+    <p>
+        For example, if you want to play in a wind quintet, but don't care who you play with, just select the instrumentation
+        for a wind quintet (or use the template), ensure you're playing the instrument you want to play, then click "Submit",
+        leaving all other player names empty. You'll be matched up with other players automatically!
+    </p>
+    {% endif %}
+    <p>
+        Optional: Select a group template to autofill the page
+        <select id="group_template_dropdown">
+            <option value=""></option>
+            {% for g in grouptemplates %}
+            <option value="{{ g.grouptemplatename }}">{{ g.grouptemplatename }}</option>
+            {% endfor %}
+        </select>
+        <button id="apply_template">Apply</button>
+    </p>
+    <p>Optional: What music will be played?<input type="text" id="textbox_music"></p>
+    {% if not conductorpage %}
+    <p>
+        Minimum level of auto-selected players in this group:
         <select id="level_dropdown">
             <option value=""></option>
             {% for l in levels %}
             <option value="{{ l }}">{{ l }}</option>
             {% endfor %}
         </select>
-    <br />
-    <br />
+    </p>
+    {% endif %}
     <table id="playersTable">
         <!--Table Headers-->
         <tr>
@@ -275,7 +299,7 @@
         </tr>
     </table>
     <button id="add_player">Add a Player</button>
-    
+
     <br />
     <br />
     <button id="submit_button">Submit</button>

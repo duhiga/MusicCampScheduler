@@ -218,7 +218,7 @@ def groupdetails(userid,groupid):
     thisuser = session.query(user).filter(user.userid == userid).first()
     if thisuser is None:
         return ('Did not find user in database. You have entered an incorrect URL address.')
-    thisgroup = session.query(group.groupid, group.groupname, group.periodid, location.locationname).join(location).filter(group.groupid == groupid).first()
+    thisgroup = session.query(group.groupid, group.groupname, group.periodid, location.locationname).outerjoin(location).filter(group.groupid == groupid).first()
     if thisgroup is None:
         return ('Did not find group in database. You have entered an incorrect URL address.')
     thisperiod = session.query(period).filter(period.periodid == thisgroup.periodid).first()
@@ -237,7 +237,6 @@ def groupdetails(userid,groupid):
                         period=thisperiod, \
                         campname=config.root.CampDetails['Name'], \
                         group=thisgroup, \
-                        location=location, \
                         players=players, \
                         #substitutes=substitutes, \
                         user=thisuser \
@@ -257,6 +256,8 @@ def grouprequestpage(userid,periodid=None):
     if thisuser.isconductor == 1 and periodid is not None:
         conductorpage = True
         thisperiod = session.query(period).filter(period.periodid == periodid).first()
+        if thisperiod is None:
+            return ('Did not find period in database. Something has gone wrong.')
     else:
         conductorpage = False
         thisperiod = None
@@ -321,7 +322,9 @@ def grouprequestpage(userid,periodid=None):
         content = request.json
         session = Session()
         log2('Grouprequest received. Whole content of JSON returned is: %s' % content)
-        grouprequest = group(music = content['music'], minimumlevel = content['minimumlevel'], ismusical = 1, requesteduserid = userid, requesttime = now)
+        grouprequest = group(music = content['music'], ismusical = 1, requesteduserid = userid)
+        if conductorpage == False:
+            grouprequest.requesttime = now
         for p in content['players']:
             log2('Performing action for instrument %s' % p['instrumentname'])
             currentinstrumentcount = getattr(grouprequest, p['instrumentname'])
@@ -330,6 +333,8 @@ def grouprequestpage(userid,periodid=None):
             else:
                 setattr(grouprequest, p['instrumentname'], (currentinstrumentcount + 1))
         grouprequest.groupname = getgroupname(grouprequest)
+        if conductorpage == True:
+            grouprequest.periodid = thisperiod.periodid
         session.add(grouprequest)
         for p in content['players']:
             log2('Performing action for player with id %s' % p['playerid'])
@@ -339,12 +344,19 @@ def grouprequestpage(userid,periodid=None):
                     playergroupassignment = groupassignment(userid = playeruser.userid, groupid = grouprequest.groupid, instrument = p['instrumentname'])
                     session.add(playergroupassignment)
                 else:
-                    return ('Could not find one of your selected players in the database. Please refresh the page and try again.')
+                    url = ('/user/' + str(thisuser.userid) + '/')
+                    session.close()
+                    return jsonify(message = 'Could not find one of your selected players in the database. Please refresh the page and try again.', url = url)
         session.commit()
+        url = ('/user/' + str(thisuser.userid) + '/group/' + str(grouprequest.groupid) + '/')
+        log2('Sending user to URL: %s' % url)
         session.close()
-        return 'Your group request has been successfully created. When everyone in your group is avaliable, it will be scheduled to run.'
+        if conductorpage == True:
+            return jsonify(message = 'Your group has been created and confirmed', url = url)
+        else:
+            return jsonify(message = 'Your group request has been successfully created. When everyone in your group is avaliable, it will be scheduled to run.', url = url)
 
-@app.route('/user/<userid>/grouprequest/conductor/<periodid>/')
+@app.route('/user/<userid>/grouprequest/conductor/<periodid>/', methods=['GET', 'POST'])
 def conductorgrouprequestpage(userid,periodid):
     session = Session()
     #gets the data associated with this user
@@ -391,6 +403,31 @@ def periodpage(userid,periodid):
                             user=thisuser, \
                             period=thisperiod \
                             )
+
+
+
+
+
+
+
+
+
+
+#ADMIN PAGES ARE BELOW
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #Shows the godpage to the user. Godpage contains all user names and links to all their dashboards. Right now uses a shared password,
 #but would be better if tied to a user's admin account. However, there's no easy way to currently see what the userid of the admin is

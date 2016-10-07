@@ -13,16 +13,34 @@
             <td>{{ group.groupname }}</td>
         </tr>
         <tr>
-            <td>Date</td>
-            <td>{{ period.starttime.strftime('%Y-%m-%d') }}</td>
+            <td>Date</td>            
+            <td>
+                {% if period == None %}
+                    Not yet allocated
+                {% else %}
+                    {{ period.starttime.strftime('%Y-%m-%d') }}
+                {% endif %}
+            </td>
         </tr>
         <tr>
             <td>Start Time</td>
-            <td>{{ period.starttime.strftime('%H:%M') }}</td>
+            <td>
+                {% if period == None %}
+                    Not yet allocated
+                {% else %}
+                    {{ period.starttime.strftime('%H:%M') }}
+                {% endif %}
+            </td>
         </tr>
         <tr>
             <td>End Time</td>
-            <td>{{ period.endtime.strftime('%H:%M') }}</td>
+            <td>
+                {% if period == None %}
+                    Not yet allocated
+                {% else %}
+                    {{ period.endtime.strftime('%H:%M') }}
+                {% endif %}
+            </td>
         </tr>
         <tr>
             <td>Location</td>

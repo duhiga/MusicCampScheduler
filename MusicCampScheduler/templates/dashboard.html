@@ -102,12 +102,7 @@
         <tr>
             <!--Time Column-->
             <td>
-                {% if p.ismusical == 1 %}
                 <a href="/user/{{ user.userid }}/period/{{ p.periodid }}/">{{ p.starttime.strftime('%H:%M') }} - {{ p.endtime.strftime('%H:%M') }}</a>
-
-                {% else %}
-                {{ p.starttime.strftime('%H:%M') }} - {{ p.endtime.strftime('%H:%M') }}
-                {% endif %}
             </td>
             <!--Group Name Column-->
             <td>
@@ -129,11 +124,11 @@
                 <td>
                 {% if not p.groupname or p.iseveryone %}
                     <button id={{ p.periodid }} data-periodname="{{ p.periodname }}" class="absent_request_button">Mark me as absent</button>
-                    {% else %}
-                        {% if p.groupname == "absent" %}
+                {% else %}
+                    {% if p.groupname == "absent" %}
                         <button id={{ p.periodid }} data-periodname="{{ p.periodname }}" class="absent_cancel_button">Mark me as present</button>
-                        {% else %}
-                            Allocated
+                    {% else %}
+                        Already allocated
                     {% endif %}
                 {% endif %}
                 </td>

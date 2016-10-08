@@ -185,6 +185,7 @@ Base.metadata.create_all(engine)
 
 #Database Build section. The below configures periods and groups depending on how the config.xml is configured.
 if config.root.Application['DBBuildRequired'] == 'Y':
+    
     #Grab the camp start and end times from the config file
     CampStartTime = datetime.datetime.strptime(config.root.CampDetails['StartTime'], '%Y-%m-%d %H:%M')
     CampEndTime = datetime.datetime.strptime(config.root.CampDetails['EndTime'], '%Y-%m-%d %H:%M')

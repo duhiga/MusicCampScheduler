@@ -35,6 +35,7 @@
     <Content Include="config.xml.example" />
     <Content Include="requirements.txt" />
     <Content Include="static\css\style.css" />
+    <Content Include="js\jquery.tablesorter.js" />
     <Content Include="templates\absentrequest.html" />
     <Content Include="templates\dashboard.html" />
     <Content Include="templates\group.html" />
@@ -42,8 +43,10 @@
     <Content Include="templates\index.html" />
     <Content Include="templates\period.html" />
     <Content Include="templates\godpage.html" />
+    <Content Include="templates\publiceventcreation.html" />
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="js\" />
     <Folder Include="static\" />
     <Folder Include="static\css\" />
     <Folder Include="templates\" />

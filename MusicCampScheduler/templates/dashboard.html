@@ -5,8 +5,6 @@
     <meta name="viewport" content="initial-scale=1">
     <title>{{ campname }} Dashboard</title>
 
-
-
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"> </script>
     <script>
         $(document).ready(function () {
@@ -51,11 +49,7 @@
             });
 
         });
-
     </script>
-
-
-
 
 </head>
 <body>
@@ -94,6 +88,9 @@
             {% endif %}
             {% if user.isconductor == 1 %}
             <th>Conductor</th>
+            {% endif %}
+            {% if user.isadmin == 1 %}
+            <th>Admin</th>
             {% endif %}
             <th>Instrument</th>
             <th>Location</th>
@@ -137,6 +134,12 @@
             {% if user.isconductor == 1 %}
             <td>
                 <a href="/user/{{ user.userid }}/grouprequest/conductor/{{ p.periodid }}/">Create a group here</a>
+            </td>
+            {% endif %}
+            <!--Admin Column - only appears if the user is an admin-->
+            {% if user.isadmin == 1 %}
+            <td>
+                <a href="/user/{{ user.userid }}/publicevent/{{ p.periodid }}/">Create a public event here</a>
             </td>
             {% endif %}
             <td>{{ p.instrument }}</td>

@@ -4,28 +4,75 @@
 <head>
     <link rel="stylesheet" href='/static/css/style.css' />
     <title>{{ campname }} Period Display</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"> </script>
+    <script src="/js/jquery.tablesorter.js"> </script>
+    <script>
+        {% for i in instrumentlist %}
+        console.log('Instrument name: {{ i }}, Loop index: {{ loop.index}})')
+        {% endfor %}
+        // add parser through the tablesorter addParser method 
+        $.tablesorter.addParser({
+            // set a unique id 
+            id: 'scoreorder',
+            is: function (s) {
+                // return false so this parser is not auto detected 
+                return false;
+            },
+            format: function (s) {
+                // format your data for normalization 
+                return s.toLowerCase(){% for i in instrumentlist %}.replace(/{{ i }}/, {{ loop.index }}){% endfor %};
+            },
+            // set type, either numeric or text 
+            type: 'numeric'
+        });
+
+        $(function () {
+            $("#periodtable").tablesorter({
+                sortList: [3,1],
+                headers: {
+                    3: {
+                        sorter: 'scoreorder',
+                        emptyto: 'top'
+                    }
+                }
+            });
+        });
+    </script>
 </head>
 <body>
     <h1>Listing for {{ period.periodname }} on {{ period.starttime.strftime('%Y-%m-%d') }} starting {{ period.starttime.strftime('%H:%M') }} and ending {{ period.endtime.strftime('%H:%M') }}</h1>
     <a href="/user/{{ user.userid }}/">Back to dashboard</a>
     <br>
-    <table style="width:100%">
-        <tr>
-            <th>First Name</th>
-            <th>Last Name</th>
-            <th>Instrument</th>
-            <th>Group Name</th>
-            <th>Location</th>
-        </tr>
-        {% for p in players %}
-        <tr>
-            <td>{{ p.firstname }}</td>
-            <td>{{ p.lastname }}</td>
-            <td>{{ p.instrument }}</td>
-            <td>{{ p.groupname }}</td>
-            <td>{{ p.locationname }}</td>
-        </tr>
-        {% endfor %}
+    <table style="width:100%" id="periodtable">
+        <thead>
+            <tr>
+                <th>First Name</th>
+                <th>Last Name</th>
+                <th>Instrument</th>
+                <th>Group Name</th>
+                <th>Location</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in players %}
+            <tr>
+                <td>{{ p.firstname }}</td>
+                <td>{{ p.lastname }}</td>
+                <td>{{ p.instrument }}</td>
+                <td>{{ p.groupname }}</td>
+                <td>{{ p.locationname }}</td>
+            </tr>
+            {% endfor %}
+            {% for p in nonplayers %}
+            <tr>
+                <td>{{ p.firstname }}</td>
+                <td>{{ p.lastname }}</td>
+                <td>{{ p.instrument }}</td>
+                <td>{{ p.groupname }}</td>
+                <td>{{ p.locationname }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
     </table>
     <a href="/user/{{ user.userid }}/">Back to dashboard</a>
 </body>

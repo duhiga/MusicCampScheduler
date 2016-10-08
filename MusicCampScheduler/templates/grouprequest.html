@@ -66,14 +66,11 @@
                 // add values to list 
                 var listItems = "<option value='null'></option>";
                 for (var i = 0; i < players.length; i++) {
-                    console.log('comparing ' + players[i].instrumentname + ' to ' + selectedinstrument)
                     if (players[i].instrumentname == selectedinstrument) {
                         listItems += "<option value='" + players[i].userid + "'>" + players[i].firstname + " " + players[i].lastname + "</option>";
-                        console.log('Adding to list: ' + players[i].instrumentname + " " + players[i].firstname)
                     };
                 };
                 console.log(listItems)
-                console.log('Setting ' + this.id + ' to ' + selectedinstrument)
                 $("#player" + $(this).data("pairing")).html(listItems);
             });
 
@@ -92,8 +89,8 @@
                 }                
             });
 
-            //run when a user clicks the "apply" button after selecting a template.
-            $("#apply_template").click(function () {
+            //run when a user changes the select template dropdown
+            $(document).on("change", '#group_template_dropdown', function () {
                 //get the user selected template and format it so we can iterate over it later
                 var grep_template = $.grep(grouptemplates, function (elt) {
                     return elt.grouptemplatename === $(group_template_dropdown).val();
@@ -306,7 +303,6 @@
             <option value="{{ g.grouptemplatename }}">{{ g.grouptemplatename }}</option>
             {% endfor %}
         </select>
-        <button id="apply_template">Apply</button>
     </p>
     <p>Optional: What music will be played?<input type="text" id="textbox_music"></p>
     <table id="playersTable">

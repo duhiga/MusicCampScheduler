@@ -9,7 +9,7 @@ Before use, you need to open up config.xml and point it to a SQL database, and c
 
 """
 
-from flask import Flask, render_template, redirect, jsonify, make_response, json, request, url_for
+from flask import Flask, render_template, redirect, jsonify, make_response, json, request, url_for, send_from_directory
 from collections import namedtuple
 import sys
 import types
@@ -48,31 +48,39 @@ def playcount(session,userid):
         filter(user.userid == userid, group.ismusical == 1, period.endtime <= datetime.datetime.now()).count()
     return playcount
 
-#gets a list of periods corresponding to the requested userid and date
+#gets a list of periods corresponding to the requested userid and date, formatting it in a nice way for the user dashboard
 def useridanddatetoperiods(session,userid,date):
     nextday = date + datetime.timedelta(days=1)
-    #---------------   
-    #the below two queries and 1 loop could be optimized with a single query, but I don't know exactly how to do embedded queries in sqlalchemy  
-    #get this user's assigned periods today
     periods = []
+    #for each period in the requested day
     for p in session.query(period).filter(period.starttime > date, period.endtime < nextday).all():
+        #try to find a group assignment for the user
+        log2('Attempting to find group assignment for user for period %s with id %s' % (p.periodname, p.periodid))
         g = session.query(group.groupname, period.starttime, period.endtime, location.locationname, group.groupid, group.ismusical, \
                             group.iseveryone, period.periodid, period.periodname, groupassignment.instrument).\
-                            join(period).join(groupassignment).join(user).outerjoin(instrument).outerjoin(location).filter(user.userid == userid,group.periodid == p.periodid).first()
-        if g == None:
-            periods.append(p)
-        if g != None:
+                            join(period).join(groupassignment).join(user).join(instrument).join(location).\
+                            filter(user.userid == userid, group.periodid == p.periodid).first()
+        if g is not None:
+            log2('Found group assignment named %s' % g.groupname)
             periods.append(g)
-
+        e = None
+        if g is None:
+            log2('Failed')
+            #try to find an iseveryone group at the time of this period
+            log2('Attempting to find an "iseveryone" group for period %s with Id %s' % (p.periodname, p.periodname))
+            e = session.query(group.groupname, period.starttime, period.endtime, location.locationname, group.groupid, group.ismusical, \
+                            group.iseveryone, period.periodid, period.periodname).\
+                            join(period).join(location).\
+                            filter(group.iseveryone == 1, group.periodid == p.periodid).first()
+        if e is not None:
+            log2('Found an "iseveryone" group named %s, from %s to %s' % (e.groupname, e.starttime, e.endtime))
+            periods.append(e)
+        if e is None and g is None:
+            #if there is no assignrment, and no "iseveryone" group, then just add the period detalis
+            log2('Failed')
+            log2("Couldn't find a group during period %s. Adding the period details." % p.periodname)
+            periods.append(p)
     return periods
-
-#looks up the whole list of players in a given periodID
-def periodidtoplayerlist(session, periodid):
-    playerlist = session.query(user.firstname, user.lastname, period.starttime, period.endtime, user.userid, groupassignment.instrument, group.groupname, location.locationname).\
-                              outerjoin(groupassignment).outerjoin(group).outerjoin(period).outerjoin(location).\
-                              filter(periodid == periodid).order_by(group.groupname,groupassignment.instrument)    
-    log2(str(playerlist))
-    return playerlist
 
 def getgroupname(g):
     instrumentlist = config.root.CampDetails['Instruments'].split(",")
@@ -109,8 +117,8 @@ def getgroupname(g):
 def rootpage():
     return render_template('index.html')
 
-#upon the URL request in the form domain/user/<userid> the user receives their dashboard.  This updates every day with the groups they 
-#are playing in.
+#upon the URL request in the form domain/user/<userid> the user receives their dashboard. The dashboard contains the groups they 
+#are playing in. Optionally, this page presents their dashboard in the future or the past, and gives them further options.
 @app.route('/user/<userid>/')
 def dashboard(userid,inputdate='n'):
     log1('dashboard fetch requested for user %s' % userid)
@@ -134,11 +142,12 @@ def dashboard(userid,inputdate='n'):
     #if today is after the start of camp, use today as the display date
     else:
         displaydate = today
-        
+    
     previousday = displaydate + datetime.timedelta(days=-1)
     nextday = displaydate + datetime.timedelta(days=1)
     periods = useridanddatetoperiods(session,userid,displaydate)
     session.close()
+
     return render_template('dashboard.html', \
                         user=thisuser, \
                         count=count, \
@@ -226,26 +235,33 @@ def groupdetails(userid,groupid):
         
     #gets the list of players playing in the given group
     players = session.query(user.firstname, user.lastname, groupassignment.instrument).join(groupassignment).join(group).\
-                            filter(group.groupid == groupid).order_by(groupassignment.instrument).all()
-    """
-    #VERY unfinished. Need data to test this to continue.
-    everyoneplayingquery = session.query(user.userid).join(groupassignment).join(group).join(period).filter(period.periodid == thisperiod.periodid)
-    everyoneNOTplayingquery = session.query(user.userid).filter(~user.in_(everyoneplayingquery))
-    """
-        
+                            filter(group.groupid == groupid).order_by(groupassignment.instrument)
+    
+    #This block finds the substitutes for this group over several queries
+    #get the list of instruments played in this group and removes duplicates to be used as a subquery later
+    instruments_in_group_query = session.query(groupassignment.instrument).join(group).filter(group.groupid == groupid).group_by(groupassignment.instrument)
+    #get the userids of everyone that's already playing in something this period
+    everyone_playing_in_periodquery = session.query(user.userid).join(groupassignment).join(group).join(period).filter(period.periodid == thisperiod.periodid)
+    #combine the last two queries with another query, finding everyone that both plays an instrument that's found in this
+    #group AND isn't in the list of users that are already playing in this period.
+    substitutes = session.query(instrument.instrumentname, user.firstname, user.lastname).join(user).\
+        filter(~user.userid.in_(everyone_playing_in_periodquery)).\
+        filter(instrument.instrumentname.in_(instruments_in_group_query)).\
+        order_by(instrument.instrumentname).all()
+
     session.close()
     return render_template('group.html', \
                         period=thisperiod, \
                         campname=config.root.CampDetails['Name'], \
                         group=thisgroup, \
                         players=players, \
-                        #substitutes=substitutes, \
+                        substitutes=substitutes, \
                         user=thisuser \
                         )
 
-#UNFINISHED - need to test the "UNTESTED" query, and handle the post properly (currently the post doesn't support conductors at all)
-#Handlnes the group request page. If a user visits the page, it gives them a form to create a new group request. Pressing submit sends a post
-#containing configuration data. Their group request is queued until an adminsitrator approves it and assigns it to a period.
+#Handles the group request page. If a user visits the page, it gives them a form to create a new group request. Pressing submit 
+#sends a post containing configuration data. Their group request is queued until an adminsitrator approves it and assigns it to 
+#a period.
 @app.route('/user/<userid>/grouprequest/', methods=['GET', 'POST'])
 def grouprequestpage(userid,periodid=None):
     session = Session()
@@ -276,7 +292,7 @@ def grouprequestpage(userid,periodid=None):
     if request.method == 'GET':
         
         if conductorpage == True:
-            #UNTESTED - Finds all players who aren't already playing in this period
+            #Finds all players who aren't already playing in this period
             playersPlayingInPeriod = session.query(user.userid).join(groupassignment).join(group).filter(group.periodid == periodid)
             playersdump = session.query(user.userid,user.firstname,user.lastname,instrument.instrumentname,instrument.grade,instrument.isprimary).\
                 join(instrument).filter(~user.userid.in_(playersPlayingInPeriod)).all()
@@ -294,9 +310,10 @@ def grouprequestpage(userid,periodid=None):
         thisuserinstruments_serialized = [i.serialize for i in thisuserinstruments]
         log2(thisuserinstruments_serialized)
 
-        #if this is the conductorpage, the user will need a list of the locations at camp
+        #if this is the conductorpage, the user will need a list of the locations that are not being used in the period selected
         if conductorpage == True:
-            locations = session.query(location).all()
+            locations_used_query = session.query(location.locationid).join(group).join(period).filter(period.periodid == periodid)
+            locations = session.query(location).filter(~location.locationid.in_(locations_used_query)).all()
         else: 
             locations = None
 
@@ -432,6 +449,42 @@ def announcementpage(userid):
     session.close()
     return 'nothing'
 
+#This page is for creating a public event. It comes up as an option for adminsitrators on their dashboards
+@app.route('/user/<userid>/publicevent/<periodid>/', methods=['GET', 'POST'])
+def publiceventpage(userid,periodid):
+    session = Session()
+    #gets the data associated with this user
+    thisuser = session.query(user).filter(user.userid == userid).first()
+    if thisuser.isadmin != 1:
+        session.close()
+        return 'You do not have permission to view this page'
+    else:
+        if request.method == 'GET':
+            #get the locations that aren't being used yet for this period
+            locations_used_query = session.query(location.locationid).join(group).join(period).filter(period.periodid == periodid)
+            locations = session.query(location).filter(~location.locationid.in_(locations_used_query)).all()
+            #get the period details to display to the user on the page
+            thisperiod = session.query(period).filter(period.periodid == periodid).first()
+            session.close()            
+            return render_template('publiceventcreation.html', \
+                                    locations=locations, \
+                                    thisuser=thisuser, \
+                                    thisperiod=thisperiod, \
+                                    )
+        
+        if request.method == 'POST':
+            event = group(periodid = periodid, iseveryone = 1, groupname =  request.json['name'], requesteduserid = thisuser.userid,\
+                ismusical = 0, locationid = request.json['location'])
+            session.add(event)
+            session.commit()
+            url = ('/user/' + str(thisuser.userid) + '/group/' + str(event.groupid) + '/')
+            session.close()
+
+            return jsonify(message = 'Event Confirmed', url = url)
+
+    
+        
+
 #this page is the full report for any given period
 @app.route('/user/<userid>/period/<periodid>/')
 def periodpage(userid,periodid):
@@ -440,14 +493,26 @@ def periodpage(userid,periodid):
     thisuser = session.query(user).filter(user.userid == userid).first()
     if thisuser is None:
         return ('Did not find user in database. You have entered an incorrect URL address.')
-    players = periodidtoplayerlist(session, periodid)
+    #start with the players that are playing in groups in the period
+    players = session.query(user.userid, user.firstname, user.lastname, period.starttime, period.endtime, group.groupname, groupassignment.instrument, location.locationname).\
+        join(groupassignment).join(group).join(period).join(location).\
+        filter(group.periodid == periodid).order_by(group.groupname,groupassignment.instrument).all()
+    #grab just the userids of those players to be used in the next query
+    players_in_groups_query = session.query(user.userid).\
+        join(groupassignment).join(group).join(period).\
+        filter(group.periodid == periodid)
+    #find all other players to be displayed to the user
+    nonplayers = (session.query(user.userid, user.firstname, user.lastname).filter(~user.userid.in_(players_in_groups_query)).all())
     thisperiod = session.query(period).filter(period.periodid == periodid).first()
     session.close()
+    instrumentlist = config.root.CampDetails['Instruments'].split(",")
     return render_template('period.html', \
                             players=players, \
+                            nonplayers=nonplayers, \
                             campname=config.root.CampDetails['Name'], \
                             user=thisuser, \
-                            period=thisperiod \
+                            period=thisperiod, \
+                            instrumentlist=instrumentlist, \
                             )
 
 
@@ -543,6 +608,10 @@ def new_instrument(userid,instrumentname,grade,isprimary):
         return ('intsrument link created for user with id %s' % thisuser.userid)
         session.close()
     return ('something went wrong. you should never get this message. Inside new_instrument method with no caught errors.')
+
+@app.route('/js/<path:path>')
+def send_js(path):
+    return send_from_directory('js', path)
 
 if __name__ == '__main__':
     app.run(debug=True, \

@@ -1,0 +1,67 @@
+<meta name="viewport" content="initial-scale=1">
+<html>
+<head>    
+    <link rel="stylesheet" href='/static/css/style.css' />
+    <title>{{ campname }} Create Public Event</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"> </script>
+    <script>
+
+        /* this script handles creating public events. */
+        
+        $(document).ready(function () {
+
+            //run when user clicks the submit button
+            $("#submit_button").click(function () {
+                console.log('Submit button pressed');
+                if ($("#name_textbox").val() == "") {
+                    confirm('The event name cannot be empty.');
+                    return false;
+                }
+                else {
+                    request = {};
+                    request.name = $("#name_textbox").val();
+                    request.location = $("#location_dropdown").val();
+
+                    console.log('Pushing the event to the server for processing:');
+                    console.log(request);
+                    $.ajax({
+                        //make a POST AJAX query to the same web page as the user is currently visiting
+                        url: (window.location.href),
+                        type: 'POST',
+                        contentType: 'application/json;charset=UTF-8',
+                        data: JSON.stringify(request, null),
+                        success: function (data) {
+                            //upon success, the server will return a message and a URL. give the user the message and send them to the URL.
+                            console.log(data);
+                            confirm(data.message)
+                            window.location = data.url;
+                        }
+                    });
+                }
+            });
+        });
+    </script>
+</head>
+
+<body>
+    <h1>Admin: Public Event Creation</h1>
+    <p><a href="/user/{{ thisuser.userid }}/">Back to dashboard</a></p>
+    <h2>Creating a public event for {{ thisperiod.periodname }} on {{ thisperiod.starttime.strftime('%A, %Y-%m-%d') }} at {{ thisperiod.starttime.strftime('%H:%M') }} - {{ thisperiod.endtime.strftime('%H:%M') }}</h2>
+    <p>
+        This page is used to create a public event, such as a Quiz night, Drinks, Dance, etc. It appears on everyone's dashboards
+        unless they are assigned to another group. Any specific group assignment overwrites this public invitation.
+    </p>
+    <p>What is the name of the event? This will appear on all user's dashboards.<input type="text" id="name_textbox"></p>
+    <p>
+        Where will this group be held?
+        <select id="location_dropdown">
+            <option value=""></option>
+            {% for l in locations %}
+            <option value="{{ l.locationid }}">{{ l.locationname }}</option>
+            {% endfor %}
+        </select>
+    </p>
+    <p><button id="submit_button">Submit</button></p>
+    <p><a href="/user/{{ thisuser.userid }}/">Back to dashboard</a></p>
+</body>
+</html>

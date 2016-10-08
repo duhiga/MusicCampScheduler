@@ -44,7 +44,8 @@ log2('Python version: %s' % sys.version)
 
 #Looks up the amount of times a user has participated in an "ismusical" group during the camp
 def playcount(session,userid):
-    playcount = session.query(groupassignment).join(group).join(user).filter(user.userid == userid, group.ismusical == 1).count()
+    playcount = session.query(groupassignment).join(group).join(user).outerjoin(period).\
+        filter(user.userid == userid, group.ismusical == 1, period.endtime <= datetime.datetime.now()).count()
     return playcount
 
 #gets a list of periods corresponding to the requested userid and date
@@ -218,7 +219,7 @@ def groupdetails(userid,groupid):
     thisuser = session.query(user).filter(user.userid == userid).first()
     if thisuser is None:
         return ('Did not find user in database. You have entered an incorrect URL address.')
-    thisgroup = session.query(group.groupid, group.groupname, group.periodid, location.locationname).outerjoin(location).filter(group.groupid == groupid).first()
+    thisgroup = session.query(group.groupid, group.groupname, group.periodid, group.music, location.locationname).outerjoin(location).filter(group.groupid == groupid).first()
     if thisgroup is None:
         return ('Did not find group in database. You have entered an incorrect URL address.')
     thisperiod = session.query(period).filter(period.periodid == thisgroup.periodid).first()
@@ -275,11 +276,10 @@ def grouprequestpage(userid,periodid=None):
     if request.method == 'GET':
         
         if conductorpage == True:
-            #UNTESTED - finds all players who are playing in this period. It should find all other players.
-            playersPlayingInPeriod = session.query(user.userid).join(instrument).join(groupassignment).join(group).filter(group.periodid == periodid)
+            #UNTESTED - Finds all players who aren't already playing in this period
+            playersPlayingInPeriod = session.query(user.userid).join(groupassignment).join(group).filter(group.periodid == periodid)
             playersdump = session.query(user.userid,user.firstname,user.lastname,instrument.instrumentname,instrument.grade,instrument.isprimary).\
-                join(instrument).filter(~user.userid.in_(playersPlayingInPeriod))
-
+                join(instrument).filter(~user.userid.in_(playersPlayingInPeriod)).all()
         else:
             #find all the instruments that everyone plays and serialize them to prepare to inject into the javascript
             playersdump = session.query(user.userid,user.firstname,user.lastname,instrument.instrumentname,instrument.grade,instrument.isprimary).\
@@ -293,11 +293,33 @@ def grouprequestpage(userid,periodid=None):
         thisuserinstruments = session.query(instrument).filter(instrument.userid == userid).all()
         thisuserinstruments_serialized = [i.serialize for i in thisuserinstruments]
         log2(thisuserinstruments_serialized)
+
+        #if this is the conductorpage, the user will need a list of the locations at camp
+        if conductorpage == True:
+            locations = session.query(location).all()
+        else: 
+            locations = None
+
         #get the list of instruments from the config file
         instrumentlist = config.root.CampDetails['Instruments'].split(",")
         levels = config.root.CampDetails['Levels'].split(",")
         #find all group templates and serialize them to prepare to inject into the javascript
-        grouptemplates = session.query(grouptemplate).filter(grouptemplate.size == 'S').all()
+        allgrouptemplates = session.query(grouptemplate).filter(grouptemplate.size == 'S').all()
+        
+        #if we are not on the conductorpage, filter the group templates so the user only sees templates that are covered by their instruments
+        if conductorpage == False:
+            grouptemplates = []
+            for t in allgrouptemplates:
+                        found = False
+                        for i in thisuserinstruments:
+                            if getattr(t, i.instrumentname) > 0 and found == False:
+                                grouptemplates.append(t)
+                                found = True
+        #if we are on the conductorpage, show the user all the grouptemplates
+        else:
+            grouptemplates = allgrouptemplates        
+
+        #serialize the grouptemplates so the JS can read them properly
         grouptemplates_serialized = [i.serialize for i in grouptemplates]
         log2(grouptemplates_serialized)
         session.close()
@@ -313,31 +335,50 @@ def grouprequestpage(userid,periodid=None):
                             levels=levels, \
                             playersdump_serialized=playersdump_serialized, \
                             conductorpage=conductorpage, \
-                            thisperiod=thisperiod
+                            thisperiod=thisperiod, \
+                            locations=locations, \
                             )
     
     #The below runs when a user presses "Submit" on the grouprequest page. It creates a group object with the configuraiton selected by 
     #the user, and creates groupassignments for all players they selected (and the user themselves)
     if request.method == 'POST':
+        #format the packet received from the server as JSON
         content = request.json
         session = Session()
         log2('Grouprequest received. Whole content of JSON returned is: %s' % content)
+        #establish the 'grouprequest' group object. This will be built up from the JSON packet, and then added to the database
         grouprequest = group(music = content['music'], ismusical = 1, requesteduserid = userid)
+        #if the conductorpage is false, we need to add a requesttime to properly order the requests later
         if conductorpage == False:
             grouprequest.requesttime = now
+        #if the conductorpage is true, we expect to also receive a locationid from the JSON packet, so we add it to the grouprequest
+        if conductorpage == True:
+            grouprequest.locationid = content['locationid']
+        #for each player object in the players array in the JSON packet
         for p in content['players']:
             log2('Performing action for instrument %s' % p['instrumentname'])
+            #increment the instrument counter in the grouprequest object corresponding with this instrument name
             currentinstrumentcount = getattr(grouprequest, p['instrumentname'])
             if currentinstrumentcount is None:
                 setattr(grouprequest, p['instrumentname'], 1)
             else:
                 setattr(grouprequest, p['instrumentname'], (currentinstrumentcount + 1))
+        #run the getgroupname function, which logically names the group
         grouprequest.groupname = getgroupname(grouprequest)
+        #if we are on the conductorpage, instantly confirm this group (assign it to the period the user submitted)
         if conductorpage == True:
-            grouprequest.periodid = thisperiod.periodid
+            grouprequest.periodid = thisperiod.periodid     
+        #add the grouprequest to the database
         session.add(grouprequest)
+        #for each player object in the players array in the JSON packet
         for p in content['players']:
             log2('Performing action for player with id %s' % p['playerid'])
+            #if we are on the conductorpage, you cannot submit blank players. Give the user an error and take them back to their dashboard.
+            if p['playerid'] == 'null' and conductorpage == True:
+                url = ('/user/' + str(thisuser.userid) + '/')
+                session.close()
+                return jsonify(message = 'Something went wrong. You are not allowed to have null players in a conductor group request.', url = url)
+            #if the playerid is not null, we create a groupassignment for them and bind it to this group
             if p['playerid'] != 'null':
                 playeruser = session.query(user).filter(user.userid == p['playerid']).first()
                 if playeruser is not None:
@@ -347,7 +388,12 @@ def grouprequestpage(userid,periodid=None):
                     url = ('/user/' + str(thisuser.userid) + '/')
                     session.close()
                     return jsonify(message = 'Could not find one of your selected players in the database. Please refresh the page and try again.', url = url)
+            #if none of the above are satisfied - that's ok. you're allowed to submit null playernames in the user request page, these will be 
+            #allocated by the admin when the group is confirmed.
+        
+        #create the group and the groupassinments configured above in the database
         session.commit()
+        #send the URL for the group that was just created to the user, and send them to that page
         url = ('/user/' + str(thisuser.userid) + '/group/' + str(grouprequest.groupid) + '/')
         log2('Sending user to URL: %s' % url)
         session.close()

@@ -9,41 +9,35 @@
     <h1>Listing for group {{ group.groupname }}</h1>
     <table style="width:30%">
         <tr>
-            <td>Name</td>
+            <th>Name</th>
             <td>{{ group.groupname }}</td>
         </tr>
         <tr>
-            <td>Date</td>            
+            <th>Music</th>
+            <td>{{ group.music }}</td>
+        </tr>
+        <tr>
+            <th>Date</th>            
             <td>
                 {% if period == None %}
                     Not yet allocated
                 {% else %}
-                    {{ period.starttime.strftime('%Y-%m-%d') }}
+                    {{ period.starttime.strftime('%A, %Y-%m-%d') }}
                 {% endif %}
             </td>
         </tr>
         <tr>
-            <td>Start Time</td>
+            <th>Time</th>
             <td>
                 {% if period == None %}
                     Not yet allocated
                 {% else %}
-                    {{ period.starttime.strftime('%H:%M') }}
+                    {{ period.starttime.strftime('%H:%M') }} - {{ period.endtime.strftime('%H:%M') }}
                 {% endif %}
             </td>
         </tr>
         <tr>
-            <td>End Time</td>
-            <td>
-                {% if period == None %}
-                    Not yet allocated
-                {% else %}
-                    {{ period.endtime.strftime('%H:%M') }}
-                {% endif %}
-            </td>
-        </tr>
-        <tr>
-            <td>Location</td>
+            <th>Location</th>
             <td>{{ group.locationname }}</td>
         </tr>
     </table>

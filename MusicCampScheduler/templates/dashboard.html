@@ -136,7 +136,7 @@
             <!--Conductor Column - only appears if the user is a conductor-->
             {% if user.isconductor == 1 %}
             <td>
-                <a href="/user/{{ user.userid }}/grouprequest/conductor/{{ p.periodid }}/">CONDUCTOR: Create a group here</a>
+                <a href="/user/{{ user.userid }}/grouprequest/conductor/{{ p.periodid }}/">Create a group here</a>
             </td>
             {% endif %}
             <td>{{ p.instrument }}</td>

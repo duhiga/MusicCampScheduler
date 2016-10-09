@@ -149,11 +149,6 @@
     </table>
     <h2>Your Options</h2>
     <p><a href="/user/{{ user.userid }}/grouprequest/">Request a group</a></p>    
-
-    {% if user.isconductor == 1 %}
-    <p><a href="/user/{{ user.userid }}/grouprequest/conductor/">Elevated Conductor request a group</a></p> 
-    {% endif %}
-
     <p><a href="mailto:{{ supportemailaddress }}">Bugs? Feedback? Complaints? Send an email to camp admin my clicking here!</a></p>
 </body>
 </html>

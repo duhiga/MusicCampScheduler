@@ -237,17 +237,20 @@ def groupdetails(userid,groupid):
     players = session.query(user.firstname, user.lastname, groupassignment.instrument).join(groupassignment).join(group).\
                             filter(group.groupid == groupid).order_by(groupassignment.instrument)
     
-    #This block finds the substitutes for this group over several queries
-    #get the list of instruments played in this group and removes duplicates to be used as a subquery later
-    instruments_in_group_query = session.query(groupassignment.instrument).join(group).filter(group.groupid == groupid).group_by(groupassignment.instrument)
-    #get the userids of everyone that's already playing in something this period
-    everyone_playing_in_periodquery = session.query(user.userid).join(groupassignment).join(group).join(period).filter(period.periodid == thisperiod.periodid)
-    #combine the last two queries with another query, finding everyone that both plays an instrument that's found in this
-    #group AND isn't in the list of users that are already playing in this period.
-    substitutes = session.query(instrument.instrumentname, user.firstname, user.lastname).join(user).\
-        filter(~user.userid.in_(everyone_playing_in_periodquery)).\
-        filter(instrument.instrumentname.in_(instruments_in_group_query)).\
-        order_by(instrument.instrumentname).all()
+    if thisperiod is not None:
+        #This block finds the substitutes for this group over several queries
+        #get the list of instruments played in this group and removes duplicates to be used as a subquery later
+        instruments_in_group_query = session.query(groupassignment.instrument).join(group).filter(group.groupid == groupid).group_by(groupassignment.instrument)
+        #get the userids of everyone that's already playing in something this period
+        everyone_playing_in_periodquery = session.query(user.userid).join(groupassignment).join(group).join(period).filter(period.periodid == thisperiod.periodid)
+        #combine the last two queries with another query, finding everyone that both plays an instrument that's found in this
+        #group AND isn't in the list of users that are already playing in this period.
+        substitutes = session.query(instrument.instrumentname, user.firstname, user.lastname).join(user).\
+            filter(~user.userid.in_(everyone_playing_in_periodquery)).\
+            filter(instrument.instrumentname.in_(instruments_in_group_query)).\
+            order_by(instrument.instrumentname).all()
+    else:
+        substitutes = None
 
     session.close()
     return render_template('group.html', \
@@ -304,7 +307,6 @@ def grouprequestpage(userid,periodid=None):
         for p in playersdump:
             playersdump_serialized.append({'userid': p.userid, 'firstname': p.firstname, 'lastname': p.lastname,
                                             'instrumentname': p.instrumentname, 'grade': p.grade, 'isprimary': p.isprimary})
-        log2('Players dump is: %s' % playersdump)
         #find the instruments this user plays
         thisuserinstruments = session.query(instrument).filter(instrument.userid == userid).all()
         thisuserinstruments_serialized = [i.serialize for i in thisuserinstruments]
@@ -319,7 +321,6 @@ def grouprequestpage(userid,periodid=None):
 
         #get the list of instruments from the config file
         instrumentlist = config.root.CampDetails['Instruments'].split(",")
-        levels = config.root.CampDetails['Levels'].split(",")
         #find all group templates and serialize them to prepare to inject into the javascript
         allgrouptemplates = session.query(grouptemplate).filter(grouptemplate.size == 'S').all()
         
@@ -349,7 +350,6 @@ def grouprequestpage(userid,periodid=None):
                             grouptemplates_serialized=grouptemplates_serialized, \
                             campname=config.root.CampDetails['Name'], \
                             instrumentlist=instrumentlist, \
-                            levels=levels, \
                             playersdump_serialized=playersdump_serialized, \
                             conductorpage=conductorpage, \
                             thisperiod=thisperiod, \
@@ -385,8 +385,43 @@ def grouprequestpage(userid,periodid=None):
         #if we are on the conductorpage, instantly confirm this group (assign it to the period the user submitted)
         if conductorpage == True:
             grouprequest.periodid = thisperiod.periodid     
-        #add the grouprequest to the database
-        session.add(grouprequest)
+        
+        #--------MATCHMAKING SECTION-----------
+        #try to find an existing group request with the same configuration as the request, and open instrument slots for all the players
+        instrumentlist = config.root.CampDetails['Instruments'].split(",")
+        matchinggroups = session.query(group).filter(group.iseveryone == None, group.ismusical == 1, group.music == grouprequest.music,\
+            group.periodid == None, *[getattr(grouprequest,i) == getattr(group,i) for i in instrumentlist]).order_by(group.requesttime).all()
+        Match = False
+        #if we found at least one matching group
+        if matchinggroups is not None:
+            #check each group that matched the instrumentation for player slots
+            for m in matchinggroups:
+                clash = False
+                log2("INSTRUMENTATION MATCH FOUND requested by %s at time %s" % (m.requesteduserid, m.requesttime))
+                #for each specific player in the request, check if there's a free spot in the matching group
+                #for each player in the group request
+                for p in content['players']:
+                    #if it's a named player, not a blank drop-down
+                    if p['playerid'] != 'null':
+                        #find a list of players that are already assigned to this group, and play the instrument requested by the grouprequest
+                        playerclash = session.query(groupassignment).filter(groupassignment.instrument == p['instrumentname'],\
+                           groupassignment.groupid == m.groupid).all()
+                        #if the list of players already matches the group instrumentation for this instrument, this match fails and break out
+                        if playerclash is not None:
+                            if len(playerclash) >= getattr(m, p['instrumentname']):
+                                clash = True
+                                break
+                #if we didn't have a clash while iterating over this grou, we have a match! set the grouprequest group to be the old group and break out
+                if clash == False:
+                    log2('Match found. Adding the players in this request to the already formed group.')
+                    grouprequest = m
+                    match = True
+                    break
+        #if we didn't get a match, we need to create the grouprequest, we won't be using an old one
+        if Match == False:
+            log2('No group already exists with the correct instrumentation slots. Creating a new group.')
+            #add the grouprequest to the database
+            session.add(grouprequest)    
         #for each player object in the players array in the JSON packet
         for p in content['players']:
             log2('Performing action for player with id %s' % p['playerid'])

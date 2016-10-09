@@ -130,6 +130,8 @@ def dashboard(userid,inputdate='n'):
         return ('Did not find user in database. You have entered an incorrect URL address.')       
     #find the number of times a user has played in groups in the past
     count = playcount(session, userid)
+    #get the current announcement
+    currentannouncement = session.query(announcement).order_by(desc(announcement.creationtime)).first()
     #get impontant datetimes
     today = datetime.datetime.combine(datetime.date.today(), datetime.time.min) #get today's date
     #if the suer has submitted a date, convert it to a datetime and use it as the display date
@@ -159,6 +161,7 @@ def dashboard(userid,inputdate='n'):
                         weekday=datetime.datetime.strftime(displaydate, '%A'), \
                         campname=config.root.CampDetails['Name'], \
                         supportemailaddress=config.root.CampDetails['SupportEmailAddress'], \
+                        currentannouncement=currentannouncement, \
                         )
 
 #When the user selects the "next day" and "previous day" links on their dashboard, it goes to this URL. this route redirects them back
@@ -283,15 +286,22 @@ def grouprequestpage(userid,periodid=None):
         thisperiod = None
     today = datetime.datetime.combine(datetime.date.today(), datetime.time.min) #get today's date
     now = datetime.datetime.now() #get the time now
-    #if this user isn't a conductor and/or they didn't request the conductor page and they've already requested groups today, deny them.
+    #if this user isn't a conductor and/or they didn't request the conductor page and they've already surpassed their group-per-day limit, deny them.
+    #UNTESTED!!! WHEN DOING A TRIAL RUN THIS NEEDS TO BE TESTED.
     if conductorpage == False:
-        alreadyrequestedcount = session.query(group).filter(group.requesteduserid == thisuser.userid, group.requesttime >= today).count()
-        log2('User has requested %s sessions today, and the limit is %s' % (alreadyrequestedcount, config.root.CampDetails['DailyGroupRequestLimit']))
-        if int(alreadyrequestedcount) >= int(config.root.CampDetails['DailyGroupRequestLimit']):
+        if thisuser.grouprequestcount == 0:
+            alreadyrequestedratio = 0
+        log2('User has requested %s groups since the start of camp. Maximum allowance is %s per day, and there have been %s days of camp so far.' \
+            % (thisuser.grouprequestcount, config.root.CampDetails['DailyGroupRequestLimit'], \
+            (now - datetime.datetime.strptime(config.root.CampDetails['StartTime'], '%Y-%m-%d %H:%M')).days))
+        alreadyrequestedratio = (thisuser.grouprequestcount + 1)/(int(config.root.CampDetails['DailyGroupRequestLimit'])*\
+            (now - datetime.datetime.strptime(config.root.CampDetails['StartTime'], '%Y-%m-%d %H:%M')).days)
+        log2('Ratio is currently at %s. If it is above one, the user is denied access to request another group.' % alreadyrequestedratio)
+        if int(alreadyrequestedratio) >= 1:
             session.close()
             return ('You have already requested the maximum number of groups you can request in a single day. Please come back tomorrow!')
         
-    #The below runs when a user visits the grouprequest page    
+    #The below runs when a user visits the grouprequest page
     if request.method == 'GET':
         
         if conductorpage == True:
@@ -422,6 +432,9 @@ def grouprequestpage(userid,periodid=None):
             log2('No group already exists with the correct instrumentation slots. Creating a new group.')
             #add the grouprequest to the database
             session.add(grouprequest)    
+        #If we have got to here, the user successfully created their group (or was matchmade). We need to increment their total.
+        thisuser.grouprequestcount = thisuser.grouprequestcount + 1
+        log2('%s %s has now made %s group requests' % (thisuser.firstname, thisuser.lastname, thisuser.grouprequestcount))
         #for each player object in the players array in the JSON packet
         for p in content['players']:
             log2('Performing action for player with id %s' % p['playerid'])
@@ -476,13 +489,37 @@ def largegroupinstrumentation(userid,periodid):
 
 #This page is currently a placehoder for the announcement editor page. An "announcer" user can edit it and everyone else will see the
 #announcement on their dashboards.
-@app.route('/user/<userid>/announcement/')
+@app.route('/user/<userid>/announcement/', methods=['GET', 'POST'])
 def announcementpage(userid):
     session = Session()
     #gets the data associated with this user
     thisuser = session.query(user).filter(user.userid == userid).first()
-    session.close()
-    return 'nothing'
+    if thisuser.isannouncer != 1:
+        session.close()
+        return 'You do not have permission to view this page'
+    else:
+        
+        #if this is a user requesting the page
+        if request.method == 'GET':
+            #get the current announcement
+            currentannouncement = session.query(announcement).order_by(desc(announcement.creationtime)).first()
+            session.close()            
+            return render_template('announcement.html', \
+                                    currentannouncement=currentannouncement, \
+                                    thisuser=thisuser, \
+                                    campname=config.root.CampDetails['Name'], \
+                                    )
+        
+        #if this is a user that just pressed submit
+        if request.method == 'POST':
+            #create a new announcement object with the submitted content, and send it
+            newannouncement = announcement(content = request.json['content'], creationtime = datetime.datetime.now())
+            session.add(newannouncement)
+            session.commit()
+            url = ('/user/' + str(thisuser.userid) + '/')
+            session.close()
+            #send the user back to their dashboard
+            return jsonify(message = 'Announcement Created', url = url)
 
 #This page is for creating a public event. It comes up as an option for adminsitrators on their dashboards
 @app.route('/user/<userid>/publicevent/<periodid>/', methods=['GET', 'POST'])
@@ -501,7 +538,7 @@ def publiceventpage(userid,periodid):
             #get the period details to display to the user on the page
             thisperiod = session.query(period).filter(period.periodid == periodid).first()
             session.close()            
-            return render_template('publiceventcreation.html', \
+            return render_template('publicevent.html', \
                                     locations=locations, \
                                     thisuser=thisuser, \
                                     thisperiod=thisperiod, \

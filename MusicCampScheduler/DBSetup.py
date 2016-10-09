@@ -66,6 +66,7 @@ class user(Base):
     lastname = Column(String)
     arrival = Column(DateTime)
     departure = Column(DateTime)
+    grouprequestcount = Column(Integer)
     isannouncer = Column(Integer)
     isconductor = Column(Integer)
     isadmin = Column(Integer)
@@ -180,6 +181,13 @@ class period(Base):
         return "<period(periodid='%s', starttime='%s', endtime='%s', periodname='%s', meal='%s')>" % (
             self.periodid,self.starttime,self.endtime,self.periodname,self.meal)
 
+class announcement(Base):
+    __tablename__ = 'announcements'
+
+    announcementid = Column(Integer, primary_key=True)
+    creationtime = Column(DateTime)
+    content = Column(String)
+
 #create all tables if needed
 Base.metadata.create_all(engine)
 
@@ -262,6 +270,7 @@ if config.root.Application['DBBuildRequired'] == 'Y':
             log2(row)
             thisuser = user()
             thisuser.userid = str(uuid.uuid4())
+            thisuser.grouprequestcount = 0
             thisuser.firstname = row[0]
             thisuser.lastname = row[1][:1]
             if row[12] is not '':

@@ -1,0 +1,48 @@
+<meta name="viewport" content="initial-scale=1">
+<html>
+<head>    
+    <link rel="stylesheet" href='/static/css/style.css' />
+    <title>{{ campname }} Announcement Editor</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"> </script>
+    <script>
+
+        /* this script handles creating public events. */
+        
+        $(document).ready(function () {
+
+            //run when user clicks the submit button
+            $("#submit_button").click(function () {
+            console.log('Submit button pressed');
+            request = {};
+            request.content = $("#announcement_text").val();
+            console.log('Pushing the event to the server for processing:');
+            console.log(request);
+            $.ajax({
+                //make a POST AJAX query to the same web page as the user is currently visiting
+                url: (window.location.href),
+                type: 'POST',
+                contentType: 'application/json;charset=UTF-8',
+                data: JSON.stringify(request, null),
+                success: function (data) {
+                    //upon success, the server will return a message and a URL. give the user the message and send them to the URL.
+                    console.log(data);
+                    confirm(data.message);
+                    window.location = data.url;
+                    }
+                });
+            });
+        });
+    </script>
+</head>
+
+<body>
+    <h1>Announcer: Announcement Creation</h1>
+    <p><a href="/user/{{ thisuser.userid }}/">Back to dashboard</a></p>
+    <p>
+        This page is used to edit the announcement that shows up on all user dashboards.
+    </p>
+    <p><textarea id="announcement_text" cols="40" rows="5">{{ currentannouncement.content }}</textarea></p>
+    <p><button id="submit_button">Submit</button></p>
+    <p><a href="/user/{{ thisuser.userid }}/">Back to dashboard</a></p>
+</body>
+</html>

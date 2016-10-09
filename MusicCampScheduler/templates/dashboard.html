@@ -57,7 +57,10 @@
     <p>{{ campname }}</p>
     <p>You have played a total of {{ count }} times this camp</p>
     <h2>Announcements</h2>
-
+    {% if user.isannouncer == 1 %}
+    <a href="/user/{{ user.userid }}/announcement/">ANNOUNCER: Edit the announcement for all campers</a>
+    {% endif %}
+    <p>{{ currentannouncement.content }}</p>
     <br />
     <h2>Your Schedule</h2>
     {% if date > today %}

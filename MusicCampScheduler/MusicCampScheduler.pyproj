@@ -43,7 +43,8 @@
     <Content Include="templates\index.html" />
     <Content Include="templates\period.html" />
     <Content Include="templates\godpage.html" />
-    <Content Include="templates\publiceventcreation.html" />
+    <Content Include="templates\announcement.html" />
+    <Content Include="templates\publicevent.html" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="js\" />

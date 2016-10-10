@@ -238,10 +238,16 @@ def groupdetails(userid,groupid):
         
     #gets the list of players playing in the given group
     players = session.query(user.firstname, user.lastname, groupassignment.instrument).join(groupassignment).join(group).\
-                            filter(group.groupid == groupid).order_by(groupassignment.instrument)
+                            filter(group.groupid == groupid).order_by(groupassignment.instrument).all()
     
     if thisperiod is not None:
-        #This block finds the substitutes for this group over several queries
+        #This block finds the substitutes for this group over several queries. A "substitute" is defined as a person who is not currently
+        #playing in anything during the period, plays the same instrument as the current players, and is a minimum level of the lowest
+        #grade current player minus one.
+        minimumgrade = session.query(user.firstname, user.lastname, instrument.instrumentname, instrument.grade).join(groupassignment).join(group).\
+            join(instrument, and_(groupassignment.instrument == instrument.instrumentname, user.userid == instrument.userid)).\
+            filter(group.groupid == groupid).order_by(instrument.grade).first()
+        log2('Found minimum grade in group to be %s %s playing %s with grade %s' % (minimumgrade.firstname, minimumgrade.lastname, minimumgrade.instrumentname, minimumgrade.grade))
         #get the list of instruments played in this group and removes duplicates to be used as a subquery later
         instruments_in_group_query = session.query(groupassignment.instrument).join(group).filter(group.groupid == groupid).group_by(groupassignment.instrument)
         #get the userids of everyone that's already playing in something this period
@@ -250,7 +256,7 @@ def groupdetails(userid,groupid):
         #group AND isn't in the list of users that are already playing in this period.
         substitutes = session.query(instrument.instrumentname, user.firstname, user.lastname).join(user).\
             filter(~user.userid.in_(everyone_playing_in_periodquery)).\
-            filter(instrument.instrumentname.in_(instruments_in_group_query)).\
+            filter(instrument.instrumentname.in_(instruments_in_group_query), instrument.grade >= (minimumgrade.grade - 1)).\
             order_by(instrument.instrumentname).all()
     else:
         substitutes = None
@@ -289,7 +295,8 @@ def grouprequestpage(userid,periodid=None):
     #if this user isn't a conductor and/or they didn't request the conductor page and they've already surpassed their group-per-day limit, deny them.
     #UNTESTED!!! WHEN DOING A TRIAL RUN THIS NEEDS TO BE TESTED.
     if conductorpage == False:
-        if thisuser.grouprequestcount == 0:
+        if thisuser.grouprequestcount == 0 or thisuser.grouprequestcount == None or thisuser.grouprequestcount == '':
+            thisuser.grouprequestcount = 0
             alreadyrequestedratio = 0
         log2('User has requested %s groups since the start of camp. Maximum allowance is %s per day, and there have been %s days of camp so far.' \
             % (thisuser.grouprequestcount, config.root.CampDetails['DailyGroupRequestLimit'], \
@@ -383,7 +390,7 @@ def grouprequestpage(userid,periodid=None):
             grouprequest.locationid = content['locationid']
         #for each player object in the players array in the JSON packet
         for p in content['players']:
-            log2('Performing action for instrument %s' % p['instrumentname'])
+            log2('Incrementing group counter for instrument %s' % p['instrumentname'])
             #increment the instrument counter in the grouprequest object corresponding with this instrument name
             currentinstrumentcount = getattr(grouprequest, p['instrumentname'])
             if currentinstrumentcount is None:
@@ -531,6 +538,8 @@ def publiceventpage(userid,periodid):
         session.close()
         return 'You do not have permission to view this page'
     else:
+        
+        #if the user requested the public event page
         if request.method == 'GET':
             #get the locations that aren't being used yet for this period
             locations_used_query = session.query(location.locationid).join(group).join(period).filter(period.periodid == periodid)
@@ -544,6 +553,7 @@ def publiceventpage(userid,periodid):
                                     thisperiod=thisperiod, \
                                     )
         
+        #if the user pressed "submit" on the public event page
         if request.method == 'POST':
             event = group(periodid = periodid, iseveryone = 1, groupname =  request.json['name'], requesteduserid = thisuser.userid,\
                 ismusical = 0, locationid = request.json['location'])
@@ -553,9 +563,6 @@ def publiceventpage(userid,periodid):
             session.close()
 
             return jsonify(message = 'Event Confirmed', url = url)
-
-    
-        
 
 #this page is the full report for any given period
 @app.route('/user/<userid>/period/<periodid>/')
@@ -628,6 +635,64 @@ def godpage(password):
                                 users=users, \
                                 campname=config.root.CampDetails['Name'], \
                                 )
+
+@app.route('/godpage/<password>/importusers/')
+def dbbuild(password):
+    if password != config.root.CampDetails['SecretKey']:
+        return 'Wrong password'
+    else:
+        session = Session()
+        #the below reads the camp input file and creates the users and instrument bindings it finds there.
+        ifile  = open('campers.csv', "rb")
+        reader = csv.reader(ifile)
+        rownum = 0
+        for row in reader:
+            log2('If youre seeing this, its looped again')
+            # Save header row.
+            if rownum == 0:
+                header = row
+                log2('Now in the header row')
+            else:
+                log2(row)
+                thisuser = user()
+                thisuser.userid = str(uuid.uuid4())
+                thisuser.grouprequestcount = 0
+                thisuser.firstname = row[0]
+                thisuser.lastname = row[1][:1] #[:1] means just get the first letter
+                if row[12] is not '':
+                    thisuser.isannouncer = row[12]
+                if row[13] is not '':
+                    thisuser.isconductor = row[13]
+                if row[14] is not '':
+                    thisuser.isadmin = row[14]
+                if row[2] is not '':
+                    thisuser.arrival = row[2]
+                if row[2] is '':
+                    thisuser.arrival = CampStartTime
+                if row[3] is not '':
+                    thisuser.departure = row[3]
+                if row[3] is '':
+                    thisuser.departure = CampEndTime
+                session.add(thisuser)
+                if row[4] is not 'Non-Player':
+                    instrument1 = instrument(userid = thisuser.userid, instrumentname = row[4].capitalize().replace(" ", ""), grade = row[5], isprimary = 1)
+                    session.add(instrument1)
+                if row[6] is not '':
+                    instrument2 = instrument(userid = thisuser.userid, instrumentname = row[6].capitalize().replace(" ", ""), grade = row[7], isprimary = 0)
+                    session.add(instrument2)
+                if row[8] is not '':
+                    instrument3 = instrument(userid = thisuser.userid, instrumentname = row[8].capitalize().replace(" ", ""), grade = row[9], isprimary = 0)
+                    session.add(instrument3)
+                if row[10] is not '':
+                    instrument4 = instrument(userid = thisuser.userid, instrumentname = row[10].capitalize().replace(" ", ""), grade = row[11], isprimary = 0)
+                    session.add(instrument4)
+                log2('Created user named %s %s' % (thisuser.firstname, thisuser.lastname))
+            rownum += 1
+        ifile.close()
+        session.commit()
+        userscount = session.query(user).count()
+        session.close()
+        return ('Created users. There are now %s total users in the database.' % userscount)
 
 #the below creates a new user. The idea for this is that you could concatenate a string up in Excel with your user's details and click 
 #on all the links to create them.

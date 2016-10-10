@@ -32,14 +32,6 @@ Session = sessionmaker()
 Session.configure(bind=engine)
 Base = declarative_base()
 
-"""
-def dump_datetime(value):
-    #Deserialize datetime object into string form for JSON processing.
-    if value is None:
-        return None
-    return [value.strftime("%Y-%m-%d"), value.strftime("%H:%M:%S")]
-"""
-
 def serialize_class(inst, cls):
     convert = dict()
     # add your coversions for things like datetime's 
@@ -257,51 +249,6 @@ if config.root.Application['DBBuildRequired'] == 'Y':
             setattr(template, 'size', config.root.CampDetails.GroupTemplate[x]['Size'])
             session.add(template)
 
-    #the below reads the camp input file and creates the users and instrument bindings it finds there.
-    #UNFINISHED - creates duplicate users for some reason...
-    ifile  = open('campers.csv', "rb")
-    reader = csv.reader(ifile)
-    rownum = 0
-    for row in reader:
-        # Save header row.
-        if rownum == 0:
-            header = row
-        else:
-            log2(row)
-            thisuser = user()
-            thisuser.userid = str(uuid.uuid4())
-            thisuser.grouprequestcount = 0
-            thisuser.firstname = row[0]
-            thisuser.lastname = row[1][:1]
-            if row[12] is not '':
-                thisuser.isannouncer = row[12]
-            if row[13] is not '':
-                thisuser.isconductor = row[13]
-            if row[14] is not '':
-                thisuser.isadmin = row[14]
-            if row[2] is not '':
-                thisuser.arrival = row[2]
-            if row[2] is '':
-                thisuser.arrival = CampStartTime
-            if row[3] is not '':
-                thisuser.departure = row[3]
-            if row[3] is '':
-                thisuser.departure = CampEndTime
-            session.add(thisuser)
-            if row[4] is not 'Non-Player':
-                instrument1 = instrument(userid = thisuser.userid, instrumentname = row[4].capitalize().replace(" ", ""), grade = row[5], isprimary = 1)
-                session.add(instrument1)
-            if row[6] is not '':
-                instrument2 = instrument(userid = thisuser.userid, instrumentname = row[6].capitalize().replace(" ", ""), grade = row[7], isprimary = 0)
-                session.add(instrument2)
-            if row[8] is not '':
-                instrument3 = instrument(userid = thisuser.userid, instrumentname = row[8].capitalize().replace(" ", ""), grade = row[9], isprimary = 0)
-                session.add(instrument3)
-            if row[10] is not '':
-                instrument4 = instrument(userid = thisuser.userid, instrumentname = row[10].capitalize().replace(" ", ""), grade = row[11], isprimary = 0)
-                session.add(instrument4)
-        rownum += 1
-    ifile.close()
     session.commit()
     session.close()
     log2('Finished Database Build!')

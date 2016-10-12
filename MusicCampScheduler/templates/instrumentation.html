@@ -1,0 +1,221 @@
+<meta name="viewport" content="initial-scale=1">
+<html>
+<head>    
+    <link rel="stylesheet" href='/static/css/style.css' />
+    <title>{{ campname }} Instrumentation</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"> </script>
+    <script>
+
+        /* this script handles all user interaction in the group request page. Upon page load, it downloads all players
+        in the camp including the instruments they play, all templates as stated by the config.xml, and the instruments
+        this user plays. it uses all of this data to populate drop-down boxes, depending on what the user selects. */
+        
+        $(document).ready(function () {
+            
+            //these first few variables set up the rest of the script
+            //var players = {{ playersdump_serialized|tojson }};
+            //console.log("Players:");
+            //console.log(players);
+
+            var grouptemplates = {{ grouptemplates_serialized|tojson }};
+            console.log("Grouptemplates:");
+            console.log(grouptemplates);
+
+            //run when a user changes the select template dropdown
+            $(document).on("change", '#group_template_dropdown', function () {
+                //get the user selected template and format it so we can iterate over it later
+                var grep_template = $.grep(grouptemplates, function (elt) {
+                    return elt.grouptemplatename === $(group_template_dropdown).val();
+                });
+                selectedTemplate = grep_template[0];
+                console.log('Selected template is:');
+                console.log(selectedTemplate);
+
+                if (conductorpage == "True") {
+                    //remove all rows in the table except the header
+                    $("#playersTable").find("tr:gt(0)").remove();
+                }
+
+                //if this is not the conductor group request, handle which instrument the user plays
+                if (conductorpage == "False") {                    
+                    //remove all rows in the table excapt for the first row and the header (first row contains the user and respective instruments they play)
+                    $("#playersTable").find("tr:gt(1)").remove();
+                    var foundprimary = false
+                
+                    //check if the user's primary instrument is in this group. if it is, set it.
+                    $.each(selectedTemplate, function(key,value){
+                        if ((key == primaryinstrument) && (value > 0)) {
+                            console.log('found that the users primary instrument is in this group. Key: ' + key);
+                            var foundprimary = true;
+                            console.log('Changing the associated user instrument to ' + key);
+                            $('#instrument0').val(key).change();
+                        }
+                    });
+                
+                    //if the user's primary instrument is not in the group, find an instrument that is, and set it.
+                    if (foundprimary == false) {
+                        console.log('Found the users primary instrument is not in the requested group. Iterating through the users instruments to see which one matches this group');
+                        $.each(selectedTemplate, function(key,value){
+                            for (var x = 1; x <= value; x++) {
+                                //get the first instrument that this user plays that matches this instrument
+                                matchinginstrument = thisuserinstruments.filter(function(obj){return obj.instrumentname == key;})[0]
+                                if (matchinginstrument) {
+                                    console.log('found this user plays intsrument ' + matchinginstrument.instrumentname + ' which matches instrument in group ' + key);
+                                    console.log('setting this user instrument to ' + key)
+                                    $('#instrument0').val(key).change();
+                                    break;
+                                }
+                            }
+                        });
+                    }
+                }
+
+                //for each instrument type in the group template
+                $.each(selectedTemplate, function(key,value){
+                    //make sure it's an instrument type and not other associated metadata
+                    if (key != 'grouptemplateid' && key != 'grouptemplatename' && key != 'size' && value > 0) {
+                        console.log(key + ": "+String(value));
+                        //if the current instrument we're looking at is the same as the one that we selected for the user, decrement it because we already have one player
+                        if (key == $("#instrument0").val()) { value = value - 1; }
+                        if (value > 0) {
+                            for (var i = 0; i < value; i++) {
+                                addRow();
+                                var thisinstrumentdropdown = '#instrument' + String(rowId - 1);
+                                console.log(thisinstrumentdropdown)
+                                $(thisinstrumentdropdown).val(key).change();
+                                console.log('attempted to change instrument dropdown with id ' + thisinstrumentdropdown + ' and resolved id ' + $(thisinstrumentdropdown).attr('id') + ' to ' + key);
+                            }
+                        }
+                        
+                    }
+                });
+            });
+
+            //run when user clicks the submit button
+            $("#submit_button").click(function () {
+                console.log('Submit button pressed');
+                //set up a variable to track invalid configuration and the JSON to send through to the server
+                var invalidConfig = false
+                //request will be our parent object, and will be pushed to the server through AJAX later
+                var request = {};
+                //add the music name and minimum level to the JSON. Establish an array to contain the player names
+                request.music = $('#textbox_music').val();
+                //if this is the conductorpage, we also need to send the selected location - it cannot be blank.
+                if (conductorpage == "True") {
+                    if ($('#location_dropdown').val() == "") {
+                        alert("Sumbission failed. You must select a location for this group.");
+                        return false;
+                    }
+                    else {
+                        request.locationid = $('#location_dropdown').val();
+                    }
+                }
+                //establish an array to fill with player and instruments
+                request.players = []
+                
+                var i = 0
+                //for each instrument drop down box
+                $('.instrument_dropdown').each(function() {
+                    //if we find a blank instrument box
+                    if ($(this).val() == "") {
+                        //this is a bad configuration. elert the user
+                        alert("Sumbission failed. Every instrument must be filled in! Make sure there are no empty boxes under the Instrument column. Empty boxes under the player names are ok though!");
+                        invalidConfig = true;
+                        //break out of the loop
+                        return false;
+                    }
+                    //if we are on the conductorpage, and we find a blank player box this is bad - it's fine on the normal user page though
+                    if ((conductorpage == "True") && ($("#player" + $(this).data("pairing")).val() == 'null')) {
+                        //this is a bad configuration. alert the user
+                        alert("Sumbission failed. This is the conductor group creation page, so all players must be filled in, you cannot leave blanks.");
+                        invalidConfig = true;
+                        //break out of the loop
+                        return false;
+                    }
+                    //create a new object
+                    var iplayer = {};
+                    //add the contents of the instrument dropdown to the object
+                    iplayer.instrumentname = $(this).val();
+                    //if this is row with ID 0 (only appears on the normal user page) add this user to the object
+                    if ($(this).data("pairing") == 0) {
+                        iplayer.playerid = "{{ user.userid }}";
+                    }
+                    //if it's not row ID 0, add whatever is in the player dropdown in the object
+                    else {
+                        iplayer.playerid = $("#player" + $(this).data("pairing")).val();
+                    }
+                    //push the player object to the players array in the request object
+                    request.players.push(iplayer);
+                    i = i + 1;
+                });
+                console.log('Pushing the following object to the server for processing:');
+                console.log(JSON.stringify(request));
+                
+                if (invalidConfig == false) {
+                    $.ajax({
+                        //make a POST AJAX query to the same web page as the user is currently visiting
+                        url: (window.location.href),
+                        type: 'POST',
+                        contentType: 'application/json;charset=UTF-8',
+                        data: JSON.stringify(request, null),
+                        success: function(data) {
+                            //upon success, the server will return a message and a URL. give the user the message and send them to the URL.
+                            console.log(data);
+                            confirm(data.message)
+                            window.location = data.url;
+                            }
+                    });
+                }
+                
+             });
+        });
+    </script>
+</head>
+
+<body>
+    <h1>Conductor: Large Group Instrumentation</h1>
+    <p>Creating instrumentation for {{ thisperiod.periodname }} on {{ thisperiod.starttime.strftime('%A, %Y-%m-%d') }} at {{ thisperiod.starttime.strftime('%H:%M') }} - {{ thisperiod.endtime.strftime('%H:%M') }}</p>
+    <a href="/user/{{ user.userid }}/">Back to dashboard</a>
+    <p>
+        This is the page that a conductor can use to schedule a large group's instrumentation.
+    </p>
+    <p>
+        Where will this group be held?
+        <select id="location_dropdown">
+            <option value=""></option>
+            {% for l in locations %}
+            <option value="{{ l.locationid }}">{{ l.locationname }}</option>
+            {% endfor %}
+        </select>
+    </p>
+    <p>
+        Optional: Select a group template to autofill the page
+        <select id="group_template_dropdown">
+            <option value=""></option>
+            {% for g in grouptemplates %}
+            <option value="{{ g.grouptemplatename }}">{{ g.grouptemplatename }}</option>
+            {% endfor %}
+        </select>
+    </p>
+    <p>What music will be played?<input type="text" id="textbox_music"></p>
+    <p>What is the name of this group?<input type="text" id="textbox_groupname"></p>
+    <table id="playersTable">
+        <!--Table Headers-->
+        <tr>
+            <th>Instrument</th>
+            <th>Number</th>
+        </tr>
+        {% for i in thisuserinstruments %}
+        <tr>
+            <td>{{ i.instrumentname }}</td>
+            <td><input type="text" id="{{ i.instrumentname }}"></td>
+        </tr>
+        {% endfor %}
+    </table>
+    <br />
+    <br />
+    <button id="submit_button">Submit</button>
+    <br />
+    <a href="/user/{{ user.userid }}/">Back to dashboard</a>
+</body>
+</html>

@@ -39,6 +39,7 @@
     <Content Include="templates\absentrequest.html" />
     <Content Include="templates\dashboard.html" />
     <Content Include="templates\group.html" />
+    <Content Include="templates\instrumentation.html" />
     <Content Include="templates\grouprequest.html" />
     <Content Include="templates\index.html" />
     <Content Include="templates\period.html" />

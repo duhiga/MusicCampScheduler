@@ -573,7 +573,8 @@ def periodpage(userid,periodid):
     if thisuser is None:
         return ('Did not find user in database. You have entered an incorrect URL address.')
     #start with the players that are playing in groups in the period
-    players = session.query(user.userid, user.firstname, user.lastname, period.starttime, period.endtime, group.groupname, groupassignment.instrument, location.locationname).\
+    players = session.query(user.userid, user.firstname, user.lastname, period.starttime, period.endtime, group.groupname,\
+        groupassignment.instrument, location.locationname, groupassignment.groupid).\
         join(groupassignment).join(group).join(period).join(location).\
         filter(group.periodid == periodid).order_by(group.groupname,groupassignment.instrument).all()
     #grab just the userids of those players to be used in the next query
@@ -593,6 +594,135 @@ def periodpage(userid,periodid):
                             period=thisperiod, \
                             instrumentlist=instrumentlist, \
                             )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#UNDER CONSTRUCTION Handles the conductor instrumentation page.
+@app.route('/user/<userid>/instrumentation/<periodid>/', methods=['GET', 'POST'])
+def instrumentation(userid,periodid):
+    session = Session()
+    #gets the data associated with this user
+    thisuser = session.query(user).filter(user.userid == userid).first()
+    if thisuser is None:
+        return ('Did not find user in database. You have entered an incorrect URL address.')
+    #check if this user is a conductor, if they are not, deny them.
+    if thisuser.isconductor != 1:
+        return ('You are not allowed to view this page.')
+    else:
+        #gets the data associated with this period
+        thisperiod = session.query(period).filter(period.periodid == periodid).first()
+        if thisperiod is None:
+            return ('Could not find the period requested.')
+
+        #The below runs when a user visits the instrumentation page
+        if request.method == 'GET':
+            
+            #may or may not need the below. Keeping it just in case. Will need if we're gaing to put actual players in the group in this
+            #page, I haven't decided if we're going to do that yet.
+            """
+            #Finds all players who aren't already playing in this period
+            playersPlayingInPeriod = session.query(user.userid).join(groupassignment).join(group).filter(group.periodid == periodid)
+            playersdump = session.query(user.userid,user.firstname,user.lastname,instrument.instrumentname,instrument.grade,instrument.isprimary).\
+                join(instrument).filter(~user.userid.in_(playersPlayingInPeriod)).all()
+            #find all the instruments that everyone plays and serialize them to prepare to inject into the javascript
+            playersdump = session.query(user.userid,user.firstname,user.lastname,instrument.instrumentname,instrument.grade,instrument.isprimary).\
+                join(instrument).filter(user.userid != thisuser.userid).all()
+            playersdump_serialized = []
+            for p in playersdump:
+                playersdump_serialized.append({'userid': p.userid, 'firstname': p.firstname, 'lastname': p.lastname,
+                                                'instrumentname': p.instrumentname, 'grade': p.grade, 'isprimary': p.isprimary})
+            #find the instruments this user plays
+            thisuserinstruments = session.query(instrument).filter(instrument.userid == userid).all()
+            thisuserinstruments_serialized = [i.serialize for i in thisuserinstruments]
+            log2(thisuserinstruments_serialized)
+            """
+
+            #Get a list of the locations that are not being used in the period selected
+            locations_used_query = session.query(location.locationid).join(group).join(period).filter(period.periodid == periodid)
+            locations = session.query(location).filter(~location.locationid.in_(locations_used_query)).all()
+
+            #get the list of instruments from the config file
+            instrumentlist = config.root.CampDetails['Instruments'].split(",")
+            #find all large group templates and serialize them to prepare to inject into the javascript
+            grouptemplates = session.query(grouptemplate).filter(grouptemplate.size == 'L').all()     
+            grouptemplates_serialized = [i.serialize for i in grouptemplates]
+            log2(grouptemplates_serialized)
+            session.close()
+            return render_template('instrumentation.html', \
+                                user=thisuser, \
+                                thisuserinstruments=thisuserinstruments, \
+                                thisuserinstruments_serialized=thisuserinstruments_serialized, \
+                                grouptemplates = grouptemplates, \
+                                grouptemplates_serialized=grouptemplates_serialized, \
+                                campname=config.root.CampDetails['Name'], \
+                                #instrumentlist=instrumentlist, \
+                                #playersdump_serialized=playersdump_serialized, \
+                                conductorpage=conductorpage, \
+                                thisperiod=thisperiod, \
+                                locations=locations, \
+                                )
+    
+        #The below runs when a user presses "Submit" on the instrumentation page. It creates a group object with the configuraiton selected by 
+        #the user, and creates groupassignments if needed
+        if request.method == 'POST':
+            #format the packet received from the server as JSON
+            content = request.json
+            session = Session()
+            log2('Grouprequest received. Whole content of JSON returned is: %s' % content)
+            #establish the 'grouprequest' group object. This will be built up from the JSON packet, and then added to the database
+            instrumentation = group(music = content['music'], ismusical = 1, requesteduserid = userid, locationid = content['locationid'],\
+                groupname = content['groupname'], periodid = thisperiod.periodid)
+            #for each player object in the players array in the JSON packet
+            for i in content['instruments']:
+                log2('Incrementing group counter for instrument %s' % p['instrumentname'])
+                setattr(instrumentation, i['instrumentname'], i['value'])
+            
+            #unsure if I need the below, will need it if we're configuring specific players in this page
+            """ 
+            for p in content['players']:
+                #increment the instrument counter in the grouprequest object corresponding with this instrument name
+                currentinstrumentcount = getattr(grouprequest, p['instrumentname'])
+                if currentinstrumentcount is None:
+                    setattr(grouprequest, p['instrumentname'], 1)
+                else:
+                    setattr(grouprequest, p['instrumentname'], (currentinstrumentcount + 1))
+            """
+            
+            #create the group and the groupassinments configured above in the database
+            session.commit()
+            #send the URL for the group that was just created to the user, and send them to that page
+            url = ('/user/' + str(thisuser.userid) + '/group/' + str(grouprequest.groupid) + '/')
+            log2('Sending user to URL: %s' % url)
+            session.close()
+            return jsonify(message = 'Instrumentation successfully submitted', url = url)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

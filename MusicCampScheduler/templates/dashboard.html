@@ -137,6 +137,7 @@
             {% if user.isconductor == 1 %}
             <td>
                 <a href="/user/{{ user.userid }}/grouprequest/conductor/{{ p.periodid }}/">Create a group here</a>
+                <a href="/user/{{ user.userid }}/instrumentation/{{ p.periodid }}/">Large Group Instrumentation</a>
             </td>
             {% endif %}
             <!--Admin Column - only appears if the user is an admin-->

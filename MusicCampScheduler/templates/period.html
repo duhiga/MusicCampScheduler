@@ -59,7 +59,7 @@
                 <td>{{ p.firstname }}</td>
                 <td>{{ p.lastname }}</td>
                 <td>{{ p.instrument }}</td>
-                <td>{{ p.groupname }}</td>
+                <td><a href="/user/{{ user.userid }}/group/{{ p.groupid }}/">{{ p.groupname }}</a></td>
                 <td>{{ p.locationname }}</td>
             </tr>
             {% endfor %}

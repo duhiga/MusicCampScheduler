@@ -13,6 +13,16 @@
             <td>{{ group.groupname }}</td>
         </tr>
         <tr>
+            <th>Status</th>
+            <td>
+                {% if period == None %}
+                Queued
+                {% else %}
+                Confirmed
+                {% endif %}
+            </td>
+        </tr>
+        <tr>
             <th>Music</th>
             <td>{{ group.music }}</td>
         </tr>
@@ -38,7 +48,13 @@
         </tr>
         <tr>
             <th>Location</th>
-            <td>{{ group.locationname }}</td>
+            <td>
+                {% if group.locationname == None %}
+                Not yet allocated
+                {% else %}
+                {{ group.locationname }}
+                {% endif %}
+            </td>
         </tr>
     </table>
     <a href="/user/{{ user.userid }}/">Back to dashboard</a>

@@ -14,13 +14,7 @@
         </tr>
         <tr>
             <th>Status</th>
-            <td>
-                {% if period == None %}
-                Queued
-                {% else %}
-                Confirmed
-                {% endif %}
-            </td>
+            <td>{{ group.status }}</td>
         </tr>
         <tr>
             <th>Music</th>

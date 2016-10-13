@@ -85,6 +85,7 @@ class group(Base):
     music = Column(String)
     ismusical = Column(Integer)
     iseveryone = Column(Integer)
+    status = Column(String)
 
     @property
     def serialize(self):

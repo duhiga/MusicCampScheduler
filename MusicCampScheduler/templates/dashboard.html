@@ -154,5 +154,34 @@
     <h2>Your Options</h2>
     <p><a href="/user/{{ user.userid }}/grouprequest/">Request a group</a></p>    
     <p><a href="mailto:{{ supportemailaddress }}">Bugs? Feedback? Complaints? Send an email to camp admin my clicking here!</a></p>
+    {% if user.isadmin == 1 %}
+    <h2>ADMIN: Queued Groups</h2>
+    <table style="width:100%">
+        <tr>
+            <th>Request Time</th>
+            <th>Group Name</th>
+            <th>Period</th>
+            <th>Status</th>
+        </tr>
+        {% if queuedgroups != None %}
+        {% for q in queuedgroups %}
+        <tr>
+            <td>
+                {% if q.requesttime != None %}
+                {{ q.requesttime.strftime('%Y-%m-%d %H:%M')}}
+                {% endif %}
+            </td>
+            <td><a href="/user/{{ user.userid }}/group/{{ q.groupid }}/">{{ q.groupname }}</a></td>
+            <td>
+                {% if q.starttime != None and q.endtime != None %}
+                {{ q.starttime.strftime('%Y-%m-%d') }}: {{ q.starttime.strftime('%H:%M') }}-{{ q.endtime.strftime('%H:%M') }}
+                {% endif %}
+            </td>
+            <td>{{ q.status }}</td>
+        </tr>
+        {% endfor %}
+        {% endif %}
+    </table>
+    {% endif %}
 </body>
 </html>

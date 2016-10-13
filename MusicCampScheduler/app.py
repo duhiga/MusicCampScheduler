@@ -147,7 +147,16 @@ def dashboard(userid,inputdate='n'):
     
     previousday = displaydate + datetime.timedelta(days=-1)
     nextday = displaydate + datetime.timedelta(days=1)
+    #get the information needed to fill in the user's schedule table
     periods = useridanddatetoperiods(session,userid,displaydate)
+    #if the user is an admin, we'll need to display them the queued groups for them to approve
+    if thisuser.isadmin == 1:
+        queuedgroups = session.query(group.groupid, group.requesttime, group.status, group.groupname, period.starttime, period.endtime).\
+            outerjoin(period).filter(group.status == "Queued").order_by(group.requesttime).all()
+        log2("Found %s queued groups to show the user" % len(queuedgroups))
+    else:
+        queuedgroups = None
+
     session.close()
 
     return render_template('dashboard.html', \
@@ -162,6 +171,7 @@ def dashboard(userid,inputdate='n'):
                         campname=config.root.CampDetails['Name'], \
                         supportemailaddress=config.root.CampDetails['SupportEmailAddress'], \
                         currentannouncement=currentannouncement, \
+                        queuedgroups=queuedgroups, \
                         )
 
 #When the user selects the "next day" and "previous day" links on their dashboard, it goes to this URL. this route redirects them back
@@ -231,7 +241,7 @@ def groupdetails(userid,groupid):
     thisuser = session.query(user).filter(user.userid == userid).first()
     if thisuser is None:
         return ('Did not find user in database. You have entered an incorrect URL address.')
-    thisgroup = session.query(group.groupid, group.groupname, group.periodid, group.music, location.locationname).outerjoin(location).filter(group.groupid == groupid).first()
+    thisgroup = session.query(group.status, group.groupid, group.groupname, group.periodid, group.music, location.locationname).outerjoin(location).filter(group.groupid == groupid).first()
     if thisgroup is None:
         return ('Did not find group in database. You have entered an incorrect URL address.')
     thisperiod = session.query(period).filter(period.periodid == thisgroup.periodid).first()
@@ -240,7 +250,7 @@ def groupdetails(userid,groupid):
     players = session.query(user.firstname, user.lastname, groupassignment.instrument).join(groupassignment).join(group).\
                             filter(group.groupid == groupid).order_by(groupassignment.instrument).all()
     
-    if thisperiod is not None:
+    if thisgroup.status == 'Confirmed':
         #This block finds the substitutes for this group over several queries. A "substitute" is defined as a person who is not currently
         #playing in anything during the period, plays the same instrument as the current players, and is a minimum level of the lowest
         #grade current player minus one.
@@ -381,13 +391,14 @@ def grouprequestpage(userid,periodid=None):
         session = Session()
         log2('Grouprequest received. Whole content of JSON returned is: %s' % content)
         #establish the 'grouprequest' group object. This will be built up from the JSON packet, and then added to the database
-        grouprequest = group(music = content['music'], ismusical = 1, requesteduserid = userid)
-        #if the conductorpage is false, we need to add a requesttime to properly order the requests later
+        grouprequest = group(music = content['music'], ismusical = 1, requesteduserid = userid, requesttime = datetime.datetime.now())
+        #if the conductorpage is false, we need to set the status to queued
         if conductorpage == False:
-            grouprequest.requesttime = now
-        #if the conductorpage is true, we expect to also receive a locationid from the JSON packet, so we add it to the grouprequest
+            grouprequest.status = "Queued"
+        #if the conductorpage is true, we expect to also receive a locationid from the JSON packet, so we add it to the grouprequest, we also confirm the request
         if conductorpage == True:
             grouprequest.locationid = content['locationid']
+            grouprequest.status = "Confirmed"
         #for each player object in the players array in the JSON packet
         for p in content['players']:
             log2('Incrementing group counter for instrument %s' % p['instrumentname'])
@@ -485,17 +496,7 @@ def conductorgrouprequestpage(userid,periodid):
         return ('You are not a conductor and cannot visit this page.')
     return grouprequestpage(userid,periodid)
 
-#This page is currently a placehoder for the large group instrumentation page, where conductors can choose instrumentation for their groups.
-@app.route('/user/<userid>/largegroupinstrumentation/')
-def largegroupinstrumentation(userid,periodid):
-    session = Session()
-    #gets the data associated with this user
-    thisuser = session.query(user).filter(user.userid == userid).first()
-    session.close()
-    return 'nothing'
-
-#This page is currently a placehoder for the announcement editor page. An "announcer" user can edit it and everyone else will see the
-#announcement on their dashboards.
+#This page is used by an "announcer" to edit the announcement that users see when they open their dashboards
 @app.route('/user/<userid>/announcement/', methods=['GET', 'POST'])
 def announcementpage(userid):
     session = Session()
@@ -556,7 +557,7 @@ def publiceventpage(userid,periodid):
         #if the user pressed "submit" on the public event page
         if request.method == 'POST':
             event = group(periodid = periodid, iseveryone = 1, groupname =  request.json['name'], requesteduserid = thisuser.userid,\
-                ismusical = 0, locationid = request.json['location'])
+                ismusical = 0, locationid = request.json['location'], status = "Confirmed")
             session.add(event)
             session.commit()
             url = ('/user/' + str(thisuser.userid) + '/group/' + str(event.groupid) + '/')
@@ -595,22 +596,7 @@ def periodpage(userid,periodid):
                             instrumentlist=instrumentlist, \
                             )
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#UNDER CONSTRUCTION Handles the conductor instrumentation page.
+#Handles the conductor instrumentation page.
 @app.route('/user/<userid>/instrumentation/<periodid>/', methods=['GET', 'POST'])
 def instrumentation(userid,periodid):
     session = Session()
@@ -629,26 +615,6 @@ def instrumentation(userid,periodid):
 
         #The below runs when a user visits the instrumentation page
         if request.method == 'GET':
-            
-            #may or may not need the below. Keeping it just in case. Will need if we're gaing to put actual players in the group in this
-            #page, I haven't decided if we're going to do that yet.
-            """
-            #Finds all players who aren't already playing in this period
-            playersPlayingInPeriod = session.query(user.userid).join(groupassignment).join(group).filter(group.periodid == periodid)
-            playersdump = session.query(user.userid,user.firstname,user.lastname,instrument.instrumentname,instrument.grade,instrument.isprimary).\
-                join(instrument).filter(~user.userid.in_(playersPlayingInPeriod)).all()
-            #find all the instruments that everyone plays and serialize them to prepare to inject into the javascript
-            playersdump = session.query(user.userid,user.firstname,user.lastname,instrument.instrumentname,instrument.grade,instrument.isprimary).\
-                join(instrument).filter(user.userid != thisuser.userid).all()
-            playersdump_serialized = []
-            for p in playersdump:
-                playersdump_serialized.append({'userid': p.userid, 'firstname': p.firstname, 'lastname': p.lastname,
-                                                'instrumentname': p.instrumentname, 'grade': p.grade, 'isprimary': p.isprimary})
-            #find the instruments this user plays
-            thisuserinstruments = session.query(instrument).filter(instrument.userid == userid).all()
-            thisuserinstruments_serialized = [i.serialize for i in thisuserinstruments]
-            log2(thisuserinstruments_serialized)
-            """
 
             #Get a list of the locations that are not being used in the period selected
             locations_used_query = session.query(location.locationid).join(group).join(period).filter(period.periodid == periodid)
@@ -657,20 +623,16 @@ def instrumentation(userid,periodid):
             #get the list of instruments from the config file
             instrumentlist = config.root.CampDetails['Instruments'].split(",")
             #find all large group templates and serialize them to prepare to inject into the javascript
-            grouptemplates = session.query(grouptemplate).filter(grouptemplate.size == 'L').all()     
+            grouptemplates = session.query(grouptemplate).filter(grouptemplate.size == 'L').all()
             grouptemplates_serialized = [i.serialize for i in grouptemplates]
             log2(grouptemplates_serialized)
             session.close()
             return render_template('instrumentation.html', \
                                 user=thisuser, \
-                                thisuserinstruments=thisuserinstruments, \
-                                thisuserinstruments_serialized=thisuserinstruments_serialized, \
                                 grouptemplates = grouptemplates, \
                                 grouptemplates_serialized=grouptemplates_serialized, \
                                 campname=config.root.CampDetails['Name'], \
-                                #instrumentlist=instrumentlist, \
-                                #playersdump_serialized=playersdump_serialized, \
-                                conductorpage=conductorpage, \
+                                instrumentlist = config.root.CampDetails['Instruments'].split(","), \
                                 thisperiod=thisperiod, \
                                 locations=locations, \
                                 )
@@ -683,25 +645,12 @@ def instrumentation(userid,periodid):
             session = Session()
             log2('Grouprequest received. Whole content of JSON returned is: %s' % content)
             #establish the 'grouprequest' group object. This will be built up from the JSON packet, and then added to the database
-            instrumentation = group(music = content['music'], ismusical = 1, requesteduserid = userid, locationid = content['locationid'],\
-                groupname = content['groupname'], periodid = thisperiod.periodid)
+            grouprequest = group(ismusical = 1, requesteduserid = userid, periodid = thisperiod.periodid, status = "Queued", requesttime = datetime.datetime.now())
             #for each player object in the players array in the JSON packet
-            for i in content['instruments']:
-                log2('Incrementing group counter for instrument %s' % p['instrumentname'])
-                setattr(instrumentation, i['instrumentname'], i['value'])
-            
-            #unsure if I need the below, will need it if we're configuring specific players in this page
-            """ 
-            for p in content['players']:
-                #increment the instrument counter in the grouprequest object corresponding with this instrument name
-                currentinstrumentcount = getattr(grouprequest, p['instrumentname'])
-                if currentinstrumentcount is None:
-                    setattr(grouprequest, p['instrumentname'], 1)
-                else:
-                    setattr(grouprequest, p['instrumentname'], (currentinstrumentcount + 1))
-            """
-            
+            for key, value in content.items():
+                setattr(grouprequest, key, value)
             #create the group and the groupassinments configured above in the database
+            session.add(grouprequest)
             session.commit()
             #send the URL for the group that was just created to the user, and send them to that page
             url = ('/user/' + str(thisuser.userid) + '/group/' + str(grouprequest.groupid) + '/')
@@ -712,41 +661,7 @@ def instrumentation(userid,periodid):
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 #ADMIN PAGES ARE BELOW
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 #Shows the godpage to the user. Godpage contains all user names and links to all their dashboards. Right now uses a shared password,

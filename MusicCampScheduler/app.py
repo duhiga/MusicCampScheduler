@@ -232,8 +232,7 @@ def mark_absent(userid,periodid,command):
         session.close()
         return 'You are already assigned to a group for this period. You have NOT been marked absent. Talk to the adminsitrator to fix this.'
 
-#this route is linked to from the user's dashboard.  When they click on a group name, they are taken to a page showing all the people
-#in that group, along with possible substitutes
+#The group page displays all the people in a given group, along with possible substitutes
 @app.route('/user/<userid>/group/<groupid>/')
 def groupdetails(userid,groupid):
     log1('Group page requested by %s for groupID %s' % (userid,groupid))
@@ -242,16 +241,18 @@ def groupdetails(userid,groupid):
     thisuser = session.query(user).filter(user.userid == userid).first()
     if thisuser is None:
         return ('Did not find user in database. You have entered an incorrect URL address.')
-    thisgroup = session.query(group.status, group.groupid, group.groupname, group.periodid, group.music, location.locationname).outerjoin(location).filter(group.groupid == groupid).first()
+    thisgroup = session.query(group).filter(group.groupid == groupid).first()
+    thislocation = session.query(location).join(group).filter(group.groupid == groupid).first()
     if thisgroup is None:
         return ('Did not find group in database. You have entered an incorrect URL address.')
     thisperiod = session.query(period).filter(period.periodid == thisgroup.periodid).first()
-        
+
     #gets the list of players playing in the given group
-    players = session.query(user.firstname, user.lastname, groupassignment.instrument).join(groupassignment).join(group).\
+    players = session.query(user.userid, user.firstname, user.lastname, groupassignment.instrument).join(groupassignment).join(group).\
                             filter(group.groupid == groupid).order_by(groupassignment.instrument).all()
     
-    if thisgroup.status == 'Confirmed':
+    
+    if thisgroup.status == 'Confirmed' and thisgroup.iseveryone != 1:
         #This block finds the substitutes for this group over several queries. A "substitute" is defined as a person who is not currently
         #playing in anything during the period, plays the same instrument as the current players, and is a minimum level of the lowest
         #grade current player minus one.
@@ -276,10 +277,68 @@ def groupdetails(userid,groupid):
     return render_template('group.html', \
                         period=thisperiod, \
                         campname=config.root.CampDetails['Name'], \
-                        group=thisgroup, \
+                        thisgroup=thisgroup, \
                         players=players, \
                         substitutes=substitutes, \
-                        user=thisuser \
+                        thisuser=thisuser, \
+                        thislocation=thislocation, \
+                        )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#UNFINISHED Group editor page. Only accessable by admins
+@app.route('/user/<userid>/group/<groupid>/edit/')
+def groupedit(userid,groupid):
+    log1('Group editor page requested by %s for groupID %s' % (userid,groupid))
+    session = Session()
+    #gets the data associated with this user
+    thisuser = session.query(user).filter(user.userid == userid).first()
+    if thisuser is None:
+        return ('Did not find user in database. You have entered an incorrect URL address.')
+    if thisuser.isadmin != 1:
+        return 'You do not have permission to do this.'
+    thisgroup = session.query(group).filter(group.groupid == groupid).first()
+    thislocation = session.query(location).join(group).filter(group.groupid == groupid).first()
+    if thisgroup is None:
+        return ('Did not find group in database. You have entered an incorrect URL address.')
+    thisperiod = session.query(period).filter(period.periodid == thisgroup.periodid).first()
+
+    #gets the list of players playing in the given group
+    players = session.query(user.userid, user.firstname, user.lastname, groupassignment.instrument).join(groupassignment).join(group).\
+                            filter(group.groupid == groupid).order_by(groupassignment.instrument).all()
+
+    periods = session.query(period).order_by(period.starttime).all()
+    locations = session.query(location).all()
+    log2('This groups status is %s' % thisgroup.status)
+    
+    
+    
+
+    session.close()
+    return render_template('groupedit.html', \
+                        period=thisperiod, \
+                        campname=config.root.CampDetails['Name'], \
+                        thisgroup=thisgroup, \
+                        players=players, \
+                        substitutes=substitutes, \
+                        thisuser=thisuser, \
+                        periods=periods, \
+                        thislocation=thislocation, \
+                        locations=locations, \
+                        instrumentlist=config.root.CampDetails['Instruments'].split(","), \
                         )
 
 #Handles the group request page. If a user visits the page, it gives them a form to create a new group request. Pressing submit 
@@ -347,8 +406,6 @@ def grouprequestpage(userid,periodid=None):
         else: 
             locations = None
 
-        #get the list of instruments from the config file
-        instrumentlist = config.root.CampDetails['Instruments'].split(",")
         #find all group templates and serialize them to prepare to inject into the javascript
         allgrouptemplates = session.query(grouptemplate).filter(grouptemplate.size == 'S').all()
         
@@ -377,7 +434,7 @@ def grouprequestpage(userid,periodid=None):
                             grouptemplates = grouptemplates, \
                             grouptemplates_serialized=grouptemplates_serialized, \
                             campname=config.root.CampDetails['Name'], \
-                            instrumentlist=instrumentlist, \
+                            instrumentlist=config.root.CampDetails['Instruments'].split(","), \
                             playersdump_serialized=playersdump_serialized, \
                             conductorpage=conductorpage, \
                             thisperiod=thisperiod, \

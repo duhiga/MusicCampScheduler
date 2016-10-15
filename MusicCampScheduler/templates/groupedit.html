@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<meta name="viewport" content="initial-scale=1">
+<html>
+<head>
+    <link rel="stylesheet" href='/static/css/style.css' />
+    <title>{{ campname }} Group Display</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"> </script>
+    <script src="/js/jquery.tablesorter.js"> </script>
+    <script>
+        $(document).ready(function () {
+
+            $(function () {
+                $("#table_players").tablesorter({
+                    theme: "blue",
+                    headers: {
+                        0: { sorter: "select" }
+
+                        }
+                });
+            });
+        });
+    </script>
+</head>
+
+<body>
+    <h1>Editing group {{ thisgroup.groupname }}</h1>
+    <p><a href="/user/{{ thisuser.userid }}/">Back to dashboard</a></p>
+    <table style="width:50%">
+        <tr>
+            <th>Name</th>
+            <td><input type="text" id="groupname" value="{{ thisgroup.groupname }}"></td>
+        </tr>
+        <tr>
+            <th>Status</th>
+            <td>
+                <select id="status">
+                {% if thisgroup.status == "Confirmed" %}
+                    <option value="Queued">Queued</option>
+                    <option selected="selected" value="Confirmed">Confirmed</option>
+                {% else %}
+                    <option selected="selected" value="Queued">Queued</option>
+                    <option value="Confirmed">Confirmed</option>
+                {% endif %}
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <th>Music</th>
+            <td><input type="text" id="music" value="{{ thisgroup.music }}"></td>
+        </tr>
+        <tr>
+            <th>Period</th>
+            <td>
+                {% if period == None %}
+                <select id="period">
+                    <option value=""></option>
+                    {% for p in periods %}
+                    <option value="{{ p.periodid }}">{{ p.periodname }}, {{ p.starttime.strftime('%A, %Y-%m-%d') }}, {{ p.starttime.strftime('%H:%M') }}-{{ p.endtime.strftime('%H:%M') }}</option>
+                    {% endfor %}
+                </select>
+                {% else %}
+                {{ period.periodname }}, {{ period.starttime.strftime('%A, %Y-%m-%d') }}, {{ period.starttime.strftime('%H:%M') }}-{{ period.endtime.strftime('%H:%M') }}
+                {% endif %}
+            </td>
+        </tr>
+        <tr>
+            <th>Location</th>
+            <td>
+                <select id="location">
+                    <option value=""></option>
+                    {% for l in locations %}
+                    {% if l.locationid == thislocation.locationid %}
+                    <option value="{{ l.locationid }}" selected="selected">{{ l.locationname }}</option>
+                    {% else %}
+                    <option value="{{ l.locationid }}">{{ l.locationname}}</option>
+                    {% endif %}
+                    {% endfor %}
+                </select>
+            </td>
+        </tr>
+     </table>
+    <h2>Players</h2>
+    <table class="sortable" id="table_players">
+        <tr>
+            <th>Instrument</th>
+            <th>Player</th>
+        </tr>
+        {% for p in players %}
+        <tr>
+            <td>
+                <select class="instrument_dropdown" id="instrument1" data-pairing="{{ p.userid }}">
+                    <option value=""></option>
+                    {% for i in instrumentlist %}
+                    {% if i == p.instrument %}
+                    <option value="{{ i }}" selected="selected">{{ i }}</option>
+                    {% else %}
+                    <option value="{{ i }}">{{ i }}</option>
+                    {% endif %}
+                    {% endfor %}
+                </select>
+            </td>
+            <td>
+                <select class="player_dropdown" id="player1" data-pairing="1">
+                    <option value="{{ p.userid }}">{{ p.firstname }} {{ p.lastname }}</option>
+                </select>
+            </td>
+            <td>
+                <button class="remove_player" id="remove_player1" data-pairing="1">X</button>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    <button id="add_player">Add a Player</button>
+    <p><button id="submit_button">Submit Changes</button></p>
+    <p><button id="delete_button">Delete Group</button></p>
+    <p><a href="/user/{{ thisuser.userid }}/">Back to dashboard</a></p>
+
+</body>
+</html>

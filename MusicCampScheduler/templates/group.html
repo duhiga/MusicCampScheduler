@@ -5,28 +5,33 @@
     <link rel="stylesheet" href='/static/css/style.css' />
     <title>{{ campname }} Group Display</title>
 </head>
+
 <body>
-    <h1>Listing for group {{ group.groupname }}</h1>
+    <h1>Listing for group {{ thisgroup.groupname }}</h1>
+    <p><a href="/user/{{ thisuser.userid }}/">Back to dashboard</a></p>
+    {% if thisuser.isadmin == 1 %}
+    <p><a href="/user/{{ thisuser.userid }}/group/{{ thisgroup.groupid }}/edit/">ADMIN: Edit Group</a></p>
+    {% endif %}
     <table style="width:30%">
         <tr>
             <th>Name</th>
-            <td>{{ group.groupname }}</td>
+            <td>{{ thisgroup.groupname }}</td>
         </tr>
         <tr>
             <th>Status</th>
-            <td>{{ group.status }}</td>
+            <td>{{ thisgroup.status }}</td>
         </tr>
         <tr>
             <th>Music</th>
-            <td>{{ group.music }}</td>
+            <td>{{ thisgroup.music }}</td>
         </tr>
         <tr>
-            <th>Date</th>            
+            <th>Date</th>
             <td>
                 {% if period == None %}
-                    Not yet allocated
+                Not yet allocated
                 {% else %}
-                    {{ period.starttime.strftime('%A, %Y-%m-%d') }}
+                {{ period.starttime.strftime('%A, %Y-%m-%d') }}
                 {% endif %}
             </td>
         </tr>
@@ -34,27 +39,26 @@
             <th>Time</th>
             <td>
                 {% if period == None %}
-                    Not yet allocated
+                Not yet allocated
                 {% else %}
-                    {{ period.starttime.strftime('%H:%M') }} - {{ period.endtime.strftime('%H:%M') }}
+                {{ period.starttime.strftime('%H:%M') }} - {{ period.endtime.strftime('%H:%M') }}
                 {% endif %}
             </td>
         </tr>
         <tr>
             <th>Location</th>
             <td>
-                {% if group.locationname == None %}
+                {% if thislocation == None %}
                 Not yet allocated
                 {% else %}
-                {{ group.locationname }}
+                {{ thislocation }}
                 {% endif %}
             </td>
         </tr>
     </table>
-    <a href="/user/{{ user.userid }}/">Back to dashboard</a>
     <br>
     <table style="width:100%">
-        <caption>Players in {{ group.groupname }}</caption>
+        <caption>Players in {{ thisgroup.groupname }}</caption>
         <tr>
             <th>First Name</th>
             <th>Last Name</th>
@@ -69,14 +73,14 @@
         {% endfor %}
 
     </table>
-    <a href="/user/{{ user.userid }}/">Back to dashboard</a>
+    <a href="/user/{{ thisuser.userid }}/">Back to dashboard</a>
     {% if substitutes %}
     <p>
         If you can not make this group, it is your responsibility to find a substitute and notify them.
         The following people are not playing in a group at this time and may be able to substitute.
     </p>
     <table style="width:100%">
-        <caption>Possible Substitutes for {{ group.groupname }}</caption>
+        <caption>Possible Substitutes for {{ thisgroup.groupname }}</caption>
         <tr>
             <th>First Name</th>
             <th>Last Name</th>
@@ -88,9 +92,9 @@
             <td>{{ s.lastname }}</td>
             <td>{{ s.instrumentname }}</td>
         </tr>
-        {% endfor %}        
+        {% endfor %}
     </table>
-    <a href="/user/{{ user.userid }}/">Back to dashboard</a>
+    <a href="/user/{{ thisuser.userid }}/">Back to dashboard</a>
     {% endif %}
 </body>
 </html>

@@ -58,7 +58,7 @@ def useridanddatetoperiods(session,userid,date):
         log2('Attempting to find group assignment for user for period %s with id %s' % (p.periodname, p.periodid))
         g = session.query(group.groupname, period.starttime, period.endtime, location.locationname, group.groupid, group.ismusical, \
                             group.iseveryone, period.periodid, period.periodname, groupassignment.instrument).\
-                            join(period).join(groupassignment).join(user).join(instrument).join(location).\
+                            join(period).join(groupassignment).join(user).join(instrument).outerjoin(location).\
                             filter(user.userid == userid, group.periodid == p.periodid).first()
         if g is not None:
             log2('Found group assignment named %s' % g.groupname)
@@ -213,6 +213,7 @@ def mark_absent(userid,periodid,command):
     if currentassignment != None:
         if currentassignment.groupname == 'absent' and command == 'confirm':
             session.close()
+            log2('User %s requested absent but is already marked absent' % thisuser.userid)
             return 'Already marked absent for period'
         #case if the user is already marked absent and their tried to cancel their absent request
         elif currentassignment.groupname == 'absent' and command == 'cancel':            

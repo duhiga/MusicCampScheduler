@@ -223,12 +223,12 @@ if config.root.Application['DBBuildRequired'] == 'Y':
                 find_mealgroup = session.query(group).filter(group.groupname == find_period.periodname,group.periodid == find_period.periodid,group.iseveryone == 1,group.ismusical == 0).first()
                 #if no mealgroup exists in the database, create it
                 if find_mealgroup is None and find_period.meal == 1:
-                    find_mealgroup = group(groupname = find_period.periodname,periodid = find_period.periodid,iseveryone = 1,ismusical = 0,locationid = meallocation.locationid)
+                    find_mealgroup = group(groupname = find_period.periodname,periodid = find_period.periodid,iseveryone = 1,ismusical = 0,locationid = meallocation.locationid,status="Confirmed",requesttime=datetime.datetime.now(),requesteduserid='system')
                     session.add(find_mealgroup)
                 find_absent_group = session.query(group).filter(group.groupname == 'absent',group.periodid == find_period.periodid).first()
                 #if no absentgroup exists in the database, create it
                 if find_absent_group is None:
-                    find_absent_group = group(groupname = 'absent',periodid = find_period.periodid,ismusical=0)
+                    find_absent_group = group(groupname = 'absent',periodid = find_period.periodid,ismusical=0,status="Confirmed",requesttime=datetime.datetime.now(),requesteduserid='system')
                     session.add(find_absent_group)
             #if we hit the camp's configured end time, then stop looping
             if ThisStartTime > CampEndTime:

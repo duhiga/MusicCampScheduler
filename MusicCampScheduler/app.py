@@ -151,8 +151,8 @@ def dashboard(userid,inputdate='n'):
     periods = useridanddatetoperiods(session,userid,displaydate)
     #if the user is an admin, we'll need to display them the queued groups for them to approve
     if thisuser.isadmin == 1:
-        queuedgroups = session.query(group.groupid, group.requesttime, group.status, group.groupname, period.starttime, period.endtime).\
-            outerjoin(period).filter(group.status == "Queued").order_by(group.requesttime).all()
+        queuedgroups = session.query(group.groupid, group.requesttime, group.status, group.groupname, period.starttime, period.endtime, user.firstname, user.lastname).\
+            outerjoin(period).outerjoin(user).filter(group.status == "Queued").order_by(group.requesttime).all()
         log2("Found %s queued groups to show the user" % len(queuedgroups))
     else:
         queuedgroups = None
@@ -299,47 +299,67 @@ def groupdetails(userid,groupid):
 
 
 
-#UNFINISHED Group editor page. Only accessable by admins
-@app.route('/user/<userid>/group/<groupid>/edit/')
+#UNFINISHED Group editor page. Only accessable by admins. Navigate here from a group to edit group.
+@app.route('/user/<userid>/group/<groupid>/edit/', methods=['GET', 'POST', 'DELETE'])
 def groupedit(userid,groupid):
     log1('Group editor page requested by %s for groupID %s' % (userid,groupid))
     session = Session()
     #gets the data associated with this user
     thisuser = session.query(user).filter(user.userid == userid).first()
     if thisuser is None:
+        session.close()
         return ('Did not find user in database. You have entered an incorrect URL address.')
     if thisuser.isadmin != 1:
+        session.close()
         return 'You do not have permission to do this.'
     thisgroup = session.query(group).filter(group.groupid == groupid).first()
-    thislocation = session.query(location).join(group).filter(group.groupid == groupid).first()
+    
     if thisgroup is None:
         return ('Did not find group in database. You have entered an incorrect URL address.')
-    thisperiod = session.query(period).filter(period.periodid == thisgroup.periodid).first()
+    if request.method == 'GET':
+        thisperiod = session.query(period).filter(period.periodid == thisgroup.periodid).first()
+        thislocation = session.query(location).join(group).filter(group.groupid == groupid).first()
+        #gets the list of players playing in the given group
+        thisgroupplayers = session.query(user.userid, user.firstname, user.lastname, groupassignment.instrument).join(groupassignment).join(group).\
+                                filter(group.groupid == groupid).order_by(groupassignment.instrument).all()
+        #Finds all players who are already playing in this period (except in this specific group)
+        playersPlayingInPeriod = session.query(user.userid).join(groupassignment).join(group).filter(group.periodid == thisgroup.periodid, group.groupid != thisgroup.groupid)
+        #finds all players who are available to play in this group (they aren't already playing in other groups)
+        playersdump = session.query(user.userid,user.firstname,user.lastname,instrument.instrumentname,instrument.grade,instrument.isprimary).\
+                    join(instrument).filter(~user.userid.in_(playersPlayingInPeriod)).all()
+        playersdump_serialized = []
+        for p in playersdump:
+                    playersdump_serialized.append({'userid': p.userid, 'firstname': p.firstname, 'lastname': p.lastname,
+                        'instrumentname': p.instrumentname, 'grade': p.grade, 'isprimary': p.isprimary})
+        periods = session.query(period).order_by(period.starttime).all()
+        locations = session.query(location).all()
+        log2('This groups status is %s' % thisgroup.status)
 
-    #gets the list of players playing in the given group
-    players = session.query(user.userid, user.firstname, user.lastname, groupassignment.instrument).join(groupassignment).join(group).\
-                            filter(group.groupid == groupid).order_by(groupassignment.instrument).all()
-
-    periods = session.query(period).order_by(period.starttime).all()
-    locations = session.query(location).all()
-    log2('This groups status is %s' % thisgroup.status)
+        session.close()
+        return render_template('groupedit.html', \
+                            period=thisperiod, \
+                            campname=config.root.CampDetails['Name'], \
+                            thisgroup=thisgroup, \
+                            thisgroupplayers=thisgroupplayers, \
+                            thisuser=thisuser, \
+                            periods=periods, \
+                            thislocation=thislocation, \
+                            locations=locations, \
+                            instrumentlist=config.root.CampDetails['Instruments'].split(","), \
+                            playersdump=playersdump, \
+                            playersdump_serialized=playersdump_serialized, \
+                            )
     
-    
-    
-
-    session.close()
-    return render_template('groupedit.html', \
-                        period=thisperiod, \
-                        campname=config.root.CampDetails['Name'], \
-                        thisgroup=thisgroup, \
-                        players=players, \
-                        substitutes=substitutes, \
-                        thisuser=thisuser, \
-                        periods=periods, \
-                        thislocation=thislocation, \
-                        locations=locations, \
-                        instrumentlist=config.root.CampDetails['Instruments'].split(","), \
-                        )
+    if request.method == 'DELETE':
+        thisgroupassignments = session.query(groupassignment).filter(groupassignment.groupid == thisgroup.groupid).all()
+        for a in thisgroupassignments:
+            session.delete(a)
+        session.delete(thisgroup)
+        session.commit()
+        url = ('/user/' + str(thisuser.userid) + '/')
+        log2('Sending user to URL: %s' % url)
+        session.close()
+        return jsonify(message = 'Group has been deleted', url = url)
 
 #Handles the group request page. If a user visits the page, it gives them a form to create a new group request. Pressing submit 
 #sends a post containing configuration data. Their group request is queued until an adminsitrator approves it and assigns it to 
@@ -420,7 +440,7 @@ def grouprequestpage(userid,periodid=None):
                                 found = True
         #if we are on the conductorpage, show the user all the grouptemplates
         else:
-            grouptemplates = allgrouptemplates        
+            grouptemplates = allgrouptemplates
 
         #serialize the grouptemplates so the JS can read them properly
         grouptemplates_serialized = [i.serialize for i in grouptemplates]
@@ -706,7 +726,14 @@ def instrumentation(userid,periodid):
             grouprequest = group(ismusical = 1, requesteduserid = userid, periodid = thisperiod.periodid, status = "Queued", requesttime = datetime.datetime.now())
             #for each player object in the players array in the JSON packet
             for key, value in content.items():
-                setattr(grouprequest, key, value)
+                try: 
+                    int(str(value))
+                    setattr(grouprequest, key, value)
+                except ValueError:
+                    url = ('/user/' + str(thisuser.userid) + '/')
+                    log2('Sending user to URL: %s' % url)
+                    session.close()
+                    return jsonify(message = 'Could not convert an instrument number, you have submitted an illegal character.', url = url)
             #create the group and the groupassinments configured above in the database
             session.add(grouprequest)
             session.commit()

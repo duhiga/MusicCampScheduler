@@ -18,27 +18,55 @@
                         }
                 });
             });
+
+            //these first few variables set up the rest of the script
+            var players = {{ playersdump_serialized|tojson }};
+            console.log("Players:");
+            console.log(players);
+
+            $("#delete_button").click(function () {
+                console.log('Delete button pressed');
+                $.ajax({
+                    //make a POST AJAX query to the same web page as the user is currently visiting
+                    url: (window.location.href),
+                    type: 'DELETE',
+                    success: function(data) {
+                        //upon success, the server will return a message and a URL. give the user the message and send them to the URL.
+                        console.log(data);
+                        confirm(data.message)
+                        window.location = data.url;
+                    }
+                });
+            });
         });
     </script>
 </head>
 
 <body>
-    <h1>Editing group {{ thisgroup.groupname }}</h1>
+    <h1>Editing group &#34;{{ thisgroup.groupname }}&#34;</h1>
     <p><a href="/user/{{ thisuser.userid }}/">Back to dashboard</a></p>
-    <table style="width:50%">
+    <h2>Group Configuration</h2>
+    <table style="width:100%">
+        <tr>
+            <th>Attribute</th>
+            <th>Current</th>
+            <th>Change</th>
+        </tr>
         <tr>
             <th>Name</th>
+            <td>{{ thisgroup.groupname }}</td>
             <td><input type="text" id="groupname" value="{{ thisgroup.groupname }}"></td>
         </tr>
         <tr>
             <th>Status</th>
+            <td>{{ thisgroup.status }}</td>
             <td>
                 <select id="status">
                 {% if thisgroup.status == "Confirmed" %}
                     <option value="Queued">Queued</option>
-                    <option selected="selected" value="Confirmed">Confirmed</option>
+                    <option  value="Confirmed">Confirmed</option>
                 {% else %}
-                    <option selected="selected" value="Queued">Queued</option>
+                    <option  value="Queued">Queued</option>
                     <option value="Confirmed">Confirmed</option>
                 {% endif %}
                 </select>
@@ -46,71 +74,96 @@
         </tr>
         <tr>
             <th>Music</th>
+            <td>{{ thisgroup.music }}</td>
             <td><input type="text" id="music" value="{{ thisgroup.music }}"></td>
         </tr>
         <tr>
             <th>Period</th>
             <td>
-                {% if period == None %}
+                {% if period != None %}
+                {{ period.periodname }}, {{ period.starttime.strftime('%A, %Y-%m-%d') }}, {{ period.starttime.strftime('%H:%M') }}-{{ period.endtime.strftime('%H:%M') }}</td>
+                {% endif %}
+            <td>
                 <select id="period">
                     <option value=""></option>
                     {% for p in periods %}
+                    {% if p.periodid == period.periodid %}
+                    <option value="{{ p.periodid }}" selected="selected">{{ p.periodname }}, {{ p.starttime.strftime('%A, %Y-%m-%d') }}, {{ p.starttime.strftime('%H:%M') }}-{{ p.endtime.strftime('%H:%M') }}</option>
+                    {% else %}
                     <option value="{{ p.periodid }}">{{ p.periodname }}, {{ p.starttime.strftime('%A, %Y-%m-%d') }}, {{ p.starttime.strftime('%H:%M') }}-{{ p.endtime.strftime('%H:%M') }}</option>
+                    {% endif %}
                     {% endfor %}
                 </select>
-                {% else %}
-                {{ period.periodname }}, {{ period.starttime.strftime('%A, %Y-%m-%d') }}, {{ period.starttime.strftime('%H:%M') }}-{{ period.endtime.strftime('%H:%M') }}
-                {% endif %}
             </td>
         </tr>
         <tr>
             <th>Location</th>
+            <td>{{ thislocation.locationname }}</td>
             <td>
                 <select id="location">
                     <option value=""></option>
                     {% for l in locations %}
                     {% if l.locationid == thislocation.locationid %}
-                    <option value="{{ l.locationid }}" selected="selected">{{ l.locationname }}</option>
+                    <option value="{{ l.locationid }}" selected="selected">{{ l.locationname }} - Max Capacity: {{ l.capacity }}</option>
                     {% else %}
-                    <option value="{{ l.locationid }}">{{ l.locationname}}</option>
+                    <option value="{{ l.locationid }}">{{ l.locationname}} - Max Capacity: {{ l.capacity }}</option>
                     {% endif %}
                     {% endfor %}
                 </select>
             </td>
+        </tr>
+        <tr>
+            <th>Minimum Level</th>
+            <td>{{ thisgroup.minimumlevel }}</td>
+            <td>
+                <select class="attribute_dropdown" id="minimumlevel_dropdown">
+                    {% set n = 7 %}
+                    {% for n in range(n) %}
+                    {% if n == thisgroup.minimumlevel %}
+                    <option value="{{ n }}" selected="selected">{{ n }}</option>
+                    {% else %}
+                    <option value="{{ n }}">{{ n }}</option>
+                    {% endif %}
+                    {% endfor %}
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <th>Requested User ID</th>
+            <td colspan="2">{{ thisgroup.requesteduserid }}</tdcolspan="2">
+        </tr>
+        <tr>
+            <th>Request Time</th>
+            <td colspan="2">{{ thisgroup.requesttime.strftime('%A, %Y-%m-%d') }}, {{ thisgroup.requesttime.strftime('%H:%M') }}</td>
         </tr>
      </table>
     <h2>Players</h2>
     <table class="sortable" id="table_players">
         <tr>
             <th>Instrument</th>
-            <th>Player</th>
+            <th>Number</th>
+            <th>Players</th>
         </tr>
-        {% for p in players %}
+        {% for i in instrumentlist %}
         <tr>
+            <td>{{ i }}</td>
             <td>
-                <select class="instrument_dropdown" id="instrument1" data-pairing="{{ p.userid }}">
-                    <option value=""></option>
-                    {% for i in instrumentlist %}
-                    {% if i == p.instrument %}
-                    <option value="{{ i }}" selected="selected">{{ i }}</option>
+                <select class="instrumentnumber_dropdown" id="number_{{ i }}">
+                    {% set n = 21 %}
+                    {% for n in range(n) %}
+                    {% if n == thisgroup[i] %}
+                    <option value="{{ n }}" selected="selected">{{ n }}</option>
                     {% else %}
-                    <option value="{{ i }}">{{ i }}</option>
+                    <option value="{{ n }}">{{ n }}</option>
                     {% endif %}
                     {% endfor %}
                 </select>
             </td>
-            <td>
-                <select class="player_dropdown" id="player1" data-pairing="1">
-                    <option value="{{ p.userid }}">{{ p.firstname }} {{ p.lastname }}</option>
-                </select>
-            </td>
-            <td>
-                <button class="remove_player" id="remove_player1" data-pairing="1">X</button>
-            </td>
+            <td></td>
         </tr>
         {% endfor %}
     </table>
-    <button id="add_player">Add a Player</button>
+    <button id="autofill_button">Auto-fill Players for this Instrumentation</button>
     <p><button id="submit_button">Submit Changes</button></p>
     <p><button id="delete_button">Delete Group</button></p>
     <p><a href="/user/{{ thisuser.userid }}/">Back to dashboard</a></p>

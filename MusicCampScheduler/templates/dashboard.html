@@ -137,6 +137,7 @@
             {% if user.isconductor == 1 %}
             <td>
                 <a href="/user/{{ user.userid }}/grouprequest/conductor/{{ p.periodid }}/">Create a group here</a>
+                <br/>
                 <a href="/user/{{ user.userid }}/instrumentation/{{ p.periodid }}/">Large Group Instrumentation</a>
             </td>
             {% endif %}
@@ -159,6 +160,7 @@
     <table style="width:100%">
         <tr>
             <th>Request Time</th>
+            <th>Requestor</th>
             <th>Group Name</th>
             <th>Period</th>
             <th>Status</th>
@@ -171,6 +173,7 @@
                 {{ q.requesttime.strftime('%Y-%m-%d %H:%M')}}
                 {% endif %}
             </td>
+            <td>{{ q.firstname }} {{ q.lastname }}</td>
             <td><a href="/user/{{ user.userid }}/group/{{ q.groupid }}/">{{ q.groupname }}</a></td>
             <td>
                 {% if q.starttime != None and q.endtime != None %}

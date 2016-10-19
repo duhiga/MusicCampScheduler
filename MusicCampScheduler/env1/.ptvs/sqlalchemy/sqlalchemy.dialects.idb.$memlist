@@ -1,0 +1,12 @@
+firebird
+registry
+oracle
+util
+sqlite
+sybase
+_auto_fn
+postgresql
+__all__
+mysql
+mssql
+postgres

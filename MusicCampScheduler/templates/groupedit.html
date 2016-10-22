@@ -5,19 +5,8 @@
     <link rel="stylesheet" href='/static/css/style.css' />
     <title>{{ campname }} Group Display</title>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"> </script>
-    <script src="/js/jquery.tablesorter.js"> </script>
     <script>
         $(document).ready(function () {
-
-            $(function () {
-                $("#table_players").tablesorter({
-                    theme: "blue",
-                    headers: {
-                        0: { sorter: "select" }
-
-                        }
-                });
-            });
 
             //these first few variables set up the rest of the script
             var players = {{ playersdump_serialized|tojson }};
@@ -129,7 +118,7 @@
             </td>
         </tr>
         <tr>
-            <th>Requested User ID</th>
+            <th>Requested User</th>
             <td colspan="2">{{ thisgroup.requesteduserid }}</tdcolspan="2">
         </tr>
         <tr>
@@ -144,6 +133,7 @@
             <th>Number</th>
             <th>Players</th>
         </tr>
+        {% set count = 0 -%}
         {% for i in instrumentlist %}
         <tr>
             <td>{{ i }}</td>
@@ -159,7 +149,18 @@
                     {% endfor %}
                 </select>
             </td>
-            <td></td>
+            <td>
+                {% for p in range( thisgroup[i]) %}
+                <select class="player_dropdown" data-instrument="{{ i }}">
+                    <option value=""></option>
+                    {% for d in playersdump %}
+                    {% if d.instrumentname == i %}
+                    <option value="{{ d.userid }}">{{ d.firstname }} {{ d.lastname }}</option>
+                    {% endif %}
+                    {% endfor %}
+                </select>
+                {% endfor %}
+            </td>
         </tr>
         {% endfor %}
     </table>
@@ -168,5 +169,9 @@
     <p><button id="delete_button">Delete Group</button></p>
     <p><a href="/user/{{ thisuser.userid }}/">Back to dashboard</a></p>
 
+    <p>Current Group Players are:</p>
+    {% for p in thisgroupplayers %}
+    {{ p.firstname }} {{ p.lastname }} {{ p.instrument }}<br/>
+    {% endfor %}
 </body>
 </html>

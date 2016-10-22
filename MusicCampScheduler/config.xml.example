@@ -37,10 +37,10 @@
          1. Everything is case sensitive, and
          2. You don't need to put every instrument name in, just the ones that are used in the group
          3. Sizes: S = everyone can request this group. L = Only conductors can request this group -->
-    <GroupTemplate Name="Red Orchestra" Size="L" Conductor="1" Flute="2" Oboe="2" Clarinet="2" Bassoon="2"
+    <GroupTemplate Name="Full Orchestra" Size="L" MinimumLevel="3" Conductor="1" Flute="2" Oboe="2" Clarinet="2" Bassoon="2"
       Horn="2" Trombone="2" Tuba="1" Percussion="1" Violin="8" Viola="4" Cello="4" DoubleBass="2"></GroupTemplate>
-    <GroupTemplate Name="String Quartet" Size="S" Violin="2" Viola="1" Cello="1"></GroupTemplate>
-    <GroupTemplate Name="Wind Quintet" Size="S" Conductor="0" Flute="1" Oboe="1" Clarinet="1" Bassoon="1" Horn="1"></GroupTemplate>
+    <GroupTemplate Name="String Quartet" Size="S" MinimumLevel="0" Violin="2" Viola="1" Cello="1"></GroupTemplate>
+    <GroupTemplate Name="Wind Quintet" Size="S" MinimumLevel="0" Conductor="0" Flute="1" Oboe="1" Clarinet="1" Bassoon="1" Horn="1"></GroupTemplate>
   </CampDetails>
   <!-- Fill in your Database name, if it needs to be built (you can leave this on 'Y', it's just slower to start the app)
        and set your debug level. 0 = off, 1 = debug, 2 = verbose, 3 = all SQL code is printed to log. This should be 0 

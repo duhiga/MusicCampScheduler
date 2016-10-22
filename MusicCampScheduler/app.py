@@ -313,17 +313,17 @@ def groupedit(userid,groupid):
         session.close()
         return 'You do not have permission to do this.'
     thisgroup = session.query(group).filter(group.groupid == groupid).first()
-    
     if thisgroup is None:
         return ('Did not find group in database. You have entered an incorrect URL address.')
     if request.method == 'GET':
+        #THIS NEEDS TO BE CHANGED TO AN ASYNC AJAX CALL UPON CHANGE OF THE DROPDOWN FOR PERIOD
         thisperiod = session.query(period).filter(period.periodid == thisgroup.periodid).first()
         thislocation = session.query(location).join(group).filter(group.groupid == groupid).first()
         #gets the list of players playing in the given group
         thisgroupplayers = session.query(user.userid, user.firstname, user.lastname, groupassignment.instrument).join(groupassignment).join(group).\
                                 filter(group.groupid == groupid).order_by(groupassignment.instrument).all()
         #Finds all players who are already playing in this period (except in this specific group)
-        playersPlayingInPeriod = session.query(user.userid).join(groupassignment).join(group).filter(group.periodid == thisgroup.periodid, group.groupid != thisgroup.groupid)
+        playersPlayingInPeriod = session.query(user.userid).join(groupassignment).join(group).filter(group.groupid != thisgroup.groupid).filter(group.periodid == thisgroup.periodid)
         #finds all players who are available to play in this group (they aren't already playing in other groups)
         playersdump = session.query(user.userid,user.firstname,user.lastname,instrument.instrumentname,instrument.grade,instrument.isprimary).\
                     join(instrument).filter(~user.userid.in_(playersPlayingInPeriod)).all()
@@ -726,14 +726,7 @@ def instrumentation(userid,periodid):
             grouprequest = group(ismusical = 1, requesteduserid = userid, periodid = thisperiod.periodid, status = "Queued", requesttime = datetime.datetime.now())
             #for each player object in the players array in the JSON packet
             for key, value in content.items():
-                try: 
-                    int(str(value))
-                    setattr(grouprequest, key, value)
-                except ValueError:
-                    url = ('/user/' + str(thisuser.userid) + '/')
-                    log2('Sending user to URL: %s' % url)
-                    session.close()
-                    return jsonify(message = 'Could not convert an instrument number, you have submitted an illegal character.', url = url)
+                setattr(grouprequest, key, value)
             #create the group and the groupassinments configured above in the database
             session.add(grouprequest)
             session.commit()

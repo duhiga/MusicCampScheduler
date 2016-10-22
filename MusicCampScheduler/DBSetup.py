@@ -97,6 +97,7 @@ class grouptemplate(Base):
     grouptemplateid = Column(Integer, primary_key=True)
     grouptemplatename = Column(String)
     size = Column(String)
+    minimumlevel = Column(Integer)
 
     @property
     def serialize(self):
@@ -248,6 +249,7 @@ if config.root.Application['DBBuildRequired'] == 'Y':
                 setattr(template, v, config.root.CampDetails.GroupTemplate[x]['%s' % v])
             setattr(template, 'grouptemplatename', config.root.CampDetails.GroupTemplate[x]['Name'])
             setattr(template, 'size', config.root.CampDetails.GroupTemplate[x]['Size'])
+            setattr(template, 'minimumlevel', config.root.CampDetails.GroupTemplate[x]['MinimumLevel'])
             session.add(template)
 
     session.commit()

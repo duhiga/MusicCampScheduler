@@ -31,6 +31,8 @@
                 console.log('Selected template is:');
                 console.log(selectedTemplate);
                 $("#textbox_groupname").val(selectedTemplate.grouptemplatename)
+                console.log('This group template minimum level is ' + selectedTemplate.minimumlevel)
+                $("#minimumlevel_dropdown").val(selectedTemplate.minimumlevel).change()
                 //for each instrument type in the group template
                 $.each(selectedTemplate, function(key,value){
                     //make sure it's an instrument type and not other associated metadata
@@ -50,7 +52,7 @@
             $("#submit_button").click(function () {
                 console.log('Submit button pressed');
                 //set up a variable to track invalid configuration and the JSON to send through to the server
-                var invalidConfig = false
+                var invalidConfig = false;
                 //request will be our parent object, and will be pushed to the server through AJAX later
                 var request = {};
                 //add the music name and minimum level to the JSON. Establish an array to contain the player names
@@ -64,10 +66,11 @@
                     request.locationid = $('#location_dropdown').val();
                     request.groupname = $('#textbox_groupname').val();
                     request.music = $('#textbox_music').val();
+                    request.minimumlevel = $('#minimumlevel_dropdown').val();
                     //establish an array to fill with instruments and numbers
                     request.instruments = []
                     //for each instrument
-                    $('.textbox_instrument').each(function() {
+                    $('.instrumentnumber_dropdown').each(function() {
                         //if we find a blank instrument box
                         if ($(this).val() == "") {
                             console.log("Selected " + $(this).attr('id') + " as None");
@@ -111,15 +114,6 @@
         This is the page that a conductor can use to schedule a large group's instrumentation.
     </p>
     <p>
-        Where will this group be held?
-        <select id="location_dropdown">
-            <option value=""></option>
-            {% for l in locations %}
-            <option value="{{ l.locationid }}">{{ l.locationname }}</option>
-            {% endfor %}
-        </select>
-    </p>
-    <p>
         Optional: Select a group template to autofill the page
         <select id="group_template_dropdown">
             <option value=""></option>
@@ -128,8 +122,41 @@
             {% endfor %}
         </select>
     </p>
-    <p>What music will be played?<input type="text" id="textbox_music"></p>
-    <p>What is the name of this group?<input type="text" id="textbox_groupname"></p>
+    <h2>Group Configuration</h2>
+    <table id="configTable">
+        <tr>
+            <th>Name</th>
+            <td><input type="text" id="textbox_groupname"></td>
+        </tr>
+        <tr>
+            <th>Music</th>
+            <td><input type="text" id="textbox_music"></td>
+        </tr>
+        <tr>
+            <th>Location</th>
+            <td>
+                <select id="location_dropdown">
+                    <option value=""></option>
+                    {% for l in locations %}
+                    <option value="{{ l.locationid }}">{{ l.locationname }}</option>
+                    {% endfor %}
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <th>Minimum Level</th>
+            <td>
+                <select id="minimumlevel_dropdown">
+                    <option value=""></option>
+                    {% set n = 7 %}
+                    {% for n in range(n) %}
+                    <option value="{{ n }}">{{ n }}</option>
+                    {% endfor %}
+                </select>
+            </td>
+        </tr>
+    </table>
+    <h2>Group Instrumentation</h2>
     <table id="playersTable">
         <!--Table Headers-->
         <tr>
@@ -139,7 +166,14 @@
         {% for i in instrumentlist %}
         <tr>
             <td>{{ i }}</td>
-            <td><input type="text" class="textbox_instrument" id="{{ i }}"></td>
+            <td>
+                <select class="instrumentnumber_dropdown" id="{{ i }}">
+                    {% set n = 21 %}
+                    {% for n in range(n) %}
+                    <option value="{{ n }}">{{ n }}</option>
+                    {% endfor %}
+                </select>
+            </td>
         </tr>
         {% endfor %}
     </table>

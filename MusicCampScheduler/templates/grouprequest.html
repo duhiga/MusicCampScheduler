@@ -4,6 +4,7 @@
     <link rel="stylesheet" href='/static/css/style.css' />
     <title>{{ campname }} Request a Group</title>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"> </script>
+    <script>if (!window.jQuery) { document.write('<script src="/js/jquery-3.1.1.min.js"><\/script>'); }</script>
     <script>
 
         /* this script handles all user interaction in the group request page. Upon page load, it downloads all players
@@ -58,10 +59,20 @@
 
             //run when user (or javascript) changes the content of an instrument dropdown. Populates the corresponding
             //player dropdown with people that play that instrument that are not the current user.
-            $(document).on("change", '.instrument_dropdown', function () {
+            $(document).on("change", '.instrument_dropdown', function () {                
                 //grab value that was selected on the dropdown
                 var selectedinstrument = $(this).val();
                 console.log('Detected dropdown instrument change to ' + selectedinstrument)
+
+                //UNTESTED
+                //if there are no empty instruments left, create a new one
+                var emptycheck = false;
+                $('.instrument_dropdown').each(function() {
+                    if ($(this).val() == "") {
+                        emptycheck = true;
+                    }
+                });
+                if (emptycheck == true) {addRow;}
 
                 // add values to list 
                 var listItems = "<option value='null'></option>";

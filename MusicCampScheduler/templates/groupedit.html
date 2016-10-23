@@ -5,6 +5,7 @@
     <link rel="stylesheet" href='/static/css/style.css' />
     <title>{{ campname }} Group Display</title>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"> </script>
+    <script>if (!window.jQuery) { document.write('<script src="/js/jquery-3.1.1.min.js"><\/script>'); }</script>
     <script>
         $(document).ready(function () {
 
@@ -150,7 +151,7 @@
                 </select>
             </td>
             <td>
-                {% for p in range( thisgroup[i]) %}
+                {% for p in range(thisgroup[i]) %}
                 <select class="player_dropdown" data-instrument="{{ i }}">
                     <option value=""></option>
                     {% for d in playersdump %}

@@ -116,7 +116,7 @@ class groupassignment(Base):
     groupassignmentid = Column(Integer, primary_key=True)
     userid = Column(Integer, ForeignKey('users.userid'))
     groupid = Column(Integer, ForeignKey('groups.groupid'))
-    instrument = Column(String, ForeignKey('instruments.instrumentname'))
+    instrumentname = Column(String, ForeignKey('instruments.instrumentname'))
 
     @property
     def serialize(self):
@@ -124,7 +124,7 @@ class groupassignment(Base):
 
     def __repr__(self):
         return "<groupassignment(groupassignmentid='%s', userid='%s', groupid='%s', instrument='%s')>" % (
-            self.groupassignmentid,self.userid,self.groupid,self.instrument)
+            self.groupassignmentid,self.userid,self.groupid,self.instrumentname)
 
 class instrument(Base):
     __tablename__ = 'instruments'

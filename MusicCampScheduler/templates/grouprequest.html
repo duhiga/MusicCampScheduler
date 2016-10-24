@@ -49,10 +49,6 @@
                                     <option value=""></option>\
                                 </select>\
                             </td>\
-                            <td>\
-                                <button class="remove_player" id="remove_player' + rowId + '" data-pairing="' + rowId + '">X</button>\
-                                </select>\
-                            </td>\
                         </tr>');
                 rowId = rowId + 1;
             }
@@ -64,16 +60,16 @@
                 var selectedinstrument = $(this).val();
                 console.log('Detected dropdown instrument change to ' + selectedinstrument)
 
-                //UNTESTED
-                //if there are no empty instruments left, create a new one
-                var emptycheck = false;
+                if (selectedinstrument == "") {
+                    $(this).parents('tr').remove();
+                }
+
                 $('.instrument_dropdown').each(function() {
                     if ($(this).val() == "") {
-                        emptycheck = true;
+                        $(this).parents('tr').remove();
                     }
                 });
-                if (emptycheck == true) {addRow;}
-
+                addRow();
                 // add values to list 
                 var listItems = "<option value='null'></option>";
                 for (var i = 0; i < players.length; i++) {
@@ -111,14 +107,16 @@
                 console.log(selectedTemplate);
 
                 if (conductorpage == "True") {
-                    //remove all rows in the table except the header
+                    //remove all rows in the table except the header and first instrument slot
                     $("#playersTable").find("tr:gt(0)").remove();
+                    addRow();
                 }
 
                 //if this is not the conductor group request, handle which instrument the user plays
                 if (conductorpage == "False") {                    
-                    //remove all rows in the table excapt for the first row and the header (first row contains the user and respective instruments they play)
+                    //remove all rows in the table excapt for the header and row containing the user, and add a new row for later
                     $("#playersTable").find("tr:gt(1)").remove();
+                    addRow();
                     var foundprimary = false
                 
                     //check if the user's primary instrument is in this group. if it is, set it.
@@ -165,26 +163,8 @@
                                 console.log('attempted to change instrument dropdown with id ' + thisinstrumentdropdown + ' and resolved id ' + $(thisinstrumentdropdown).attr('id') + ' to ' + key);
                             }
                         }
-                        
                     }
                 });
-            });
-
-            //run when user attempts to add another player row to the table
-            $("#add_player").click(function () {
-                event.preventDefault();
-                //if the row is below the limit defined in the site configuraiton, add a row
-                if ($('.instrument_dropdown').length < {{ playerlimit }}) {
-                    console.log('Adding a player as requested by user');
-                    addRow()
-                };
-             });
-
-            //run when user attempts to remove a player row from the table
-            $(document).on('click', ".remove_player", function() {
-                console.log('Removing player as requested by user');
-                //remove the row corresponding to the one that contains the box the user clicked on
-                $(this).parents('tr').remove();
             });
 
             //run when user clicks the submit button
@@ -212,16 +192,8 @@
                 var i = 0
                 //for each instrument drop down box
                 $('.instrument_dropdown').each(function() {
-                    //if we find a blank instrument box
-                    if ($(this).val() == "") {
-                        //this is a bad configuration. elert the user
-                        alert("Sumbission failed. Every instrument must be filled in! Make sure there are no empty boxes under the Instrument column. Empty boxes under the player names are ok though!");
-                        invalidConfig = true;
-                        //break out of the loop
-                        return false;
-                    }
                     //if we are on the conductorpage, and we find a blank player box this is bad - it's fine on the normal user page though
-                    if ((conductorpage == "True") && ($("#player" + $(this).data("pairing")).val() == 'null')) {
+                    if ((conductorpage == "True") && ($("#player" + $(this).data("pairing")).val() == 'null') && $(this).val() != "") {
                         //this is a bad configuration. alert the user
                         alert("Sumbission failed. This is the conductor group creation page, so all players must be filled in, you cannot leave blanks.");
                         invalidConfig = true;
@@ -229,20 +201,22 @@
                         return false;
                     }
                     //create a new object
-                    var iplayer = {};
-                    //add the contents of the instrument dropdown to the object
-                    iplayer.instrumentname = $(this).val();
-                    //if this is row with ID 0 (only appears on the normal user page) add this user to the object
-                    if ($(this).data("pairing") == 0) {
-                        iplayer.playerid = "{{ user.userid }}";
+                    if ($(this).val() != "") {
+                        var iplayer = {};
+                        //add the contents of the instrument dropdown to the object
+                        iplayer.instrumentname = $(this).val();
+                        //if this is row with ID 0 (only appears on the normal user page) add this user to the object
+                        if ($(this).data("pairing") == 0) {
+                            iplayer.playerid = "{{ user.userid }}";
+                        }
+                        //if it's not row ID 0, add whatever is in the player dropdown in the object
+                        else {
+                            iplayer.playerid = $("#player" + $(this).data("pairing")).val();
+                        }
+                        //push the player object to the players array in the request object
+                        request.players.push(iplayer);
+                        i = i + 1;
                     }
-                    //if it's not row ID 0, add whatever is in the player dropdown in the object
-                    else {
-                        iplayer.playerid = $("#player" + $(this).data("pairing")).val();
-                    }
-                    //push the player object to the players array in the request object
-                    request.players.push(iplayer);
-                    i = i + 1;
                 });
                 console.log('Pushing the following object to the server for processing:');
                 console.log(JSON.stringify(request));
@@ -309,7 +283,7 @@
     <p>
         Optional: Select a group template to autofill the page
         <select id="group_template_dropdown">
-            <option value=""></option>
+            <option value="" selected="selected">No Template</option>
             {% for g in grouptemplates %}
             <option value="{{ g.grouptemplatename }}">{{ g.grouptemplatename }}</option>
             {% endfor %}
@@ -350,14 +324,8 @@
                     <option value=""></option>
                 </select>
             </td>
-            <td>
-                <button class="remove_player" id="remove_player1" data-pairing="1">X</button>
-            </td>
         </tr>
     </table>
-    <button id="add_player">Add a Player</button>
-
-    <br />
     <br />
     <button id="submit_button">Submit</button>
     <br />

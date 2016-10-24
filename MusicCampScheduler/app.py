@@ -57,7 +57,7 @@ def useridanddatetoperiods(session,userid,date):
         #try to find a group assignment for the user
         log2('Attempting to find group assignment for user for period %s with id %s' % (p.periodname, p.periodid))
         g = session.query(group.groupname, period.starttime, period.endtime, location.locationname, group.groupid, group.ismusical, \
-                            group.iseveryone, period.periodid, period.periodname, groupassignment.instrument).\
+                            group.iseveryone, period.periodid, period.periodname, groupassignment.instrumentname).\
                             join(period).join(groupassignment).join(user).join(instrument).outerjoin(location).\
                             filter(user.userid == userid, group.periodid == p.periodid).first()
         if g is not None:
@@ -248,8 +248,8 @@ def groupdetails(userid,groupid):
     thisperiod = session.query(period).filter(period.periodid == thisgroup.periodid).first()
 
     #gets the list of players playing in the given group
-    players = session.query(user.userid, user.firstname, user.lastname, groupassignment.instrument).join(groupassignment).join(group).\
-                            filter(group.groupid == groupid).order_by(groupassignment.instrument).all()
+    players = session.query(user.userid, user.firstname, user.lastname, groupassignment.instrumentname).join(groupassignment).join(group).\
+                            filter(group.groupid == groupid).order_by(groupassignment.instrumentname).all()
     
     
     if thisgroup.status == 'Confirmed' and thisgroup.iseveryone != 1:
@@ -257,11 +257,11 @@ def groupdetails(userid,groupid):
         #playing in anything during the period, plays the same instrument as the current players, and is a minimum level of the lowest
         #grade current player minus one.
         minimumgrade = session.query(user.firstname, user.lastname, instrument.instrumentname, instrument.grade).join(groupassignment).join(group).\
-            join(instrument, and_(groupassignment.instrument == instrument.instrumentname, user.userid == instrument.userid)).\
+            join(instrument, and_(groupassignment.instrumentname == instrument.instrumentname, user.userid == instrument.userid)).\
             filter(group.groupid == groupid).order_by(instrument.grade).first()
         log2('Found minimum grade in group to be %s %s playing %s with grade %s' % (minimumgrade.firstname, minimumgrade.lastname, minimumgrade.instrumentname, minimumgrade.grade))
         #get the list of instruments played in this group and removes duplicates to be used as a subquery later
-        instruments_in_group_query = session.query(groupassignment.instrument).join(group).filter(group.groupid == groupid).group_by(groupassignment.instrument)
+        instruments_in_group_query = session.query(groupassignment.instrumentname).join(group).filter(group.groupid == groupid).group_by(groupassignment.instrumentname)
         #get the userids of everyone that's already playing in something this period
         everyone_playing_in_periodquery = session.query(user.userid).join(groupassignment).join(group).join(period).filter(period.periodid == thisperiod.periodid)
         #combine the last two queries with another query, finding everyone that both plays an instrument that's found in this
@@ -301,7 +301,7 @@ def groupdetails(userid,groupid):
 
 #UNFINISHED Group editor page. Only accessable by admins. Navigate here from a group to edit group.
 @app.route('/user/<userid>/group/<groupid>/edit/', methods=['GET', 'POST', 'DELETE'])
-def groupedit(userid,groupid):
+def groupedit(userid,groupid,periodid=None):
     log1('Group editor page requested by %s for groupID %s' % (userid,groupid))
     session = Session()
     #gets the data associated with this user
@@ -317,27 +317,35 @@ def groupedit(userid,groupid):
         return ('Did not find group in database. You have entered an incorrect URL address.')
     if request.method == 'GET':
         #THIS NEEDS TO BE CHANGED TO AN ASYNC AJAX CALL UPON CHANGE OF THE DROPDOWN FOR PERIOD
-        thisperiod = session.query(period).filter(period.periodid == thisgroup.periodid).first()
+        currentperiod = session.query(period).filter(period.periodid == thisgroup.periodid).first()
+        selectedperiod = currentperiod
+        if periodid is not None:
+            selectedperiod = session.query(period).filter(period.periodid == periodid).first()
         thislocation = session.query(location).join(group).filter(group.groupid == groupid).first()
         #gets the list of players playing in the given group
-        thisgroupplayers = session.query(user.userid, user.firstname, user.lastname, groupassignment.instrument).join(groupassignment).join(group).\
-                                filter(group.groupid == groupid).order_by(groupassignment.instrument).all()
+        thisgroupplayers = session.query(user.userid, user.firstname, user.lastname, groupassignment.instrumentname).join(groupassignment).join(group).\
+                                filter(group.groupid == groupid).order_by(groupassignment.instrumentname).all()
+        thisgroupplayers_serialized = []
+        for p in thisgroupplayers:
+             thisgroupplayers_serialized.append({'userid': p.userid, 'firstname': p.firstname, 'lastname': p.lastname,
+                'instrumentname': p.instrumentname})
         #Finds all players who are already playing in this period (except in this specific group)
-        playersPlayingInPeriod = session.query(user.userid).join(groupassignment).join(group).filter(group.groupid != thisgroup.groupid).filter(group.periodid == thisgroup.periodid)
+        playersPlayingInPeriod = session.query(user.userid).join(groupassignment).join(group).filter(group.groupid != thisgroup.groupid).filter(group.periodid == selectedperiod.periodid)
         #finds all players who are available to play in this group (they aren't already playing in other groups)
         playersdump = session.query(user.userid,user.firstname,user.lastname,instrument.instrumentname,instrument.grade,instrument.isprimary).\
                     join(instrument).filter(~user.userid.in_(playersPlayingInPeriod)).all()
         playersdump_serialized = []
         for p in playersdump:
-                    playersdump_serialized.append({'userid': p.userid, 'firstname': p.firstname, 'lastname': p.lastname,
-                        'instrumentname': p.instrumentname, 'grade': p.grade, 'isprimary': p.isprimary})
+            playersdump_serialized.append({'userid': p.userid, 'firstname': p.firstname, 'lastname': p.lastname,
+                'instrumentname': p.instrumentname, 'grade': p.grade, 'isprimary': p.isprimary})
         periods = session.query(period).order_by(period.starttime).all()
         locations = session.query(location).all()
         log2('This groups status is %s' % thisgroup.status)
 
         session.close()
         return render_template('groupedit.html', \
-                            period=thisperiod, \
+                            currentperiod=currentperiod, \
+                            selectedperiod=selectedperiod, \
                             campname=config.root.CampDetails['Name'], \
                             thisgroup=thisgroup, \
                             thisgroupplayers=thisgroupplayers, \
@@ -348,6 +356,7 @@ def groupedit(userid,groupid):
                             instrumentlist=config.root.CampDetails['Instruments'].split(","), \
                             playersdump=playersdump, \
                             playersdump_serialized=playersdump_serialized, \
+                            thisgroupplayers_serialized=thisgroupplayers_serialized, \
                             )
     
     if request.method == 'DELETE':
@@ -360,6 +369,16 @@ def groupedit(userid,groupid):
         log2('Sending user to URL: %s' % url)
         session.close()
         return jsonify(message = 'Group has been deleted', url = url)
+
+    if request.method == 'POST':
+        #format the packet received from the server as JSON
+        content = request.json
+        session = Session()
+        log2('Grouprequest received. Whole content of JSON returned is: %s' % content)
+
+@app.route('/user/<userid>/group/<groupid>/period/<periodid>/edit/')
+def groupeditperiod(userid,groupid,periodid):
+    return groupedit(userid,groupid,periodid)
 
 #Handles the group request page. If a user visits the page, it gives them a form to create a new group request. Pressing submit 
 #sends a post containing configuration data. Their group request is queued until an adminsitrator approves it and assigns it to 
@@ -510,7 +529,7 @@ def grouprequestpage(userid,periodid=None):
                     #if it's a named player, not a blank drop-down
                     if p['playerid'] != 'null':
                         #find a list of players that are already assigned to this group, and play the instrument requested by the grouprequest
-                        playerclash = session.query(groupassignment).filter(groupassignment.instrument == p['instrumentname'],\
+                        playerclash = session.query(groupassignment).filter(groupassignment.instrumentname == p['instrumentname'],\
                            groupassignment.groupid == m.groupid).all()
                         #if the list of players already matches the group instrumentation for this instrument, this match fails and break out
                         if playerclash is not None:
@@ -543,7 +562,7 @@ def grouprequestpage(userid,periodid=None):
             if p['playerid'] != 'null':
                 playeruser = session.query(user).filter(user.userid == p['playerid']).first()
                 if playeruser is not None:
-                    playergroupassignment = groupassignment(userid = playeruser.userid, groupid = grouprequest.groupid, instrument = p['instrumentname'])
+                    playergroupassignment = groupassignment(userid = playeruser.userid, groupid = grouprequest.groupid, instrumentname = p['instrumentname'])
                     session.add(playergroupassignment)
                 else:
                     url = ('/user/' + str(thisuser.userid) + '/')
@@ -651,11 +670,13 @@ def periodpage(userid,periodid):
     thisuser = session.query(user).filter(user.userid == userid).first()
     if thisuser is None:
         return ('Did not find user in database. You have entered an incorrect URL address.')
+    #find any public events on during this period
+    publicevents = session.query(group.groupname,group.groupid).filter(group.iseveryone == 1).filter(group.periodid == periodid).all()
     #start with the players that are playing in groups in the period
     players = session.query(user.userid, user.firstname, user.lastname, period.starttime, period.endtime, group.groupname,\
-        groupassignment.instrument, location.locationname, groupassignment.groupid).\
+        groupassignment.instrumentname, location.locationname, groupassignment.groupid).\
         join(groupassignment).join(group).join(period).join(location).\
-        filter(group.periodid == periodid).order_by(group.groupname,groupassignment.instrument).all()
+        filter(group.periodid == periodid).order_by(group.groupname,groupassignment.instrumentname).all()
     #grab just the userids of those players to be used in the next query
     players_in_groups_query = session.query(user.userid).\
         join(groupassignment).join(group).join(period).\
@@ -667,6 +688,7 @@ def periodpage(userid,periodid):
     instrumentlist = config.root.CampDetails['Instruments'].split(",")
     return render_template('period.html', \
                             players=players, \
+                            publicevents=publicevents, \
                             nonplayers=nonplayers, \
                             campname=config.root.CampDetails['Name'], \
                             user=thisuser, \
@@ -831,7 +853,7 @@ def new_user(firstname,lastname,age,arrival,departure,isannouncer,isconductor,is
     absentgroups = session.query(group.groupid).join(period).filter(or_(period.starttime < arrival, period.starttime > departure)).all()
     for g in absentgroups:
         log2('assigning user to absent group with id %s' % g.groupid)
-        ga = groupassignment(userid = userid, groupid = g.groupid, instrument = 'absent')
+        ga = groupassignment(userid = userid, groupid = g.groupid, instrumentname = 'absent')
         session.add(ga)
     session.commit()
     session.close()
@@ -862,7 +884,7 @@ def new_instrument(userid,instrumentname,grade,isprimary):
         session.close()
         return ('This user already has a primary instrument. Cannot create another primary instrument record.')
     else:
-        thisinstrument = instrument(userid = thisuser.userid, instrumentname = instrumentname, grade = grade, isprimary = isprimary)
+        thisinstrumentname = instrument(userid = thisuser.userid, instrumentname = instrumentname, grade = grade, isprimary = isprimary)
         session.add(thisinstrument)
         session.commit()
         return ('intsrument link created for user with id %s' % thisuser.userid)
@@ -875,5 +897,5 @@ def send_js(path):
 
 if __name__ == '__main__':
     app.run(debug=True, \
-            #host='0.0.0.0'\
+            #host='0.0.0.0'\ #UNCOMMENTING THIS MAKES IT A PUBLIC SERVER
             )

@@ -46,6 +46,11 @@
     <h1>Listing for {{ period.periodname }} on {{ period.starttime.strftime('%Y-%m-%d') }} starting {{ period.starttime.strftime('%H:%M') }} and ending {{ period.endtime.strftime('%H:%M') }}</h1>
     <a href="/user/{{ user.userid }}/">Back to dashboard</a>
     <br>
+    {% if publicevents[0] != None %}
+    {% for e in publicevents %}
+    <h2>Public Event At This Time: <a href="/user/{{ user.userid }}/group/{{ e.groupid }}">{{ e.groupname }}</a></h2> 
+    {% endfor %}
+    {% endif %}
     <table style="width:100%" id="periodtable">
         <thead>
             <tr>
@@ -61,7 +66,7 @@
             <tr>
                 <td>{{ p.firstname }}</td>
                 <td>{{ p.lastname }}</td>
-                <td>{{ p.instrument }}</td>
+                <td>{{ p.instrumentname }}</td>
                 <td><a href="/user/{{ user.userid }}/group/{{ p.groupid }}/">{{ p.groupname }}</a></td>
                 <td>{{ p.locationname }}</td>
             </tr>
@@ -70,7 +75,7 @@
             <tr>
                 <td>{{ p.firstname }}</td>
                 <td>{{ p.lastname }}</td>
-                <td>{{ p.instrument }}</td>
+                <td>{{ p.instrumentname }}</td>
                 <td>{{ p.groupname }}</td>
                 <td>{{ p.locationname }}</td>
             </tr>

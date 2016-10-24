@@ -7,13 +7,132 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"> </script>
     <script>if (!window.jQuery) { document.write('<script src="/js/jquery-3.1.1.min.js"><\/script>'); }</script>
     <script>
+
         $(document).ready(function () {
 
-            //these first few variables set up the rest of the script
-            var players = {{ playersdump_serialized|tojson }};
-            console.log("Players:");
-            console.log(players);
+            //turn the dump of all players available in this period to a JS object
+            {% if playersdump_serialized == [] %}
+            var playersdump = null;
+            {% else %}
+            var playersdump = {{ playersdump_serialized|tojson }};
+            {% endif %}
+            console.log("Available Players:");
+            console.log(playersdump);
+            
+            //turn the dump of all players already playing in this group to a JS object
+            {% if thisgroupplayers_serialized == [] %}
+            var thisgroupplayers = null;
+            {% else %}
+            var thisgroupplayers = {{ thisgroupplayers_serialized|tojson }};
+            {% endif %}
+            console.log("Players already playing in this group:");
+            console.log(thisgroupplayers);
 
+            //changes all player dropdowns to match the players already playing in the group. 
+            //Sets the players to bold in their respective dropdowns.
+            instrumentcounter = {}
+            if (thisgroupplayers != null) {
+                for (var i = 0; i < thisgroupplayers.length; i++) {
+                    if (instrumentcounter[thisgroupplayers[i].instrumentname] == null) {
+                        instrumentcounter[thisgroupplayers[i].instrumentname] = 0;
+                    }
+                    $("#" + thisgroupplayers[i].instrumentname + "_" + instrumentcounter[thisgroupplayers[i].instrumentname]).val(thisgroupplayers[i].userid).change();
+                    $("#" + thisgroupplayers[i].instrumentname + "_" + instrumentcounter[thisgroupplayers[i].instrumentname] + " option:selected").css("font-weight","Bold");
+                    instrumentcounter[thisgroupplayers[i].instrumentname]++;
+
+                };
+            }
+
+            //this function updates the table slot containing the total number of players in the group.
+            function updatetotal() {
+                var sum = 0;
+                $('.instrumentnumber_dropdown').each(function() {
+                    sum += Number($(this).val());
+                });
+                $("#total_players").html(sum).change();
+            }
+            
+            //when the page loads for the first time, update the total
+            updatetotal();
+            
+            //adds a player dropdown to a given cell
+            function addPlayer(cell) {
+                instrument = cell.attr('data-instrument')
+                var sel = ($('<select class="player_dropdown" data-instrument="' + instrument + '">')).appendTo(cell);
+                sel.append($("<option>").attr('value',""));
+                for (var i = 0; i < playersdump.length; i++) {
+                    if (playersdump[i].instrumentname == instrument) {
+                        sel.append($("<option>").attr('value',playersdump[i].userid).text(playersdump[i].firstname + ' ' + playersdump[i].lastname));
+                    }
+                }
+            }
+
+            function removePlayer(cell) {
+                dropdowns = jQuery(cell).find('.player_dropdown')
+                dropdowns[dropdowns.length - 1].remove()
+            }
+
+            //when user changes any instrument number drop down baxes
+            $(document).on("change", '.instrumentnumber_dropdown', function () {
+                updatetotal();
+                thisinstrument = $(this).attr('data-instrument');
+                playerscell = $('.players_cell[data-instrument="' + thisinstrument + '"]')
+                difference = $(this).val() - $('.player_dropdown[data-instrument="' + thisinstrument + '"]').length
+                console.log('Need to add ' + difference + ' dropdowns')
+                if (difference > 0) {
+                    for (i=0; i < difference; i++) {
+                        addPlayer(playerscell)
+                    }
+                }
+                if (difference < 0) {
+                    for (i=0; i > difference; i--) {
+                        removePlayer(playerscell)
+                    }
+                } 
+            });
+
+            //when user changes any instrument number drop down baxes
+            $(document).on("change", '#period', function () {
+                window.location = '/user/{{ thisuser.userid }}/group/{{ thisgroup.groupid }}/period/' + $(this).val() + '/edit/';
+            });
+
+            //run when user changes the content of a player dropdown. checks for other dropdown boxes that contain the
+            //name of the player that was selected and removes them.
+            $(document).on("change", '.player_dropdown', function (e) {
+                //grab value that was selected on the dropdown
+                var selectedplayer = $(this).val();
+                //only run the code if it's the original event to prevent recursion (this function would go infinite otherwise)
+                if (e.originalEvent) {
+                    $('.player_dropdown').not(this).each(function() {
+                        if ($(this).val() == selectedplayer) {
+                            $(this).val("").change();
+                        }
+                    });
+                }
+            });
+
+            //when user presses submit button
+            //UNFINISHED
+            $("#submit_button").click(function () {
+                console.log('Delete button pressed');
+                var request = {}
+                $('.group_attribute').each(function() {
+                    request[$(this).attr('id')] = $(this).val();
+                });
+                $.ajax({
+                    //make a POST AJAX query to the same web page as the user is currently visiting
+                    url: ('/user/{{ thisuser.userid }}/group/{{ thisgroup.groupid }}/edit/'),
+                    type: 'POST',
+                    success: function(data) {
+                        //upon success, the server will return a message and a URL. give the user the message and send them to the URL.
+                        console.log(data);
+                        confirm(data.message)
+                        window.location = data.url;
+                    }
+                });
+            });
+
+            //when user presses the delete group button
             $("#delete_button").click(function () {
                 console.log('Delete button pressed');
                 $.ajax({
@@ -45,18 +164,18 @@
         <tr>
             <th>Name</th>
             <td>{{ thisgroup.groupname }}</td>
-            <td><input type="text" id="groupname" value="{{ thisgroup.groupname }}"></td>
+            <td><input type="text" id="groupname" class="group_attribute" value="{{ thisgroup.groupname }}"></td>
         </tr>
         <tr>
             <th>Status</th>
             <td>{{ thisgroup.status }}</td>
             <td>
-                <select id="status">
+                <select id="status" class="group_attribute">
                 {% if thisgroup.status == "Confirmed" %}
                     <option value="Queued">Queued</option>
-                    <option  value="Confirmed">Confirmed</option>
+                    <option value="Confirmed" selected="selected">Confirmed</option>
                 {% else %}
-                    <option  value="Queued">Queued</option>
+                    <option value="Queued" selected="selected">Queued</option>
                     <option value="Confirmed">Confirmed</option>
                 {% endif %}
                 </select>
@@ -65,19 +184,19 @@
         <tr>
             <th>Music</th>
             <td>{{ thisgroup.music }}</td>
-            <td><input type="text" id="music" value="{{ thisgroup.music }}"></td>
+            <td><input type="text" id="music" class="group_attribute"value="{{ thisgroup.music }}"></td>
         </tr>
         <tr>
             <th>Period</th>
             <td>
                 {% if period != None %}
-                {{ period.periodname }}, {{ period.starttime.strftime('%A, %Y-%m-%d') }}, {{ period.starttime.strftime('%H:%M') }}-{{ period.endtime.strftime('%H:%M') }}</td>
+                {{ currentperiod.periodname }}, {{ currentperiod.starttime.strftime('%A, %Y-%m-%d') }}, {{ currentperiod.starttime.strftime('%H:%M') }}-{{ currentperiod.endtime.strftime('%H:%M') }}</td>
                 {% endif %}
             <td>
-                <select id="period">
+                <select id="period" class="group_attribute">
                     <option value=""></option>
                     {% for p in periods %}
-                    {% if p.periodid == period.periodid %}
+                    {% if p.periodid == selectedperiod.periodid %}
                     <option value="{{ p.periodid }}" selected="selected">{{ p.periodname }}, {{ p.starttime.strftime('%A, %Y-%m-%d') }}, {{ p.starttime.strftime('%H:%M') }}-{{ p.endtime.strftime('%H:%M') }}</option>
                     {% else %}
                     <option value="{{ p.periodid }}">{{ p.periodname }}, {{ p.starttime.strftime('%A, %Y-%m-%d') }}, {{ p.starttime.strftime('%H:%M') }}-{{ p.endtime.strftime('%H:%M') }}</option>
@@ -90,7 +209,7 @@
             <th>Location</th>
             <td>{{ thislocation.locationname }}</td>
             <td>
-                <select id="location">
+                <select id="location" class="group_attribute">
                     <option value=""></option>
                     {% for l in locations %}
                     {% if l.locationid == thislocation.locationid %}
@@ -106,7 +225,7 @@
             <th>Minimum Level</th>
             <td>{{ thisgroup.minimumlevel }}</td>
             <td>
-                <select class="attribute_dropdown" id="minimumlevel_dropdown">
+                <select id="minimumlevel_dropdown" class="group_attribute">
                     {% set n = 7 %}
                     {% for n in range(n) %}
                     {% if n == thisgroup.minimumlevel %}
@@ -128,6 +247,7 @@
         </tr>
      </table>
     <h2>Players</h2>
+    <p>Players bolded in the below table are the current players in that group.</p>
     <table class="sortable" id="table_players">
         <tr>
             <th>Instrument</th>
@@ -136,10 +256,10 @@
         </tr>
         {% set count = 0 -%}
         {% for i in instrumentlist %}
-        <tr>
+        <tr id="row_{{ i }}">
             <td>{{ i }}</td>
             <td>
-                <select class="instrumentnumber_dropdown" id="number_{{ i }}">
+                <select class="instrumentnumber_dropdown" id="number_{{ i }}" data-instrument="{{i}}">
                     {% set n = 21 %}
                     {% for n in range(n) %}
                     {% if n == thisgroup[i] %}
@@ -150,9 +270,10 @@
                     {% endfor %}
                 </select>
             </td>
-            <td>
+            <td class="players_cell" data-instrument="{{i}}">
+                {% if thisgroup[i] %}
                 {% for p in range(thisgroup[i]) %}
-                <select class="player_dropdown" data-instrument="{{ i }}">
+                <select class="player_dropdown" id="{{i}}_{{p}}" data-instrument="{{i}}">
                     <option value=""></option>
                     {% for d in playersdump %}
                     {% if d.instrumentname == i %}
@@ -161,18 +282,21 @@
                     {% endfor %}
                 </select>
                 {% endfor %}
+                {% endif %}
             </td>
         </tr>
         {% endfor %}
+        <tr>
+            <th>Total Players:</th>
+            <td id="total_players"></td>
+        </tr>
     </table>
-    <button id="autofill_button">Auto-fill Players for this Instrumentation</button>
+    <form id="autofill">
+        <input type="radio" name="gender" value="n" checked> Do not auto-fill empty player boxes<br>
+        <input type="radio" name="gender" value="y"> Auto-fill empty player boxes<br>
+    </form>
     <p><button id="submit_button">Submit Changes</button></p>
     <p><button id="delete_button">Delete Group</button></p>
     <p><a href="/user/{{ thisuser.userid }}/">Back to dashboard</a></p>
-
-    <p>Current Group Players are:</p>
-    {% for p in thisgroupplayers %}
-    {{ p.firstname }} {{ p.lastname }} {{ p.instrument }}<br/>
-    {% endfor %}
 </body>
 </html>

@@ -67,6 +67,7 @@
                 }
             }
 
+            //removes the last player dropdown in a cell
             function removePlayer(cell) {
                 dropdowns = jQuery(cell).find('.player_dropdown')
                 dropdowns[dropdowns.length - 1].remove()
@@ -92,7 +93,8 @@
             });
 
             //when user changes any instrument number drop down baxes
-            $(document).on("change", '#period', function () {
+            $(document).on("change", '#periodid', function () {
+                console.log('User selected period ' + $(this).val() + ', reloading page for that period')
                 window.location = '/user/{{ thisuser.userid }}/group/{{ thisgroup.groupid }}/period/' + $(this).val() + '/edit/';
             });
 
@@ -114,20 +116,47 @@
             //when user presses submit button
             //UNFINISHED
             $("#submit_button").click(function () {
-                console.log('Delete button pressed');
+                console.log('Submit button pressed');
+                //establish the object we'll send to the server
                 var request = {}
+                //for each group_attribute dropdown on the page, add the value to the object
                 $('.group_attribute').each(function() {
                     request[$(this).attr('id')] = $(this).val();
                 });
+
+                $('.instrumentnumber_dropdown').each(function() {
+                    request[$(this).data('instrument')] = $(this).val();
+                });
+
+                //establish an array to fill with player and instruments
+                request.players = []
+                $('.player_dropdown').each(function() {
+                    //create a new object
+                    var iplayer = {};
+                    //add the contents of the instrument dropdown to the object
+                    iplayer.instrumentname = $(this).data('instrument');
+                    iplayer.userid = $(this).val();
+                    //push the player object to the players array in the request object
+                    request.players.push(iplayer);
+                });
+
+                console.log('Sending the following to the server:');
+                console.log(request);
                 $.ajax({
                     //make a POST AJAX query to the same web page as the user is currently visiting
                     url: ('/user/{{ thisuser.userid }}/group/{{ thisgroup.groupid }}/edit/'),
                     type: 'POST',
+                    contentType: 'application/json;charset=UTF-8',
+                    data: JSON.stringify(request, null),
                     success: function(data) {
                         //upon success, the server will return a message and a URL. give the user the message and send them to the URL.
                         console.log(data);
-                        confirm(data.message)
-                        window.location = data.url;
+                        if (data.message != 'none') {
+                            confirm(data.message);
+                        }
+                        if (data.url != 'none') {
+                            window.location = data.url;
+                        }
                     }
                 });
             });
@@ -142,7 +171,9 @@
                     success: function(data) {
                         //upon success, the server will return a message and a URL. give the user the message and send them to the URL.
                         console.log(data);
-                        confirm(data.message)
+                        if (data.message != 'none') {
+                            confirm(data.message);
+                        }
                         window.location = data.url;
                     }
                 });
@@ -189,11 +220,11 @@
         <tr>
             <th>Period</th>
             <td>
-                {% if period != None %}
+                {% if currentperiod != None %}
                 {{ currentperiod.periodname }}, {{ currentperiod.starttime.strftime('%A, %Y-%m-%d') }}, {{ currentperiod.starttime.strftime('%H:%M') }}-{{ currentperiod.endtime.strftime('%H:%M') }}</td>
                 {% endif %}
             <td>
-                <select id="period" class="group_attribute">
+                <select id="periodid" class="group_attribute">
                     <option value=""></option>
                     {% for p in periods %}
                     {% if p.periodid == selectedperiod.periodid %}
@@ -203,13 +234,14 @@
                     {% endif %}
                     {% endfor %}
                 </select>
+                WARNING: changing this will refresh this page
             </td>
         </tr>
         <tr>
             <th>Location</th>
             <td>{{ thislocation.locationname }}</td>
             <td>
-                <select id="location" class="group_attribute">
+                <select id="locationid" class="group_attribute">
                     <option value=""></option>
                     {% for l in locations %}
                     {% if l.locationid == thislocation.locationid %}
@@ -225,7 +257,7 @@
             <th>Minimum Level</th>
             <td>{{ thisgroup.minimumlevel }}</td>
             <td>
-                <select id="minimumlevel_dropdown" class="group_attribute">
+                <select id="minimumlevel" class="group_attribute">
                     {% set n = 7 %}
                     {% for n in range(n) %}
                     {% if n == thisgroup.minimumlevel %}
@@ -239,7 +271,7 @@
         </tr>
         <tr>
             <th>Requested User</th>
-            <td colspan="2">{{ thisgroup.requesteduserid }}</tdcolspan="2">
+            <td colspan="2">{{ thisgroup.requesteduserid }}</td>
         </tr>
         <tr>
             <th>Request Time</th>
@@ -291,10 +323,7 @@
             <td id="total_players"></td>
         </tr>
     </table>
-    <form id="autofill">
-        <input type="radio" name="gender" value="n" checked> Do not auto-fill empty player boxes<br>
-        <input type="radio" name="gender" value="y"> Auto-fill empty player boxes<br>
-    </form>
+    <button id="autofill_button">Auto-fill missing players</button>
     <p><button id="submit_button">Submit Changes</button></p>
     <p><button id="delete_button">Delete Group</button></p>
     <p><a href="/user/{{ thisuser.userid }}/">Back to dashboard</a></p>

@@ -318,9 +318,12 @@ def groupedit(userid,groupid,periodid=None):
     if request.method == 'GET':
         #THIS NEEDS TO BE CHANGED TO AN ASYNC AJAX CALL UPON CHANGE OF THE DROPDOWN FOR PERIOD
         currentperiod = session.query(period).filter(period.periodid == thisgroup.periodid).first()
-        selectedperiod = currentperiod
         if periodid is not None:
             selectedperiod = session.query(period).filter(period.periodid == periodid).first()
+        elif currentperiod is not None:
+            selectedperiod = currentperiod
+        else:
+            selectedperiod = session.query(period).filter(period.meal != 1).order_by(period.starttime).first()
         thislocation = session.query(location).join(group).filter(group.groupid == groupid).first()
         #gets the list of players playing in the given group
         thisgroupplayers = session.query(user.userid, user.firstname, user.lastname, groupassignment.instrumentname).join(groupassignment).join(group).\
@@ -374,8 +377,50 @@ def groupedit(userid,groupid,periodid=None):
         #format the packet received from the server as JSON
         content = request.json
         session = Session()
-        log2('Grouprequest received. Whole content of JSON returned is: %s' % content)
-
+        thisgroupassignments = session.query(groupassignment).filter(groupassignment.groupid == thisgroup.groupid).all()
+        for a in thisgroupassignments:
+            session.delete(a)
+        
+        thisgroup.groupname = content['groupname']
+        thisgroup.periodid = content['periodid']
+        thisgroup.locationid = content['locationid']
+        thisgroup.minimumlevel = content['minimumlevel']
+        thisgroup.music = content['music']
+        thisgroup.status = content['status']
+        for i in config.root.CampDetails['Instruments'].split(","):
+            log2('Setting %s to %s' % (i,content[i]))
+            setattr(thisgroup,i,content[i])
+        foundempty = False
+        for p in content['players']:
+                    log2('Performing action for player with id %s' % p['userid'])
+                    #if we are on the conductorpage, you cannot submit blank players. Give the user an error and take them back to their dashboard.
+                    if p['userid'] == '':
+                        foundempty = True
+                    #if the playerid is not null, we create a groupassignment for them and bind it to this group
+                    else:
+                        playeruser = session.query(user).filter(user.userid == p['userid']).first()
+                        currentassignment = session.query(groupassignment).filter(groupassignment.userid == userid).filter(group.periodid == content['periodid'])
+                        if playeruser is not None:
+                            playergroupassignment = groupassignment(userid = playeruser.userid, groupid = thisgroup.groupid, instrumentname = p['instrumentname'])
+                            session.add(playergroupassignment)
+                        else:
+                            url = ('/user/' + str(thisuser.userid) + '/')
+                            session.close()
+                            return jsonify(message = 'Could not find one of your selected players in the database. Please refresh the page and try again.', url = url)
+                    #if none of the above are satisfied - that's ok. you're allowed to submit null playernames in the user request page, these will be 
+                    #allocated by the admin when the group is confirmed.
+        if thisgroup.status == 'Confirmed' and (thisgroup.periodid == '' or thisgroup.groupname == '' or thisgroup.locationid == '' or foundempty == True):
+            url = '/user/' + str(thisuser.userid) + '/group/' + str(thisgroup.groupid) + '/'
+            session.close()
+            return jsonify(message = 'Confirmed groups must have a name, assigned period, assigned location and no empty player slots.', url = 'none')
+            
+        else:
+            session.add(thisgroup)
+            session.commit()
+            url = '/user/' + str(thisuser.userid) + '/group/' + str(thisgroup.groupid) + '/'
+            session.close()
+            return jsonify(message = 'none', url = url)
+        
 @app.route('/user/<userid>/group/<groupid>/period/<periodid>/edit/')
 def groupeditperiod(userid,groupid,periodid):
     return groupedit(userid,groupid,periodid)

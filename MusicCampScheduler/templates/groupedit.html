@@ -62,7 +62,7 @@
                 sel.append($("<option>").attr('value',""));
                 for (var i = 0; i < playersdump.length; i++) {
                     if (playersdump[i].instrumentname == instrument) {
-                        sel.append($("<option>").attr('value',playersdump[i].userid).text(playersdump[i].firstname + ' ' + playersdump[i].lastname));
+                        sel.append($("<option>").attr('value',playersdump[i].userid).text(playersdump[i].grade + ' - ' + playersdump[i].firstname + ' ' + playersdump[i].lastname));
                     }
                 }
             }
@@ -73,52 +73,87 @@
                 dropdowns[dropdowns.length - 1].remove()
             }
 
-            //when user changes any instrument number drop down baxes
+            //when user changes any instrument number drop down boxes
             $(document).on("change", '.instrumentnumber_dropdown', function () {
                 updatetotal();
                 thisinstrument = $(this).attr('data-instrument');
-                playerscell = $('.players_cell[data-instrument="' + thisinstrument + '"]')
-                difference = $(this).val() - $('.player_dropdown[data-instrument="' + thisinstrument + '"]').length
-                console.log('Need to add ' + difference + ' dropdowns')
+                playerscell = $('.players_cell[data-instrument="' + thisinstrument + '"]');
+                difference = $(this).val() - $('.player_dropdown[data-instrument="' + thisinstrument + '"]').length;
+                console.log('Need to add ' + difference + ' dropdowns');
                 if (difference > 0) {
                     for (i=0; i < difference; i++) {
-                        addPlayer(playerscell)
+                        addPlayer(playerscell);
                     }
                 }
                 if (difference < 0) {
                     for (i=0; i > difference; i--) {
-                        removePlayer(playerscell)
+                        removePlayer(playerscell);
                     }
                 } 
             });
 
-            //when user changes any instrument number drop down baxes
+            //when user changes the period dropdown box, reload the page with data from the new period
             $(document).on("change", '#periodid', function () {
-                console.log('User selected period ' + $(this).val() + ', reloading page for that period')
+                console.log('User selected period ' + $(this).val() + ', reloading page for that period');
                 window.location = '/user/{{ thisuser.userid }}/group/{{ thisgroup.groupid }}/period/' + $(this).val() + '/edit/';
             });
 
-            //run when user changes the content of a player dropdown. checks for other dropdown boxes that contain the
-            //name of the player that was selected and removes them.
+            //run when user changes the content of a player dropdown
             $(document).on("change", '.player_dropdown', function (e) {
                 //grab value that was selected on the dropdown
                 var selectedplayer = $(this).val();
                 //only run the code if it's the original event to prevent recursion (this function would go infinite otherwise)
                 if (e.originalEvent) {
+                    //for each other drop down box
                     $('.player_dropdown').not(this).each(function() {
+                        //set any other boxes with the same player name to blank
                         if ($(this).val() == selectedplayer) {
                             $(this).val("").change();
                         }
                     });
                 }
+                ////NOT USED - keeping just in case. code doesn't work, but is the makings of the "available players" column
+                ////In each "Available Players" cell
+                //$('.available_players').each(function() {
+                //    thisinstrument = $(this).attr('id')
+                //    //iterate through the whole list of players
+                //    for (var i = 0; i < playersdump.length; i++) {
+                //        //and for each player who plays this instrument
+                //        if (playersdump[i].instrumentname == thisinstrument) {
+                //            alreadyfound = false;
+                //            $('.player_dropdown').each(function() {
+                //                //if they are already set to playing in this group
+                //                if ($(this).val() != playersdump[i].userid) {
+                //                    //don't write their name
+                //                    console.log('Already found player in dropdowns ' + playersdump[i].firstname + ' ' + playersdump[i].lastname)
+                //                    alreadyfound = true;
+                //                    return false
+                //                }
+                //            });
+                //            if (alreadyfound == false) {
+                //                console.log('Player not found in dropdowns, adding text to cell ' + playersdump[i].firstname + ' ' + playersdump[i].lastname)
+                //                if ($(this).html() == '') {
+                //                    $(this).html(playersdump[i].firstname + ' ' + playersdump[i].lastname)
+                //                }
+                //                else {
+                //                    $(this).html().append(playersdump[i].firstname + ' ' + playersdump[i].lastname)
+                //                }
+                //            }
+                //        }
+                //    }
+                //});
             });
 
-            //when user presses submit button
-            //UNFINISHED
-            $("#submit_button").click(function () {
+            //when user presses submit button (either with or without autofill)
+            $(".submit_button").click(function () {
                 console.log('Submit button pressed');
                 //establish the object we'll send to the server
                 var request = {}
+
+                //check if this was the autofill button or not, and add this information to the object
+                if ($(this).attr('id') == 'submit_with_autofill') { request.autofill = '1' }
+                else { request.autofill = '0' }
+
                 //for each group_attribute dropdown on the page, add the value to the object
                 $('.group_attribute').each(function() {
                     request[$(this).attr('id')] = $(this).val();
@@ -258,6 +293,7 @@
             <td>{{ thisgroup.minimumlevel }}</td>
             <td>
                 <select id="minimumlevel" class="group_attribute">
+                    <option value="">Auto</option>
                     {% set n = 7 %}
                     {% for n in range(n) %}
                     {% if n == thisgroup.minimumlevel %}
@@ -270,6 +306,25 @@
             </td>
         </tr>
         <tr>
+            <th>Counted towards play totals</th>
+            <td>
+                {% if thisgroup.ismusical == 0 %}No
+                {% else %}Yes
+                {% endif %}
+            </td>
+            <td>
+                <select id="ismusical" class="group_attribute">
+                    {% if thisgroup.ismusical == 0 %}
+                    <option value="1">Yes</option>
+                    <option value="0" selected="selected">No</option>
+                    {% else %}
+                    <option value="1" selected="selected">Yes</option>
+                    <option value="0">No</option>
+                    {% endif %}
+                </select>
+            </td>
+        </tr>
+        <tr>
             <th>Requested User</th>
             <td colspan="2">{{ thisgroup.requesteduserid }}</td>
         </tr>
@@ -277,14 +332,19 @@
             <th>Request Time</th>
             <td colspan="2">{{ thisgroup.requesttime.strftime('%A, %Y-%m-%d') }}, {{ thisgroup.requesttime.strftime('%H:%M') }}</td>
         </tr>
+        <tr>
+            <th>Total Players:</th>
+            <td colspan="2" id="total_players"></td>
+        </tr>
      </table>
     <h2>Players</h2>
-    <p>Players bolded in the below table are the current players in that group.</p>
+    <p>Players bolded in the below table are the current players in that group. Player are shown with their grades on the respective instruments before their names.</p>
     <table class="sortable" id="table_players">
         <tr>
             <th>Instrument</th>
             <th>Number</th>
-            <th>Players</th>
+            <th>Current Players</th>
+            <!--<th>Available Players</th>-->
         </tr>
         {% set count = 0 -%}
         {% for i in instrumentlist %}
@@ -309,22 +369,19 @@
                     <option value=""></option>
                     {% for d in playersdump %}
                     {% if d.instrumentname == i %}
-                    <option value="{{ d.userid }}">{{ d.firstname }} {{ d.lastname }}</option>
+                    <option value="{{ d.userid }}">{{ d.grade }} - {{ d.firstname }} {{ d.lastname }}</option>
                     {% endif %}
                     {% endfor %}
                 </select>
                 {% endfor %}
                 {% endif %}
             </td>
+            <!-- <td class="available_players" data-instrument="{{i}}"></td> -->
         </tr>
         {% endfor %}
-        <tr>
-            <th>Total Players:</th>
-            <td id="total_players"></td>
-        </tr>
     </table>
-    <button id="autofill_button">Auto-fill missing players</button>
-    <p><button id="submit_button">Submit Changes</button></p>
+    <p><button class="submit_button" id="submit_with_autofill">Submit Changes and auto-fill missing players</button></p>
+    <p><button class="submit_button" id="submit_without_autofill">Submit Changes without auto-fill</button></p>
     <p><button id="delete_button">Delete Group</button></p>
     <p><a href="/user/{{ thisuser.userid }}/">Back to dashboard</a></p>
 </body>

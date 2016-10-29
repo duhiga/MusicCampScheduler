@@ -149,8 +149,7 @@
             <td>
                 <select id="minimumlevel_dropdown">
                     <option value=""></option>
-                    {% set n = 7 %}
-                    {% for n in range(n) %}
+                    {% for n in range(maximumlevel + 1) %}
                     <option value="{{ n }}">{{ n }}</option>
                     {% endfor %}
                 </select>

@@ -43,7 +43,7 @@
                 {% if period == None %}
                 Not yet allocated
                 {% else %}
-                {{ period.starttime.strftime('%H:%M') }} - {{ period.endtime.strftime('%H:%M') }}
+                <a href="/user/{{ thisuser.userid }}/period/{{ period.periodid }}/">{{ period.starttime.strftime('%H:%M') }} - {{ period.endtime.strftime('%H:%M') }}</a>
                 {% endif %}
             </td>
         </tr>

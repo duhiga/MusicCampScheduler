@@ -294,8 +294,7 @@
             <td>
                 <select id="minimumlevel" class="group_attribute">
                     <option value="">Auto</option>
-                    {% set n = 7 %}
-                    {% for n in range(n) %}
+                    {% for n in range(maximumlevel + 1) %}
                     {% if n == thisgroup.minimumlevel %}
                     <option value="{{ n }}" selected="selected">{{ n }}</option>
                     {% else %}

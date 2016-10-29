@@ -48,30 +48,17 @@ def playcount(session,userid):
         filter(user.userid == userid, group.ismusical == 1, period.endtime <= datetime.datetime.now()).count()
     return playcount
 
-def findsubstitutes(session,inputgroup):
-    #This block finds the substitutes for this group over several queries. A "substitute" is defined as a person who is not currently
-    #playing in anything during the period, plays the same instrument as the current players, and is a minimum level of the lowest
-    #grade current player minus one.
-    if inputgroup.minimumlevel is None:
+def minimumlevel(session,inputgroup):
+    if inputgroup.minimumlevel is None or inputgroup.minimumlevel == '':
         minimumgradeob = session.query(user.firstname, user.lastname, instrument.instrumentname, instrument.grade).join(groupassignment).join(group).\
             join(instrument, and_(groupassignment.instrumentname == instrument.instrumentname, user.userid == instrument.userid)).\
             filter(group.groupid == inputgroup.groupid).order_by(instrument.grade).first()
-        minimumgrade = minimumgradeob.grade
+        minimumgrade = int(minimumgradeob.grade) - 1
         log2('Found minimum grade in group to be %s %s playing %s with grade %s' % (minimumgradeob.firstname, minimumgradeob.lastname, minimumgradeob.instrumentname, minimumgradeob.grade))
     else:
         minimumgrade = inputgroup.minimumlevel
         log2('Found minimum grade from the group config to be %s' % minimumgrade)
-    #get the list of instruments played in this group and removes duplicates to be used as a subquery later
-    instruments_in_group_query = session.query(groupassignment.instrumentname).join(group).filter(group.groupid == inputgroup.groupid).group_by(groupassignment.instrumentname)
-    #get the userids of everyone that's already playing in something this period
-    everyone_playing_in_periodquery = session.query(user.userid).join(groupassignment).join(group).join(period).filter(period.periodid == inputgroup.periodid)
-    #combine the last two queries with another query, finding everyone that both plays an instrument that's found in this
-    #group AND isn't in the list of users that are already playing in this period.
-    substitutes = session.query(instrument.instrumentname, user.userid, user.firstname, user.lastname).join(user).\
-        filter(~user.userid.in_(everyone_playing_in_periodquery)).\
-        filter(instrument.instrumentname.in_(instruments_in_group_query), instrument.grade >= (int(minimumgrade) - 1)).\
-        order_by(instrument.instrumentname)
-    return substitutes
+    return minimumgrade
 
 #gets a list of periods corresponding to the requested userid and date, formatting it in a nice way for the user dashboard
 def useridanddatetoperiods(session,userid,date):
@@ -278,7 +265,18 @@ def groupdetails(userid,groupid):
     
     #find the substitutes for this group
     if thisgroup.status == 'Confirmed' and thisgroup.iseveryone != 1:
-        substitutes = findsubstitutes(session,thisgroup).all()
+        minimumgrade = int(minimumlevel(session,thisgroup)) - 1
+        #get the list of instruments played in this group and removes duplicates to be used as a subquery later
+        instruments_in_group_query = session.query(groupassignment.instrumentname).join(group).filter(group.groupid == thisgroup.groupid).group_by(groupassignment.instrumentname)
+        log2('Found instruments in group to be %s' % instruments_in_group_query.all())
+        #get the userids of everyone that's already playing in something this period
+        everyone_playing_in_periodquery = session.query(user.userid).join(groupassignment).join(group).join(period).filter(period.periodid == thisgroup.periodid)
+        #combine the last two queries with another query, finding everyone that both plays an instrument that's found in this
+        #group AND isn't in the list of users that are already playing in this period.
+        substitutes = session.query(instrument.instrumentname, user.userid, user.firstname, user.lastname).join(user).\
+            filter(~user.userid.in_(everyone_playing_in_periodquery)).\
+            filter(instrument.instrumentname.in_(instruments_in_group_query), instrument.grade >= minimumgrade).\
+            order_by(instrument.instrumentname)
     else:
         substitutes = None
 
@@ -292,21 +290,6 @@ def groupdetails(userid,groupid):
                         thisuser=thisuser, \
                         thislocation=thislocation, \
                         )
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 #UNFINISHED Group editor page. Only accessable by admins. Navigate here from a group to edit group.
 @app.route('/user/<userid>/group/<groupid>/edit/', methods=['GET', 'POST', 'DELETE'])
@@ -401,12 +384,13 @@ def groupedit(userid,groupid,periodid=None):
             log2('Setting %s to %s' % (i,content[i]))
             setattr(thisgroup,i,content[i])
         foundempty = False
+        foundfilled = True
         for p in content['players']:
-                    log2('Performing action for player with id %s' % p['userid'])
-                    if p['userid'] == '':
+                    if p['userid'] == '' or p['userid'] is None:
                         foundempty = True
                     #if the playerid is not null, we create a groupassignment for them and bind it to this group
                     else:
+                        foundfilled = True
                         log2('Attempting to find user %s' % p['userid'])
                         playeruser = session.query(user).filter(user.userid == p['userid']).first()
                         currentassignment = session.query(groupassignment).join(group).filter(groupassignment.userid == userid).filter(group.periodid == content['periodid']).first()
@@ -422,37 +406,63 @@ def groupedit(userid,groupid,periodid=None):
                             url = ('/user/' + str(thisuser.userid) + '/')
                             session.close()
                             return jsonify(message = 'Could not find one of your selected players in the database. Please refresh the page and try again.', url = url)
+        if thisgroup.minimumlevel is None and foundfilled == False:
+            url = 'none'
+            session.rollback()
+            session.close()
+            return jsonify(message = 'You cannot have all empty players and an auto level. Set the level or at least one player.', url=url)
         if thisgroup.status == 'Confirmed' and (thisgroup.periodid == '' or thisgroup.groupname == '' or thisgroup.locationid == '' or foundempty == True):
             url = '/user/' + str(thisuser.userid) + '/group/' + str(thisgroup.groupid) + '/'
             session.close()
             return jsonify(message = 'Confirmed groups must have a name, assigned period, assigned location and no empty player slots.', url = 'none')
         
-        #----AUTOFILL SECTION----# UNFINISHED AND DOESN'T WORK
+        #----AUTOFILL SECTION---- UNFINISHED AND DOESN'T WORK
         if content['autofill'] == '1':
             log2('User selected to autofill the group')
             for i in config.root.CampDetails['Instruments'].split(","):
                 numberinstrument = getattr(thisgroup,i)
-                if getattr(thisgroup,i) > 0:
-                    log2('Group has %s players for instrument %s' % (numberinstrument, i))
+                if int(getattr(thisgroup,i)) > 0:
+                    log2('Group has configured %s total players for instrument %s' % (numberinstrument, i))
                     currentinstrumentplayers = session.query(user).join(groupassignment).filter(groupassignment.groupid == thisgroup.groupid, groupassignment.instrumentname == i).all()
                     requiredplayers = int(numberinstrument) - len(currentinstrumentplayers)
-                    log2('We need to find %s extra players for instrument %s' % (requiredplayers, i))
-                    possibleplayersquery = findsubstitutes(session,thisgroup).filter(instrument.instrumentname == i)
-                    log2('possible players query is: %s' % possibleplayersquery)
-                    playcountsquery = session.query(user.userid, func.count(user.userid).label("playcount")).join(groupassignment).join(group).filter(group.ismusical == 1).group_by(user.userid)
-                    assignmentlist = session.query(possibleplayersquery).join(playcountsquery, possibleplayersquery.userid == playcountsquery.userid).order_by(playcountsquery.playcount).all()
-                    
-                    #find the instrument, userid, firstname and lastname of all possible players in this group
-                    while count < requiredplayers:
-                        log2('Selected %s to play %s' % (assignedplayerlist[count].userid, i))
-                        count = count + 1
+                    log2('Found %s current players for instrument %s' % (len(currentinstrumentplayers), i))
+                    log2('We need to autofill %s extra players for instrument %s' % (requiredplayers, i))
+                    #get the minimum level of this group
+                    minlevel = minimumlevel(session,thisgroup)
+                    #get the userids of everyone that's already playing in something this period
+                    everyone_playing_in_period_query = session.query(user.userid).join(groupassignment).join(group).join(period).filter(period.periodid == thisgroup.periodid)
+                    #combine the last query with another query, finding everyone that both plays an instrument that's found in this
+                    #group AND isn't in the list of users that are already playing in this period.
+                    possible_players_query = session.query(user.userid).outerjoin(instrument).filter(~user.userid.in_(everyone_playing_in_period_query)).\
+                        filter(instrument.grade >= int(minlevel)).filter(instrument.instrumentname == i)
+                    if possible_players_query.first() is None:
+                        url = 'none'
+                        session.close()
+                        return jsonify(message = 'Could not find a suitable player for instrument %s, manually fill their names, change the minimum level requirement of this group, or remove their instrument and try again.' % i, url = url)
+                    else:
+                        log2('Found %s players that could potentially be autofilled into this group.' % len(possible_players_query.all()))
+                        #get the players that have already played in groups at this camp, and inverse it to get the players with playcounts of zero
+                        already_played_query = session.query(user.userid).join(groupassignment).join(group).filter(group.ismusical == 1).\
+                            filter(groupassignment.userid.in_(possible_players_query))
+                        final_list = session.query(user.userid,sqlalchemy.sql.expression.literal_column("0").label("playcount")).filter(user.userid.in_(possible_players_query)).filter(~user.userid.in_(already_played_query)).all()
+                        #append the players that have already played to the players that haven't played
+                        for p in (session.query(user.userid, func.count(groupassignment.userid).label("playcount")).group_by(groupassignment.userid).outerjoin(groupassignment).outerjoin(group).\
+                                filter(group.ismusical == 1).filter(groupassignment.userid.in_(possible_players_query)).order_by(func.count(groupassignment.userid)).all()):
+                            final_list.append(p)
+                        log2('Players in final list with playcounts:')
+                        for pl in final_list:
+                            log2('%s: %s' % (pl.userid, pl.playcount))
+                        #add groupassignments for the required amount of instruments from the top of this list
+                        for x in range(0, requiredplayers):
+                            log2('Selected %s to play %s' % (final_list[x].userid, i))
+                            playergroupassignment = groupassignment(userid = final_list[x].userid, groupid = thisgroup.groupid, instrumentname = i)
+                            session.add(playergroupassignment)
         
-        else:
-            session.merge(thisgroup)
-            session.commit()
-            url = '/user/' + str(thisuser.userid) + '/group/' + str(thisgroup.groupid) + '/'
-            session.close()
-            return jsonify(message = 'none', url = url)
+        session.merge(thisgroup)
+        session.commit()
+        url = '/user/' + str(thisuser.userid) + '/group/' + str(thisgroup.groupid) + '/'
+        session.close()
+        return jsonify(message = 'none', url = url)
         
 @app.route('/user/<userid>/group/<groupid>/period/<periodid>/edit/')
 def groupeditperiod(userid,groupid,periodid):
@@ -630,7 +640,6 @@ def grouprequestpage(userid,periodid=None):
         log2('%s %s has now made %s group requests' % (thisuser.firstname, thisuser.lastname, thisuser.grouprequestcount))
         #for each player object in the players array in the JSON packet
         for p in content['players']:
-            log2('Performing action for player with id %s' % p['playerid'])
             #if we are on the conductorpage, you cannot submit blank players. Give the user an error and take them back to their dashboard.
             if p['playerid'] == 'null' and conductorpage == True:
                 url = ('/user/' + str(thisuser.userid) + '/')
@@ -836,11 +845,7 @@ def instrumentation(userid,periodid):
             session.close()
             return jsonify(message = 'Instrumentation successfully submitted', url = url)
 
-
-
-
-#ADMIN PAGES ARE BELOW
-
+#------------ADMIN PAGES ARE BELOW--------------
 
 #Shows the godpage to the user. Godpage contains all user names and links to all their dashboards. Right now uses a shared password,
 #but would be better if tied to a user's admin account. However, there's no easy way to currently see what the userid of the admin is

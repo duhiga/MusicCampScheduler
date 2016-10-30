@@ -37,9 +37,8 @@
     <Content Include="config.xml.example" />
     <Content Include="js\jquery-3.1.1.min.js" />
     <Content Include="requirements.txt" />
-    <Content Include="static\css\style.css" />
+    <Content Include="css\style.css" />
     <Content Include="js\jquery.tablesorter.js" />
-    <Content Include="templates\absentrequest.html" />
     <Content Include="templates\dashboard.html" />
     <Content Include="templates\group.html" />
     <Content Include="templates\groupedit.html" />
@@ -53,8 +52,7 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="js\" />
-    <Folder Include="static\" />
-    <Folder Include="static\css\" />
+    <Folder Include="css\" />
     <Folder Include="templates\" />
   </ItemGroup>
   <ItemGroup>

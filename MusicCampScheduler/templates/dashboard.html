@@ -6,27 +6,7 @@
     <link rel="stylesheet" href="http://www.w3schools.com/lib/w3-theme-black.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css">
-    <style>
-        html, body, h1, h2, h3, h4, h5, h6 {
-            font-family: "Roboto", sans-serif;
-        }
-
-        .w3-sidenav a, .w3-sidenav h4 {
-            padding: 12px;
-        }
-
-        .w3-navbar li a {
-            padding-top: 12px;
-            padding-bottom: 12px;
-        }
-
-        td, th {
-            border: 1px solid #999;
-        }
-        body {
-            padding-top: 60px;
-        }
-    </style>
+    <link rel="stylesheet" href="/css/style.css">
     <title>{{ campname }} Dashboard</title>
 
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"> </script>
@@ -187,32 +167,36 @@
             {% if user.isadmin == 1 %}
             <h2>ADMIN: Queued Groups</h2>
             <table style="width:100%">
-                <tr>
-                    <th>Request Time</th>
-                    <th>Requestor</th>
-                    <th>Group Name</th>
-                    <th>Period</th>
-                    <th>Status</th>
-                </tr>
-                {% if queuedgroups != None %}
-                {% for q in queuedgroups %}
-                <tr>
-                    <td>
-                        {% if q.requesttime != None %}
-                        {{ q.requesttime.strftime('%Y-%m-%d %H:%M')}}
-                        {% endif %}
-                    </td>
-                    <td>{{ q.firstname }} {{ q.lastname }}</td>
-                    <td><a href="/user/{{ user.userid }}/group/{{ q.groupid }}/">{{ q.groupname }}</a></td>
-                    <td>
-                        {% if q.starttime != None and q.endtime != None %}
-                        {{ q.starttime.strftime('%Y-%m-%d') }}: {{ q.starttime.strftime('%H:%M') }}-{{ q.endtime.strftime('%H:%M') }}
-                        {% endif %}
-                    </td>
-                    <td>{{ q.status }}</td>
-                </tr>
-                {% endfor %}
-                {% endif %}
+                <thead>
+                    <tr>
+                        <th>Request Time</th>
+                        <th>Requestor</th>
+                        <th>Group Name</th>
+                        <th>Period</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody class="zebra-table">
+                    {% if queuedgroups != None %}
+                    {% for q in queuedgroups %}
+                    <tr>
+                        <td>
+                            {% if q.requesttime != None %}
+                            {{ q.requesttime.strftime('%Y-%m-%d %H:%M')}}
+                            {% endif %}
+                        </td>
+                        <td>{{ q.firstname }} {{ q.lastname }}</td>
+                        <td><a href="/user/{{ user.userid }}/group/{{ q.groupid }}/">{{ q.groupname }}</a></td>
+                        <td>
+                            {% if q.starttime != None and q.endtime != None %}
+                            {{ q.starttime.strftime('%Y-%m-%d') }}: {{ q.starttime.strftime('%H:%M') }}-{{ q.endtime.strftime('%H:%M') }}
+                            {% endif %}
+                        </td>
+                        <td>{{ q.status }}</td>
+                    </tr>
+                    {% endfor %}
+                    {% endif %}
+                </tbody>
             </table>
             {% endif %}
             </div>

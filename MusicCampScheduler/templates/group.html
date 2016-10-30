@@ -66,7 +66,7 @@
             <li><a href="#" class="w3-theme-l1">{{ thisgroup.groupname }}</a></li>
             <li class="w3-hide-small"><a href="/user/{{ thisuser.userid }}/" class="w3-hover-white">Dashboard</a></li>
             {% if thisuser.isadmin == 1 %}
-            <li class="w3-hide-small"><a href="/user/{{ thisuser.userid }}/group/{{ thisgroup.groupid }}/edit/" class="w3-hover-white">Edit Group</a></li>
+            <li class="w3-hide-small"><a href="/user/{{ thisuser.userid }}/group/{{ thisgroup.groupid }}/edit/" class="w3-hover-white">Edit This Group</a></li>
             {% endif %}
         </ul>
     </div>

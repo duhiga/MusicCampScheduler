@@ -213,7 +213,9 @@
                         if (data.message != 'none') {
                             confirm(data.message);
                         }
-                        window.location = data.url;
+                        if (data.url != 'none') {
+                            window.location = data.url;
+                        }
                     }
                 });
             });

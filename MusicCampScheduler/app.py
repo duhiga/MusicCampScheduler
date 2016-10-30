@@ -430,6 +430,7 @@ def groupedit(userid,groupid,periodid=None):
             return jsonify(message = 'You cannot have all empty players and an auto level. Set the level or at least one player.', url=url)
         if thisgroup.status == 'Confirmed' and (thisgroup.periodid == '' or thisgroup.groupname == '' or thisgroup.locationid == '' or foundempty == True):
             url = '/user/' + str(thisuser.userid) + '/group/' + str(thisgroup.groupid) + '/'
+            session.rollback()
             session.close()
             return jsonify(message = 'Confirmed groups must have a name, assigned period, assigned location and no empty player slots.', url = 'none')
         
@@ -659,6 +660,9 @@ def grouprequestpage(userid,periodid=None):
                     if clash == False:
                         log2('Match found. Adding the players in this request to the already formed group.')
                         grouprequest = m
+                        #if the original group doesn't have music already assigned, we can assign it music from the user request
+                        if grouprequest.music is not None and grouprequest.music != '' and grouprequest.music != 'null':
+                            grouprequest.music = content['music']
                         match = True
                         break
                 else:
@@ -697,10 +701,7 @@ def grouprequestpage(userid,periodid=None):
         url = ('/user/' + str(thisuser.userid) + '/group/' + str(grouprequest.groupid) + '/')
         log2('Sending user to URL: %s' % url)
         session.close()
-        if conductorpage == True:
-            return jsonify(message = 'Your group has been created and confirmed', url = url)
-        else:
-            return jsonify(message = 'Your group request has been successfully created. When everyone in your group is avaliable, it will be scheduled to run.', url = url)
+        return jsonify(message = 'none', url = url)
 
 @app.route('/user/<userid>/grouprequest/conductor/<periodid>/', methods=['GET', 'POST'])
 def conductorgrouprequestpage(userid,periodid):

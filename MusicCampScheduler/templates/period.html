@@ -61,57 +61,61 @@
         </ul>
     </div>
     <!-- Body -->
-    <br>
-    {% if publicevents[0] != None %}
-    {% for e in publicevents %}
-    <h2>Public Event At This Time: <a href="/user/{{ user.userid }}/group/{{ e.groupid }}">{{ e.groupname }}</a></h2> 
-    {% endfor %}
-    {% endif %}
-    <table style="width:40%">
-        <tr>
-            <th>Date</th>
-            <td>{{ period.starttime.strftime('%A, %Y-%m-%d') }}</td>
-        </tr>
-        <tr>
-            <th>Start</th>
-            <td>{{ period.starttime.strftime('%H:%M') }}</td>
-        </tr>
-        <tr>
-            <th>End</th>
-            <td>{{ period.endtime.strftime('%H:%M') }}</td>
-        </tr>
-    </table>
-    <br>
-    <table style="width:100%" id="periodtable">
-        <thead>
-            <tr>
-                <th>First Name</th>
-                <th>Last Name</th>
-                <th>Instrument</th>
-                <th>Group Name</th>
-                <th>Location</th>
-            </tr>
-        </thead>
-        <tbody class="zebra-table">
-            {% for p in players %}
-            <tr>
-                <td>{{ p.firstname }}</td>
-                <td>{{ p.lastname }}</td>
-                <td>{{ p.instrumentname }}</td>
-                <td><a href="/user/{{ user.userid }}/group/{{ p.groupid }}/">{{ p.groupname }}</a></td>
-                <td>{{ p.locationname }}</td>
-            </tr>
+    <div class="w3-row">
+        <div class="w3-container">
+            <br>
+            {% if publicevents[0] != None %}
+            {% for e in publicevents %}
+            <h2>Public Event At This Time: <a href="/user/{{ user.userid }}/group/{{ e.groupid }}">{{ e.groupname }}</a></h2>
             {% endfor %}
-            {% for p in nonplayers %}
-            <tr>
-                <td>{{ p.firstname }}</td>
-                <td>{{ p.lastname }}</td>
-                <td>{{ p.instrumentname }}</td>
-                <td>{{ p.groupname }}</td>
-                <td>{{ p.locationname }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+            {% endif %}
+            <table style="width:40%">
+                <tr>
+                    <th>Date</th>
+                    <td>{{ period.starttime.strftime('%A, %Y-%m-%d') }}</td>
+                </tr>
+                <tr>
+                    <th>Start</th>
+                    <td>{{ period.starttime.strftime('%H:%M') }}</td>
+                </tr>
+                <tr>
+                    <th>End</th>
+                    <td>{{ period.endtime.strftime('%H:%M') }}</td>
+                </tr>
+            </table>
+            <br>
+            <table style="width:100%" id="periodtable">
+                <thead>
+                    <tr>
+                        <th>First Name</th>
+                        <th>Last Name</th>
+                        <th>Instrument</th>
+                        <th>Group Name</th>
+                        <th>Location</th>
+                    </tr>
+                </thead>
+                <tbody class="zebra-table">
+                    {% for p in players %}
+                    <tr>
+                        <td>{{ p.firstname }}</td>
+                        <td>{{ p.lastname }}</td>
+                        <td>{{ p.instrumentname }}</td>
+                        <td><a href="/user/{{ user.userid }}/group/{{ p.groupid }}/">{{ p.groupname }}</a></td>
+                        <td>{{ p.locationname }}</td>
+                    </tr>
+                    {% endfor %}
+                    {% for p in nonplayers %}
+                    <tr>
+                        <td>{{ p.firstname }}</td>
+                        <td>{{ p.lastname }}</td>
+                        <td>{{ p.instrumentname }}</td>
+                        <td>{{ p.groupname }}</td>
+                        <td>{{ p.locationname }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
 </body>
 </html>

@@ -52,26 +52,24 @@
 
 
 
-<body>
+<body style="padding-top:60px">
 
 
     <!-- Navbar -->
     <div class="w3-top">
         <ul class="w3-navbar w3-theme w3-top w3-left-align w3-large">
-            <li><a href="/user/{{ user.userid }}/" class="w3-theme-l1">{{ campname }}</a></li>
+            <li><a href="/user/{{ user.userid }}/" class="w3-theme-l1">{{ user.firstname}} {{ user.lastname }}'s Dashboard</a></li>
         </ul>
     </div>
     <div class="w3-row">
         <div class="w3-container">
-            <h1> {{ user.firstname}} {{ user.lastname }}'s Dashboard</h1>
-            <p>You have played a total of {{ count }} times this camp</p>
-            <h2>Announcements</h2>
+            <h3>Announcements</h3>
             {% if user.isannouncer == 1 %}
             <a href="/user/{{ user.userid }}/announcement/">ANNOUNCER: Edit the announcement for all campers</a>
             {% endif %}
             <p>{{ currentannouncement.content }}</p>
             <br />
-            <h2>Your Schedule</h2>
+            <h3>Your Schedule</h3>
             {% if date > today %}
             <p>To mark yourself as absent for any period, select one of the corresponding buttons.</p>
             {% endif %}
@@ -161,11 +159,8 @@
                 </tr>
                 {% endfor %}
             </table>
-            <h2>Your Options</h2>
-            <p><a href="/user/{{ user.userid }}/grouprequest/">Request a group</a></p>
-            <p><a href="mailto:{{ supportemailaddress }}">Bugs? Feedback? Complaints? Send an email to camp admin my clicking here!</a></p>
             {% if user.isadmin == 1 %}
-            <h2>ADMIN: Queued Groups</h2>
+            <h3>Queued Groups</h3>
             <table style="width:100%">
                 <thead>
                     <tr>
@@ -201,5 +196,13 @@
             {% endif %}
             </div>
         </div>
+    <!-- Navbar -->
+    <div class="w3-bottom">
+        <ul class="w3-navbar w3-theme w3-bottom w3-left-align w3-large">
+            <li><a href="/user/{{ user.userid }}/grouprequest/">Request a group</a></li>
+            <li><a href="/user/{{ user.userid }}/grouphistory/" class="w3-hover-white">Group History</a></li>
+            <li><a href="mailto:{{ supportemailaddress }}">Contact Camp Administration</a></li>
+        </ul>
+    </div>
 </body>
 </html>

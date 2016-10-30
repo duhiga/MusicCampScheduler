@@ -10,10 +10,27 @@ td, th {
 }
 body {
     padding-top: 60px;
+    padding-bottom: 60px;
 }
 table {
     border-collapse: collapse;
 }
 .zebra-table tr:nth-child(odd) {
     background: #eee;
+}
+/*  #Mobile (Portrait)
+================================================== */
+/* Note: Design for a width of 320px */
+@media all and (max-width: 600px) {
+.unimportant-column {
+    display:none;
+    width:0;
+    height:0;
+    opacity:0;
+    visibility: collapse;
+    }
+body {
+    padding-top: 120px;
+    padding-bottom: 180px;
+    }
 }

@@ -59,23 +59,40 @@
     <!-- Body -->
     <div class="w3-row">
         <div class="w3-container">
-            <h2>Creating a public event for {{ thisperiod.periodname }} on {{ thisperiod.starttime.strftime('%A, %Y-%m-%d') }} at {{ thisperiod.starttime.strftime('%H:%M') }} - {{ thisperiod.endtime.strftime('%H:%M') }}</h2>
+            <table id="configTable">
+                <tr>
+                    <th>Period Name</th>
+                    <td>{{ thisperiod.periodname }}</td>
+                </tr>
+                <tr>
+                    <th>Date</th>
+                    <td>{{ thisperiod.starttime.strftime('%A, %Y-%m-%d') }}</td>
+                </tr>
+                <tr>
+                    <th>Time</th>
+                    <td>{{ thisperiod.starttime.strftime('%H:%M') }} - {{ thisperiod.endtime.strftime('%H:%M') }}</td>
+                </tr>
+            </table>
             <p>
                 This page is used to create a public event, such as a Quiz night, Drinks, Dance, etc. It appears on everyone's dashboards
                 unless they are assigned to another group. Any specific group assignment overwrites this public invitation.
             </p>
-            <p>What is the name of the event? This will appear on all user's dashboards.<input type="text" id="name_textbox"></p>
+            <p>What is the name of the event? This will appear on all user's dashboards. <input type="text" id="name_textbox"></p>
             <p>
-                Where will this event be held?
+                Where will this event be held? 
                 <select id="location_dropdown">
                     <option value=""></option>
                     {% for l in locations %}
                     <option value="{{ l.locationid }}">{{ l.locationname }}</option>
                     {% endfor %}
                 </select>
-            </p>
-            <p><button id="submit_button">Submit</button></p>
         </div>
+    </div>
+    <!-- Navbar -->
+    <div class="w3-bottom">
+        <ul class="w3-navbar w3-theme w3-bottom w3-left-align w3-large">
+            <li><a href="#" class="w3-hover-white" id="submit_button">Submit</a></li>
+        </ul>
     </div>
 </body>
 </html>

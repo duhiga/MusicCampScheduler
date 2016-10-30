@@ -203,7 +203,8 @@
             //when user presses the delete group button
             $("#delete_button").click(function () {
                 console.log('Delete button pressed');
-                $.ajax({
+                var r = confirm('Are you sure you want to delete this group?');
+                if (r == true) {$.ajax({
                     //make a POST AJAX query to the same web page as the user is currently visiting
                     url: (window.location.href),
                     type: 'DELETE',
@@ -217,7 +218,7 @@
                             window.location = data.url;
                         }
                     }
-                });
+                });}
             });
         });
     </script>
@@ -229,7 +230,7 @@
     <div class="w3-top">
         <ul class="w3-navbar w3-theme w3-top w3-left-align w3-large">
             <li><a href="#" class="w3-theme-l1">&#34;{{ thisgroup.groupname }}&#34; Editor</a></li>
-            <li class="w3-hide-small"><a href="/user/{{ thisuser.userid }}/" class="w3-hover-white">Dashboard</a></li>
+            <li><a href="/user/{{ thisuser.userid }}/" class="w3-hover-white">Back To Dashboard</a></li>
         </ul>
     </div>
 
@@ -240,17 +241,17 @@
             <table style="width:100%">
                 <tr>
                     <th>Attribute</th>
-                    <th>Current</th>
+                    <th class="unimportant-column">Current</th>
                     <th>Change</th>
                 </tr>
                 <tr>
                     <th>Name</th>
-                    <td>{{ thisgroup.groupname }}</td>
+                    <td class="unimportant-column">{{ thisgroup.groupname }}</td>
                     <td><input type="text" id="groupname" class="group_attribute" value="{{ thisgroup.groupname }}"></td>
                 </tr>
                 <tr>
                     <th>Status</th>
-                    <td>{{ thisgroup.status }}</td>
+                    <td class="unimportant-column">{{ thisgroup.status }}</td>
                     <td>
                         <select id="status" class="group_attribute">
                             {% if thisgroup.status == "Confirmed" %}
@@ -265,12 +266,12 @@
                 </tr>
                 <tr>
                     <th>Music</th>
-                    <td>{{ thisgroup.music }}</td>
+                    <td class="unimportant-column">{{ thisgroup.music }}</td>
                     <td><input type="text" id="music" class="group_attribute" value="{{ thisgroup.music }}"></td>
                 </tr>
                 <tr>
                     <th>Period</th>
-                    <td>
+                    <td class="unimportant-column">
                         {% if currentperiod != None %}
                         {{ currentperiod.periodname }}, {{ currentperiod.starttime.strftime('%A, %Y-%m-%d') }}, {{ currentperiod.starttime.strftime('%H:%M') }}-{{ currentperiod.endtime.strftime('%H:%M') }}
                     </td>
@@ -291,7 +292,7 @@
                 </tr>
                 <tr>
                     <th>Location</th>
-                    <td>{{ thislocation.locationname }}</td>
+                    <td class="unimportant-column">{{ thislocation.locationname }}</td>
                     <td>
                         <select id="locationid" class="group_attribute">
                             <option value=""></option>
@@ -307,7 +308,7 @@
                 </tr>
                 <tr>
                     <th>Minimum Level</th>
-                    <td>{{ thisgroup.minimumlevel }}</td>
+                    <td class="unimportant-column">{{ thisgroup.minimumlevel }}</td>
                     <td>
                         <select id="minimumlevel" class="group_attribute">
                             <option value="">Auto</option>
@@ -323,7 +324,7 @@
                 </tr>
                 <tr>
                     <th>Counted towards play totals</th>
-                    <td>
+                    <td class="unimportant-column">
                         {% if thisgroup.ismusical == 0 %}No
                         {% else %}Yes
                         {% endif %}
@@ -340,17 +341,17 @@
                         </select>
                     </td>
                 </tr>
-                <tr>
+                <tr class="unimportant-column">
                     <th>Requested User</th>
-                    <td colspan="2">{{ thisgroup.requesteduserid }}</td>
+                    <td colspan="2" class="unimportant-column">{{ thisgroup.requesteduserid }}</td>
                 </tr>
-                <tr>
+                <tr class="unimportant-column">
                     <th>Request Time</th>
-                    <td colspan="2">{{ thisgroup.requesttime.strftime('%A, %Y-%m-%d') }}, {{ thisgroup.requesttime.strftime('%H:%M') }}</td>
+                    <td colspan="2" class="unimportant-column">{{ thisgroup.requesttime.strftime('%A, %Y-%m-%d') }}, {{ thisgroup.requesttime.strftime('%H:%M') }}</td>
                 </tr>
                 <tr>
                     <th>Total Players:</th>
-                    <td colspan="2" id="total_players"></td>
+                    <td id="total_players"></td>
                 </tr>
             </table>
             <h2>Players</h2>
@@ -396,11 +397,15 @@
                 </tr>
                 {% endfor %}
             </table>
-            <p><button class="submit_button" id="submit_with_autofill">Submit Changes and auto-fill missing players</button></p>
-            <p><button class="submit_button" id="submit_without_autofill">Submit Changes without auto-fill</button></p>
-            <p><button id="delete_button">Delete Group</button></p>
         </div>
-        </div>
-
+    </div>
+    <!-- Navbar -->
+    <div class="w3-bottom">
+        <ul class="w3-navbar w3-theme w3-bottom w3-left-align w3-large">
+            <li><a href="#" class="w3-hover-white" id="submit_without_autofill">Submit</a></li>
+            <li><a href="#" class="w3-hover-white" id="submit_with_autofill">Autofill Missing Players</a></li>
+            <li><a href="#" class="w3-hover-white" id="delete_button">Delete Group</a></li>
+        </ul>
+    </div>
 </body>
 </html>

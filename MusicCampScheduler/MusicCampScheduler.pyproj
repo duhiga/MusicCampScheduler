@@ -16,8 +16,6 @@
     <PythonWsgiHandler>{StartupModule}.wsgi_app</PythonWsgiHandler>
     <Name>MusicCampScheduler</Name>
     <RootNamespace>MusicCampScheduler</RootNamespace>
-    <InterpreterId>{1677e815-8ea7-4db9-8d73-04f6563de410}</InterpreterId>
-    <InterpreterVersion>2.7</InterpreterVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
@@ -35,13 +33,13 @@
   <ItemGroup>
     <Content Include="config.xml" />
     <Content Include="config.xml.example" />
+    <Content Include="css\style.css" />
     <Content Include="js\jquery-3.1.1.min.js" />
     <Content Include="requirements.txt" />
-    <Content Include="css\style.css" />
     <Content Include="js\jquery.tablesorter.js" />
     <Content Include="templates\dashboard.html" />
-    <Content Include="templates\group.html" />
     <Content Include="templates\groupedit.html" />
+    <Content Include="templates\group.html" />
     <Content Include="templates\instrumentation.html" />
     <Content Include="templates\grouprequest.html" />
     <Content Include="templates\index.html" />
@@ -51,22 +49,9 @@
     <Content Include="templates\publicevent.html" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="js\" />
     <Folder Include="css\" />
+    <Folder Include="js\" />
     <Folder Include="templates\" />
-  </ItemGroup>
-  <ItemGroup>
-    <Interpreter Include="env1\">
-      <Id>{1677e815-8ea7-4db9-8d73-04f6563de410}</Id>
-      <BaseInterpreter>{2af0f10d-7135-4994-9156-5d01c9c11b7e}</BaseInterpreter>
-      <Version>2.7</Version>
-      <Description>env1 (Python 2.7)</Description>
-      <InterpreterPath>Scripts\python.exe</InterpreterPath>
-      <WindowsInterpreterPath>Scripts\pythonw.exe</WindowsInterpreterPath>
-      <LibraryPath>Lib\</LibraryPath>
-      <PathEnvironmentVariable>PYTHONPATH</PathEnvironmentVariable>
-      <Architecture>X86</Architecture>
-    </Interpreter>
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.Web.targets" />
   <!-- Specify pre- and post-build commands in the BeforeBuild and 

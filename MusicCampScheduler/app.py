@@ -380,7 +380,7 @@ def groupedit(userid,groupid,periodid=None):
         url = ('/user/' + str(thisuser.userid) + '/')
         log2('Sending user to URL: %s' % url)
         session.close()
-        return jsonify(message = 'Group has been deleted', url = url)
+        return jsonify(message = 'none', url = url)
 
     if request.method == 'POST':
         #format the packet received from the server as JSON

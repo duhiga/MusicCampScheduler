@@ -2,101 +2,149 @@
 <meta name="viewport" content="initial-scale=1">
 <html>
 <head>
-    <link rel="stylesheet" href='/static/css/style.css' />
+    
+    
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="http://www.w3schools.com/lib/w3.css">
+    <link rel="stylesheet" href="http://www.w3schools.com/lib/w3-theme-black.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css">
+    <style>
+        html, body, h1, h2, h3, h4, h5, h6 {
+            font-family: "Roboto", sans-serif;
+        }
+
+        .w3-sidenav a, .w3-sidenav h4 {
+            padding: 12px;
+        }
+
+        .w3-navbar li a {
+            padding-top: 12px;
+            padding-bottom: 12px;
+        }
+        td, th {
+            border: 1px solid #999;
+        }
+
+        body {
+    padding-top: 60px;
+  }
+
+
+
+    </style>
+    
+    
+    
+    
+    
+    
+    
+    
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"> </script>
     <script>if (!window.jQuery) { document.write('<script src="/js/jquery-3.1.1.min.js"><\/script>'); }</script>
     <title>{{ campname }} Group Display</title>
 </head>
 
 <body>
-    <h1>Listing for group {{ thisgroup.groupname }}</h1>
-    <p><a href="/user/{{ thisuser.userid }}/">Back to dashboard</a></p>
-    {% if thisuser.isadmin == 1 %}
-    <p><a href="/user/{{ thisuser.userid }}/group/{{ thisgroup.groupid }}/edit/">ADMIN: Edit Group</a></p>
-    {% endif %}
-    <table style="width:30%">
-        <tr>
-            <th>Name</th>
-            <td>{{ thisgroup.groupname }}</td>
-        </tr>
-        <tr>
-            <th>Status</th>
-            <td>{{ thisgroup.status }}</td>
-        </tr>
-        <tr>
-            <th>Music</th>
-            <td>{{ thisgroup.music }}</td>
-        </tr>
-        <tr>
-            <th>Date</th>
-            <td>
-                {% if period == None %}
-                Not yet allocated
-                {% else %}
-                {{ period.starttime.strftime('%A, %Y-%m-%d') }}
-                {% endif %}
-            </td>
-        </tr>
-        <tr>
-            <th>Time</th>
-            <td>
-                {% if period == None %}
-                Not yet allocated
-                {% else %}
-                <a href="/user/{{ thisuser.userid }}/period/{{ period.periodid }}/">{{ period.starttime.strftime('%H:%M') }} - {{ period.endtime.strftime('%H:%M') }}</a>
-                {% endif %}
-            </td>
-        </tr>
-        <tr>
-            <th>Location</th>
-            <td>
-                {% if thislocation == None %}
-                Not yet allocated
-                {% else %}
-                {{ thislocation.locationname }}
-                {% endif %}
-            </td>
-        </tr>
-    </table>
-    <br>
-    <table style="width:100%">
-        <caption>Players in {{ thisgroup.groupname }}</caption>
-        <tr>
-            <th>First Name</th>
-            <th>Last Name</th>
-            <th>Instrument</th>
-        </tr>
-        {% for p in players %}
-        <tr>
-            <td>{{ p.firstname }}</td>
-            <td>{{ p.lastname }}</td>
-            <td>{{ p.instrumentname }}</td>
-        </tr>
-        {% endfor %}
 
-    </table>
-    <a href="/user/{{ thisuser.userid }}/">Back to dashboard</a>
-    {% if substitutes %}
-    <p>
-        If you can not make this group, it is your responsibility to find a substitute and notify them.
-        The following people are not playing in a group at this time and may be able to substitute.
-    </p>
-    <table style="width:100%">
-        <caption>Possible Substitutes for {{ thisgroup.groupname }}</caption>
-        <tr>
-            <th>First Name</th>
-            <th>Last Name</th>
-            <th>Instrument</th>
-        </tr>
-        {% for s in substitutes %}
-        <tr>
-            <td>{{ s.firstname }}</td>
-            <td>{{ s.lastname }}</td>
-            <td>{{ s.instrumentname }}</td>
-        </tr>
-        {% endfor %}
-    </table>
-    <a href="/user/{{ thisuser.userid }}/">Back to dashboard</a>
-    {% endif %}
+
+    <!-- Navbar -->
+    <div class="w3-top">
+        <ul class="w3-navbar w3-theme w3-top w3-left-align w3-large">
+            <li><a href="#" class="w3-theme-l1">{{ thisgroup.groupname }}</a></li>
+            <li class="w3-hide-small"><a href="/user/{{ thisuser.userid }}/" class="w3-hover-white">Dashboard</a></li>
+            {% if thisuser.isadmin == 1 %}
+            <li class="w3-hide-small"><a href="/user/{{ thisuser.userid }}/group/{{ thisgroup.groupid }}/edit/" class="w3-hover-white">Edit Group</a></li>
+            {% endif %}
+        </ul>
+    </div>
+    <div class="w3-row">
+        <div class="w3-container">
+            <h2>Group Details</h2>
+            <table style="width:30%">
+                <tr>
+                    <th>Name</th>
+                    <td>{{ thisgroup.groupname }}</td>
+                </tr>
+                <tr>
+                    <th>Status</th>
+                    <td>{{ thisgroup.status }}</td>
+                </tr>
+                <tr>
+                    <th>Music</th>
+                    <td>{{ thisgroup.music }}</td>
+                </tr>
+                <tr>
+                    <th>Date</th>
+                    <td>
+                        {% if period == None %}
+                        Not yet allocated
+                        {% else %}
+                        {{ period.starttime.strftime('%A, %Y-%m-%d') }}
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <th>Time</th>
+                    <td>
+                        {% if period == None %}
+                        Not yet allocated
+                        {% else %}
+                        <a href="/user/{{ thisuser.userid }}/period/{{ period.periodid }}/">{{ period.starttime.strftime('%H:%M') }} - {{ period.endtime.strftime('%H:%M') }}</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <th>Location</th>
+                    <td>
+                        {% if thislocation == None %}
+                        Not yet allocated
+                        {% else %}
+                        {{ thislocation.locationname }}
+                        {% endif %}
+                    </td>
+                </tr>
+            </table>
+            <h2>Players</h2>
+            <table style="width:100%">
+                <tr>
+                    <th>First Name</th>
+                    <th>Last Name</th>
+                    <th>Instrument</th>
+                </tr>
+                {% for p in players %}
+                <tr>
+                    <td>{{ p.firstname }}</td>
+                    <td>{{ p.lastname }}</td>
+                    <td>{{ p.instrumentname }}</td>
+                </tr>
+                {% endfor %}
+
+            </table>
+            {% if substitutes %}
+            <p>
+                If you can not make this group, it is your responsibility to find a substitute and notify them.
+                The following people are not playing in a group at this time and may be able to substitute.
+            </p>
+            <h2>Possible Substitutes</h2>
+            <table style="width:100%">
+                <tr>
+                    <th>First Name</th>
+                    <th>Last Name</th>
+                    <th>Instrument</th>
+                </tr>
+                {% for s in substitutes %}
+                <tr>
+                    <td>{{ s.firstname }}</td>
+                    <td>{{ s.lastname }}</td>
+                    <td>{{ s.instrumentname }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+            {% endif %}
+        </div>
+    </div>
 </body>
 </html>

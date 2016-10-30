@@ -1,7 +1,33 @@
-<meta name="viewport" content="initial-scale=1">
+<!DOCTYPE html>
 <html>
 <head>    
-    <link rel="stylesheet" href='/static/css/style.css' />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="http://www.w3schools.com/lib/w3.css">
+    <link rel="stylesheet" href="http://www.w3schools.com/lib/w3-theme-black.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css">
+    <style>
+        html, body, h1, h2, h3, h4, h5, h6 {
+            font-family: "Roboto", sans-serif;
+        }
+
+        .w3-sidenav a, .w3-sidenav h4 {
+            padding: 12px;
+        }
+
+        .w3-navbar li a {
+            padding-top: 12px;
+            padding-bottom: 12px;
+        }
+
+        td, th {
+            border: 1px solid #999;
+        }
+
+        body {
+            padding-top: 60px;
+        }
+    </style>
     <title>{{ campname }} Instrumentation</title>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"> </script>
     <script>if (!window.jQuery) { document.write('<script src="/js/jquery-3.1.1.min.js"><\/script>'); }</script>
@@ -108,79 +134,92 @@
 </head>
 
 <body>
-    <h1>Conductor: Large Group Instrumentation</h1>
-    <p>Creating instrumentation for a large group during {{ thisperiod.periodname }} on {{ thisperiod.starttime.strftime('%A, %Y-%m-%d') }} at {{ thisperiod.starttime.strftime('%H:%M') }} - {{ thisperiod.endtime.strftime('%H:%M') }}</p>
-    <a href="/user/{{ user.userid }}/">Back to dashboard</a>
-    <p>
-        This is the page that a conductor can use to schedule a large group's instrumentation.
-    </p>
-    <p>
-        Optional: Select a group template to autofill the page
-        <select id="group_template_dropdown">
-            <option value=""></option>
-            {% for g in grouptemplates %}
-            <option value="{{ g.grouptemplatename }}">{{ g.grouptemplatename }}</option>
-            {% endfor %}
-        </select>
-    </p>
-    <h2>Group Configuration</h2>
-    <table id="configTable">
-        <tr>
-            <th>Name</th>
-            <td><input type="text" id="textbox_groupname"></td>
-        </tr>
-        <tr>
-            <th>Music</th>
-            <td><input type="text" id="textbox_music"></td>
-        </tr>
-        <tr>
-            <th>Location</th>
-            <td>
-                <select id="location_dropdown">
+
+    <!-- Navbar -->
+    <div class="w3-top">
+        <ul class="w3-navbar w3-theme w3-top w3-left-align w3-large">
+            <li><a href="#" class="w3-theme-l1">Large Group Instrumentation</a></li>
+            <li class="w3-hide-small"><a href="/user/{{ user.userid }}/" class="w3-hover-white">Dashboard</a></li>
+        </ul>
+    </div>
+
+    <div class="w3-row">
+        <div class="w3-container">
+            <p>
+                Optional: Select a group template to autofill the page
+                <select id="group_template_dropdown">
                     <option value=""></option>
-                    {% for l in locations %}
-                    <option value="{{ l.locationid }}">{{ l.locationname }}</option>
+                    {% for g in grouptemplates %}
+                    <option value="{{ g.grouptemplatename }}">{{ g.grouptemplatename }}</option>
                     {% endfor %}
                 </select>
-            </td>
-        </tr>
-        <tr>
-            <th>Minimum Level</th>
-            <td>
-                <select id="minimumlevel_dropdown">
-                    <option value=""></option>
-                    {% for n in range(maximumlevel + 1) %}
-                    <option value="{{ n }}">{{ n }}</option>
-                    {% endfor %}
-                </select>
-            </td>
-        </tr>
-    </table>
-    <h2>Group Instrumentation</h2>
-    <table id="playersTable">
-        <!--Table Headers-->
-        <tr>
-            <th>Instrument</th>
-            <th>Number</th>
-        </tr>
-        {% for i in instrumentlist %}
-        <tr>
-            <td>{{ i }}</td>
-            <td>
-                <select class="instrumentnumber_dropdown" id="{{ i }}">
-                    {% set n = 21 %}
-                    {% for n in range(n) %}
-                    <option value="{{ n }}">{{ n }}</option>
-                    {% endfor %}
-                </select>
-            </td>
-        </tr>
-        {% endfor %}
-    </table>
-    <br />
-    <button id="submit_button">Submit</button>
-    <br />
-    <br />
-    <a href="/user/{{ user.userid }}/">Back to dashboard</a>
+            </p>
+            <h2>Group Configuration</h2>
+            <table id="configTable">
+                <tr>
+                    <th>Period Name</th>
+                    <td>{{ thisperiod.periodname }}</td>
+                </tr>
+                <tr>
+                    <th>Date</th>
+                    <td>{{ thisperiod.starttime.strftime('%A, %Y-%m-%d') }}</td>
+                </tr>
+                <tr>
+                    <th>Group Name</th>
+                    <td><input type="text" id="textbox_groupname"></td>
+                </tr>
+                <tr>
+                    <th>Music</th>
+                    <td><input type="text" id="textbox_music"></td>
+                </tr>
+                <tr>
+                    <th>Location</th>
+                    <td>
+                        <select id="location_dropdown">
+                            <option value=""></option>
+                            {% for l in locations %}
+                            <option value="{{ l.locationid }}">{{ l.locationname }}</option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <th>Minimum Level</th>
+                    <td>
+                        <select id="minimumlevel_dropdown">
+                            <option value=""></option>
+                            {% for n in range(maximumlevel + 1) %}
+                            <option value="{{ n }}">{{ n }}</option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                </tr>
+            </table>
+            <h2>Group Instrumentation</h2>
+            <table id="playersTable">
+                <!--Table Headers-->
+                <tr>
+                    <th>Instrument</th>
+                    <th>Number</th>
+                </tr>
+                {% for i in instrumentlist %}
+                <tr>
+                    <td>{{ i }}</td>
+                    <td>
+                        <select class="instrumentnumber_dropdown" id="{{ i }}">
+                            {% set n = 21 %}
+                            {% for n in range(n) %}
+                            <option value="{{ n }}">{{ n }}</option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                </tr>
+                {% endfor %}
+            </table>
+            <br />
+            <button id="submit_button">Submit</button>
+
+        </div>
+        </div>
 </body>
 </html>

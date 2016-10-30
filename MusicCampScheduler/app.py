@@ -344,6 +344,11 @@ def groupedit(userid,groupid,periodid=None):
         for p in playersdump:
             playersdump_serialized.append({'userid': p.userid, 'firstname': p.firstname, 'lastname': p.lastname,
                 'instrumentname': p.instrumentname, 'grade': p.grade, 'isprimary': p.isprimary})
+        #UNFINISHED find the periods that the players in this group are unavailable
+        #to do this, I think I need to join groups back onto itself. Need to look at documentation for this.
+
+        #find the periods in which the players already in this group are available
+        #UNFINISHED - finds every period instead as a workaround
         periods = session.query(period).order_by(period.starttime).all()
         locations = session.query(location).all()
         log2('This groups status is %s' % thisgroup.status)
@@ -452,13 +457,15 @@ def groupedit(userid,groupid,periodid=None):
                         if possible_players_query.first() is None:
                             url = 'none'
                             session.close()
-                            return jsonify(message = 'Could not find a suitable player for instrument %s, manually fill their names, change the minimum level requirement of this group, or remove their instrument and try again.' % i, url = url)
+                            return jsonify(message = """Could not find a suitable player for instrument %s, manually fill their names, change the minimum level requirement of 
+                                                        this group, or remove their instrument and try again.""" % i, url = url)
                         else:
                             log2('Found %s players that could potentially be autofilled into this group.' % len(possible_players_query.all()))
                             #get the players that have already played in groups at this camp, and inverse it to get the players with playcounts of zero
                             already_played_query = session.query(user.userid).join(groupassignment).join(group).filter(group.ismusical == 1).\
                                 filter(groupassignment.userid.in_(possible_players_query))
-                            final_list = session.query(user.userid,sqlalchemy.sql.expression.literal_column("0").label("playcount")).filter(user.userid.in_(possible_players_query)).filter(~user.userid.in_(already_played_query)).all()
+                            final_list = session.query(user.userid,sqlalchemy.sql.expression.literal_column("0").label("playcount")).filter(user.userid.in_(possible_players_query)).\
+                                            filter(~user.userid.in_(already_played_query)).all()
                             #append the players that have already played to the players that haven't played
                             for p in (session.query(user.userid, func.count(groupassignment.userid).label("playcount")).group_by(groupassignment.userid).outerjoin(groupassignment).outerjoin(group).\
                                     filter(group.ismusical == 1).filter(groupassignment.userid.in_(possible_players_query)).order_by(func.count(groupassignment.userid)).all()):
@@ -616,8 +623,8 @@ def grouprequestpage(userid,periodid=None):
         #--------MATCHMAKING SECTION-----------
         #try to find an existing group request with the same configuration as the request, and open instrument slots for all the players
         instrumentlist = config.root.CampDetails['Instruments'].split(",")
-        matchinggroups = session.query(group).filter(group.iseveryone == None, group.ismusical == 1, group.music == grouprequest.music,\
-            group.periodid == None, *[getattr(grouprequest,i) == getattr(group,i) for i in instrumentlist]).order_by(group.requesttime).all()
+        matchinggroups = session.query(group).filter(group.iseveryone == None, group.ismusical == 1, group.periodid == None, *[getattr(grouprequest,i) == getattr(group,i) for i in instrumentlist]).\
+            order_by(group.requesttime).all()
         Match = False
         #if we found at least one matching group
         if matchinggroups is not None:
@@ -625,25 +632,37 @@ def grouprequestpage(userid,periodid=None):
             for m in matchinggroups:
                 clash = False
                 log2("INSTRUMENTATION MATCH FOUND requested by %s at time %s" % (m.requesteduserid, m.requesttime))
-                #for each specific player in the request, check if there's a free spot in the matching group
-                #for each player in the group request
-                for p in content['players']:
-                    #if it's a named player, not a blank drop-down
-                    if p['playerid'] != 'null':
-                        #find a list of players that are already assigned to this group, and play the instrument requested by the grouprequest
-                        playerclash = session.query(groupassignment).filter(groupassignment.instrumentname == p['instrumentname'],\
-                           groupassignment.groupid == m.groupid).all()
-                        #if the list of players already matches the group instrumentation for this instrument, this match fails and break out
-                        if playerclash is not None:
-                            if len(playerclash) >= getattr(m, p['instrumentname']):
+                if (m.music is not None and m.music != '') or \
+                    (content['music'] is not None and content['music'] != '' and content['music'] != 'null') or \
+                    (content['music'] == m.music):
+                    #for each specific player in the request, check if there's a free spot in the matching group
+                    #for each player in the group request
+                    for p in content['players']:
+                        #if it's a named player, not a blank drop-down
+                        if p['playerid'] != 'null':
+                            #find a list of players that are already assigned to this group, and play the instrument requested by the grouprequest
+                            instrumentclash = session.query(groupassignment).filter(groupassignment.instrumentname == p['instrumentname'],\
+                               groupassignment.groupid == m.groupid).all()
+                            #if the list of players already matches the group instrumentation for this instrument, this match fails and break out
+                            if instrumentclash is not None and instrumentclash != []:
+                                if len(instrumentclash) >= getattr(m, p['instrumentname']):
+                                    log2('Found group not suitable, does not have an open slot for this player.')
+                                    clash = True
+                                    break
+                            #found out if this player is already playing in the found group and make a clash if they are
+                            playerclash = session.query(groupassignment).filter(groupassignment.userid == p['playerid'], groupassignment.groupid == m.groupid).all()
+                            if playerclash is not None and playerclash != []:
+                                log2('Found group not suitable, already has this player playing in it. Found the following group assignment: %s' % playerclash)
                                 clash = True
                                 break
-                #if we didn't have a clash while iterating over this grou, we have a match! set the grouprequest group to be the old group and break out
-                if clash == False:
-                    log2('Match found. Adding the players in this request to the already formed group.')
-                    grouprequest = m
-                    match = True
-                    break
+                    #if we didn't have a clash while iterating over this grou, we have a match! set the grouprequest group to be the old group and break out
+                    if clash == False:
+                        log2('Match found. Adding the players in this request to the already formed group.')
+                        grouprequest = m
+                        match = True
+                        break
+                else:
+                    log2('Music doesnt match the found group. Requested group music: %s. Database group music: %s' % (content['music'], m.music))
         #if we didn't get a match, we need to create the grouprequest, we won't be using an old one
         if Match == False:
             log2('No group already exists with the correct instrumentation slots. Creating a new group.')

@@ -1,7 +1,36 @@
-<meta name="viewport" content="initial-scale=1">
 <html>
 <head>    
-    <link rel="stylesheet" href='/static/css/style.css' />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="http://www.w3schools.com/lib/w3.css">
+    <link rel="stylesheet" href="http://www.w3schools.com/lib/w3-theme-black.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css">
+    <style>
+        html, body, h1, h2, h3, h4, h5, h6 {
+            font-family: "Roboto", sans-serif;
+        }
+
+        .w3-sidenav a, .w3-sidenav h4 {
+            padding: 12px;
+        }
+
+        .w3-navbar li a {
+            padding-top: 12px;
+            padding-bottom: 12px;
+        }
+
+        td, th {
+            border: 1px solid #999;
+        }
+
+        th {
+            cursor: pointer;
+        }
+
+        body {
+            padding-top: 60px;
+        }
+    </style>
     <title>{{ campname }} Create Public Event</title>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"> </script>
     <script>if (!window.jQuery) { document.write('<script src="/js/jquery-3.1.1.min.js"><\/script>'); }</script>
@@ -45,24 +74,33 @@
 </head>
 
 <body>
-    <h1>Admin: Public Event Creation</h1>
-    <p><a href="/user/{{ thisuser.userid }}/">Back to dashboard</a></p>
-    <h2>Creating a public event for {{ thisperiod.periodname }} on {{ thisperiod.starttime.strftime('%A, %Y-%m-%d') }} at {{ thisperiod.starttime.strftime('%H:%M') }} - {{ thisperiod.endtime.strftime('%H:%M') }}</h2>
-    <p>
-        This page is used to create a public event, such as a Quiz night, Drinks, Dance, etc. It appears on everyone's dashboards
-        unless they are assigned to another group. Any specific group assignment overwrites this public invitation.
-    </p>
-    <p>What is the name of the event? This will appear on all user's dashboards.<input type="text" id="name_textbox"></p>
-    <p>
-        Where will this event be held?
-        <select id="location_dropdown">
-            <option value=""></option>
-            {% for l in locations %}
-            <option value="{{ l.locationid }}">{{ l.locationname }}</option>
-            {% endfor %}
-        </select>
-    </p>
-    <p><button id="submit_button">Submit</button></p>
-    <p><a href="/user/{{ thisuser.userid }}/">Back to dashboard</a></p>
+    <!-- Navbar -->
+    <div class="w3-top">
+        <ul class="w3-navbar w3-theme w3-top w3-left-align w3-large">
+            <li><a href="#" class="w3-theme-l1">Public Event Creation</a></li>
+            <li class="w3-hide-small"><a href="/user/{{ thisuser.userid }}/" class="w3-hover-white">Dashboard</a></li>
+        </ul>
+    </div>
+    <!-- Body -->
+    <div class="w3-row">
+        <div class="w3-container">
+            <h2>Creating a public event for {{ thisperiod.periodname }} on {{ thisperiod.starttime.strftime('%A, %Y-%m-%d') }} at {{ thisperiod.starttime.strftime('%H:%M') }} - {{ thisperiod.endtime.strftime('%H:%M') }}</h2>
+            <p>
+                This page is used to create a public event, such as a Quiz night, Drinks, Dance, etc. It appears on everyone's dashboards
+                unless they are assigned to another group. Any specific group assignment overwrites this public invitation.
+            </p>
+            <p>What is the name of the event? This will appear on all user's dashboards.<input type="text" id="name_textbox"></p>
+            <p>
+                Where will this event be held?
+                <select id="location_dropdown">
+                    <option value=""></option>
+                    {% for l in locations %}
+                    <option value="{{ l.locationid }}">{{ l.locationname }}</option>
+                    {% endfor %}
+                </select>
+            </p>
+            <p><button id="submit_button">Submit</button></p>
+        </div>
+    </div>
 </body>
 </html>

@@ -163,20 +163,17 @@ class announcement(Base):
     creationtime = Column(DateTime)
     content = Column(String)
 
-#create all tables if needed
-Base.metadata.create_all(engine)
-
 #Database Build section. The below configures periods and groups depending on how the config.xml is configured.
 def dbbuild():
     config = untangle.parse('uploads/config.xml')
-
+    
     #add columns to group and grouptemplate classes for each intsrument in the config file
     instrumentlist = config.root.CampDetails['Instruments'].split(",")
     for i in instrumentlist:
         log('Setting up columns for %s in database' % i)
         setattr(group, i, Column(Integer))
         setattr(grouptemplate, i, Column(Integer))
-
+    Base.metadata.create_all(engine)
     #Grab the camp start and end times from the config file
     CampStartTime = datetime.datetime.strptime(config.root.CampDetails['StartTime'], '%Y-%m-%d %H:%M')
     CampEndTime = datetime.datetime.strptime(config.root.CampDetails['EndTime'], '%Y-%m-%d %H:%M')

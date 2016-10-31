@@ -9,25 +9,13 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship, aliased
 from sqlalchemy.dialects.mysql.base import MSBinary
 from sqlalchemy.schema import Column
-from debug import *
 import uuid
-config = untangle.parse('config.xml')
 
 #sets up debugging
-debug = int(config.root.Application['Debug'])
-def log1(string):
-    if debug >= 1:
-        print(string)
-def log2(string):
-    if debug >= 2:
-        print(string)
-print('Debug level set to %s' % debug)
+def log(string):
+    print(string)
 
-if debug >= 3:
-    engine = create_engine("sqlite:///" + config.root.Application['DBPath'], echo=True)
-else:
-    engine = create_engine("sqlite:///" + config.root.Application['DBPath'])
-log2('sqlalchemy version: %s' % sqlalchemy.__version__)
+engine = create_engine("sqlite:///MusicCampDatabase.db")
 Session = sessionmaker()
 Session.configure(bind=engine)
 Base = declarative_base()
@@ -102,13 +90,6 @@ class grouptemplate(Base):
     @property
     def serialize(self):
         return serialize_class(self, self.__class__)
-
-#add columns to group and grouptemplate classes for each intsrument in the config file
-instrumentlist = config.root.CampDetails['Instruments'].split(",")
-for i in instrumentlist:
-    log2('Setting up columns for %s in database' % i)
-    setattr(group, i, Column(Integer))
-    setattr(grouptemplate, i, Column(Integer))
 
 class groupassignment(Base):
     __tablename__ = 'groupassignments'
@@ -186,14 +167,22 @@ class announcement(Base):
 Base.metadata.create_all(engine)
 
 #Database Build section. The below configures periods and groups depending on how the config.xml is configured.
-if config.root.Application['DBBuildRequired'] == 'Y':
-    
+def dbbuild():
+    config = untangle.parse('uploads/config.xml')
+
+    #add columns to group and grouptemplate classes for each intsrument in the config file
+    instrumentlist = config.root.CampDetails['Instruments'].split(",")
+    for i in instrumentlist:
+        log('Setting up columns for %s in database' % i)
+        setattr(group, i, Column(Integer))
+        setattr(grouptemplate, i, Column(Integer))
+
     #Grab the camp start and end times from the config file
     CampStartTime = datetime.datetime.strptime(config.root.CampDetails['StartTime'], '%Y-%m-%d %H:%M')
     CampEndTime = datetime.datetime.strptime(config.root.CampDetails['EndTime'], '%Y-%m-%d %H:%M')
     #Prepare for the loop, which will go through each day of camp and create an instance of each day's period
     ThisDay = datetime.datetime.strptime(datetime.datetime.strftime(CampStartTime, '%Y-%m-%d'), '%Y-%m-%d')
-    log2('first thisDay is %s' % ThisDay)
+    log('first thisDay is %s' % ThisDay)
     #start our session, then go through the loop
     session = Session()
     loop = 'start'
@@ -205,7 +194,7 @@ if config.root.Application['DBBuildRequired'] == 'Y':
     meallocation = session.query(location).filter(location.locationname == config.root.CampDetails['MealLocation']).first()
     #For each day covered by the camp start and end time
     while loop == 'start':
-        log2('now looping for %s' % ThisDay)
+        log('now looping for %s' % ThisDay)
         #For each period covered by the camp's configured period list
         for x in range(0,len(config.root.CampDetails.Period)):
             ThisStartTime = datetime.datetime.strptime((datetime.datetime.strftime(ThisDay, '%Y-%m-%d') + ' ' + config.root.CampDetails.Period[x]['StartTime']),'%Y-%m-%d %H:%M')
@@ -218,7 +207,7 @@ if config.root.Application['DBBuildRequired'] == 'Y':
                 find_period = session.query(period).filter(period.periodname == ThisPeriodName,period.starttime == ThisStartTime,period.endtime == ThisEndTime).first()
                 #if no period exists in the database, create it
                 if find_period is None:
-                    log2('Period not found. Creating period instance with details ' + datetime.datetime.strftime(ThisStartTime, '%Y-%m-%d %H:%M') + datetime.datetime.strftime(ThisStartTime, '%Y-%m-%d %H:%M') + ThisPeriodName)
+                    log('Period not found. Creating period instance with details ' + datetime.datetime.strftime(ThisStartTime, '%Y-%m-%d %H:%M') + datetime.datetime.strftime(ThisStartTime, '%Y-%m-%d %H:%M') + ThisPeriodName)
                     find_period = period(periodname = ThisPeriodName,starttime = ThisStartTime,endtime = ThisEndTime,meal=ThisPeriodMeal)
                     session.add(find_period)
                 find_mealgroup = session.query(group).filter(group.groupname == find_period.periodname,group.periodid == find_period.periodid,group.iseveryone == 1,group.ismusical == 0).first()
@@ -237,15 +226,15 @@ if config.root.Application['DBBuildRequired'] == 'Y':
         ThisDay = ThisDay + datetime.timedelta(days=1)    
     #create group templates
     for x in range(0,len(config.root.CampDetails.GroupTemplate)):
-        log2(config.root.CampDetails.GroupTemplate[x])
+        log(config.root.CampDetails.GroupTemplate[x])
         find_template = session.query(grouptemplate).filter(grouptemplate.grouptemplatename == config.root.CampDetails.GroupTemplate[x]['Name']).first()
         if find_template is None:
             template = grouptemplate()
             attributelist = [a for a in dir(template) if not a.startswith('_') and not callable(getattr(template,a)) and not a == 'grouptemplateid' and not a == 'metadata' and not a == 'serialize']
-            log2('attributelist is:')
-            log2(attributelist)
+            log('attributelist is:')
+            log(attributelist)
             for v in attributelist:
-                log2('Attempting to change template property %s to %s' % (v, config.root.CampDetails.GroupTemplate[x]['%s' % v]))
+                log('Attempting to change template property %s to %s' % (v, config.root.CampDetails.GroupTemplate[x]['%s' % v]))
                 setattr(template, v, config.root.CampDetails.GroupTemplate[x]['%s' % v])
             setattr(template, 'grouptemplatename', config.root.CampDetails.GroupTemplate[x]['Name'])
             setattr(template, 'size', config.root.CampDetails.GroupTemplate[x]['Size'])
@@ -254,4 +243,4 @@ if config.root.Application['DBBuildRequired'] == 'Y':
 
     session.commit()
     session.close()
-    log2('Finished Database Build!')
+    log('Finished Database Build!')

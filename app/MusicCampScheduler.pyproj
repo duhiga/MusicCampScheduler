@@ -28,7 +28,6 @@
   <ItemGroup>
     <Compile Include="__init__.py" />
     <Compile Include="DBSetup.py" />
-    <Compile Include="debug.py" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="config.xml" />
@@ -47,10 +46,12 @@
     <Content Include="templates\godpage.html" />
     <Content Include="templates\announcement.html" />
     <Content Include="templates\publicevent.html" />
+    <Content Include="templates\setup.html" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="css\" />
     <Folder Include="js\" />
+    <Folder Include="uploads\" />
     <Folder Include="templates\" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.Web.targets" />

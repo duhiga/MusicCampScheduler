@@ -1,3 +1,3 @@
 #!flask/bin/python
-from MusicCampScheduler import app
+from app import app
 app.run(debug=False)

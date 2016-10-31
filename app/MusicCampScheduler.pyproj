@@ -14,8 +14,8 @@
     <LaunchProvider>Web launcher</LaunchProvider>
     <OutputPath>.</OutputPath>
     <PythonWsgiHandler>{StartupModule}.wsgi_app</PythonWsgiHandler>
-    <Name>MusicCampScheduler</Name>
-    <RootNamespace>MusicCampScheduler</RootNamespace>
+    <Name>app</Name>
+    <RootNamespace>app</RootNamespace>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>

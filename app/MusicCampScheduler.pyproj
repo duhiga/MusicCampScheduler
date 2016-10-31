@@ -49,6 +49,7 @@
     <Content Include="templates\announcement.html" />
     <Content Include="templates\publicevent.html" />
     <Content Include="templates\setup.html" />
+    <Content Include="uploads\uploads.txt" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="css\" />

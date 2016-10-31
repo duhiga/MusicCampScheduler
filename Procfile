@@ -1,1 +1,1 @@
-web: gunicorn MusicCampScheduler.app:app
+web: gunicorn MusicCampScheduler.MusicCampScheduler.app:app

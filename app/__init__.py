@@ -938,6 +938,7 @@ def dbbuild(password):
     if password != config.root.CampDetails['SecretKey']:
         return 'Wrong password'
     else:
+        DBSetup.dbbuild()
         session = Session()
         #the below reads the camp input file and creates the users and instrument bindings it finds there.
         ifile  = open('uploads/campers.csv', "rb")

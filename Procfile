@@ -1,1 +1,1 @@
-web: gunicorn musiccampscheduler.wsgi --log-file -
+web: python MusicCampScheduler/app.py

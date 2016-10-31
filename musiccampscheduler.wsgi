@@ -1,1 +1,0 @@
-from MusicCampScheduler import app as application

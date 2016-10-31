@@ -150,7 +150,6 @@ def rootpage():
 def setup():
     global config
     if request.method == 'GET':
-        config = untangle.parse('uploads/config.xml')
         return render_template('setup.html')
     if request.method == 'POST':
         # Get the name of the uploaded file

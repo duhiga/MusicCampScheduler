@@ -13,6 +13,10 @@ favicon.ico
 web.debug.config
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
+venv
+*.pyc
+staticfiles
+.env
 
 # Build results
 [Dd]ebug/

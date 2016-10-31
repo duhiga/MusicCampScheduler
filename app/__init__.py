@@ -1051,8 +1051,3 @@ def send_js(path):
 @app.route('/css/<path:path>')
 def send_css(path):
     return send_from_directory('css', path)
-
-if __name__ == '__main__':
-    app.run(debug=True, \
-            #host='0.0.0.0'\ #UNCOMMENTING THIS MAKES IT A PUBLIC SERVER
-            )

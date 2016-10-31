@@ -7,7 +7,7 @@
     <ProjectGuid>1a6af510-fdd3-49cd-b861-776157274710</ProjectGuid>
     <ProjectHome>.</ProjectHome>
     <ProjectTypeGuids>{789894c7-04a9-4a11-a6b5-3f4435165112};{1b580a1a-fdb3-4b32-83e1-6407eb2722e6};{349c5851-65df-11da-9384-00065b846f21};{888888a0-9f3d-457c-b088-3a5042f75d52}</ProjectTypeGuids>
-    <StartupFile>__init__.py</StartupFile>
+    <StartupFile>run.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -16,6 +16,7 @@
     <PythonWsgiHandler>{StartupModule}.wsgi_app</PythonWsgiHandler>
     <Name>app</Name>
     <RootNamespace>app</RootNamespace>
+    <IsWindowsApplication>False</IsWindowsApplication>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
@@ -26,6 +27,7 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="run.py" />
     <Compile Include="__init__.py" />
     <Compile Include="DBSetup.py" />
   </ItemGroup>

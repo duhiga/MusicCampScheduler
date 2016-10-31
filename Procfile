@@ -1,1 +1,1 @@
-web: gunicorn --pythonpath MusicCampScheduler app:app
+web: gunicorn --pythonpath MusicCampScheduler app.py

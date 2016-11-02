@@ -24,18 +24,16 @@ import sqlalchemy
 import os
 from DBSetup import *
 from sqlalchemy import *
+from config import *
 
 # Make the WSGI interface available at the top level so wfastcgi can get it.
 app = Flask(__name__)
 #app.secret_key = 'MusicCampIsCool'
 wsgi_app = app.wsgi_app
-# This is the path to the upload directory
-app.config['UPLOAD_FOLDER'] = 'uploads/'
 # These are the extension that we are accepting to be uploaded
 app.config['ALLOWED_EXTENSIONS'] = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'xml', 'csv'])
 
 Session = sessionmaker(bind=engine)
-global config
 
 #sets up debugging
 def log(string):
@@ -60,20 +58,19 @@ def getgrouplevel(session,inputgroup,min_or_max):
             filter(group.groupid == inputgroup.groupid).order_by(instrument.grade).first()
         log('Found minimum grade in group to be %s %s playing %s with grade %s' % (minimumgradeob.firstname, minimumgradeob.lastname, minimumgradeob.instrumentname, minimumgradeob.grade))
         if min_or_max == 'min':
-            level = int(minimumgradeob.grade) - int(config.root.CampDetails['AutoAssignLimitLow'])
+            level = int(minimumgradeob.grade) - int(getconfig('AutoAssignLimitLow'))
         if min_or_max == 'max':
-            level = int(minimumgradeob.grade) + int(config.root.CampDetails['AutoAssignLimitHigh'])
+            level = int(minimumgradeob.grade) + int(getconfig('AutoAssignLimitHigh'))
     #in this case, the group's configuration explicitly defines the minimum level, maximum level is always infninite
     else:
         if min_or_max == 'min':
             level = inputgroup.minimumlevel
         if min_or_max == 'max':
             #get the maximum possible level
-            level = config.root.CampDetails['MaximumLevel']
+            level = getconfig('MaximumLevel')
     log('Found %s grade of group %s to be %s' % (min_or_max,inputgroup.groupid,level))
     return int(level)
     
-
 #gets a list of periods corresponding to the requested userid and date, formatting it in a nice way for the user dashboard
 def useridanddatetoperiods(session,userid,date):
     nextday = date + datetime.timedelta(days=1)
@@ -109,7 +106,7 @@ def useridanddatetoperiods(session,userid,date):
     return periods
 
 def getgroupname(g):
-    instrumentlist = config.root.CampDetails['Instruments'].split(",")
+    instrumentlist = getconfig('Instruments').split(",")
     count = 0
     for i in instrumentlist:
         value = getattr(g, i)
@@ -154,19 +151,64 @@ def setup():
     if request.method == 'POST':
         # Get the name of the uploaded file
         file = request.files['file']
-        # Check if the file is one of the allowed types/extensions
         if file and allowed_file(file.filename):
-            # Make the filename safe, remove unsupported chars
             filename = secure_filename(file.filename)
-            # Move the file form the temporal folder to
-            # the upload folder we setup
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            # Redirect the user to the uploaded_file route, which
-            # will basicaly show on the browser the uploaded file
-            config = untangle.parse('uploads/config.xml')
-            app.config['SECRET_KEY'] = config.root.CampDetails['SecretKey']
-            log('Secret key is now %s' % app.config['SECRET_KEY'])
-        return render_template('setup.html')
+            if filename == 'config.xml':
+                return dbbuild(file.read())
+            if filename == 'campers.csv':
+                dbbuildstatus = dbbuild()
+                session = Session()
+                #the below reads the camp input file and creates the users and instrument bindings it finds there.
+                ifile  = open(file.read(), "rb")
+                reader = csv.reader(ifile)
+                rownum = 0
+                for row in reader:
+                    log('If youre seeing this, its looped again')
+                    # Save header row.
+                    if rownum == 0:
+                        header = row
+                        log('Now in the header row')
+                    else:
+                        log(row)
+                        thisuser = user()
+                        thisuser.userid = str(uuid.uuid4())
+                        thisuser.grouprequestcount = 0
+                        thisuser.firstname = row[0]
+                        thisuser.lastname = row[1][:1] #[:1] means just get the first letter
+                        if row[12] is not '':
+                            thisuser.isannouncer = row[12]
+                        if row[13] is not '':
+                            thisuser.isconductor = row[13]
+                        if row[14] is not '':
+                            thisuser.isadmin = row[14]
+                        if row[2] is not '':
+                            thisuser.arrival = row[2]
+                        if row[2] is '':
+                            thisuser.arrival = CampStartTime
+                        if row[3] is not '':
+                            thisuser.departure = row[3]
+                        if row[3] is '':
+                            thisuser.departure = CampEndTime
+                        session.add(thisuser)
+                        if row[4] is not 'Non-Player':
+                            instrument1 = instrument(userid = thisuser.userid, instrumentname = row[4].capitalize().replace(" ", ""), grade = row[5], isprimary = 1)
+                            session.add(instrument1)
+                        if row[6] is not '':
+                            instrument2 = instrument(userid = thisuser.userid, instrumentname = row[6].capitalize().replace(" ", ""), grade = row[7], isprimary = 0)
+                            session.add(instrument2)
+                        if row[8] is not '':
+                            instrument3 = instrument(userid = thisuser.userid, instrumentname = row[8].capitalize().replace(" ", ""), grade = row[9], isprimary = 0)
+                            session.add(instrument3)
+                        if row[10] is not '':
+                            instrument4 = instrument(userid = thisuser.userid, instrumentname = row[10].capitalize().replace(" ", ""), grade = row[11], isprimary = 0)
+                            session.add(instrument4)
+                        log('Created user named %s %s' % (thisuser.firstname, thisuser.lastname))
+                    rownum += 1
+                ifile.close()
+                session.commit()
+                userscount = session.query(user).count()
+                session.close()
+                return ('Created users. There are now %s total users in the database.' % userscount)
 
 #upon the URL request in the form domain/user/<userid> the user receives their dashboard. The dashboard contains the groups they 
 #are playing in. Optionally, this page presents their dashboard in the future or the past, and gives them further options.
@@ -189,8 +231,8 @@ def dashboard(userid,inputdate='n'):
     if inputdate != 'n': 
         displaydate = datetime.datetime.strptime(inputdate, '%Y-%m-%d')
     #if the user has not submitted a date and today is before the start of camp, use the first day of camp as the display date
-    elif today < datetime.datetime.strptime(config.root.CampDetails['StartTime'], '%Y-%m-%d %H:%M'): 
-        displaydate = datetime.datetime.strptime(config.root.CampDetails['StartTime'].split()[0], '%Y-%m-%d')
+    elif today < datetime.datetime.strptime(getconfig('StartTime'), '%Y-%m-%d %H:%M'): 
+        displaydate = datetime.datetime.strptime(getconfig('StartTime').split()[0], '%Y-%m-%d')
         log(displaydate)
     #if today is after the start of camp, use today as the display date
     else:
@@ -219,8 +261,8 @@ def dashboard(userid,inputdate='n'):
                         nextday=datetime.datetime.strftime(nextday, '%Y-%m-%d'), \
                         today=today, \
                         weekday=datetime.datetime.strftime(displaydate, '%A'), \
-                        campname=config.root.CampDetails['Name'], \
-                        supportemailaddress=config.root.CampDetails['SupportEmailAddress'], \
+                        campname=getconfig('Name'), \
+                        supportemailaddress=getconfig('SupportEmailAddress'), \
                         currentannouncement=currentannouncement, \
                         queuedgroups=queuedgroups, \
                         )
@@ -323,7 +365,7 @@ def grouppage(userid,groupid):
     session.close()
     return render_template('group.html', \
                         period=thisperiod, \
-                        campname=config.root.CampDetails['Name'], \
+                        campname=getconfig('Name'), \
                         thisgroup=thisgroup, \
                         players=players, \
                         substitutes=substitutes, \
@@ -387,18 +429,18 @@ def groupedit(userid,groupid,periodid=None):
         return render_template('groupedit.html', \
                             currentperiod=currentperiod, \
                             selectedperiod=selectedperiod, \
-                            campname=config.root.CampDetails['Name'], \
+                            campname=getconfig('Name'), \
                             thisgroup=thisgroup, \
                             thisgroupplayers=thisgroupplayers, \
                             thisuser=thisuser, \
                             periods=periods, \
                             thislocation=thislocation, \
                             locations=locations, \
-                            instrumentlist=config.root.CampDetails['Instruments'].split(","), \
+                            instrumentlist=getconfig('Instruments').split(","), \
                             playersdump=playersdump, \
                             playersdump_serialized=playersdump_serialized, \
                             thisgroupplayers_serialized=thisgroupplayers_serialized, \
-                            maximumlevel=int(config.root.CampDetails['MaximumLevel']), \
+                            maximumlevel=int(getconfig('MaximumLevel')), \
                             )
     
     if request.method == 'DELETE':
@@ -427,7 +469,7 @@ def groupedit(userid,groupid,periodid=None):
         thisgroup.music = content['music']
         thisgroup.status = content['status']
         thisgroup.ismusical = content['ismusical']
-        for i in config.root.CampDetails['Instruments'].split(","):
+        for i in getconfig('Instruments').split(","):
             log('Setting %s to %s' % (i,content[i]))
             setattr(thisgroup,i,content[i])
         foundempty = False
@@ -470,7 +512,7 @@ def groupedit(userid,groupid,periodid=None):
             #get the minimum level of this group
             mingrade = getgrouplevel(session,thisgroup,'min')
             maxgrade = getgrouplevel(session,thisgroup,'max')
-            for i in config.root.CampDetails['Instruments'].split(","):
+            for i in getconfig('Instruments').split(","):
                 numberinstrument = getattr(thisgroup,i)
                 if int(getattr(thisgroup,i)) > 0:
                     log('Group has configured %s total players for instrument %s' % (numberinstrument, i))
@@ -549,10 +591,10 @@ def grouprequestpage(userid,periodid=None):
             thisuser.grouprequestcount = 0
             alreadyrequestedratio = 0
         log('User has requested %s groups since the start of camp. Maximum allowance is %s per day, and there have been %s days of camp so far.' \
-            % (thisuser.grouprequestcount, config.root.CampDetails['DailyGroupRequestLimit'], \
-            (now - datetime.datetime.strptime(config.root.CampDetails['StartTime'], '%Y-%m-%d %H:%M')).days))
-        alreadyrequestedratio = (thisuser.grouprequestcount + 1)/(int(config.root.CampDetails['DailyGroupRequestLimit'])*\
-            (now - datetime.datetime.strptime(config.root.CampDetails['StartTime'], '%Y-%m-%d %H:%M')).days)
+            % (thisuser.grouprequestcount, getconfig('DailyGroupRequestLimit'), \
+            (now - datetime.datetime.strptime(getconfig('StartTime'), '%Y-%m-%d %H:%M')).days))
+        alreadyrequestedratio = (thisuser.grouprequestcount + 1)/(int(getconfig('DailyGroupRequestLimit'))*\
+            (now - datetime.datetime.strptime(getconfig('StartTime'), '%Y-%m-%d %H:%M')).days)
         log('Ratio is currently at %s. If it is above one, the user is denied access to request another group.' % alreadyrequestedratio)
         if int(alreadyrequestedratio) >= 1:
             session.close()
@@ -610,11 +652,11 @@ def grouprequestpage(userid,periodid=None):
                             user=thisuser, \
                             thisuserinstruments=thisuserinstruments, \
                             thisuserinstruments_serialized=thisuserinstruments_serialized, \
-                            playerlimit = config.root.CampDetails['SmallGroupPlayerLimit'], \
+                            playerlimit = getconfig('SmallGroupPlayerLimit'), \
                             grouptemplates = grouptemplates, \
                             grouptemplates_serialized=grouptemplates_serialized, \
-                            campname=config.root.CampDetails['Name'], \
-                            instrumentlist=config.root.CampDetails['Instruments'].split(","), \
+                            campname=getconfig('Name'), \
+                            instrumentlist=getconfig('Instruments').split(","), \
                             playersdump_serialized=playersdump_serialized, \
                             conductorpage=conductorpage, \
                             thisperiod=thisperiod, \
@@ -654,7 +696,7 @@ def grouprequestpage(userid,periodid=None):
         
         #--------MATCHMAKING SECTION-----------
         #try to find an existing group request with the same configuration as the request, and open instrument slots for all the players
-        instrumentlist = config.root.CampDetails['Instruments'].split(",")
+        instrumentlist = getconfig('Instruments').split(",")
         matchinggroups = session.query(group).filter(group.iseveryone == None, group.ismusical == 1, group.periodid == None, *[getattr(grouprequest,i) == getattr(group,i) for i in instrumentlist]).\
             order_by(group.requesttime).all()
         Match = False
@@ -766,7 +808,7 @@ def announcementpage(userid):
             return render_template('announcement.html', \
                                     currentannouncement=currentannouncement, \
                                     thisuser=thisuser, \
-                                    campname=config.root.CampDetails['Name'], \
+                                    campname=getconfig('Name'), \
                                     )
         
         #if this is a user that just pressed submit
@@ -839,12 +881,12 @@ def periodpage(userid,periodid):
     nonplayers = (session.query(user.userid, user.firstname, user.lastname).filter(~user.userid.in_(players_in_groups_query)).all())
     thisperiod = session.query(period).filter(period.periodid == periodid).first()
     session.close()
-    instrumentlist = config.root.CampDetails['Instruments'].split(",")
+    instrumentlist = getconfig('Instruments').split(",")
     return render_template('period.html', \
                             players=players, \
                             publicevents=publicevents, \
                             nonplayers=nonplayers, \
-                            campname=config.root.CampDetails['Name'], \
+                            campname=getconfig('Name'), \
                             user=thisuser, \
                             period=thisperiod, \
                             instrumentlist=instrumentlist, \
@@ -875,7 +917,7 @@ def instrumentation(userid,periodid):
             locations = session.query(location).filter(~location.locationid.in_(locations_used_query)).all()
 
             #get the list of instruments from the config file
-            instrumentlist = config.root.CampDetails['Instruments'].split(",")
+            instrumentlist = getconfig('Instruments').split(",")
             #find all large group templates and serialize them to prepare to inject into the javascript
             grouptemplates = session.query(grouptemplate).filter(grouptemplate.size == 'L').all()
             grouptemplates_serialized = [i.serialize for i in grouptemplates]
@@ -885,11 +927,11 @@ def instrumentation(userid,periodid):
                                 user=thisuser, \
                                 grouptemplates = grouptemplates, \
                                 grouptemplates_serialized=grouptemplates_serialized, \
-                                campname=config.root.CampDetails['Name'], \
-                                instrumentlist = config.root.CampDetails['Instruments'].split(","), \
+                                campname=getconfig('Name'), \
+                                instrumentlist = getconfig('Instruments').split(","), \
                                 thisperiod=thisperiod, \
                                 locations=locations, \
-                                maximumlevel=int(config.root.CampDetails['MaximumLevel']), \
+                                maximumlevel=int(getconfig('MaximumLevel')), \
                                 )
     
         #The below runs when a user presses "Submit" on the instrumentation page. It creates a group object with the configuraiton selected by 
@@ -920,7 +962,7 @@ def instrumentation(userid,periodid):
 #after it's been created. Hmm... a conundrum.
 @app.route('/godpage/<password>/')
 def godpage(password):
-    if password != config.root.CampDetails['SecretKey']:
+    if password != getconfig('SecretKey'):
         return 'Wrong password'
     else:
         session = Session()
@@ -929,12 +971,12 @@ def godpage(password):
         return render_template('godpage.html', \
                                 #user=thisuser, \
                                 users=users, \
-                                campname=config.root.CampDetails['Name'], \
+                                campname=getconfig('Name'), \
                                 )
 
 @app.route('/godpage/<password>/importusers/')
 def dbbuild(password):
-    if password != config.root.CampDetails['SecretKey']:
+    if password != getconfig('SecretKey'):
         return 'Wrong password'
     else:
         DBSetup.dbbuild()

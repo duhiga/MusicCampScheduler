@@ -10,12 +10,14 @@ from sqlalchemy.orm import sessionmaker, relationship, aliased
 from sqlalchemy.dialects.mysql.base import MSBinary
 from sqlalchemy.schema import Column
 import uuid
+import os
+from config import *
 
 #sets up debugging
 def log(string):
     print(string)
 
-engine = create_engine("sqlite:///MusicCampDatabase.db")
+engine = create_engine(getconfig('DATABASE_URL'))
 Session = sessionmaker()
 Session.configure(bind=engine)
 Base = declarative_base()
@@ -91,6 +93,13 @@ class grouptemplate(Base):
     def serialize(self):
         return serialize_class(self, self.__class__)
 
+instrumentlist = getconfig('Instruments').split(",")
+for i in instrumentlist:
+    log('Setting up columns for %s in database' % i)
+    setattr(group, i, Column(Integer))
+    setattr(grouptemplate, i, Column(Integer))
+    
+
 class groupassignment(Base):
     __tablename__ = 'groupassignments'
 
@@ -163,41 +172,42 @@ class announcement(Base):
     creationtime = Column(DateTime)
     content = Column(String)
 
+Base.metadata.create_all(engine)
+
 #Database Build section. The below configures periods and groups depending on how the config.xml is configured.
-def dbbuild():
-    config = untangle.parse('uploads/config.xml')
-    
+def dbbuild(configfile):
+    conf = untangle.parse(configfile)
     #add columns to group and grouptemplate classes for each intsrument in the config file
-    instrumentlist = config.root.CampDetails['Instruments'].split(",")
+    instrumentlist = getconfig('Instruments').split(",")
     for i in instrumentlist:
         log('Setting up columns for %s in database' % i)
         setattr(group, i, Column(Integer))
         setattr(grouptemplate, i, Column(Integer))
     Base.metadata.create_all(engine)
     #Grab the camp start and end times from the config file
-    CampStartTime = datetime.datetime.strptime(config.root.CampDetails['StartTime'], '%Y-%m-%d %H:%M')
-    CampEndTime = datetime.datetime.strptime(config.root.CampDetails['EndTime'], '%Y-%m-%d %H:%M')
+    CampStartTime = datetime.datetime.strptime(getconfig('StartTime'), '%Y-%m-%d %H:%M')
+    CampEndTime = datetime.datetime.strptime(getconfig('EndTime'), '%Y-%m-%d %H:%M')
     #Prepare for the loop, which will go through each day of camp and create an instance of each day's period
     ThisDay = datetime.datetime.strptime(datetime.datetime.strftime(CampStartTime, '%Y-%m-%d'), '%Y-%m-%d')
     log('first thisDay is %s' % ThisDay)
     #start our session, then go through the loop
     session = Session()
     loop = 'start'
-    for x in range(0,len(config.root.CampDetails.Location)):
-        find_location = session.query(location).filter(location.locationname == config.root.CampDetails.Location[x]['Name']).first()
+    for x in range(0,len(conf.root.CampDetails.Location)):
+        find_location = session.query(location).filter(location.locationname == conf.root.CampDetails.Location[x]['Name']).first()
         if find_location is None:
-            find_location = location(locationname = config.root.CampDetails.Location[x]['Name'],capacity = config.root.CampDetails.Location[x]['Capacity'])
+            find_location = location(locationname = conf.root.CampDetails.Location[x]['Name'],capacity = conf.root.CampDetails.Location[x]['Capacity'])
             session.add(find_location)
-    meallocation = session.query(location).filter(location.locationname == config.root.CampDetails['MealLocation']).first()
+    meallocation = session.query(location).filter(location.locationname == conf.root.CampDetails['MealLocation']).first()
     #For each day covered by the camp start and end time
     while loop == 'start':
         log('now looping for %s' % ThisDay)
         #For each period covered by the camp's configured period list
-        for x in range(0,len(config.root.CampDetails.Period)):
-            ThisStartTime = datetime.datetime.strptime((datetime.datetime.strftime(ThisDay, '%Y-%m-%d') + ' ' + config.root.CampDetails.Period[x]['StartTime']),'%Y-%m-%d %H:%M')
-            ThisEndTime = datetime.datetime.strptime((datetime.datetime.strftime(ThisDay, '%Y-%m-%d') + ' ' + config.root.CampDetails.Period[x]['EndTime']),'%Y-%m-%d %H:%M')
-            ThisPeriodName = config.root.CampDetails.Period[x]['Name']
-            ThisPeriodMeal = config.root.CampDetails.Period[x]['Meal']
+        for x in range(0,len(conf.root.CampDetails.Period)):
+            ThisStartTime = datetime.datetime.strptime((datetime.datetime.strftime(ThisDay, '%Y-%m-%d') + ' ' + conf.root.CampDetails.Period[x]['StartTime']),'%Y-%m-%d %H:%M')
+            ThisEndTime = datetime.datetime.strptime((datetime.datetime.strftime(ThisDay, '%Y-%m-%d') + ' ' + conf.root.CampDetails.Period[x]['EndTime']),'%Y-%m-%d %H:%M')
+            ThisPeriodName = conf.root.CampDetails.Period[x]['Name']
+            ThisPeriodMeal = conf.root.CampDetails.Period[x]['Meal']
             find_period = session.query(period).filter(period.periodname == ThisPeriodName,period.starttime == ThisStartTime,period.endtime == ThisEndTime).first()
             #only create periods and groups if we are inside the specific camp start and end time
             if ThisStartTime < CampEndTime and ThisStartTime > CampStartTime:
@@ -222,22 +232,22 @@ def dbbuild():
                 loop = 'stop'
         ThisDay = ThisDay + datetime.timedelta(days=1)    
     #create group templates
-    for x in range(0,len(config.root.CampDetails.GroupTemplate)):
-        log(config.root.CampDetails.GroupTemplate[x])
-        find_template = session.query(grouptemplate).filter(grouptemplate.grouptemplatename == config.root.CampDetails.GroupTemplate[x]['Name']).first()
+    for x in range(0,len(conf.root.CampDetails.GroupTemplate)):
+        log(conf.root.CampDetails.GroupTemplate[x])
+        find_template = session.query(grouptemplate).filter(grouptemplate.grouptemplatename == conf.root.CampDetails.GroupTemplate[x]['Name']).first()
         if find_template is None:
             template = grouptemplate()
             attributelist = [a for a in dir(template) if not a.startswith('_') and not callable(getattr(template,a)) and not a == 'grouptemplateid' and not a == 'metadata' and not a == 'serialize']
             log('attributelist is:')
             log(attributelist)
             for v in attributelist:
-                log('Attempting to change template property %s to %s' % (v, config.root.CampDetails.GroupTemplate[x]['%s' % v]))
-                setattr(template, v, config.root.CampDetails.GroupTemplate[x]['%s' % v])
-            setattr(template, 'grouptemplatename', config.root.CampDetails.GroupTemplate[x]['Name'])
-            setattr(template, 'size', config.root.CampDetails.GroupTemplate[x]['Size'])
-            setattr(template, 'minimumlevel', config.root.CampDetails.GroupTemplate[x]['MinimumLevel'])
+                log('Attempting to change template property %s to %s' % (v, conf.root.CampDetails.GroupTemplate[x]['%s' % v]))
+                setattr(template, v, conf.root.CampDetails.GroupTemplate[x]['%s' % v])
+            setattr(template, 'grouptemplatename', conf.root.CampDetails.GroupTemplate[x]['Name'])
+            setattr(template, 'size', conf.root.CampDetails.GroupTemplate[x]['Size'])
+            setattr(template, 'minimumlevel', conf.root.CampDetails.GroupTemplate[x]['MinimumLevel'])
             session.add(template)
-
     session.commit()
     session.close()
     log('Finished Database Build!')
+    return 'Database Build Successful'

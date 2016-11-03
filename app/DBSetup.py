@@ -72,6 +72,7 @@ class group(Base):
     requesteduserid = Column(String, ForeignKey('users.userid'))
     periodid = Column(Integer, ForeignKey('periods.periodid'))
     minimumlevel = Column(Integer)
+    maximumlevel = Column(Integer)
     music = Column(String)
     ismusical = Column(Integer)
     iseveryone = Column(Integer)
@@ -88,6 +89,7 @@ class grouptemplate(Base):
     grouptemplatename = Column(String)
     size = Column(String)
     minimumlevel = Column(Integer)
+    maximumlevel = Column(Integer)
 
     @property
     def serialize(self):
@@ -120,7 +122,7 @@ class instrument(Base):
     __tablename__ = 'instruments'
 
     instrumentid = Column(Integer, primary_key=True)
-    userid = Column(Integer, ForeignKey('users.userid'))
+    userid = Column(String, ForeignKey('users.userid'))
     instrumentname = Column(String)
     grade = Column(Integer)
     isprimary = Column(Integer)
@@ -177,13 +179,6 @@ Base.metadata.create_all(engine)
 #Database Build section. The below configures periods and groups depending on how the config.xml is configured.
 def dbbuild(configfile):
     conf = untangle.parse(configfile)
-    #add columns to group and grouptemplate classes for each intsrument in the config file
-    instrumentlist = getconfig('Instruments').split(",")
-    for i in instrumentlist:
-        log('Setting up columns for %s in database' % i)
-        setattr(group, i, Column(Integer))
-        setattr(grouptemplate, i, Column(Integer))
-    Base.metadata.create_all(engine)
     #Grab the camp start and end times from the config file
     CampStartTime = datetime.datetime.strptime(getconfig('StartTime'), '%Y-%m-%d %H:%M')
     CampEndTime = datetime.datetime.strptime(getconfig('EndTime'), '%Y-%m-%d %H:%M')
@@ -225,7 +220,7 @@ def dbbuild(configfile):
                 find_absent_group = session.query(group).filter(group.groupname == 'absent',group.periodid == find_period.periodid).first()
                 #if no absentgroup exists in the database, create it
                 if find_absent_group is None:
-                    find_absent_group = group(groupname = 'absent',periodid = find_period.periodid,ismusical=0,status="Confirmed",requesttime=datetime.datetime.now(),requesteduserid='system')
+                    find_absent_group = group(groupname = 'absent',periodid = find_period.periodid,ismusical=0,status="Confirmed",requesttime=datetime.datetime.now(),requesteduserid='system',minimumlevel=0,maximumlevel=0)
                     session.add(find_absent_group)
             #if we hit the camp's configured end time, then stop looping
             if ThisStartTime > CampEndTime:
@@ -251,3 +246,58 @@ def dbbuild(configfile):
     session.close()
     log('Finished Database Build!')
     return 'Database Build Successful'
+
+def importusers(file):
+    session = Session()
+    CampStartTime = datetime.datetime.strptime(getconfig('StartTime'), '%Y-%m-%d %H:%M')
+    CampEndTime = datetime.datetime.strptime(getconfig('EndTime'), '%Y-%m-%d %H:%M')
+    #the below reads the camp input file and creates the users and instrument bindings it finds there.
+    #ifile  = open(file, "rb")
+    reader = csv.reader(file)
+    rownum = 0
+    for row in reader:
+        log('If youre seeing this, its looped again')
+        # Save header row.
+        if rownum == 0:
+            header = row
+            log('Now in the header row')
+        else:
+            log(row)
+            thisuser = user()
+            thisuser.userid = str(uuid.uuid4())
+            thisuser.grouprequestcount = 0
+            thisuser.firstname = row[0]
+            thisuser.lastname = row[1][:1] #[:1] means just get the first letter
+            if row[12] is not '':
+                thisuser.isannouncer = row[12]
+            if row[13] is not '':
+                thisuser.isconductor = row[13]
+            if row[14] is not '':
+                thisuser.isadmin = row[14]
+            if row[2] is not '':
+                thisuser.arrival = row[2]
+            if row[2] is '':
+                thisuser.arrival = CampStartTime
+            if row[3] is not '':
+                thisuser.departure = row[3]
+            if row[3] is '':
+                thisuser.departure = CampEndTime
+            session.add(thisuser)
+            if row[4] is not 'Non-Player':
+                instrument1 = instrument(userid = thisuser.userid, instrumentname = row[4].capitalize().replace(" ", ""), grade = row[5], isprimary = 1)
+                session.add(instrument1)
+            if row[6] is not '':
+                instrument2 = instrument(userid = thisuser.userid, instrumentname = row[6].capitalize().replace(" ", ""), grade = row[7], isprimary = 0)
+                session.add(instrument2)
+            if row[8] is not '':
+                instrument3 = instrument(userid = thisuser.userid, instrumentname = row[8].capitalize().replace(" ", ""), grade = row[9], isprimary = 0)
+                session.add(instrument3)
+            if row[10] is not '':
+                instrument4 = instrument(userid = thisuser.userid, instrumentname = row[10].capitalize().replace(" ", ""), grade = row[11], isprimary = 0)
+                session.add(instrument4)
+            log('Created user named %s %s' % (thisuser.firstname, thisuser.lastname))
+        rownum += 1
+    session.commit()
+    userscount = session.query(user).count()
+    session.close()
+    return ('Created users. There are now %s total users in the database.' % userscount)

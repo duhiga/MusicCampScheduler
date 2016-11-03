@@ -58,9 +58,15 @@ def getgrouplevel(session,inputgroup,min_or_max):
             filter(group.groupid == inputgroup.groupid).order_by(instrument.grade).first()
         log('Found minimum grade in group to be %s %s playing %s with grade %s' % (minimumgradeob.firstname, minimumgradeob.lastname, minimumgradeob.instrumentname, minimumgradeob.grade))
         if min_or_max == 'min':
-            level = int(minimumgradeob.grade) - int(getconfig('AutoAssignLimitLow'))
+            if minimumgradeob is not None:
+                level = int(minimumgradeob.grade) - int(getconfig('AutoAssignLimitLow'))
+            else: 
+                level = 0
         if min_or_max == 'max':
-            level = int(minimumgradeob.grade) + int(getconfig('AutoAssignLimitHigh'))
+            if minimumgradeob is not None:
+                level = int(minimumgradeob.grade) + int(getconfig('AutoAssignLimitHigh'))
+            else:
+                level = getconfig('MaximumLevel')
     #in this case, the group's configuration explicitly defines the minimum level, maximum level is always infninite
     else:
         if min_or_max == 'min':
@@ -138,10 +144,7 @@ def getgroupname(g):
 #tells them how to get to their user dashboard.
 @app.route('/')
 def rootpage():
-    if app.config['SECRET_KEY'] is None:
-        return setup()
-    else:
-        return render_template('index.html')
+    return render_template('index.html')
 
 @app.route('/setup/', methods=["GET", "POST"])
 def setup():
@@ -156,59 +159,7 @@ def setup():
             if filename == 'config.xml':
                 return dbbuild(file.read())
             if filename == 'campers.csv':
-                dbbuildstatus = dbbuild()
-                session = Session()
-                #the below reads the camp input file and creates the users and instrument bindings it finds there.
-                ifile  = open(file.read(), "rb")
-                reader = csv.reader(ifile)
-                rownum = 0
-                for row in reader:
-                    log('If youre seeing this, its looped again')
-                    # Save header row.
-                    if rownum == 0:
-                        header = row
-                        log('Now in the header row')
-                    else:
-                        log(row)
-                        thisuser = user()
-                        thisuser.userid = str(uuid.uuid4())
-                        thisuser.grouprequestcount = 0
-                        thisuser.firstname = row[0]
-                        thisuser.lastname = row[1][:1] #[:1] means just get the first letter
-                        if row[12] is not '':
-                            thisuser.isannouncer = row[12]
-                        if row[13] is not '':
-                            thisuser.isconductor = row[13]
-                        if row[14] is not '':
-                            thisuser.isadmin = row[14]
-                        if row[2] is not '':
-                            thisuser.arrival = row[2]
-                        if row[2] is '':
-                            thisuser.arrival = CampStartTime
-                        if row[3] is not '':
-                            thisuser.departure = row[3]
-                        if row[3] is '':
-                            thisuser.departure = CampEndTime
-                        session.add(thisuser)
-                        if row[4] is not 'Non-Player':
-                            instrument1 = instrument(userid = thisuser.userid, instrumentname = row[4].capitalize().replace(" ", ""), grade = row[5], isprimary = 1)
-                            session.add(instrument1)
-                        if row[6] is not '':
-                            instrument2 = instrument(userid = thisuser.userid, instrumentname = row[6].capitalize().replace(" ", ""), grade = row[7], isprimary = 0)
-                            session.add(instrument2)
-                        if row[8] is not '':
-                            instrument3 = instrument(userid = thisuser.userid, instrumentname = row[8].capitalize().replace(" ", ""), grade = row[9], isprimary = 0)
-                            session.add(instrument3)
-                        if row[10] is not '':
-                            instrument4 = instrument(userid = thisuser.userid, instrumentname = row[10].capitalize().replace(" ", ""), grade = row[11], isprimary = 0)
-                            session.add(instrument4)
-                        log('Created user named %s %s' % (thisuser.firstname, thisuser.lastname))
-                    rownum += 1
-                ifile.close()
-                session.commit()
-                userscount = session.query(user).count()
-                session.close()
-                return ('Created users. There are now %s total users in the database.' % userscount)
+                return importusers(file)
 
 #upon the URL request in the form domain/user/<userid> the user receives their dashboard. The dashboard contains the groups they 
 #are playing in. Optionally, this page presents their dashboard in the future or the past, and gives them further options.
@@ -871,7 +822,7 @@ def periodpage(userid,periodid):
     #start with the players that are playing in groups in the period
     players = session.query(user.userid, user.firstname, user.lastname, period.starttime, period.endtime, group.groupname,\
         groupassignment.instrumentname, location.locationname, groupassignment.groupid).\
-        join(groupassignment).join(group).join(period).join(location).\
+        join(groupassignment).join(group).join(period).outerjoin(location).\
         filter(group.periodid == periodid).order_by(group.groupname,groupassignment.instrumentname).all()
     #grab just the userids of those players to be used in the next query
     players_in_groups_query = session.query(user.userid).\
@@ -975,7 +926,7 @@ def godpage(password):
                                 )
 
 @app.route('/godpage/<password>/importusers/')
-def dbbuild(password):
+def BETAdbbuild(password):
     if password != getconfig('SecretKey'):
         return 'Wrong password'
     else:

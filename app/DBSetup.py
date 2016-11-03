@@ -4,7 +4,7 @@ import untangle
 import time
 import datetime
 import csv
-from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey, exists, Enum, types
+from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey, exists, Enum, types, UniqueConstraint, ForeignKeyConstraint
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship, aliased
 from sqlalchemy.dialects.mysql.base import MSBinary
@@ -43,7 +43,7 @@ def serialize_class(inst, cls):
 class user(Base):
     __tablename__ = 'users'
 
-    userid = Column(String, primary_key=True)
+    userid = Column(String, primary_key=True, unique=True)
     firstname = Column(String)
     lastname = Column(String)
     arrival = Column(DateTime)
@@ -65,7 +65,7 @@ class user(Base):
 class group(Base):
     __tablename__ = 'groups'
 
-    groupid = Column(Integer, primary_key=True)
+    groupid = Column(Integer, primary_key=True, unique=True)
     groupname = Column(String)
     locationid = Column(Integer, ForeignKey('locations.locationid'))
     requesttime = Column(DateTime)
@@ -85,7 +85,7 @@ class group(Base):
 class grouptemplate(Base):
     __tablename__ = 'grouptemplates'
 
-    grouptemplateid = Column(Integer, primary_key=True)
+    grouptemplateid = Column(Integer, primary_key=True, unique=True)
     grouptemplatename = Column(String)
     size = Column(String)
     minimumlevel = Column(Integer)
@@ -95,33 +95,17 @@ class grouptemplate(Base):
     def serialize(self):
         return serialize_class(self, self.__class__)
 
+#add the columns for each instrument in the application configuration to the table
 instrumentlist = getconfig('Instruments').split(",")
 for i in instrumentlist:
     log('Setting up columns for %s in database' % i)
     setattr(group, i, Column(Integer))
     setattr(grouptemplate, i, Column(Integer))
-    
-
-class groupassignment(Base):
-    __tablename__ = 'groupassignments'
-
-    groupassignmentid = Column(Integer, primary_key=True)
-    userid = Column(String, ForeignKey('users.userid'))
-    groupid = Column(Integer, ForeignKey('groups.groupid'))
-    instrumentname = Column(String, ForeignKey('instruments.instrumentname'))
-
-    @property
-    def serialize(self):
-        return serialize_class(self, self.__class__)
-
-    def __repr__(self):
-        return "<groupassignment(groupassignmentid='%s', userid='%s', groupid='%s', instrument='%s')>" % (
-            self.groupassignmentid,self.userid,self.groupid,self.instrumentname)
 
 class instrument(Base):
     __tablename__ = 'instruments'
 
-    instrumentid = Column(Integer, primary_key=True)
+    instrumentid = Column(Integer, primary_key=True, unique=True)
     userid = Column(String, ForeignKey('users.userid'))
     instrumentname = Column(String)
     grade = Column(Integer)
@@ -135,10 +119,27 @@ class instrument(Base):
         return "<instrument(instrumentid='%s', userid='%s', instrumentname='%s', grade='%s', isprimary='%s')>" % (
             self.instrumentid,self.userid,self.instrumentname,self.grade,self.isprimary)
 
+class groupassignment(Base):
+    __tablename__ = 'groupassignments'
+
+    groupassignmentid = Column(Integer, primary_key=True, unique=True)
+    userid = Column(String, ForeignKey('users.userid'))
+    groupid = Column(Integer, ForeignKey('groups.groupid'))
+    instrumentname = Column(String)
+    __table_args__ = (ForeignKeyConstraint([userid, instrumentname],[instrument.userid, instrument.instrumentname]), {})
+
+    @property
+    def serialize(self):
+        return serialize_class(self, self.__class__)
+
+    def __repr__(self):
+        return "<groupassignment(groupassignmentid='%s', userid='%s', groupid='%s', instrument='%s')>" % (
+            self.groupassignmentid,self.userid,self.groupid,self.instrumentname)
+
 class location(Base):
     __tablename__ = 'locations'
 
-    locationid = Column(Integer, primary_key=True)
+    locationid = Column(Integer, primary_key=True, unique=True)
     locationname = Column(String)
     capacity = Column(Integer)
 
@@ -153,7 +154,7 @@ class location(Base):
 class period(Base):
     __tablename__ = 'periods'
 
-    periodid = Column(Integer, primary_key=True)
+    periodid = Column(Integer, primary_key=True, unique=True)
     starttime = Column(DateTime)
     endtime = Column(DateTime)
     periodname = Column(String)
@@ -170,7 +171,7 @@ class period(Base):
 class announcement(Base):
     __tablename__ = 'announcements'
 
-    announcementid = Column(Integer, primary_key=True)
+    announcementid = Column(Integer, primary_key=True, unique=True)
     creationtime = Column(DateTime)
     content = Column(String)
 

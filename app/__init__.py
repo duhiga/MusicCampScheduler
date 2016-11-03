@@ -88,7 +88,7 @@ def useridanddatetoperiods(session,userid,date):
         g = session.query(group.groupname, period.starttime, period.endtime, location.locationname, group.groupid, group.ismusical, \
                             group.iseveryone, period.periodid, period.periodname, groupassignment.instrumentname).\
                             join(period).join(groupassignment).join(user).join(instrument).outerjoin(location).\
-                            filter(user.userid == userid, group.periodid == p.periodid).first()
+                            filter(user.userid == userid, group.periodid == p.periodid, group.status == 'Confirmed').first()
         if g is not None:
             log('Found group assignment named %s' % g.groupname)
             periods.append(g)
@@ -433,12 +433,12 @@ def groupedit(userid,groupid,periodid=None):
                         foundfilled = True
                         log('Attempting to find user %s' % p['userid'])
                         playeruser = session.query(user).filter(user.userid == p['userid']).first()
-                        currentassignment = session.query(groupassignment).join(group).filter(groupassignment.userid == userid).filter(group.periodid == content['periodid']).first()
+                        currentassignment = session.query(groupassignment.instrumentname, group.groupname, group.groupid).join(group).filter(groupassignment.userid == userid).filter(group.periodid == content['periodid']).first()
                         if currentassignment is not None:
                             if currentassignment.groupid != thisgroup.groupid:
                                 url = 'none'
                                 session.close()
-                                return jsonify(message = ('Found a clash for %s. Refresh the page and try again.' % playeruser.firstname), url = url)
+                                return jsonify(message = ('Found a clash for %s. They are alrdeay playing %s in %s. Refresh the page and try again.' % (playeruser.firstname, currentassignment.instrumentname, currentassignment.groupname)), url = url)
                         if playeruser is not None:
                             playergroupassignment = groupassignment(userid = playeruser.userid, groupid = thisgroup.groupid, instrumentname = p['instrumentname'])
                             session.add(playergroupassignment)
@@ -478,10 +478,10 @@ def groupedit(userid,groupid,periodid=None):
                         #group AND isn't in the list of users that are already playing in this period.
                         possible_players_query = session.query(user.userid).outerjoin(instrument).filter(~user.userid.in_(everyone_playing_in_period_query)).\
                             filter(instrument.grade >= mingrade, instrument.grade <= maxgrade).filter(instrument.instrumentname == i)
-                        if possible_players_query.first() is None:
+                        if len(possible_players_query.all()) < requiredplayers:
                             url = 'none'
                             session.close()
-                            return jsonify(message = """Could not find a suitable player for instrument %s, manually fill their names, change the minimum level requirement of 
+                            return jsonify(message = """Could not find enough players for instrument %s, manually fill their names, change the minimum level requirement of 
                                                         this group, or remove their instrument and try again.""" % i, url = url)
                         else:
                             log('Found %s players that could potentially be autofilled into this group.' % len(possible_players_query.all()))
@@ -490,8 +490,8 @@ def groupedit(userid,groupid,periodid=None):
                                 filter(groupassignment.userid.in_(possible_players_query))
                             final_list = session.query(user.userid,sqlalchemy.sql.expression.literal_column("0").label("playcount")).filter(user.userid.in_(possible_players_query)).\
                                             filter(~user.userid.in_(already_played_query)).all()
-                            #append the players that have already played to the players that haven't played
-                            for p in (session.query(user.userid, func.count(groupassignment.userid).label("playcount")).group_by(groupassignment.userid).outerjoin(groupassignment).outerjoin(group).\
+                            #append the players that have already played
+                            for p in (session.query(user.userid, func.count(groupassignment.userid).label("playcount")).group_by(user.userid).outerjoin(groupassignment).outerjoin(group).\
                                     filter(group.ismusical == 1).filter(groupassignment.userid.in_(possible_players_query)).order_by(func.count(groupassignment.userid)).all()):
                                 final_list.append(p)
                             log('Players in final list with playcounts:')
@@ -904,7 +904,7 @@ def instrumentation(userid,periodid):
             url = ('/user/' + str(thisuser.userid) + '/group/' + str(grouprequest.groupid) + '/')
             log('Sending user to URL: %s' % url)
             session.close()
-            return jsonify(message = 'Instrumentation successfully submitted', url = url)
+            return jsonify(message = 'none', url = url)
 
 #------------ADMIN PAGES ARE BELOW--------------
 

@@ -52,12 +52,10 @@
     <Content Include="templates\announcement.html" />
     <Content Include="templates\publicevent.html" />
     <Content Include="templates\setup.html" />
-    <Content Include="uploads\uploads.txt" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="css\" />
     <Folder Include="js\" />
-    <Folder Include="uploads\" />
     <Folder Include="templates\" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.Web.targets" />

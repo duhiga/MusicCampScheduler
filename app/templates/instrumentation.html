@@ -99,9 +99,13 @@
                             success: function(data) {
                                 //upon success, the server will return a message and a URL. give the user the message and send them to the URL.
                                 console.log(data);
-                                confirm(data.message);
-                                window.location = data.url;
+                                if (data.message != 'none') {
+                                    confirm(data.message);
                                 }
+                                if (data.url != 'none') {
+                                    window.location = data.url;
+                                }
+                            }
                         });
                         
                     }

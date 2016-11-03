@@ -116,36 +116,6 @@
                         }
                     });
                 }
-                ////NOT USED - keeping just in case. code doesn't work, but is the makings of the "available players" column after all the dropdowns.
-                ////In each "Available Players" cell
-                //$('.available_players').each(function() {
-                //    thisinstrument = $(this).attr('id')
-                //    //iterate through the whole list of players
-                //    for (var i = 0; i < playersdump.length; i++) {
-                //        //and for each player who plays this instrument
-                //        if (playersdump[i].instrumentname == thisinstrument) {
-                //            alreadyfound = false;
-                //            $('.player_dropdown').each(function() {
-                //                //if they are already set to playing in this group
-                //                if ($(this).val() != playersdump[i].userid) {
-                //                    //don't write their name
-                //                    console.log('Already found player in dropdowns ' + playersdump[i].firstname + ' ' + playersdump[i].lastname)
-                //                    alreadyfound = true;
-                //                    return false
-                //                }
-                //            });
-                //            if (alreadyfound == false) {
-                //                console.log('Player not found in dropdowns, adding text to cell ' + playersdump[i].firstname + ' ' + playersdump[i].lastname)
-                //                if ($(this).html() == '') {
-                //                    $(this).html(playersdump[i].firstname + ' ' + playersdump[i].lastname)
-                //                }
-                //                else {
-                //                    $(this).html().append(playersdump[i].firstname + ' ' + playersdump[i].lastname)
-                //                }
-                //            }
-                //        }
-                //    }
-                //});
             });
 
             //when user presses submit button (either with or without autofill)
@@ -197,6 +167,15 @@
                             window.location = data.url;
                         }
                     }
+                });
+            });
+
+
+            //when user presses the delete group button
+            $("#clear_players").click(function () {
+                console.log('Clear players button pressed');
+                $('.player_dropdown').each(function() {
+                    $(this).val('').change();
                 });
             });
 
@@ -404,6 +383,7 @@
         <ul class="w3-navbar w3-theme w3-bottom w3-left-align w3-large">
             <li><a href="#" class="w3-hover-white submit_button" id="submit_without_autofill">Submit</a></li>
             <li><a href="#" class="w3-hover-white submit_button" id="submit_with_autofill">Autofill Missing Players</a></li>
+            <li><a href="#" class="w3-hover-white" id="clear_players">Clear Players</a></li>
             <li><a href="#" class="w3-hover-white" id="delete_button">Delete Group</a></li>
         </ul>
     </div>

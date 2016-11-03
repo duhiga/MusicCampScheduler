@@ -95,7 +95,7 @@ class grouptemplate(Base):
     def serialize(self):
         return serialize_class(self, self.__class__)
 
-#add the columns for each instrument in the application configuration to the table
+#add the columns for each instrument in the application configuration to the group and grouptemplates tables
 instrumentlist = getconfig('Instruments').split(",")
 for i in instrumentlist:
     log('Setting up columns for %s in database' % i)
@@ -126,7 +126,7 @@ class groupassignment(Base):
     userid = Column(String, ForeignKey('users.userid'))
     groupid = Column(Integer, ForeignKey('groups.groupid'))
     instrumentname = Column(String)
-    __table_args__ = (ForeignKeyConstraint([userid, instrumentname],[instrument.userid, instrument.instrumentname]), {})
+    #__table_args__ = (ForeignKeyConstraint([userid, instrumentname],[instrument.userid, instrument.instrumentname]), {})
 
     @property
     def serialize(self):
@@ -221,7 +221,7 @@ def dbbuild(configfile):
                 find_absent_group = session.query(group).filter(group.groupname == 'absent',group.periodid == find_period.periodid).first()
                 #if no absentgroup exists in the database, create it
                 if find_absent_group is None:
-                    find_absent_group = group(groupname = 'absent',periodid = find_period.periodid,ismusical=0,status="Confirmed",requesttime=datetime.datetime.now(),requesteduserid='system',minimumlevel=0,maximumlevel=0)
+                    find_absent_group = group(groupname = 'absent',periodid = find_period.periodid,ismusical=0,status="Confirmed",requesttime=datetime.datetime.now(),minimumlevel=0,maximumlevel=0)
                     session.add(find_absent_group)
             #if we hit the camp's configured end time, then stop looping
             if ThisStartTime > CampEndTime:
@@ -284,6 +284,7 @@ def importusers(file):
             if row[3] is '':
                 thisuser.departure = CampEndTime
             session.add(thisuser)
+            session.commit()
             if row[4] is not 'Non-Player':
                 instrument1 = instrument(userid = thisuser.userid, instrumentname = row[4].capitalize().replace(" ", ""), grade = row[5], isprimary = 1)
                 session.add(instrument1)

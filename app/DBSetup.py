@@ -106,7 +106,7 @@ class groupassignment(Base):
     __tablename__ = 'groupassignments'
 
     groupassignmentid = Column(Integer, primary_key=True)
-    userid = Column(Integer, ForeignKey('users.userid'))
+    userid = Column(String, ForeignKey('users.userid'))
     groupid = Column(Integer, ForeignKey('groups.groupid'))
     instrumentname = Column(String, ForeignKey('instruments.instrumentname'))
 

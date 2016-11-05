@@ -5,19 +5,13 @@ html, body, h1, h2, h3, h4, h5, h6, select, option {
     padding-top: 12px;
     padding-bottom: 12px;
 }
-td, th {
-    border: 1px solid #999;
-}
 body {
     padding-top: 60px;
     padding-bottom: 60px;
 }
-table {
-    border-collapse: collapse;
-}
-.zebra-table tr:nth-child(odd) {
-    background: #eee;
-}
+table {border-collapse: collapse;}
+.zebra-table tr:nth-child(odd) {background: #eee;}
+td, th {border: 1px solid #999;}
 /*  #Mobile (Portrait)
 ================================================== */
 /* Note: Design for a width of 320px */

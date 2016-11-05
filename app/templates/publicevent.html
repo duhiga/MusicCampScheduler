@@ -14,34 +14,46 @@
         /* this script handles creating public events. */
         
         $(document).ready(function () {
-
+            var isClicked = false;
             //run when user clicks the submit button
             $("#submit_button").click(function () {
-                console.log('Submit button pressed');
-                if ($("#name_textbox").val() == "") {
-                    confirm('The event name cannot be empty.');
-                    return false;
-                }
-                else {
-                    request = {};
-                    request.name = $("#name_textbox").val();
-                    request.location = $("#location_dropdown").val();
+                if (!isClicked) {
+                    isClicked = true;
+                    console.log('Submit button pressed');
+                    if ($("#name_textbox").val() == "") {
+                        alert('The event name cannot be empty.');
+                        isClicked = false;
+                        return false;
+                    }
+                    else {
+                        request = {};
+                        request.name = $("#name_textbox").val();
+                        request.location = $("#location_dropdown").val();
 
-                    console.log('Pushing the event to the server for processing:');
-                    console.log(request);
-                    $.ajax({
-                        //make a POST AJAX query to the same web page as the user is currently visiting
-                        url: (window.location.href),
-                        type: 'POST',
-                        contentType: 'application/json;charset=UTF-8',
-                        data: JSON.stringify(request, null),
-                        success: function (data) {
-                            //upon success, the server will return a message and a URL. give the user the message and send them to the URL.
-                            console.log(data);
-                            confirm(data.message)
-                            window.location = data.url;
-                        }
-                    });
+                        console.log('Pushing the event to the server for processing:');
+                        console.log(request);
+                        $.ajax({
+                            //make a POST AJAX query to the same web page as the user is currently visiting
+                            url: (window.location.href),
+                            type: 'POST',
+                            contentType: 'application/json;charset=UTF-8',
+                            data: JSON.stringify(request, null),
+                            success: function (data) {
+                                //upon success, the server will return a message and a URL. give the user the message and send them to the URL.
+                                console.log(data);
+                                if (data.message != 'none') {
+                                    alert(data.message);
+                                    isClicked = false;
+                                }
+                                if (data.url != 'none') {
+                                    window.location = data.url;
+                                }
+                                else {
+                                    isClicked = false;
+                                }
+                            }
+                        });
+                    }
                 }
             });
         });

@@ -17,32 +17,34 @@
         $(document).ready(function () {
             //handler for user clicking the button requesting an absence
             $(".absent_request_button").click(function () {
-                    console.log("User requested absence");
-                    var post_absent = $.ajax({
-                        type: 'POST',
-                        url: '/user/{{ user.userid }}/period/' + this.id + '/absent/confirm/'
-                    });
+                $(this).prop('disabled', true).addClass('disabled');
+                console.log("User requested absence");
+                var post_absent = $.ajax({
+                    type: 'POST',
+                    url: '/user/{{ user.userid }}/period/' + this.id + '/absent/confirm/'
+                });
 
-                    // handle response
-                    post_absent.done(function (response) {
-                        console.log(response);
-                        location.reload();
-                    });
+                // handle response
+                post_absent.done(function (response) {
+                    console.log(response);
+                    location.reload();
+                });
             });
 
             //handler for user clicking the button requesting to cancel an absence
             $(".absent_cancel_button").click(function () {
-                    console.log("User Removed their Absence");
-                    var post_absent = $.ajax({
-                        type: 'POST',
-                        url: '/user/{{ user.userid }}/period/' + this.id + '/absent/cancel/'
-                    });
+                $(this).prop('disabled', true).addClass('disabled');
+                console.log("User Removed their Absence");
+                var post_absent = $.ajax({
+                    type: 'POST',
+                    url: '/user/{{ user.userid }}/period/' + this.id + '/absent/cancel/'
+                });
 
-                    // handle response
-                    post_absent.done(function (response) {
-                        console.log(response);
-                        location.reload();
-                    });
+                // handle response
+                post_absent.done(function (response) {
+                    console.log(response);
+                    location.reload();
+                });
             });
 
         });
@@ -68,7 +70,6 @@
             <a href="/user/{{ user.userid }}/announcement/">ANNOUNCER: Edit the announcement for all campers</a>
             {% endif %}
             <p>{{ currentannouncement.content }}</p>
-            <br />
             <h3>Your Schedule</h3>
             {% if date > today %}
             <p>To mark yourself as absent for any period, select one of the corresponding buttons.</p>
@@ -80,8 +81,7 @@
                     {% else %}
                     <a href="/user/{{ user.userid }}/date/{{ previousday }}/">Previous</a>
                     {% endif %}
-
-                    <b>     Schedule for {{ weekday }}, {{ date.strftime('%Y-%m-%d') }}     </b>
+                    <b> Schedule for {{ date.strftime('%a, %d %b') }}</b>
                     {% if nextday == today %}
                     <a href="/user/{{ user.userid }}/">Next</a>
                     {% else %}

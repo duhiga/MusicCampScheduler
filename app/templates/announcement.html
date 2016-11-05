@@ -14,31 +14,38 @@
         /* this script handles creating public events. */
         
         $(document).ready(function () {
-
+            isClicked = false;
             //run when user clicks the submit button
             $("#submit_button").click(function () {
-                console.log('Submit button pressed');
-                request = {};
-                request.content = $("#announcement_text").val();
-                console.log('Pushing the event to the server for processing:');
-                console.log(request);
-                $.ajax({
-                    //make a POST AJAX query to the same web page as the user is currently visiting
-                    url: (window.location.href),
-                    type: 'POST',
-                    contentType: 'application/json;charset=UTF-8',
-                    data: JSON.stringify(request, null),
-                    success: function (data) {
-                        //upon success, the server will return a message and a URL. give the user the message and send them to the URL.
-                        console.log(data);
-                        if (data.message != 'none') {
-                            confirm(data.message);
+                if (!isClicked) {
+                    isClicked = true;
+                    console.log('Submit button pressed');
+                    request = {};
+                    request.content = $("#announcement_text").val();
+                    console.log('Pushing the event to the server for processing:');
+                    console.log(request);
+                    $.ajax({
+                        //make a POST AJAX query to the same web page as the user is currently visiting
+                        url: (window.location.href),
+                        type: 'POST',
+                        contentType: 'application/json;charset=UTF-8',
+                        data: JSON.stringify(request, null),
+                        success: function (data) {
+                            //upon success, the server will return a message and a URL. give the user the message and send them to the URL.
+                            console.log(data);
+                            if (data.message != 'none') {
+                                alert(data.message);
+                                isClicked = false;
+                            }
+                            if (data.url != 'none') {
+                                window.location = data.url;
+                            }
+                            else {
+                                isClicked = false;
+                            }
                         }
-                        if (data.url != 'none') {
-                            window.location = data.url;
-                        }
-                    }
-                });
+                    });
+                }
             });
         });
     </script>

@@ -17,15 +17,12 @@
         this user plays. it uses all of this data to populate drop-down boxes, depending on what the user selects. */
         
         $(document).ready(function () {
-            
-            //these first few variables set up the rest of the script
-            //var players = 
-            //console.log("Players:");
-            //console.log(players);
 
             var grouptemplates = {{ grouptemplates_serialized|tojson }};
             console.log("Grouptemplates:");
             console.log(grouptemplates);
+
+            var isClicked = false;
 
             //run when a user changes the select template dropdown
             $(document).on("change", '#group_template_dropdown', function () {
@@ -39,6 +36,8 @@
                 $("#textbox_groupname").val(selectedTemplate.grouptemplatename)
                 console.log('This group template minimum level is ' + selectedTemplate.minimumlevel)
                 $("#minimumlevel_dropdown").val(selectedTemplate.minimumlevel).change()
+                $("#maximumlevel_dropdown").val(selectedTemplate.maximumlevel).change()
+                $("#location_dropdown").val(selectedTemplate.defaultlocationid).change()
                 //for each instrument type in the group template
                 $.each(selectedTemplate, function(key,value){
                     //make sure it's an instrument type and not other associated metadata
@@ -57,61 +56,68 @@
             //run when user clicks the submit button
             $("#submit_button").click(function () {
                 console.log('Submit button pressed');
-                //set up a variable to track invalid configuration and the JSON to send through to the server
-                var invalidConfig = false;
-                //request will be our parent object, and will be pushed to the server through AJAX later
-                var request = {};
-                //add the music name and minimum level to the JSON. Establish an array to contain the player names
-                request.music = $('#textbox_music').val();
-                //if this is the conductorpage, we also need to send the selected location - it cannot be blank.
-                if ($('#location_dropdown').val() == "" || $('#textbox_groupname').val() == "" || $('#textbox_music').val() == "") {
-                    alert("Sumbission failed. You have not filled in required fields. You must fill in the location, music and name of the group.");
-                    return false;
-                }
-                else {
-                    request.locationid = $('#location_dropdown').val();
-                    request.groupname = $('#textbox_groupname').val();
+                if (!isClicked) {
+                    isClicked = true;
+                    //set up a variable to track invalid configuration and the JSON to send through to the server
+                    var invalidConfig = false;
+                    //request will be our parent object, and will be pushed to the server through AJAX later
+                    var request = {};
+                    //add the music name and minimum level to the JSON. Establish an array to contain the player names
                     request.music = $('#textbox_music').val();
-                    request.minimumlevel = $('#minimumlevel_dropdown').val();
-                    //establish an array to fill with instruments and numbers
-                    request.instruments = []
-                    //for each instrument
-                    $('.instrumentnumber_dropdown').each(function() {
-                        //if we find a blank instrument box
-                        if ($(this).val() == "") {
-                            console.log("Selected " + $(this).attr('id') + " as None");
-                        }
-                        else {
-                            request[$(this).attr('id')] = $(this).val();
-                            console.log("Selected " + $(this).attr('id') + ' as ' + $(this).val());
-                        }
-                    });
-                    console.log('Pushing the following object to the server for processing:');
-                    console.log(JSON.stringify(request));
-                    
-                    if (invalidConfig == false) {
-                        $.ajax({
-                            //make a POST AJAX query to the same web page as the user is currently visiting
-                            url: (window.location.href),
-                            type: 'POST',
-                            contentType: 'application/json;charset=UTF-8',
-                            data: JSON.stringify(request, null),
-                            success: function(data) {
-                                //upon success, the server will return a message and a URL. give the user the message and send them to the URL.
-                                console.log(data);
-                                if (data.message != 'none') {
-                                    confirm(data.message);
-                                }
-                                if (data.url != 'none') {
-                                    window.location = data.url;
-                                }
+                    //if this is the conductorpage, we also need to send the selected location - it cannot be blank.
+                    if ($('#location_dropdown').val() == "" || $('#textbox_groupname').val() == "" || $('#textbox_music').val() == "") {
+                        alert("Sumbission failed. You have not filled in required fields. You must fill in the location, music and name of the group.");
+                        return false;
+                    }
+                    else {
+                        request.locationid = $('#location_dropdown').val();
+                        request.groupname = $('#textbox_groupname').val();
+                        request.music = $('#textbox_music').val();
+                        request.minimumlevel = $('#minimumlevel_dropdown').val();
+                        request.maximumlevel = $('#maximumlevel_dropdown').val();
+                        //establish an array to fill with instruments and numbers
+                        request.instruments = []
+                        //for each instrument
+                        $('.instrumentnumber_dropdown').each(function() {
+                            //if we find a blank instrument box
+                            if ($(this).val() == "") {
+                                console.log("Selected " + $(this).attr('id') + " as None");
+                            }
+                            else {
+                                request[$(this).attr('id')] = $(this).val();
+                                console.log("Selected " + $(this).attr('id') + ' as ' + $(this).val());
                             }
                         });
+                        console.log('Pushing the following object to the server for processing:');
+                        console.log(JSON.stringify(request));
+                    
+                        if (invalidConfig == false) {
+                            $.ajax({
+                                //make a POST AJAX query to the same web page as the user is currently visiting
+                                url: (window.location.href),
+                                type: 'POST',
+                                contentType: 'application/json;charset=UTF-8',
+                                data: JSON.stringify(request, null),
+                                success: function(data) {
+                                    //upon success, the server will return a message and a URL. give the user the message and send them to the URL.
+                                    console.log(data);
+                                    if (data.message != 'none') {
+                                        alert(data.message);
+                                        isClicked = false;
+                                    }
+                                    if (data.url != 'none') {
+                                        window.location = data.url;
+                                    }
+                                    else {
+                                        isClicked = false;
+                                    }
+                                }
+                            });
                         
+                        }
                     }
                 }
-                
-             });
+            });
         });
     </script>
 </head>
@@ -159,7 +165,6 @@
                     <th>Location</th>
                     <td>
                         <select id="location_dropdown">
-                            <option value=""></option>
                             {% for l in locations %}
                             <option value="{{ l.locationid }}">{{ l.locationname }}</option>
                             {% endfor %}
@@ -170,9 +175,26 @@
                     <th>Minimum Level</th>
                     <td>
                         <select id="minimumlevel_dropdown">
-                            <option value=""></option>
                             {% for n in range(maximumlevel + 1) %}
+                            {% if n  == 0 %}
+                            <option value="{{ n }}">Auto</option>
+                            {%else%}
                             <option value="{{ n }}">{{ n }}</option>
+                            {%endif%}
+                            {% endfor %}
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <th>Maximum Level</th>
+                    <td>
+                        <select id="maximumlevel_dropdown">
+                            {% for n in range(maximumlevel + 1) %}
+                            {% if n  == 0 %}
+                            <option value="{{ n }}">Auto</option>
+                            {%else%}
+                            <option value="{{ n }}">{{ n }}</option>
+                            {%endif%}
                             {% endfor %}
                         </select>
                     </td>

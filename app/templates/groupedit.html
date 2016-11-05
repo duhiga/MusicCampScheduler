@@ -14,6 +14,8 @@
 
         $(document).ready(function () {
 
+            var isClicked = false;
+
             //turn the dump of all players available in this period to a JS object
             {% if playersdump_serialized == [] %}
             var playersdump = null;
@@ -120,56 +122,62 @@
 
             //when user presses submit button (either with or without autofill)
             $(".submit_button").click(function () {
-                console.log('Submit button pressed');
-                //establish the object we'll send to the server
-                var request = {}
+                if (!isClicked) {
+                    isClicked = true;
+                    console.log('Submit button pressed');
+                    //establish the object we'll send to the server
+                    var request = {}
 
-                //check if this was the autofill button or not, and add this information to the object
-                if ($(this).attr('id') == 'submit_with_autofill') { request.autofill = '1' }
-                else { request.autofill = '0' }
+                    //check if this was the autofill button or not, and add this information to the object
+                    if ($(this).attr('id') == 'submit_with_autofill') { request.autofill = '1' }
+                    else { request.autofill = '0' }
 
-                //for each group_attribute dropdown on the page, add the value to the object
-                $('.group_attribute').each(function() {
-                    request[$(this).attr('id')] = $(this).val();
-                });
+                    //for each group_attribute dropdown on the page, add the value to the object
+                    $('.group_attribute').each(function() {
+                        request[$(this).attr('id')] = $(this).val();
+                    });
 
-                $('.instrumentnumber_dropdown').each(function() {
-                    request[$(this).data('instrument')] = $(this).val();
-                });
+                    $('.instrumentnumber_dropdown').each(function() {
+                        request[$(this).data('instrument')] = $(this).val();
+                    });
 
-                //establish an array to fill with player and instruments
-                request.players = []
-                $('.player_dropdown').each(function() {
-                    //create a new object
-                    var iplayer = {};
-                    //add the contents of the instrument dropdown to the object
-                    iplayer.instrumentname = $(this).data('instrument');
-                    iplayer.userid = $(this).val();
-                    //push the player object to the players array in the request object
-                    request.players.push(iplayer);
-                });
+                    //establish an array to fill with player and instruments
+                    request.players = []
+                    $('.player_dropdown').each(function() {
+                        //create a new object
+                        var iplayer = {};
+                        //add the contents of the instrument dropdown to the object
+                        iplayer.instrumentname = $(this).data('instrument');
+                        iplayer.userid = $(this).val();
+                        //push the player object to the players array in the request object
+                        request.players.push(iplayer);
+                    });
 
-                console.log('Sending the following to the server:');
-                console.log(request);
-                $.ajax({
-                    //make a POST AJAX query to the same web page as the user is currently visiting
-                    url: ('/user/{{ thisuser.userid }}/group/{{ thisgroup.groupid }}/edit/'),
-                    type: 'POST',
-                    contentType: 'application/json;charset=UTF-8',
-                    data: JSON.stringify(request, null),
-                    success: function(data) {
-                        //upon success, the server will return a message and a URL. give the user the message and send them to the URL.
-                        console.log(data);
-                        if (data.message != 'none') {
-                            confirm(data.message);
+                    console.log('Sending the following to the server:');
+                    console.log(request);
+                    $.ajax({
+                        //make a POST AJAX query to the same web page as the user is currently visiting
+                        url: ('/user/{{ thisuser.userid }}/group/{{ thisgroup.groupid }}/edit/'),
+                        type: 'POST',
+                        contentType: 'application/json;charset=UTF-8',
+                        data: JSON.stringify(request, null),
+                        success: function(data) {
+                            //upon success, the server will return a message and a URL. give the user the message and send them to the URL.
+                            console.log(data);
+                            if (data.message != 'none') {
+                                alert(data.message);
+                                isClicked = false;
+                            }
+                            if (data.url != 'none') {
+                                window.location = data.url;
+                            }
+                            else {
+                                isClicked = false;
+                            }
                         }
-                        if (data.url != 'none') {
-                            window.location = data.url;
-                        }
-                    }
-                });
+                    });
+                }
             });
-
 
             //when user presses the delete group button
             $("#clear_players").click(function () {
@@ -181,31 +189,37 @@
 
             //when user presses the delete group button
             $("#delete_button").click(function () {
-                console.log('Delete button pressed');
-                var r = confirm('Are you sure you want to delete this group?');
-                if (r == true) {$.ajax({
-                    //make a POST AJAX query to the same web page as the user is currently visiting
-                    url: (window.location.href),
-                    type: 'DELETE',
-                    success: function(data) {
-                        //upon success, the server will return a message and a URL. give the user the message and send them to the URL.
-                        console.log(data);
-                        if (data.message != 'none') {
-                            confirm(data.message);
-                        }
-                        if (data.url != 'none') {
-                            window.location = data.url;
-                        }
+                if (!isClicked) {
+                    console.log('Delete button pressed');
+                    var r = confirm('Are you sure you want to delete this group?');
+                    if (r == true) {
+                        $.ajax({
+                            //make a POST AJAX query to the same web page as the user is currently visiting
+                            url: (window.location.href),
+                            type: 'DELETE',
+                            success: function(data) {
+                                //upon success, the server will return a message and a URL. give the user the message and send them to the URL.
+                                console.log(data);
+                                if (data.message != 'none') {
+                                    alert(data.message);
+                                    isClicked = false;
+                                }
+                                if (data.url != 'none') {
+                                    window.location = data.url;
+                                }
+                                else {
+                                    isClicked = false;
+                                }
+                            }
+                        });
                     }
-                });}
+                }
             });
         });
     </script>
 </head>
 
 <body>
-
-
     <div class="w3-top">
         <ul class="w3-navbar w3-theme w3-top w3-left-align w3-large">
             <li><a href="#" class="w3-theme-l1">&#34;{{ thisgroup.groupname }}&#34; Editor</a></li>
@@ -274,7 +288,6 @@
                     <td class="unimportant-column">{{ thislocation.locationname }}</td>
                     <td>
                         <select id="locationid" class="group_attribute">
-                            <option value=""></option>
                             {% for l in locations %}
                             {% if l.locationid == thislocation.locationid %}
                             <option value="{{ l.locationid }}" selected="selected">{{ l.locationname }} - Max Capacity: {{ l.capacity }}</option>
@@ -290,10 +303,32 @@
                     <td class="unimportant-column">{{ thisgroup.minimumlevel }}</td>
                     <td>
                         <select id="minimumlevel" class="group_attribute">
-                            <option value="">Auto</option>
                             {% for n in range(maximumlevel + 1) %}
-                            {% if n == thisgroup.minimumlevel %}
+                            {% if n == thisgroup.minimumlevel and n == 0 %}
+                            <option value="{{ n }}" selected="selected">Auto</option>
+                            {% elif n == thisgroup.minimumlevel %}
                             <option value="{{ n }}" selected="selected">{{ n }}</option>
+                            {% elif n == 0 %}
+                            <option value="{{ n }}">Auto</option>
+                            {% else %}
+                            <option value="{{ n }}">{{ n }}</option>
+                            {% endif %}
+                            {% endfor %}
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <th>Maximum Level</th>
+                    <td class="unimportant-column">{{ thisgroup.maximumlevel }}</td>
+                    <td>
+                        <select id="maximumlevel" class="group_attribute">
+                            {% for n in range(maximumlevel + 1) %}
+                            {% if n == thisgroup.maximumlevel and n == 0 %}
+                            <option value="{{ n }}" selected="selected">Auto</option>
+                            {% elif n == thisgroup.maximumlevel %}
+                            <option value="{{ n }}" selected="selected">{{ n }}</option>
+                            {% elif n == 0 %}
+                            <option value="{{ n }}">Auto</option>
                             {% else %}
                             <option value="{{ n }}">{{ n }}</option>
                             {% endif %}
@@ -364,7 +399,9 @@
                         <select class="player_dropdown" id="{{i}}_{{p}}" data-instrument="{{i}}">
                             <option value=""></option>
                             {% for d in playersdump %}
-                            {% if d.instrumentname == i %}
+                            {% if d.instrumentname == 'Conductor' and d.userid == thisgroup.requesteduserid %}
+                            <option value="{{ d.userid }}" selected="selected">{{ d.grade }} - {{ d.firstname }} {{ d.lastname }}</option>
+                            {% elif d.instrumentname == i %}
                             <option value="{{ d.userid }}">{{ d.grade }} - {{ d.firstname }} {{ d.lastname }}</option>
                             {% endif %}
                             {% endfor %}

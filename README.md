@@ -1,6 +1,6 @@
 # MusicCampScheduler
-Scheduler and dashboard applicaiton for a music camp
+Scheduler and dashboard applicaiton for a music camp.
 
-This application is still very, very alpha. It is a learning activity for me, I've not done any development in a number of years and wanted to do something on the web. It will be functional with a 1.0 release by the end of 2016, but won't look very pretty. More features and functionality will be written in 2017 when I learn CSS/HTML/JS properly.
+This app runs the music camp scheduler site. The original target audience for this site is around 100 people for a camp around 1 week long. The intended model for the music camp is that people are allocated into groups like orchestras, bands, quartets, etc over several periods in a day. People can mark themselves as "absent" at least one day in advance and will not be allocated  to groups in the session. Once running, the website must be maintained by an adminstrator, and conductors to confirm groups.
 
-Before using this applicaiton, you need to configure your own config.xml. There's an example in here, with all the information you should need. The application is pretty flexible on how long your camp is, and which sessions are held throughout the day.
+This works best with Heroku. Before use you need to configure environment variables in your heroku account for all keys at the top of config.xml.example. If you're running this application locally, you need to set up your own config.xml. Copy the example, and save it into the same folder with your own configuration. You'll need to provide your own postgresql database, or rename the database URL to a local SQLite database.

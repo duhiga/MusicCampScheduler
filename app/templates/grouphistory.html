@@ -1,14 +1,14 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
 <head>
-    
+
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="/css/w3.css">
     <link rel="stylesheet" href="/css/w3-theme-black.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css">
     <link rel="stylesheet" href="/css/style.css">
-    
+
     <title>{{ campname }} Period Display</title>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"> </script>
     <script>if (!window.jQuery) { document.write('<script src="/js/jquery-3.1.1.min.js"><\/script>'); }</script>
@@ -18,19 +18,19 @@
             {% for i in instrumentlist %}
             console.log('Instrument name: {{ i }}, Loop index: {{ loop.index }})')
             {% endfor %}
-            // add parser through the tablesorter addParser method 
+            // add parser through the tablesorter addParser method
             $.tablesorter.addParser({
-                // set a unique id 
+                // set a unique id
                 id: 'scoreorder',
                 is: function (s) {
-                    // return false so this parser is not auto detected 
+                    // return false so this parser is not auto detected
                     return false;
                 },
                 format: function (s) {
-                    // format your data for normalization 
+                    // format your data for normalization
                     return s.toLowerCase(){% for i in instrumentlist %}.replace(/{{ i }}/, {{ loop.index }}){% endfor %};
                 },
-                // set type, either numeric or text 
+                // set type, either numeric or text
                 type: 'numeric'
             });
 
@@ -53,53 +53,41 @@
     <!-- Navbar -->
     <div class="w3-top">
         <ul class="w3-navbar w3-theme w3-top w3-left-align w3-large">
-            <li><a href="#" class="w3-theme-l1">{{ period.periodname }}</a></li>
-            <li class="w3-hide-small"><a href="/user/{{ user.userid }}/" class="w3-hover-white">Dashboard</a></li>
+            <li><a href="#" class="w3-theme-l1">{{ thisuser.firstname }} {{ thisuser.lastname }}'s Group History</a></li>
+            <li><a href="/user/{{ thisuser.userid }}/" class="w3-hover-white">Dashboard</a></li>
         </ul>
     </div>
     <!-- Body -->
     <div class="w3-row">
         <div class="w3-container">
-            <br>
-            {% if publicevents[0] != None %}
-            {% for e in publicevents %}
-            <h2>Public Event At This Time: <a href="/user/{{ user.userid }}/group/{{ e.groupid }}">{{ e.groupname }}</a></h2>
-            {% endfor %}
-            {% endif %}
-            <table style="width:40%">
-                <tr>
-                    <th>Time</th>
-                    <td>{{ period.starttime.strftime('%A %d %b') }}, {{ period.starttime.strftime('%H:%M') }}-{{ period.endtime.strftime('%H:%M') }}</td>
-                </tr>
-            </table>
-            <br>
             <table style="width:100%" id="periodtable">
                 <thead>
                     <tr>
-                        <th>First Name</th>
-                        <th>Last Name</th>
-                        <th>Instrument</th>
+                        <th>Date</th>
+                        <th>Time</th>
                         <th>Group Name</th>
+                        <th>Instrument</th>
                         <th>Location</th>
+                        <th>Status</th>
                     </tr>
                 </thead>
                 <tbody class="zebra-table">
-                    {% for p in players %}
+                    {% for g in groups %}
                     <tr>
-                        <td>{{ p.firstname }}</td>
-                        <td>{{ p.lastname }}</td>
-                        <td>{{ p.instrumentname }}</td>
-                        <td><a href="/user/{{ user.userid }}/group/{{ p.groupid }}/">{{ p.groupname }}</a></td>
-                        <td>{{ p.locationname }}</td>
-                    </tr>
-                    {% endfor %}
-                    {% for p in nonplayers %}
-                    <tr>
-                        <td>{{ p.firstname }}</td>
-                        <td>{{ p.lastname }}</td>
-                        <td>{{ p.instrumentname }}</td>
-                        <td>{{ p.groupname }}</td>
-                        <td>{{ p.locationname }}</td>
+                        <td><a href="/user/{{ thisuser.userid }}/date/{{ g.starttime.strftime('%Y-%m-%d') }}/">{{ g.starttime.strftime('%d %b') }}</a></td>
+                        <td><a href="/user/{{ thisuser.userid }}/period/{{ g.periodid }}/">{{ g.starttime.strftime('%H:%M') }}</a></td>
+                        <td><a href="/user/{{ thisuser.userid }}/group/{{ g.groupid }}/">{{ g.groupname }}</a></td>
+                        <td>{{ g.instrumentname }}</td>
+                        <td>{{ g.locationname }}</td>
+                        <td>
+                            {% if g.status == 'Confirmed' and now > g.endtime %}
+                            Complete
+                            {% elif g.status == 'Confirmed' and now > g.starttime %}
+                            In Progress
+                            {% else %}
+                            {{ g.status }}
+                            {% endif %}
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>

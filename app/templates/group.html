@@ -104,49 +104,51 @@
                     </td>
                 </tr>
             </table>
-            <h2>Players</h2>
-            <table style="width:100%" class="player_table">
-                <thead>
-                    <tr>
-                        <th>First Name</th>
-                        <th>Last Name</th>
-                        <th>Instrument</th>
-                    </tr>
-                </thead>
-                <tbody class="zebra-table">
-                    {% for p in players %}
-                    <tr>
-                        <td>{{ p.firstname }}</td>
-                        <td>{{ p.lastname }}</td>
-                        <td>{{ p.instrumentname }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            {% if substitutes %}
-            <p>
-                If you can not make this group, it is your responsibility to find a substitute and notify them.
-                The following people are not playing in a group at this time and may be able to substitute.
-            </p>
-            <h2>Possible Substitutes</h2>
-            <table style="width:100%" class="player_table">
-                <thead>
-                    <tr>
-                        <th>First Name</th>
-                        <th>Last Name</th>
-                        <th>Instrument</th>
-                    </tr>
-                </thead>
-                <tbody class="zebra-table">
-                    {% for s in substitutes %}
-                    <tr>
-                        <td>{{ s.firstname }}</td>
-                        <td>{{ s.lastname }}</td>
-                        <td>{{ s.instrumentname }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            {% if thisgroup.iseveryone != 1 %}
+                <h2>Players</h2>
+                <table style="width:100%" class="player_table">
+                    <thead>
+                        <tr>
+                            <th>First Name</th>
+                            <th>Last Name</th>
+                            <th>Instrument</th>
+                        </tr>
+                    </thead>
+                    <tbody class="zebra-table">
+                        {% for p in players %}
+                        <tr>
+                            <td>{{ p.firstname }}</td>
+                            <td>{{ p.lastname }}</td>
+                            <td>{{ p.instrumentname }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% if substitutes %}
+                <p>
+                    If you can not make this group, it is your responsibility to find a substitute and notify them.
+                    The following people are not playing in a group at this time and may be able to substitute.
+                </p>
+                <h2>Possible Substitutes</h2>
+                <table style="width:100%" class="player_table">
+                    <thead>
+                        <tr>
+                            <th>First Name</th>
+                            <th>Last Name</th>
+                            <th>Instrument</th>
+                        </tr>
+                    </thead>
+                    <tbody class="zebra-table">
+                        {% for s in substitutes %}
+                        <tr>
+                            <td>{{ s.firstname }}</td>
+                            <td>{{ s.lastname }}</td>
+                            <td>{{ s.instrumentname }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% endif %}
             {% endif %}
         </div>
     </div>

@@ -30,6 +30,8 @@
             var thisuserinstruments = {{ thisuserinstruments_serialized|tojson }};
             console.log("Instruments played by this user:");
             console.log(thisuserinstruments);
+
+            var isClicked = false;
             
             conductorpage = "{{ conductorpage }}"
             console.log('Conductorpage is ' + conductorpage)
@@ -175,77 +177,87 @@
             //run when user clicks the submit button
             $("#submit_button").click(function () {
                 console.log('Submit button pressed');
-                //set up a variable to track invalid configuration and the JSON to send through to the server
-                var invalidConfig = false
-                //request will be our parent object, and will be pushed to the server through AJAX later
-                var request = {};
-                //add the music name and minimum level to the JSON. Establish an array to contain the player names
-                request.music = $('#textbox_music').val();
-                //if this is the conductorpage, we also need to send the selected location - it cannot be blank.
-                if (conductorpage == "True") {
-                    if ($('#location_dropdown').val() == "") {
-                        alert("Sumbission failed. You must select a location for this group.");
-                        return false;
-                    }
-                    else {
-                        request.locationid = $('#location_dropdown').val();
-                    }
-                }
-                //establish an array to fill with player and instruments
-                request.players = []
-                
-                var i = 0
-                //for each instrument drop down box
-                $('.instrument_dropdown').each(function() {
-                    //if we are on the conductorpage, and we find a blank player box this is bad - it's fine on the normal user page though
-                    if ((conductorpage == "True") && ($("#player" + $(this).data("pairing")).val() == 'null') && $(this).val() != "") {
-                        //this is a bad configuration. alert the user
-                        alert("Sumbission failed. This is the conductor group creation page, so all players must be filled in, you cannot leave blanks.");
-                        invalidConfig = true;
-                        //break out of the loop
-                        return false;
-                    }
-                    //create a new object
-                    if ($(this).val() != "") {
-                        var iplayer = {};
-                        //add the contents of the instrument dropdown to the object
-                        iplayer.instrumentname = $(this).val();
-                        //if this is row with ID 0 (only appears on the normal user page) add this user to the object
-                        if ($(this).data("pairing") == 0) {
-                            iplayer.playerid = "{{ user.userid }}";
+                //if the button hasn't already been clicked
+                if (!isClicked) {
+                    isClicked = true;
+                    //set up a variable to track invalid configuration and the JSON to send through to the server
+                    var invalidConfig = false
+                    //request will be our parent object, and will be pushed to the server through AJAX later
+                    var request = {};
+                    //add the music name and minimum level to the JSON. Establish an array to contain the player names
+                    request.music = $('#textbox_music').val();
+                    //if this is the conductorpage, we also need to send the selected location - it cannot be blank.
+                    if (conductorpage == "True") {
+                        if ($('#location_dropdown').val() == "") {
+                            alert("Sumbission failed. You must select a location for this group.");
+                            //break out of the function
+                            isClicked = false;
+                            return false;
                         }
-                        //if it's not row ID 0, add whatever is in the player dropdown in the object
                         else {
-                            iplayer.playerid = $("#player" + $(this).data("pairing")).val();
+                            request.locationid = $('#location_dropdown').val();
                         }
-                        //push the player object to the players array in the request object
-                        request.players.push(iplayer);
-                        i = i + 1;
                     }
-                });
-                console.log('Pushing the following object to the server for processing:');
-                console.log(JSON.stringify(request));
+                    //establish an array to fill with player and instruments
+                    request.players = []
                 
-                if (invalidConfig == false) {
-                    $.ajax({
-                        //make a POST AJAX query to the same web page as the user is currently visiting
-                        url: (window.location.href),
-                        type: 'POST',
-                        contentType: 'application/json;charset=UTF-8',
-                        data: JSON.stringify(request, null),
-                        success: function(data) {
-                            //upon success, the server will return a message and a URL. give the user the message and send them to the URL.
-                            console.log(data);
-                            if (data.message != 'none') {
-                                confirm(data.message);
+                    var i = 0
+                    //for each instrument drop down box
+                    $('.instrument_dropdown').each(function() {
+                        //if we are on the conductorpage, and we find a blank player box this is bad - it's fine on the normal user page though
+                        if ((conductorpage == "True") && ($("#player" + $(this).data("pairing")).val() == 'null') && $(this).val() != "") {
+                            //this is a bad configuration. alert the user
+                            alert("Sumbission failed. This is the conductor group creation page, so all players must be filled in, you cannot leave blanks.");
+                            invalidConfig = true;
+                            //break out of the loop
+                            isClicked = false;
+                            return false;
+                        }
+                        //create a new object
+                        if ($(this).val() != "") {
+                            var iplayer = {};
+                            //add the contents of the instrument dropdown to the object
+                            iplayer.instrumentname = $(this).val();
+                            //if this is row with ID 0 (only appears on the normal user page) add this user to the object
+                            if ($(this).data("pairing") == 0) {
+                                iplayer.playerid = "{{ user.userid }}";
                             }
-                            if (data.url != 'none') {
-                                window.location = data.url;
+                                //if it's not row ID 0, add whatever is in the player dropdown in the object
+                            else {
+                                iplayer.playerid = $("#player" + $(this).data("pairing")).val();
                             }
+                            //push the player object to the players array in the request object
+                            request.players.push(iplayer);
+                            i = i + 1;
                         }
                     });
-                }
+                    console.log('Pushing the following object to the server for processing:');
+                    console.log(JSON.stringify(request));
                 
+                    if (invalidConfig == false) {
+                        $.ajax({
+                            //make a POST AJAX query to the same web page as the user is currently visiting
+                            url: (window.location.href),
+                            type: 'POST',
+                            contentType: 'application/json;charset=UTF-8',
+                            data: JSON.stringify(request, null),
+                            success: function(data) {
+                                //upon success, the server will return a message and a URL. give the user the message and send them to the URL.
+                                console.log(data);
+                                if (data.message != 'none') {
+                                    alert(data.message);
+                                    isClicked = false;
+                                }
+                                if (data.url != 'none') {
+                                    window.location = data.url;
+                                }
+                                else {
+                                    isClicked = false;
+                                }
+                            }
+                        });
+                    }
+                }
              });
         });
     </script>

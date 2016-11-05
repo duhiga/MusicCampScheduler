@@ -1,19 +1,31 @@
 <?xml version="1.0"?>
 <root>
-  <!-- Fill in the below section with the details of your camp. Note the times - formatting is strictly YYYY-MM-DD HH:mm 
-       When entering camp times ensure your StartTime is right before the first period of the camp and your EndTime is 
-       right after the START TIME of the last period of the camp. This is used when creating the database.
-       GroupRequeLimit is the maximum number of times a normal user can request a group per day -->
+  <!-- Fill in the below section with the details of your camp. Notes:
+          -StartTime and EndTime - formatting is strictly YYYY-MM-DD HH:mm. When entering camp times ensure your StartTime 
+            is right before the first period of the camp and your EndTime is right after the START TIME of the last period 
+            of the camp. This is used when creating the database.
+          -GroupRequeLimit is the maximum number of times a normal user can request a group per day.
+          -AutoAssign limits are used when automatically assigning players to groups. The autoassign algorythm picks players
+            according to the lowest level already contained in the group, plus and minus these limits. 
+            
+            Original database URL for SQLite:
+            DATABASE_URL="postgresql://scott:tiger@localhost:5432/mydatabase"
+            -->
   <CampDetails
-    Name="Name of the camp goes here. This will be on people's dashboards and titles of pages"
-    SecretKey="This can be anything, but put something in here to make it secure"
+    Name="Camp Name"
+    DATABASE_URL="postgresql://user:password@localhost:5432/databasename"
+    SecretKey="QuaranupIsCool"
     Instruments="Conductor,Piccolo,Flute,Oboe,Coranglais,Clarinet,Bassoon,Horn,Trumpet,Trombone,Tuba,Percussion,Piano,Saxophone,Violin,Viola,Cello,Doublebass"
-    SupportEmailAddress="PutYourEmailHereIt'sUsedInTheSupportLinkOnTheDashboard@website.com"
+    SupportEmailAddress="email@website.com"
     StartTime="2016-12-28 18:00"
     EndTime="2017-01-05 07:45"
     DailyGroupRequestLimit="1"
     SmallGroupPlayerLimit="8"
     MealLocation="Dining Room"
+    AutoAssignLimitHigh="1"
+    AutoAssignLimitLow="1"
+    MaximumLevel="5"
+    Debug="1"
     >
     <!-- Fill in the each period object with period names and times. Note the time format, ensure you enter it in the 
          format HH:mm (in 24 hour time). Each of these periods will recur every day that is covered by your start and 
@@ -37,17 +49,14 @@
          1. Everything is case sensitive, and
          2. You don't need to put every instrument name in, just the ones that are used in the group
          3. Sizes: S = everyone can request this group. L = Only conductors can request this group -->
-    <GroupTemplate Name="Full Orchestra" Size="L" MinimumLevel="3" Conductor="1" Flute="2" Oboe="2" Clarinet="2" Bassoon="2"
-      Horn="2" Trombone="2" Tuba="1" Percussion="1" Violin="8" Viola="4" Cello="4" DoubleBass="2"></GroupTemplate>
-    <GroupTemplate Name="String Quartet" Size="S" MinimumLevel="0" Violin="2" Viola="1" Cello="1"></GroupTemplate>
-    <GroupTemplate Name="Wind Quintet" Size="S" MinimumLevel="0" Conductor="0" Flute="1" Oboe="1" Clarinet="1" Bassoon="1" Horn="1"></GroupTemplate>
+    <GroupTemplate Name="Begginer Orchestra" Size="L" MinimumLevel="3" MaximumLevel="4" Conductor="1" Flute="2" Oboe="2" Clarinet="2" Bassoon="2"
+      Horn="2" Trombone="2" Percussion="1" Violin="8" Viola="4" Cello="4" Doublebass="2"></GroupTemplate>
+    <GroupTemplate Name="Advanced Orchestra" Size="L" MinimumLevel="4" MaximumLevel="5" Conductor="1" Flute="2" Oboe="2" Clarinet="3" Bassoon="2"
+      Horn="4" Trombone="2" Tuba="1" Percussion="2" Violin="8" Viola="4" Cello="4" Doublebass="2"></GroupTemplate>
+    <GroupTemplate Name="String Quartet" Size="S" Violin="2" Viola="1" Cello="1"></GroupTemplate>
+    <GroupTemplate Name="String Quintet" Size="S" Violin="2" Viola="1" Cello="1" Doublebass="1"></GroupTemplate>
+    <GroupTemplate Name="Wind Quintet" Size="S" Flute="1" Oboe="1" Clarinet="1" Bassoon="1" Horn="1"></GroupTemplate>
+    <GroupTemplate Name="Brass Quintet" Size="S" Trumpet="2" Trombone="1" Tuba="1" Horn="1"></GroupTemplate>
+    <GroupTemplate Name="Brass Quintet (Doubled)" Size="S" Trumpet="4" Trombone="2" Tuba="2" Horn="2"></GroupTemplate>
   </CampDetails>
-  <!-- Fill in your Database name, if it needs to be built (you can leave this on 'Y', it's just slower to start the app)
-       and set your debug level. 0 = off, 1 = debug, 2 = verbose, 3 = all SQL code is printed to log. This should be 0 
-       unless you're troubleshooting. -->
-  <Application
-    DBPath="MusicCampDatabase.db"
-    DBBuildRequired="Y"
-    Debug="0">
-  </Application>
 </root>

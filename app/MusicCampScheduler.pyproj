@@ -46,6 +46,7 @@
     <Content Include="templates\dashboard.html" />
     <Content Include="templates\groupedit.html" />
     <Content Include="templates\group.html" />
+    <Content Include="templates\grouphistory.html" />
     <Content Include="templates\instrumentation.html" />
     <Content Include="templates\grouprequest.html" />
     <Content Include="templates\index.html" />

@@ -40,6 +40,7 @@
     <Content Include="css\style.css" />
     <Content Include="css\w3-theme-black.css" />
     <Content Include="css\w3.css" />
+    <Content Include="js\sidenav.js" />
     <Content Include="js\jquery-3.1.1.min.js" />
     <Content Include="requirements.txt" />
     <Content Include="js\jquery.tablesorter.js" />
@@ -50,6 +51,7 @@
     <Content Include="templates\instrumentation.html" />
     <Content Include="templates\grouprequest.html" />
     <Content Include="templates\index.html" />
+    <Content Include="templates\layout.html" />
     <Content Include="templates\period.html" />
     <Content Include="templates\godpage.html" />
     <Content Include="templates\announcement.html" />

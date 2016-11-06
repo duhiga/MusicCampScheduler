@@ -1,14 +1,7 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="/css/w3.css">
-    <link rel="stylesheet" href="/css/w3-theme-black.css">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css">
-    <link rel="stylesheet" href="/css/style.css">
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"> </script>
-    <script>if (!window.jQuery) { document.write('<script src="/js/jquery-3.1.1.min.js"><\/script>'); }</script>
+{% extends "layout.html" %}
+{% block title %}{{ campname }} Group Display{% endblock %}
+{% block pagename %}{{ thisgroup.groupname }} Details{% endblock %}
+{% block head %}
     <script>
         $(document).ready(function () {
             {% for i in instrumentlist %}
@@ -43,22 +36,14 @@
             });
         });
     </script>
-    <title>{{ campname }} Group Display</title>
-</head>
-<body>
-    <!-- Navbar -->
-    <div class="w3-top">
-        <ul class="w3-navbar w3-theme w3-top w3-left-align w3-large">
-            <li><a href="#" class="w3-theme-l1">{{ thisgroup.groupname }}</a></li>
-            <li><a href="/user/{{ thisuser.userid }}/" class="w3-hover-white">Dashboard</a></li>
-            {% if thisuser.isadmin == 1 %}
-            <li><a href="/user/{{ thisuser.userid }}/group/{{ thisgroup.groupid }}/edit/" class="w3-hover-white">Edit This Group</a></li>
-            {% endif %}
-        </ul>
-    </div>
-    <!-- Body -->
-    <div class="w3-row">
-        <div class="w3-container">
+{% endblock %}
+{% block edit %}
+{% if thisuser.isadmin == 1 %}
+<h4><b>Edit</b></h4>
+<a href="/user/{{ thisuser.userid }}/group/{{ thisgroup.groupid }}/edit/" class="w3-hover-black ">Edit Group</a>
+{% endif %}
+{% endblock %}
+{% block content %}
             <h2>Group Details</h2>
             <table>
                 <tr>
@@ -150,7 +135,4 @@
                 </table>
                 {% endif %}
             {% endif %}
-        </div>
-    </div>
-</body>
-</html>
+{% endblock %}

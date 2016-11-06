@@ -1,6 +1,7 @@
 html, body, h1, h2, h3, h4, h5, h6, select, option {
     font-family: "Roboto", sans-serif;
 }
+.w3-sidenav a,.w3-sidenav h4 {padding: 12px;}
 .w3-navbar li a {
     padding-top: 12px;
     padding-bottom: 12px;
@@ -22,9 +23,5 @@ td, th {border: 1px solid #999;}
     height:0;
     opacity:0;
     visibility: collapse;
-    }
-body {
-    padding-top: 120px;
-    padding-bottom: 180px;
     }
 }

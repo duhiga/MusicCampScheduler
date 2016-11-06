@@ -1,17 +1,7 @@
-﻿<!DOCTYPE html>
-<html>
-<head>
-
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="/css/w3.css">
-    <link rel="stylesheet" href="/css/w3-theme-black.css">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css">
-    <link rel="stylesheet" href="/css/style.css">
-
-    <title>{{ campname }} Period Display</title>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"> </script>
-    <script>if (!window.jQuery) { document.write('<script src="/js/jquery-3.1.1.min.js"><\/script>'); }</script>
+﻿{% extends "layout.html" %}
+{% block title %}{{ campname }} Group History{% endblock %}
+{% block pagename %}Group History{% endblock %}
+{% block head %}
     <script src="/js/jquery.tablesorter.js"> </script>
     <script>
         $(document).ready(function () {
@@ -47,52 +37,49 @@
             });
         });
     </script>
-</head>
-<body>
-
-    <!-- Navbar -->
-    <div class="w3-top">
-        <ul class="w3-navbar w3-theme w3-top w3-left-align w3-large">
-            <li><a href="#" class="w3-theme-l1">{{ thisuser.firstname }} {{ thisuser.lastname }}'s Group History</a></li>
-            <li><a href="/user/{{ thisuser.userid }}/" class="w3-hover-white">Dashboard</a></li>
-        </ul>
-    </div>
-    <!-- Body -->
-    <div class="w3-row">
-        <div class="w3-container">
-            <table style="width:100%" id="periodtable">
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Time</th>
-                        <th>Group Name</th>
-                        <th>Instrument</th>
-                        <th>Location</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody class="zebra-table">
-                    {% for g in groups %}
-                    <tr>
-                        <td><a href="/user/{{ thisuser.userid }}/date/{{ g.starttime.strftime('%Y-%m-%d') }}/">{{ g.starttime.strftime('%d %b') }}</a></td>
-                        <td><a href="/user/{{ thisuser.userid }}/period/{{ g.periodid }}/">{{ g.starttime.strftime('%H:%M') }}</a></td>
-                        <td><a href="/user/{{ thisuser.userid }}/group/{{ g.groupid }}/">{{ g.groupname }}</a></td>
-                        <td>{{ g.instrumentname }}</td>
-                        <td>{{ g.locationname }}</td>
-                        <td>
-                            {% if g.status == 'Confirmed' and now > g.endtime %}
-                            Complete
-                            {% elif g.status == 'Confirmed' and now > g.starttime %}
-                            In Progress
-                            {% else %}
-                            {{ g.status }}
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-</body>
-</html>
+{% endblock %}
+{% block content %}
+<table style="width:100%" id="periodtable">
+    <thead>
+        <tr>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Group Name</th>
+            <th>Instrument</th>
+            <th>Location</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody class="zebra-table">
+        {% for g in groups %}
+        <tr>
+            <td>
+                {% if g.periodid != None %}
+                <a href="/user/{{ thisuser.userid }}/date/{{ g.starttime.strftime('%Y-%m-%d') }}/">{{ g.starttime.strftime('%d %b') }}</a></td>
+                {% else %}
+                Queued
+                {% endif %}
+            <td>
+                {% if g.periodid != None %}
+                <a href="/user/{{ thisuser.userid }}/period/{{ g.periodid }}/">{{ g.starttime.strftime('%H:%M') }}</a>
+                {% else %}
+                Queued
+                {% endif %}
+            </td>
+            <td><a href="/user/{{ thisuser.userid }}/group/{{ g.groupid }}/">{{ g.groupname }}</a></td>
+            <td>{{ g.instrumentname }}</td>
+            <td>{{ g.locationname }}</td>
+            <td>
+                {% if g.status == 'Confirmed' and now > g.endtime %}
+                Complete
+                {% elif g.status == 'Confirmed' and now > g.starttime %}
+                In Progress
+                {% else %}
+                {{ g.status }}
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

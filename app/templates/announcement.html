@@ -1,14 +1,7 @@
-<html>
-<head>    
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="/css/w3.css">
-    <link rel="stylesheet" href="/css/w3-theme-black.css">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css">
-    <link rel="stylesheet" href="/css/style.css">
-    <title>{{ campname }} Announcement Editor</title>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"> </script>
-    <script>if (!window.jQuery) { document.write('<script src="/js/jquery-3.1.1.min.js"><\/script>'); }</script>
+{% extends "layout.html" %}
+{% block title %}{{ campname }} Announcement Editor{% endblock %}
+{% block pagename %}Announcement Editor{% endblock %}
+{% block head %}
     <script>
 
         /* this script handles creating public events. */
@@ -49,30 +42,22 @@
             });
         });
     </script>
-</head>
-
-<body>
-    <!-- Navbar -->
-    <div class="w3-top">
-        <ul class="w3-navbar w3-theme w3-top w3-left-align w3-large">
-            <li><a href="#" class="w3-theme-l1">Announcement Editor</a></li>
-            <li><a href="/user/{{ thisuser.userid }}/" class="w3-hover-white">Dashboard</a></li>
-        </ul>
-    </div>
-    <!-- Body -->
-    <div class="w3-row">
-        <div class="w3-container">
-            <p>
-                This page is used to edit the announcement that shows up on all user dashboards.
-            </p>
-            <p><textarea id="announcement_text" cols="40" rows="5">{{ currentannouncement.content }}</textarea></p>
-        </div>
-    </div>
-    <!-- Navbar -->
-    <div class="w3-bottom">
-        <ul class="w3-navbar w3-theme w3-bottom w3-left-align w3-large">
-            <li><a href="#" class="w3-hover-white" id="submit_button">Submit</a></li>
-        </ul>
-    </div>
-</body>
-</html>
+{% endblock %}
+{% block edit %}
+<h4><b>Edit</b></h4>
+<a href="#" class="w3-hover-black " id="submit_button">Submit</a>
+{% endblock %}
+{% block content %}
+    <p>
+        This page is used to edit the announcement that shows up on all user dashboards.
+    </p>
+    <p><textarea id="announcement_text" cols="40" rows="5">{{ currentannouncement.content }}</textarea></p>
+{% endblock %}
+{% block footer %}
+<!-- Navbar -->
+<div class="w3-bottom">
+    <ul class="w3-navbar w3-theme w3-bottom w3-left-align w3-large">
+        <li><a href="#" class="w3-hover-white" id="submit_button">Submit</a></li>
+    </ul>
+</div>
+{% endblock %}

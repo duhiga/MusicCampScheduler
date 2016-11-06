@@ -207,7 +207,7 @@ def dashboard(userid,inputdate='n'):
     session.close()
 
     return render_template('dashboard.html', \
-                        user=thisuser, \
+                        thisuser=thisuser, \
                         count=count, \
                         date=displaydate,\
                         periods=periods, \
@@ -525,6 +525,7 @@ def grouphistory(userid):
         return ('Did not find user in database. You have entered an incorrect URL address.')
     groups = session.query(group.groupname, group.groupid, period.periodid, period.starttime, period.endtime, groupassignment.instrumentname, group.status, location.locationname).\
                 join(groupassignment).outerjoin(period).outerjoin(location).filter(groupassignment.userid == thisuser.userid).order_by(period.starttime)
+    log(groups)
     return render_template('grouphistory.html', \
                             thisuser=thisuser, \
                             groups = groups, \
@@ -619,7 +620,7 @@ def grouprequestpage(userid,periodid=None):
         log(grouptemplates_serialized)
         session.close()
         return render_template('grouprequest.html', \
-                            user=thisuser, \
+                            thisuser=thisuser, \
                             thisuserinstruments=thisuserinstruments, \
                             thisuserinstruments_serialized=thisuserinstruments_serialized, \
                             playerlimit = getconfig('SmallGroupPlayerLimit'), \
@@ -862,7 +863,7 @@ def periodpage(userid,periodid):
                             publicevents=publicevents, \
                             nonplayers=nonplayers, \
                             campname=getconfig('Name'), \
-                            user=thisuser, \
+                            thisuser=thisuser, \
                             period=thisperiod, \
                             instrumentlist=instrumentlist, \
                             )
@@ -899,7 +900,7 @@ def instrumentation(userid,periodid):
             log(grouptemplates_serialized)
             session.close()
             return render_template('instrumentation.html', \
-                                user=thisuser, \
+                                thisuser=thisuser, \
                                 grouptemplates = grouptemplates, \
                                 grouptemplates_serialized=grouptemplates_serialized, \
                                 campname=getconfig('Name'), \
@@ -1065,3 +1066,7 @@ def send_js(path):
 @app.route('/css/<path:path>')
 def send_css(path):
     return send_from_directory('css', path)
+
+@app.route('/png/<path:path>')
+def send_png(path):
+    return send_from_directory('png', path)

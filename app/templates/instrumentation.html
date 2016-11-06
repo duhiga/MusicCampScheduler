@@ -1,15 +1,7 @@
-<!DOCTYPE html>
-<html>
-<head>    
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="/css/w3.css">
-    <link rel="stylesheet" href="/css/w3-theme-black.css">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css">
-    <link rel="stylesheet" href='/css/style.css'>
-    <title>{{ campname }} Instrumentation</title>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"> </script>
-    <script>if (!window.jQuery) { document.write('<script src="/js/jquery-3.1.1.min.js"><\/script>'); }</script>
+{% extends "layout.html" %}
+{% block title %}{{ campname }} Instrumentation{% endblock %}
+{% block pagename %}Large Group Instrumentation{% endblock %}
+{% block head %}
     <script>
 
         /* this script handles all user interaction in the group request page. Upon page load, it downloads all players
@@ -120,20 +112,12 @@
             });
         });
     </script>
-</head>
-
-<body>
-
-    <!-- Navbar -->
-    <div class="w3-top">
-        <ul class="w3-navbar w3-theme w3-top w3-left-align w3-large">
-            <li><a href="#" class="w3-theme-l1">Large Group Instrumentation</a></li>
-            <li><a href="/user/{{ user.userid }}/" class="w3-hover-white">Dashboard</a></li>
-        </ul>
-    </div>
-
-    <div class="w3-row">
-        <div class="w3-container">
+{% endblock %}
+{% block edit %}
+    <h4><b>Edit</b></h4>
+    <a href="#" class="w3-hover-black " id="submit_button">Submit</a>
+{% endblock %}
+{% block content %}
             <p>
                 Optional: Select a group template to autofill the page
                 <select id="group_template_dropdown">
@@ -221,14 +205,12 @@
                 </tr>
                 {% endfor %}
             </table>
-
-        </div>
-    </div>
-    <!-- Navbar -->
+{% endblock %}
+{% block footer %}
+<!-- Navbar -->
     <div class="w3-bottom">
         <ul class="w3-navbar w3-theme w3-bottom w3-left-align w3-large">
             <li><a href="#" class="w3-hover-white" id="submit_button">Submit</a></li>
         </ul>
     </div>
-</body>
-</html>
+{% endblock %}

@@ -1,20 +1,11 @@
-<!DOCTYPE html>
-<html>
-<head>    
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="/css/w3.css">
-    <link rel="stylesheet" href="/css/w3-theme-black.css">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css">
-    <link rel="stylesheet" href='/css/style.css'>
-    <title>{{ campname }} Request a Group</title>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"> </script>
-    <script>if (!window.jQuery) { document.write('<script src="/js/jquery-3.1.1.min.js"><\/script>'); }</script>
+{% extends "layout.html" %}
+{% block title %}{{ campname }} Group Request{% endblock %}
+{% block pagename %}Request a Group{% endblock %}
+{% block head %}
     <script>
-
-        /* this script handles all user interaction in the group request page. Upon page load, it downloads all players
+        /* this script handles all thisuser interaction in the group request page. Upon page load, it downloads all players
         in the camp including the instruments they play, all templates as stated by the config.xml, and the instruments
-        this user plays. it uses all of this data to populate drop-down boxes, depending on what the user selects. */
+        this thisuser plays. it uses all of this data to populate drop-down boxes, depending on what the thisuser selects. */
         
         $(document).ready(function () {
             
@@ -218,9 +209,9 @@
                             var iplayer = {};
                             //add the contents of the instrument dropdown to the object
                             iplayer.instrumentname = $(this).val();
-                            //if this is row with ID 0 (only appears on the normal user page) add this user to the object
+                            //if this is row with ID 0 (only appears on the normal thisuser page) add this user to the object
                             if ($(this).data("pairing") == 0) {
-                                iplayer.playerid = "{{ user.userid }}";
+                                iplayer.playerid = "{{ thisuser.userid }}";
                             }
                                 //if it's not row ID 0, add whatever is in the player dropdown in the object
                             else {
@@ -261,119 +252,101 @@
              });
         });
     </script>
-</head>
-
-<body>
-    <!-- Navbar -->
-    <div class="w3-top">
-        <ul class="w3-navbar w3-theme w3-top w3-left-align w3-large">
-            <li><a href="#" class="w3-theme-l1">
-                    {% if conductorpage %}
-                    Create a Group
-                    {% else %}
-                    Request a Group
-                    {% endif %}
-                </a></li>
-            <li><a href="/user/{{ user.userid }}/" class="w3-hover-white">Dashboard</a></li>
-        </ul>
-    </div>
-    <div class="w3-row">
-        <div class="w3-container">
-
-            {% if conductorpage %}
-            <table id="configTable">
-                <tr>
-                    <th>Period Name</th>
-                    <td>{{ thisperiod.periodname }}</td>
-                </tr>
-                <tr>
-                    <th>Date</th>
-                    <td>{{ thisperiod.starttime.strftime('%A, %Y-%m-%d') }}</td>
-                </tr>
-                </table>
-                {% endif %}
-
-                {% if conductorpage %}
-                <p>
-                    This is a conductor group creation page. With great power comes great responsibility. Any group creation you make
-                    here is instantly in the system, with no further approval. This is intended to be for allocation of mentored groups.
-                    You cannot leave any blank fields for player names on this page.
-                </p>
-                <p>
-                    Where will this group be held?
-                    <select id="location_dropdown">
-                        <option value=""></option>
-                        {% for l in locations %}
-                        <option value="{{ l.locationid }}">{{ l.locationname }}</option>
-                        {% endfor %}
-                    </select>
-                </p>
-                {% endif %}
-
-                {% if not conductorpage %}
-                <p>
-                    Use this page to request a group. You can request a group of up to {{ playerlimit }} people. Only the
-                    instrumentation is required, all other fields are optional and will be autofilled if left blank.
-                </p>
-                <p>
-                    For example, if you want to play in a wind quintet, but don't care who you play with, just select the instrumentation
-                    for a wind quintet (or use the template), ensure you're playing the instrument you want to play, then click "Submit",
-                    leaving all other player names empty. You'll be matched up with other players automatically!
-                </p>
-                {% endif %}
-                <p>
-                    Optional: Select a group template to autofill the page
-                    <select id="group_template_dropdown">
-                        <option value="" selected="selected">No Template</option>
-                        {% for g in grouptemplates %}
-                        <option value="{{ g.grouptemplatename }}">{{ g.grouptemplatename }}</option>
-                        {% endfor %}
-                    </select>
-                </p>
-                <p>Optional: What music do you want to play? <input type="text" id="textbox_music"></p>
-                <table id="playersTable">
-                    <!--Table Headers-->
-                    <tr>
-                        <th>Instrument</th>
-                        <th>Player Name</th>
-                    </tr>
-                    {% if not conductorpage %}
-                    <tr>
-                        <!--Row 1 (only appears for the non-conductor group page and is locked to the player name)-->
-                        <td>
-                            <select class="instrument_dropdown" id="instrument0" data-pairing="0">
-                                {% for i in thisuserinstruments %}
-                                <option value="{{ i.instrumentname }}">{{ i.instrumentname }}</option>
-                                {% endfor %}
-                            </select>
-                        </td>
-                        <td>{{ user.firstname }} {{ user.lastname }}</td>
-                    </tr>
-                    {% endif %}
-                    <tr>
-                        <!--Row 2 (drop down menu containing instrument, player names are autofilled by the JS upon selection)-->
-                        <td>
-                            <select class="instrument_dropdown" id="instrument1" data-pairing="1">
-                                <option value=""></option>
-                                {% for i in instrumentlist %}
-                                <option value="{{ i }}">{{ i }}</option>
-                                {% endfor %}
-                            </select>
-                        </td>
-                        <td>
-                            <select class="player_dropdown" id="player1" data-pairing="1">
-                                <option value=""></option>
-                            </select>
-                        </td>
-                    </tr>
-                </table>
-        </div>
-    </div>
-    <!-- Navbar -->
-    <div class="w3-bottom">
-        <ul class="w3-navbar w3-theme w3-bottom w3-left-align w3-large">
-            <li><a href="#" class="w3-hover-white" id="submit_button">Submit</a></li>
-        </ul>
-    </div>
-</body>
-</html>
+{% endblock %}
+{% block edit %}
+<h4><b>Edit</b></h4>
+<a href="#" class="w3-hover-black " id="submit_button">Submit</a>
+{% endblock %}
+{% block content %}
+    {% if conductorpage %}
+    <table id="configTable">
+    <tr>
+        <th>Period Name</th>
+        <td>{{ thisperiod.periodname }}</td>
+    </tr>
+    <tr>
+        <th>Date</th>
+        <td>{{ thisperiod.starttime.strftime('%A, %Y-%m-%d') }}</td>
+    </tr>
+    </table>
+    <p>
+        This is a conductor group creation page. With great power comes great responsibility. Any group creation you make
+        here is instantly in the system, with no further approval. This is intended to be for allocation of mentored groups.
+        You cannot leave any blank fields for player names on this page.
+    </p>
+    <p>
+        Where will this group be held?
+        <select id="location_dropdown">
+            <option value=""></option>
+            {% for l in locations %}
+            <option value="{{ l.locationid }}">{{ l.locationname }}</option>
+            {% endfor %}
+        </select>
+    </p>
+    {% endif %}
+    {% if not conductorpage %}
+    <p>
+        Use this page to request a group. You can request a group of up to {{ playerlimit }} people. Only the
+        instrumentation is required, all other fields are optional and will be autofilled if left blank.
+    </p>
+    <p>
+        For example, if you want to play in a wind quintet, but don't care who you play with, just select the instrumentation
+        for a wind quintet (or use the template), ensure you're playing the instrument you want to play, then click "Submit",
+        leaving all other player names empty. You'll be matched up with other players automatically!
+    </p>
+    {% endif %}
+    <p>
+        Optional: Select a group template to autofill the page
+        <select id="group_template_dropdown">
+            <option value="" selected="selected">No Template</option>
+            {% for g in grouptemplates %}
+            <option value="{{ g.grouptemplatename }}">{{ g.grouptemplatename }}</option>
+            {% endfor %}
+        </select>
+    </p>
+    <p>Optional: What music do you want to play? <input type="text" id="textbox_music"></p>
+    <table id="playersTable">
+        <!--Table Headers-->
+        <tr>
+            <th>Instrument</th>
+            <th>Player Name</th>
+        </tr>
+        {% if not conductorpage %}
+        <tr>
+            <!--Row 1 (only appears for the non-conductor group page and is locked to the player name)-->
+            <td>
+                <select class="instrument_dropdown" id="instrument0" data-pairing="0">
+                    {% for i in thisuserinstruments %}
+                    <option value="{{ i.instrumentname }}">{{ i.instrumentname }}</option>
+                    {% endfor %}
+                </select>
+            </td>
+            <td>{{ thisuser.firstname }} {{ thisuser.lastname }}</td>
+        </tr>
+        {% endif %}
+        <tr>
+            <!--Row 2 (drop down menu containing instrument, player names are autofilled by the JS upon selection)-->
+            <td>
+                <select class="instrument_dropdown" id="instrument1" data-pairing="1">
+                    <option value=""></option>
+                    {% for i in instrumentlist %}
+                    <option value="{{ i }}">{{ i }}</option>
+                    {% endfor %}
+                </select>
+            </td>
+            <td>
+                <select class="player_dropdown" id="player1" data-pairing="1">
+                    <option value=""></option>
+                </select>
+            </td>
+        </tr>
+    </table>
+{% endblock %}
+{% block footer %}
+<!-- Navbar -->
+<div class="w3-bottom">
+    <ul class="w3-navbar w3-theme w3-bottom w3-left-align w3-large">
+        <li><a href="#" class="w3-hover-white" id="submit_button">Submit</a></li>
+    </ul>
+</div>
+{% endblock %}

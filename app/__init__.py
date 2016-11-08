@@ -77,7 +77,7 @@ def getgrouplevel(session,inputgroup,min_or_max):
     log('Found %s grade of group %s to be %s' % (min_or_max,inputgroup.groupid,level))
     return int(level)
     
-#gets a list of periods corresponding to the requested userid and date, formatting it in a nice way for the user dashboard
+#gets a list of periods corresponding to the requested userid and date, formatting it in a nice way for the user home
 def useridanddatetoperiods(session,userid,date):
     nextday = date + datetime.timedelta(days=1)
     
@@ -112,7 +112,7 @@ def getgroupname(g):
     return name
 
 #the root page isn't meant to be navigable.  It shows the user an error and
-#tells them how to get to their user dashboard.
+#tells them how to get to their user home.
 @app.route('/')
 def rootpage():
     return render_template('index.html')
@@ -132,11 +132,11 @@ def setup():
             if filename == 'campers.csv':
                 return importusers(file)
 
-#upon the URL request in the form domain/user/<userid> the user receives their dashboard. The dashboard contains the groups they 
-#are playing in. Optionally, this page presents their dashboard in the future or the past, and gives them further options.
+#upon the URL request in the form domain/user/<userid> the user receives their home. The home contains the groups they 
+#are playing in. Optionally, this page presents their home in the future or the past, and gives them further options.
 @app.route('/user/<userid>/')
-def dashboard(userid,inputdate='n'):
-    log('dashboard fetch requested for user %s' % userid)
+def home(userid,inputdate='n'):
+    log('home fetch requested for user %s' % userid)
     log('date modifier is currently set to %s' % inputdate)
     session = Session()
     #gets the data associated with this user
@@ -196,17 +196,9 @@ def dashboard(userid,inputdate='n'):
             log("Couldn't find a group during period %s. Adding the period details." % p.periodname)
             periods.append(p)
 
-    #if the user is an admin, we'll need to display them the queued groups for them to approve
-    if thisuser.isadmin == 1:
-        queuedgroups = session.query(group.groupid, group.requesttime, group.status, group.groupname, period.starttime, period.endtime, user.firstname, user.lastname).\
-            outerjoin(period).outerjoin(user).filter(group.status == "Queued").order_by(group.requesttime).all()
-        log("Found %s queued groups to show the user" % len(queuedgroups))
-    else:
-        queuedgroups = None
-
     session.close()
 
-    return render_template('dashboard.html', \
+    return render_template('home.html', \
                         thisuser=thisuser, \
                         count=count, \
                         date=displaydate,\
@@ -217,16 +209,15 @@ def dashboard(userid,inputdate='n'):
                         campname=getconfig('Name'), \
                         supportemailaddress=getconfig('SupportEmailAddress'), \
                         currentannouncement=currentannouncement, \
-                        queuedgroups=queuedgroups, \
                         )
 
-#When the user selects the "next day" and "previous day" links on their dashboard, it goes to this URL. this route redirects them back
-#to the user dashboard with a date modifier.
+#When the user selects the "next day" and "previous day" links on their home, it goes to this URL. this route redirects them back
+#to the user home with a date modifier.
 @app.route('/user/<userid>/date/<date>/')
-def dashboardDateModifier(userid,date):
-    return dashboard(userid,date)
+def homeDateModifier(userid,date):
+    return home(userid,date)
 
-#Makes a post query that marks a player adsent for a given period. This is triggered off the above (two) dashboard functions.
+#Makes a post query that marks a player adsent for a given period. This is triggered off the above (two) home functions.
 @app.route("/user/<userid>/period/<periodid>/absent/<command>/", methods=["POST"])
 def mark_absent(userid,periodid,command):
     session = Session()
@@ -273,7 +264,7 @@ def mark_absent(userid,periodid,command):
                 session.rollback()
                 session.close()
                 return 'error'
-    #catch-all case. You'd get here if the adminsitrator was changing the back-end while the user was on their dashboard page
+    #catch-all case. You'd get here if the adminsitrator was changing the back-end while the user was on their home page
     else:
         session.close()
         return 'You are already assigned to a group for this period. You have NOT been marked absent. Talk to the adminsitrator to fix this.'
@@ -722,7 +713,7 @@ def grouprequestpage(userid,periodid=None):
         log('%s %s has now made %s group requests' % (thisuser.firstname, thisuser.lastname, thisuser.grouprequestcount))
         #for each player object in the players array in the JSON packet
         for p in content['players']:
-            #if we are on the conductorpage, you cannot submit blank players. Give the user an error and take them back to their dashboard.
+            #if we are on the conductorpage, you cannot submit blank players. Give the user an error and take them back to their home.
             if p['playerid'] == 'null' and conductorpage == True:
                 url = ('/user/' + str(thisuser.userid) + '/')
                 session.close()
@@ -760,7 +751,7 @@ def conductorgrouprequestpage(userid,periodid):
         return ('You are not a conductor and cannot visit this page.')
     return grouprequestpage(userid,periodid)
 
-#This page is used by an "announcer" to edit the announcement that users see when they open their dashboards
+#This page is used by an "announcer" to edit the announcement that users see when they open their homes
 @app.route('/user/<userid>/announcement/', methods=['GET', 'POST'])
 def announcementpage(userid):
     
@@ -791,10 +782,30 @@ def announcementpage(userid):
             session.commit()
             url = ('/user/' + str(thisuser.userid) + '/')
             session.close()
-            #send the user back to their dashboard
+            #send the user back to their home
             return jsonify(message = 'none', url = url)
 
-#This page is for creating a public event. It comes up as an option for adminsitrators on their dashboards
+#This page shows the queued groups, it is only accessible by the admin
+@app.route('/user/<userid>/groupqueue/')
+def groupqueue(userid):
+    session = Session()
+    #gets the data associated with this user
+    thisuser = session.query(user).filter(user.userid == userid).first()
+    if thisuser.isadmin != 1:
+        session.close()
+        return 'You do not have permission to view this page'
+    else:
+        queuedgroups = session.query(group.groupid, group.requesttime, group.status, group.groupname, period.starttime, period.endtime, user.firstname, user.lastname).\
+            outerjoin(period).outerjoin(user).filter(group.status == "Queued").order_by(group.requesttime).all()
+        log("Found %s queued groups to show the user" % len(queuedgroups))
+        session.close()
+        return render_template('groupqueue.html', \
+                                queuedgroups=queuedgroups, \
+                                thisuser=thisuser, \
+                                campname=getconfig('Name'), \
+                                )
+
+#This page is for creating a public event. It comes up as an option for adminsitrators on their homes
 @app.route('/user/<userid>/publicevent/<periodid>/', methods=['GET', 'POST'])
 def publiceventpage(userid,periodid):
     session = Session()
@@ -817,6 +828,7 @@ def publiceventpage(userid,periodid):
                                     locations=locations, \
                                     thisuser=thisuser, \
                                     thisperiod=thisperiod, \
+                                    campname=getconfig('Name'), \
                                     )
         
         #if the user pressed "submit" on the public event page
@@ -931,7 +943,7 @@ def instrumentation(userid,periodid):
             session.close()
             return jsonify(message = 'none', url = url)
 
-#Shows the godpage to the user. Godpage contains all user names and links to all their dashboards. Right now uses a shared password,
+#Shows the godpage to the user. Godpage contains all user names and links to all their homes. Right now uses a shared password,
 #but would be better if tied to a user's admin account. However, there's no easy way to currently see what the userid of the admin is
 #after it's been created. Hmm... a conundrum.
 @app.route('/godpage/<password>/')

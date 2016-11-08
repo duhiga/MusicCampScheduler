@@ -17,6 +17,8 @@
     <Name>app</Name>
     <RootNamespace>app</RootNamespace>
     <IsWindowsApplication>False</IsWindowsApplication>
+    <InterpreterId>{ca79bd30-0768-402f-8be3-74c828c3aa05}</InterpreterId>
+    <InterpreterVersion>2.7</InterpreterVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
@@ -44,7 +46,7 @@
     <Content Include="js\jquery-3.1.1.min.js" />
     <Content Include="requirements.txt" />
     <Content Include="js\jquery.tablesorter.js" />
-    <Content Include="templates\dashboard.html" />
+    <Content Include="templates\home.html" />
     <Content Include="templates\groupedit.html" />
     <Content Include="templates\group.html" />
     <Content Include="templates\grouphistory.html" />
@@ -56,12 +58,26 @@
     <Content Include="templates\godpage.html" />
     <Content Include="templates\announcement.html" />
     <Content Include="templates\publicevent.html" />
+    <Content Include="templates\groupqueue.html" />
     <Content Include="templates\setup.html" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="css\" />
     <Folder Include="js\" />
     <Folder Include="templates\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Interpreter Include="env2\">
+      <Id>{ca79bd30-0768-402f-8be3-74c828c3aa05}</Id>
+      <BaseInterpreter>{2af0f10d-7135-4994-9156-5d01c9c11b7e}</BaseInterpreter>
+      <Version>2.7</Version>
+      <Description>env2 (Python 2.7)</Description>
+      <InterpreterPath>Scripts\python.exe</InterpreterPath>
+      <WindowsInterpreterPath>Scripts\pythonw.exe</WindowsInterpreterPath>
+      <LibraryPath>Lib\</LibraryPath>
+      <PathEnvironmentVariable>PYTHONPATH</PathEnvironmentVariable>
+      <Architecture>X86</Architecture>
+    </Interpreter>
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.Web.targets" />
   <!-- Specify pre- and post-build commands in the BeforeBuild and 

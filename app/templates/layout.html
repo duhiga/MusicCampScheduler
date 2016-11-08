@@ -15,12 +15,12 @@
 <body>
     <!-- Navbar -->
     <div class="w3-top">
-        <ul class="w3-navbar w3-theme w3-top w3-left-align w3-large">
+        <ul class="w3-navbar w3-theme w3-top w3-left-align w3-large" style="display:inline-block; white-space:nowrap;">
             <li class="w3-opennav w3-right w3-hide-large">
                 <a class="w3-hover-white w3-large w3-theme-l1" href="javascript:void(0)" onclick="w3_open()"><i class="fa fa-bars"></i></a>
             </li>
+            <li class="w3-opennav w3-right"><a href="/user/{{ thisuser.userid }}/" class="w3-hover-white"><i class="fa fa-home"></i></a></li>
             <li><a href="#" class="w3-theme-l1">{% block pagename %}{% endblock %}</a></li>
-            <li class="w3-hide-small"><a href="/user/{{ thisuser.userid }}/" class="w3-hover-white">Dashboard</a></li>
             <li class="w3-hide-small"><a href="/user/{{ thisuser.userid }}/grouprequest/" class="w3-hover-white">Request a group</a></li>
             <li class="w3-hide-medium w3-hide-small"><a href="/user/{{ thisuser.userid }}/grouphistory/" class="w3-hover-white">Group History</a></li>
             <li class="w3-hide-medium w3-hide-small"><a href="mailto:{{ supportemailaddress }}" class="w3-hover-white">Contact Camp Administration</a></li>
@@ -33,16 +33,21 @@
             <i class="fa fa-remove"></i>
         </a>
 
-        {% block edit %}{% endblock %}
+        {% block tools %}{% endblock %}
 
         <h4><b>Navigation</b></h4>
-        <a href="/user/{{ thisuser.userid }}/" class="w3-hover-black">Dashboard</a>
+        <a href="/user/{{ thisuser.userid }}/" class="w3-hover-black">Home</a>
         <a href="/user/{{ thisuser.userid }}/grouprequest/" class="w3-hover-black">Request a group</a>
         <a href="/user/{{ thisuser.userid }}/grouphistory/" class="w3-hover-black">Group History</a>
+        <a href="mailto:{{ supportemailaddress }}" class="w3-hover-black">Contact Camp Administration</a>
         {% if thisuser.isannouncer == 1 %}
+        <h4><b>Announcer</b></h4>
         <a href="/user/{{ thisuser.userid }}/announcement/" class="w3-hover-black">Announcement Editor</a>
         {% endif %}
-        <a href="mailto:{{ supportemailaddress }}" class="w3-hover-black">Contact Camp Administration</a>
+        {% if thisuser.isadmin == 1 %}
+        <h4><b>Admin</b></h4>
+        <a href="/user/{{ thisuser.userid }}/groupqueue/" class="w3-hover-black">Queued Groups</a>
+        {% endif %}
     </nav>
 
     <!-- Overlay effect when opening sidenav on small screens -->

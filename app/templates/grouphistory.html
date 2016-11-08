@@ -45,7 +45,7 @@
             <th>Date</th>
             <th>Time</th>
             <th>Group Name</th>
-            <th>Instrument</th>
+            <th class="unimportant-column">Instrument</th>
             <th>Location</th>
             <th>Status</th>
         </tr>
@@ -67,7 +67,7 @@
                 {% endif %}
             </td>
             <td><a href="/user/{{ thisuser.userid }}/group/{{ g.groupid }}/">{{ g.groupname }}</a></td>
-            <td>{{ g.instrumentname }}</td>
+            <td class="unimportant-column">{{ g.instrumentname }}</td>
             <td>{{ g.locationname }}</td>
             <td>
                 {% if g.status == 'Confirmed' and now > g.endtime %}

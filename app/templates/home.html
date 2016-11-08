@@ -1,0 +1,266 @@
+{% extends "layout.html" %}
+{% block title%}{{ campname }} Home{% endblock %}
+{% block pagename %}{{ thisuser.firstname }} {{ thisuser.lastname }}{% endblock %}
+{% block head %}
+    <script>
+
+        function openCity(evt, cityName) {
+            // Declare all variables
+            var i, tabcontent, tablinks;
+
+            // Get all elements with class="tabcontent" and hide them
+            tabcontent = document.getElementsByClassName("tabcontent");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+
+            // Get all elements with class="tablinks" and remove the class "active"
+            tablinks = document.getElementsByClassName("tablinks");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+
+            // Show the current tab, and add an "active" class to the link that opened the tab
+            document.getElementById(cityName).style.display = "block";
+            evt.currentTarget.className += " active";
+        }
+
+        
+
+        $(document).ready(function () {
+
+            // Get the element with id="defaultOpen" and click on it
+            document.getElementById("defaultOpen").click();
+
+            //handler for thisuser clicking the button requesting an absence
+            $(".absent_request_button").click(function () {
+                $(this).prop('disabled', true).addClass('disabled');
+                console.log("User requested absence");
+                var post_absent = $.ajax({
+                    type: 'POST',
+                    url: '/user/{{ thisuser.userid }}/period/' + this.id + '/absent/confirm/'
+                });
+
+                // handle response
+                post_absent.done(function (response) {
+                    console.log(response);
+                    location.reload();
+                });
+            });
+
+            //handler for thisuser clicking the button requesting to cancel an absence
+            $(".absent_cancel_button").click(function () {
+                $(this).prop('disabled', true).addClass('disabled');
+                console.log("User Removed their Absence");
+                var post_absent = $.ajax({
+                    type: 'POST',
+                    url: '/user/{{ thisuser.userid }}/period/' + this.id + '/absent/cancel/'
+                });
+
+                // handle response
+                post_absent.done(function (response) {
+                    console.log(response);
+                    location.reload();
+                });
+            });
+
+        });
+    </script>
+{% endblock %}
+{% block content %}
+    <h3>Announcements</h3>
+    <p>{{ currentannouncement.content }}</p>
+    {% if date > today %}
+    <p>To mark yourself as absent for any period, select one of the corresponding buttons.</p>
+    {% endif %}
+    <p style="text-align: center;">
+        {% if previousday == today %}
+        <a href="/user/{{ thisuser.userid }}/">Previous</a>
+        {% else %}
+        <a href="/user/{{ thisuser.userid }}/date/{{ previousday }}/">Previous</a>
+        {% endif %}
+        <b> Schedule for {{ date.strftime('%a, %d %b') }}</b>
+        {% if nextday == today %}
+        <a href="/user/{{ thisuser.userid }}/">Next</a>
+        {% else %}
+        <a href="/user/{{ thisuser.userid }}/date/{{ nextday }}/">Next</a>
+        {% endif %}
+    </p>
+    <ul class="tab">
+        <li><a href="javascript:void(0)" class="tablinks" onclick="openCity(event, 'Schedule')" id="defaultOpen">Schedule</a></li>
+        <li><a href="javascript:void(0)" class="tablinks" onclick="openCity(event, 'Tools')">Tools</a></li>
+        {% if thisuser.isconductor == 1 %}
+        <li><a href="javascript:void(0)" class="tablinks" onclick="openCity(event, 'Conductor')">Conductor</a></li>
+        {% endif %}
+        {% if thisuser.isadmin == 1 %}
+        <li><a href="javascript:void(0)" class="tablinks" onclick="openCity(event, 'Admin')">Admin</a></li>
+        {% endif %}
+    </ul>
+    <div id="Schedule" class="tabcontent">
+        <table style="width:100%">
+            <!--Start of the table for group allocations for this day-->
+            <tr>
+                <th>Time</th>
+                <th>Name</th>
+                <th>Instrument</th>
+                <th>Location</th>
+            </tr>
+            {% for p in periods %}
+            <tr>
+                <!--Time Column-->
+                <td>
+                    <a href="/user/{{ thisuser.userid }}/period/{{ p.periodid }}/">{{ p.starttime.strftime('%H:%M') }} - {{ p.endtime.strftime('%H:%M') }}</a>
+                </td>
+                <!--Group Name Column-->
+                <td>
+                    {% if not p.groupname %}
+                    {{ p.periodname }}
+
+                    {% else %}{% if p.ismusical == 1 %}
+                    <a href="/user/{{ thisuser.userid }}/group/{{ p.groupid }}/">{{ p.groupname }}</a>
+                    {% else %}{% if p.groupname == "absent" %}
+                    ABSENT
+                    {% else %}
+                    {{ p.groupname }}
+                    {% endif %}
+                    {% endif %}
+                    {% endif %}
+                </td>
+                <td>{{ p.instrumentname }}</td>
+                <td>{{ p.locationname }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+    <div id="Tools" class="tabcontent">
+        <table style="width:100%">
+            <!--Start of the table for group allocations for this day-->
+            <tr>
+                <th>Time</th>
+                <th>Name</th>
+                {% if date > today %}
+                <th>Mark yourself absent</th>
+                {% endif %}
+            </tr>
+            {% for p in periods %}
+            <tr>
+                <!--Time Column-->
+                <td>
+                    <a href="/user/{{ thisuser.userid }}/period/{{ p.periodid }}/">{{ p.starttime.strftime('%H:%M') }} - {{ p.endtime.strftime('%H:%M') }}</a>
+                </td>
+                <!--Group Name Column-->
+                <td>
+                    {% if not p.groupname %}
+                    {{ p.periodname }}
+
+                    {% else %}{% if p.ismusical == 1 %}
+                    <a href="/user/{{ thisuser.userid }}/group/{{ p.groupid }}/">{{ p.groupname }}</a>
+                    {% else %}{% if p.groupname == "absent" %}
+                    ABSENT
+                    {% else %}
+                    {{ p.groupname }}
+                    {% endif %}
+                    {% endif %}
+                    {% endif %}
+                </td>
+                <!--Options Column - only appears if looking at a future date-->
+                {% if date > today %}
+                <td>
+                    {% if not p.groupname or p.iseveryone %}
+                    <button id={{ p.periodid }} data-periodname="{{ p.periodname }}" class="absent_request_button">Mark me as absent</button>
+                    {% else %}
+                    {% if p.groupname == "absent" %}
+                    <button id={{ p.periodid }} data-periodname="{{ p.periodname }}" class="absent_cancel_button">Mark me as present</button>
+                    {% else %}
+                    Already allocated
+                    {% endif %}
+                    {% endif %}
+                </td>
+                {% endif %}
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+    <div id="Conductor" class="tabcontent">
+        <table style="width:100%">
+            <!--Start of the table for group allocations for this day-->
+            <tr>
+                <th>Time</th>
+                <th>Name</th>
+                {% if thisuser.isconductor == 1 %}
+                <th>Group Creation</th>
+                <th>Instrumentation</th>
+                {% endif %}
+            </tr>
+            {% for p in periods %}
+            <tr>
+                <!--Time Column-->
+                <td>
+                    <a href="/user/{{ thisuser.userid }}/period/{{ p.periodid }}/">{{ p.starttime.strftime('%H:%M') }} - {{ p.endtime.strftime('%H:%M') }}</a>
+                </td>
+                <!--Group Name Column-->
+                <td>
+                    {% if not p.groupname %}
+                    {{ p.periodname }}
+
+                    {% else %}{% if p.ismusical == 1 %}
+                    <a href="/user/{{ thisuser.userid }}/group/{{ p.groupid }}/">{{ p.groupname }}</a>
+                    {% else %}{% if p.groupname == "absent" %}
+                    ABSENT
+                    {% else %}
+                    {{ p.groupname }}
+                    {% endif %}
+                    {% endif %}
+                    {% endif %}
+                </td>
+                <!--Conductor Columns - only appears if the thisuser is a conductor-->
+                {% if thisuser.isconductor == 1 %}
+                <td><a href="/user/{{ thisuser.userid }}/grouprequest/conductor/{{ p.periodid }}/">Create</a></td>
+                <td><a href="/user/{{ thisuser.userid }}/instrumentation/{{ p.periodid }}/">Create</a></td>
+                {% endif %}
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+    <div id="Admin" class="tabcontent">
+        <table style="width:100%">
+            <!--Start of the table for group allocations for this day-->
+            <tr>
+                <th>Time</th>
+                <th>Name</th>
+                {% if thisuser.isadmin == 1 %}
+                <th>Admin</th>
+                {% endif %}
+            </tr>
+            {% for p in periods %}
+            <tr>
+                <!--Time Column-->
+                <td>
+                    <a href="/user/{{ thisuser.userid }}/period/{{ p.periodid }}/">{{ p.starttime.strftime('%H:%M') }} - {{ p.endtime.strftime('%H:%M') }}</a>
+                </td>
+                <!--Group Name Column-->
+                <td>
+                    {% if not p.groupname %}
+                    {{ p.periodname }}
+
+                    {% else %}{% if p.ismusical == 1 %}
+                    <a href="/user/{{ thisuser.userid }}/group/{{ p.groupid }}/">{{ p.groupname }}</a>
+                    {% else %}{% if p.groupname == "absent" %}
+                    ABSENT
+                    {% else %}
+                    {{ p.groupname }}
+                    {% endif %}
+                    {% endif %}
+                    {% endif %}
+                </td>
+                <!--Admin Column - only appears if the thisuser is an admin-->
+                {% if thisuser.isadmin == 1 %}
+                <td>
+                    <a href="/user/{{ thisuser.userid }}/publicevent/{{ p.periodid }}/">Create</a>
+                </td>
+                {% endif %}
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+    {% endblock %}

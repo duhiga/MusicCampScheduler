@@ -14,7 +14,19 @@
 </head>
 <body>
     <h1>GOD PAGE - {{ campname }}</h1>
+    <div class="container">
+        <h2>Application Setup</h2>
+        <div>
+            <p>Step 1: upload a config.xml file</p>
+            <p>Step 2: upload a campers.csv file</p>
+            <form method="post" enctype="multipart/form-data">
+                <input type="file" name="file"><br />
+                <input type="submit" value="Upload">
+            </form>
+        </div>
+    </div>
     <br>
+    <h2>Users in Database</h2>
     <table style="width:100%">
         <tr>
             <th>First Name</th>

@@ -117,21 +117,6 @@ def getgroupname(g):
 def rootpage():
     return render_template('index.html')
 
-@app.route('/setup/', methods=["GET", "POST"])
-def setup():
-    global config
-    if request.method == 'GET':
-        return render_template('setup.html')
-    if request.method == 'POST':
-        # Get the name of the uploaded file
-        file = request.files['file']
-        if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            if filename == 'config.xml':
-                return dbbuild(file.read())
-            if filename == 'campers.csv':
-                return importusers(file)
-
 #upon the URL request in the form domain/user/<userid> the user receives their home. The home contains the groups they 
 #are playing in. Optionally, this page presents their home in the future or the past, and gives them further options.
 @app.route('/user/<userid>/')
@@ -841,7 +826,7 @@ def publiceventpage(userid,periodid):
                 session.close()
                 return jsonify(message = 'Submission failed. You must submit both an event name and location.', url = url)
             event = group(periodid = periodid, iseveryone = 1, groupname =  request.json['name'], requesteduserid = thisuser.userid,\
-                ismusical = 0, locationid = request.json['location'], status = "Confirmed")
+                ismusical = 0, locationid = request.json['location'], status = "Confirmed", requesttime = datetime.datetime.now())
             session.add(event)
             session.commit()
             url = ('/user/' + str(thisuser.userid) + '/group/' + str(event.groupid) + '/')
@@ -977,78 +962,34 @@ def instrumentation(userid,periodid):
 #Shows the godpage to the user. Godpage contains all user names and links to all their homes. Right now uses a shared password,
 #but would be better if tied to a user's admin account. However, there's no easy way to currently see what the userid of the admin is
 #after it's been created. Hmm... a conundrum.
-@app.route('/godpage/<password>/')
+@app.route('/godpage/<password>/', methods=["GET", "POST"])
 def godpage(password):
     if password != getconfig('SecretKey'):
         return 'Wrong password'
     else:
         session = Session()
+
+    if request.method == 'GET':
         users = session.query(user).all()
         session.close()
         return render_template('godpage.html', \
-                                #user=thisuser, \
-                                users=users, \
-                                campname=getconfig('Name'), \
-                                )
+                                        #user=thisuser, \
+                                        users=users, \
+                                        campname=getconfig('Name'), \
+                                        )
+    if request.method == 'POST':
+        # Get the name of the uploaded file
+        file = request.files['file']
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            if filename == 'config.xml':
+                return dbbuild(file.read())
+            if filename == 'campers.csv':
+                return importusers(file)
 
-@app.route('/godpage/<password>/importusers/')
-def BETAdbbuild(password):
-    if password != getconfig('SecretKey'):
-        return 'Wrong password'
-    else:
-        DBSetup.dbbuild()
-        session = Session()
-        #the below reads the camp input file and creates the users and instrument bindings it finds there.
-        ifile  = open('uploads/campers.csv', "rb")
-        reader = csv.reader(ifile)
-        rownum = 0
-        for row in reader:
-            log('If youre seeing this, its looped again')
-            # Save header row.
-            if rownum == 0:
-                header = row
-                log('Now in the header row')
-            else:
-                log(row)
-                thisuser = user()
-                thisuser.userid = str(uuid.uuid4())
-                thisuser.grouprequestcount = 0
-                thisuser.firstname = row[0]
-                thisuser.lastname = row[1][:1] #[:1] means just get the first letter
-                if row[12] is not '':
-                    thisuser.isannouncer = row[12]
-                if row[13] is not '':
-                    thisuser.isconductor = row[13]
-                if row[14] is not '':
-                    thisuser.isadmin = row[14]
-                if row[2] is not '':
-                    thisuser.arrival = row[2]
-                if row[2] is '':
-                    thisuser.arrival = CampStartTime
-                if row[3] is not '':
-                    thisuser.departure = row[3]
-                if row[3] is '':
-                    thisuser.departure = CampEndTime
-                session.add(thisuser)
-                if row[4] is not 'Non-Player':
-                    instrument1 = instrument(userid = thisuser.userid, instrumentname = row[4].capitalize().replace(" ", ""), grade = row[5], isprimary = 1)
-                    session.add(instrument1)
-                if row[6] is not '':
-                    instrument2 = instrument(userid = thisuser.userid, instrumentname = row[6].capitalize().replace(" ", ""), grade = row[7], isprimary = 0)
-                    session.add(instrument2)
-                if row[8] is not '':
-                    instrument3 = instrument(userid = thisuser.userid, instrumentname = row[8].capitalize().replace(" ", ""), grade = row[9], isprimary = 0)
-                    session.add(instrument3)
-                if row[10] is not '':
-                    instrument4 = instrument(userid = thisuser.userid, instrumentname = row[10].capitalize().replace(" ", ""), grade = row[11], isprimary = 0)
-                    session.add(instrument4)
-                log('Created user named %s %s' % (thisuser.firstname, thisuser.lastname))
-            rownum += 1
-        ifile.close()
-        session.commit()
-        userscount = session.query(user).count()
-        session.close()
-        return ('Created users. There are now %s total users in the database.' % userscount)
+
+
+        
 
 #the below creates a new user. The idea for this is that you could concatenate a string up in Excel with your user's details and click 
 #on all the links to create them.

@@ -354,7 +354,11 @@
                     </tr>
                     <tr class="unimportant-column">
                         <th>Request Time</th>
-                        <td colspan="2" class="unimportant-column">{{ thisgroup.requesttime.strftime('%A, %Y-%m-%d') }}, {{ thisgroup.requesttime.strftime('%H:%M') }}</td>
+                        <td colspan="2" class="unimportant-column">
+                            {% if thisgroup.requesttime != None %}
+                            {{ thisgroup.requesttime.strftime('%A, %Y-%m-%d') }}, {{ thisgroup.requesttime.strftime('%H:%M') }}
+                            {% endif %}
+                        </td>
                     </tr>
                     <tr>
                         <th>Total Players:</th>

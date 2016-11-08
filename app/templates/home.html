@@ -96,39 +96,43 @@
         {% endif %}
     </ul>
     <div id="Schedule" class="tabcontent">
-        <table style="width:100%" class="zebra-table">
-            <!--Start of the table for group allocations for this day-->
-            <tr>
-                <th>Time</th>
-                <th>Name</th>
-                <th>Instrument</th>
-                <th>Location</th>
-            </tr>
-            {% for p in periods %}
-            <tr>
-                <!--Time Column-->
-                <td>
-                    <a href="/user/{{ thisuser.userid }}/period/{{ p.periodid }}/">{{ p.starttime.strftime('%H:%M') }} - {{ p.endtime.strftime('%H:%M') }}</a>
-                </td>
-                <!--Group Name Column-->
-                <td>
-                    {% if not p.groupname %}
-                    {{ p.periodname }}
+        <table style="width:100%">
+            <thead>
+                <!--Start of the table for group allocations for this day-->
+                <tr>
+                    <th>Time</th>
+                    <th>Name</th>
+                    <th>Instrument</th>
+                    <th>Location</th>
+                </tr>
+            </thead>
+            <tbody class="zebra-table">
+                {% for p in periods %}
+                <tr>
+                    <!--Time Column-->
+                    <td>
+                        <a href="/user/{{ thisuser.userid }}/period/{{ p.periodid }}/">{{ p.starttime.strftime('%H:%M') }} - {{ p.endtime.strftime('%H:%M') }}</a>
+                    </td>
+                    <!--Group Name Column-->
+                    <td>
+                        {% if not p.groupname %}
+                        {{ p.periodname }}
 
-                    {% else %}{% if p.ismusical == 1 %}
-                    <a href="/user/{{ thisuser.userid }}/group/{{ p.groupid }}/">{{ p.groupname }}</a>
-                    {% else %}{% if p.groupname == "absent" %}
-                    ABSENT
-                    {% else %}
-                    {{ p.groupname }}
-                    {% endif %}
-                    {% endif %}
-                    {% endif %}
-                </td>
-                <td>{{ p.instrumentname }}</td>
-                <td>{{ p.locationname }}</td>
-            </tr>
-            {% endfor %}
+                        {% else %}{% if p.ismusical == 1 %}
+                        <a href="/user/{{ thisuser.userid }}/group/{{ p.groupid }}/">{{ p.groupname }}</a>
+                        {% else %}{% if p.groupname == "absent" %}
+                        ABSENT
+                        {% else %}
+                        {{ p.groupname }}
+                        {% endif %}
+                        {% endif %}
+                        {% endif %}
+                    </td>
+                    <td>{{ p.instrumentname }}</td>
+                    <td>{{ p.locationname }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
         </table>
     </div>
     <div id="Tools" class="tabcontent">

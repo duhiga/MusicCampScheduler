@@ -1,5 +1,5 @@
 ﻿<!DOCTYPE html>
-<html>
+<html height="100%">
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="/css/w3.css">
@@ -47,7 +47,7 @@
     <title>{% block title %}{% endblock %}</title>
     {% block head %}{% endblock %}
 </head>
-<body>
+<body height="100%">
     <!-- Navbar -->
     <div class="w3-top">
         <ul class="w3-navbar w3-theme w3-top w3-left-align w3-large" style="display:inline-block; white-space:nowrap;">
@@ -58,7 +58,6 @@
             <li><a href="#" class="w3-theme-l1">{% block pagename %}{% endblock %}</a></li>
             <li class="w3-hide-small"><a href="/user/{{ thisuser.userid }}/grouprequest/" class="w3-hover-white">Request a group</a></li>
             <li class="w3-hide-small"><a href="/user/{{ thisuser.userid }}/grouphistory/" class="w3-hover-white">Group History</a></li>
-            <li class="w3-hide-medium w3-hide-small"><a href="mailto:{{ supportemailaddress }}" class="w3-hover-white">Contact Camp Administration</a></li>
         </ul>
     </div>
 
@@ -89,7 +88,7 @@
     <div class="w3-overlay w3-hide-large" onclick="w3_close()" style="cursor:pointer" title="close side menu" id="myOverlay"></div>
 
     <!-- Main content: shift it to the right by 250 pixels when the sidenav is visible -->
-    <div class="w3-main" style="margin-left:250px">
+    <div class="w3-main" style="margin-left:250px;">
 
         <div class="w3-row">
             <div class="w3-container">

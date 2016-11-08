@@ -1,50 +1,13 @@
 ﻿{% extends "layout.html" %}
 {% block title %}{{ campname }} Group History{% endblock %}
 {% block pagename %}Group History{% endblock %}
-{% block head %}
-    <script src="/js/jquery.tablesorter.js"> </script>
-    <script>
-        $(document).ready(function () {
-            {% for i in instrumentlist %}
-            console.log('Instrument name: {{ i }}, Loop index: {{ loop.index }})')
-            {% endfor %}
-            // add parser through the tablesorter addParser method
-            $.tablesorter.addParser({
-                // set a unique id
-                id: 'scoreorder',
-                is: function (s) {
-                    // return false so this parser is not auto detected
-                    return false;
-                },
-                format: function (s) {
-                    // format your data for normalization
-                    return s.toLowerCase(){% for i in instrumentlist %}.replace(/{{ i }}/, {{ loop.index }}){% endfor %};
-                },
-                // set type, either numeric or text
-                type: 'numeric'
-            });
-
-            $(function () {
-                $("#periodtable").tablesorter({
-                    sortList: [3,1],
-                    headers: {
-                        3: {
-                            sorter: 'scoreorder',
-                            emptyto: 'top'
-                        }
-                    }
-                });
-            });
-        });
-    </script>
-{% endblock %}
 {% block content %}
-<table style="width:100%" id="periodtable">
+<table style="width:100%" class="sortable-table">
     <thead>
         <tr>
             <th>Date</th>
             <th>Time</th>
-            <th>Group Name</th>
+            <th>Name</th>
             <th class="unimportant-column">Instrument</th>
             <th>Location</th>
             <th>Status</th>

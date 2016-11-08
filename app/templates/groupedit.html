@@ -116,11 +116,12 @@
                 if (!isClicked) {
                     isClicked = true;
                     console.log('Submit button pressed');
+                    var id = $(this).attr('id')
                     //establish the object we'll send to the server
                     var request = {}
 
                     //check if this was the autofill button or not, and add this information to the object
-                    if ($(this).attr('id') == 'submit_with_autofill') { request.autofill = '1' }
+                    if (id == 'submit_with_autofill') { request.autofill = '1' }
                     else { request.autofill = '0' }
 
                     //for each group_attribute dropdown on the page, add the value to the object
@@ -160,7 +161,7 @@
                                 isClicked = false;
                             }
                             if (data.url != 'none') {
-                                if ($(this).attr('id') == 'save') {
+                                if (id == 'save') {
                                     location.reload();
                                 }
                                 else {

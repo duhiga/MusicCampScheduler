@@ -59,6 +59,7 @@
                     //if this is the conductorpage, we also need to send the selected location - it cannot be blank.
                     if ($('#location_dropdown').val() == "" || $('#textbox_groupname').val() == "" || $('#textbox_music').val() == "") {
                         alert("Sumbission failed. You have not filled in required fields. You must fill in the location, music and name of the group.");
+                        isClicked = false;
                         return false;
                     }
                     else {
@@ -67,6 +68,7 @@
                         request.music = $('#textbox_music').val();
                         request.minimumlevel = $('#minimumlevel_dropdown').val();
                         request.maximumlevel = $('#maximumlevel_dropdown').val();
+                        request.conductoruserid = $('#conductorid').val();
                         //establish an array to fill with instruments and numbers
                         request.instruments = []
                         //for each instrument
@@ -115,7 +117,7 @@
 {% endblock %}
 {% block tools %}
     <h4><b>Tools</b></h4>
-    <a href="#" class="w3-hover-black " id="submit_button">Submit</a>
+    <a href="#" class="w3-hover-black submit_button">Submit</a>
 {% endblock %}
 {% block content %}
             <p>
@@ -184,6 +186,19 @@
                     </td>
                 </tr>
             </table>
+            <p>
+                Conductor Name:
+                <select id="conductorid">
+                    <option value=""></option>
+                    {% for c in conductors %}
+                        {% if c.userid == thisuser.userid %}
+                            <option value="{{ c.userid }}" selected="selected">{{ c.firstname }} {{ c.lastname }}</option>
+                        {% else %}
+                            <option value="{{ c.userid }}">{{ c.firstname }} {{ c.lastname }}</option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+            </p>
             <h2>Group Instrumentation</h2>
             <table id="playersTable">
                 <!--Table Headers-->
@@ -198,7 +213,7 @@
                         <select class="instrumentnumber_dropdown" id="{{ i }}">
                             {% set n = 21 %}
                             {% for n in range(n) %}
-                            <option value="{{ n }}">{{ n }}</option>
+                                <option value="{{ n }}">{{ n }}</option>
                             {% endfor %}
                         </select>
                     </td>

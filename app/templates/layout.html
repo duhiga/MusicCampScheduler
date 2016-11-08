@@ -9,6 +9,41 @@
     <link rel="stylesheet" href="/css/style.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"> </script>
     <script>if (!window.jQuery) { document.write('<script src="/js/jquery-3.1.1.min.js"><\/script>'); }</script>
+    <script src="/js/jquery.tablesorter.js"></script>
+    <script>
+        $(document).ready(function () {
+            {% for i in instrumentlist %}
+            console.log('Instrument name: {{ i }}, Loop index: {{ loop.index }})')
+            {% endfor %}
+            // add parser through the tablesorter addParser method
+            $.tablesorter.addParser({
+                // set a unique id
+                id: 'scoreorder',
+                is: function (s) {
+                    // return false so this parser is not auto detected
+                    return false;
+                },
+                format: function (s) {
+                    // format your data for normalization
+                    return s.toLowerCase(){% for i in instrumentlist %}.replace(/{{ i }}/, {{ loop.index }}){% endfor %};
+                },
+                // set type, either numeric or text
+                type: 'numeric'
+            });
+
+            $(function () {
+                $(".sortable-table").tablesorter({
+                    sortList: [2,1],
+                    headers: {
+                        2: {
+                            sorter: 'scoreorder',
+                            emptyto: 'top'
+                        }
+                    }
+                });
+            });
+        });
+    </script>
     <title>{% block title %}{% endblock %}</title>
     {% block head %}{% endblock %}
 </head>
@@ -19,10 +54,10 @@
             <li class="w3-opennav w3-right w3-hide-large">
                 <a class="w3-hover-white w3-large w3-theme-l1" href="javascript:void(0)" onclick="w3_open()"><i class="fa fa-bars"></i></a>
             </li>
-            <li class="w3-opennav w3-right"><a href="/user/{{ thisuser.userid }}/" class="w3-hover-white"><i class="fa fa-home"></i></a></li>
+            <li class="w3-opennav w3-right"><a href="/user/{{ thisuser.userid }}/" class="w3-hover-white w3-large w3-theme-l1"><i class="fa fa-home"></i></a></li>
             <li><a href="#" class="w3-theme-l1">{% block pagename %}{% endblock %}</a></li>
             <li class="w3-hide-small"><a href="/user/{{ thisuser.userid }}/grouprequest/" class="w3-hover-white">Request a group</a></li>
-            <li class="w3-hide-medium w3-hide-small"><a href="/user/{{ thisuser.userid }}/grouphistory/" class="w3-hover-white">Group History</a></li>
+            <li class="w3-hide-small"><a href="/user/{{ thisuser.userid }}/grouphistory/" class="w3-hover-white">Group History</a></li>
             <li class="w3-hide-medium w3-hide-small"><a href="mailto:{{ supportemailaddress }}" class="w3-hover-white">Contact Camp Administration</a></li>
         </ul>
     </div>
@@ -63,6 +98,26 @@
         </div>
         {% block footer %}{% endblock %}
     </div>
-    <script src="/js/sidenav.js"></script>
+    <script>
+        // Get the Sidenav
+        var mySidenav = document.getElementById("mySidenav");
+        // Get the DIV with overlay effect
+        var overlayBg = document.getElementById("myOverlay");
+        // Toggle between showing and hiding the sidenav, and add overlay effect
+        function w3_open() {
+            if (mySidenav.style.display === 'block') {
+                mySidenav.style.display = 'none';
+                overlayBg.style.display = "none";
+            } else {
+                mySidenav.style.display = 'block';
+                overlayBg.style.display = "block";
+            }
+        }
+        // Close the sidenav with the close button
+        function w3_close() {
+            mySidenav.style.display = "none";
+            overlayBg.style.display = "none";
+        }
+    </script>
 </body>
 </html>

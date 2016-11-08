@@ -124,7 +124,6 @@ class groupassignment(Base):
     userid = Column(UUID, ForeignKey('users.userid'))
     groupid = Column(Integer, ForeignKey('groups.groupid'))
     instrumentname = Column(String)
-    #__table_args__ = (ForeignKeyConstraint([userid, instrumentname],[instrument.userid, instrument.instrumentname]), {})
 
     @property
     def serialize(self):

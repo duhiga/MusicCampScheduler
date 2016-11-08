@@ -4,7 +4,7 @@
 {% block head %}
     <script>
 
-        function openCity(evt, cityName) {
+        function openTab(evt, tabName) {
             // Declare all variables
             var i, tabcontent, tablinks;
 
@@ -21,7 +21,7 @@
             }
 
             // Show the current tab, and add an "active" class to the link that opened the tab
-            document.getElementById(cityName).style.display = "block";
+            document.getElementById(tabName).style.display = "block";
             evt.currentTarget.className += " active";
         }
 
@@ -70,9 +70,6 @@
 {% block content %}
     <h3>Announcements</h3>
     <p>{{ currentannouncement.content }}</p>
-    {% if date > today %}
-    <p>To mark yourself as absent for any period, select one of the corresponding buttons.</p>
-    {% endif %}
     <p style="text-align: center;">
         {% if previousday == today %}
         <a href="/user/{{ thisuser.userid }}/">Previous</a>
@@ -87,17 +84,19 @@
         {% endif %}
     </p>
     <ul class="tab">
-        <li><a href="javascript:void(0)" class="tablinks" onclick="openCity(event, 'Schedule')" id="defaultOpen">Schedule</a></li>
-        <li><a href="javascript:void(0)" class="tablinks" onclick="openCity(event, 'Tools')">Tools</a></li>
+        <li><a href="javascript:void(0)" class="tablinks" onclick="openTab(event, 'Schedule')" id="defaultOpen">Schedule</a></li>
+        {% if date > today or thisuser.isconductor == 1 or thisuser.isadmin == 1 %}
+        <li><a href="javascript:void(0)" class="tablinks" onclick="openTab(event, 'Tools')">Tools</a></li>
+        {% endif %}
         {% if thisuser.isconductor == 1 %}
-        <li><a href="javascript:void(0)" class="tablinks" onclick="openCity(event, 'Conductor')">Conductor</a></li>
+        <li><a href="javascript:void(0)" class="tablinks" onclick="openTab(event, 'Conductor')">Conductor</a></li>
         {% endif %}
         {% if thisuser.isadmin == 1 %}
-        <li><a href="javascript:void(0)" class="tablinks" onclick="openCity(event, 'Admin')">Admin</a></li>
+        <li><a href="javascript:void(0)" class="tablinks" onclick="openTab(event, 'Admin')">Admin</a></li>
         {% endif %}
     </ul>
     <div id="Schedule" class="tabcontent">
-        <table style="width:100%">
+        <table style="width:100%" class="zebra-table">
             <!--Start of the table for group allocations for this day-->
             <tr>
                 <th>Time</th>
@@ -133,7 +132,7 @@
         </table>
     </div>
     <div id="Tools" class="tabcontent">
-        <table style="width:100%">
+        <table style="width:100%" class="zebra-table">
             <!--Start of the table for group allocations for this day-->
             <tr>
                 <th>Time</th>
@@ -181,16 +180,15 @@
             {% endfor %}
         </table>
     </div>
+    {% if thisuser.isconductor == 1 %}
     <div id="Conductor" class="tabcontent">
-        <table style="width:100%">
+        <table style="width:100%" class="zebra-table">
             <!--Start of the table for group allocations for this day-->
             <tr>
                 <th>Time</th>
                 <th>Name</th>
-                {% if thisuser.isconductor == 1 %}
                 <th>Group Creation</th>
                 <th>Instrumentation</th>
-                {% endif %}
             </tr>
             {% for p in periods %}
             <tr>
@@ -199,20 +197,7 @@
                     <a href="/user/{{ thisuser.userid }}/period/{{ p.periodid }}/">{{ p.starttime.strftime('%H:%M') }} - {{ p.endtime.strftime('%H:%M') }}</a>
                 </td>
                 <!--Group Name Column-->
-                <td>
-                    {% if not p.groupname %}
-                    {{ p.periodname }}
-
-                    {% else %}{% if p.ismusical == 1 %}
-                    <a href="/user/{{ thisuser.userid }}/group/{{ p.groupid }}/">{{ p.groupname }}</a>
-                    {% else %}{% if p.groupname == "absent" %}
-                    ABSENT
-                    {% else %}
-                    {{ p.groupname }}
-                    {% endif %}
-                    {% endif %}
-                    {% endif %}
-                </td>
+                <td>{{ p.periodname }}</td>
                 <!--Conductor Columns - only appears if the thisuser is a conductor-->
                 {% if thisuser.isconductor == 1 %}
                 <td><a href="/user/{{ thisuser.userid }}/grouprequest/conductor/{{ p.periodid }}/">Create</a></td>
@@ -222,15 +207,15 @@
             {% endfor %}
         </table>
     </div>
+    {% endif %}
+    {% if thisuser.isadmin == 1 %}
     <div id="Admin" class="tabcontent">
-        <table style="width:100%">
+        <table style="width:100%" class="zebra-table">
             <!--Start of the table for group allocations for this day-->
             <tr>
                 <th>Time</th>
                 <th>Name</th>
-                {% if thisuser.isadmin == 1 %}
-                <th>Admin</th>
-                {% endif %}
+                <th>Public Event</th>
             </tr>
             {% for p in periods %}
             <tr>
@@ -239,20 +224,7 @@
                     <a href="/user/{{ thisuser.userid }}/period/{{ p.periodid }}/">{{ p.starttime.strftime('%H:%M') }} - {{ p.endtime.strftime('%H:%M') }}</a>
                 </td>
                 <!--Group Name Column-->
-                <td>
-                    {% if not p.groupname %}
-                    {{ p.periodname }}
-
-                    {% else %}{% if p.ismusical == 1 %}
-                    <a href="/user/{{ thisuser.userid }}/group/{{ p.groupid }}/">{{ p.groupname }}</a>
-                    {% else %}{% if p.groupname == "absent" %}
-                    ABSENT
-                    {% else %}
-                    {{ p.groupname }}
-                    {% endif %}
-                    {% endif %}
-                    {% endif %}
-                </td>
+                <td>{{ p.periodname }}</td>
                 <!--Admin Column - only appears if the thisuser is an admin-->
                 {% if thisuser.isadmin == 1 %}
                 <td>
@@ -263,4 +235,5 @@
             {% endfor %}
         </table>
     </div>
+    {% endif %}
     {% endblock %}

@@ -306,7 +306,6 @@ def grouppage(userid,groupid):
 #Group editor page. Only accessable by admins. Navigate here from a group to edit group.
 @app.route('/user/<userid>/group/<groupid>/edit/', methods=['GET', 'POST', 'DELETE'])
 def groupedit(userid,groupid,periodid=None):
-    
     log('Group editor page requested by %s for groupID %s' % (userid,groupid))
     session = Session()
     #gets the data associated with this user
@@ -317,18 +316,20 @@ def groupedit(userid,groupid,periodid=None):
     if thisuser.isadmin != 1:
         session.close()
         return 'You do not have permission to do this.'
-    thisgroup = session.query(group).filter(group.groupid == groupid).first()
-    if thisgroup is None:
-        return ('Did not find group in database. You have entered an incorrect URL address.')
+    if periodid == 'None':
+        periodid = None
+    if groupid == 'new' or groupid is None:
+        groupid = None
+        thisgroup = group()
+    else:
+        thisgroup = session.query(group).filter(group.groupid == groupid).first()
     if request.method == 'GET':
-        #THIS NEEDS TO BE CHANGED TO AN ASYNC AJAX CALL UPON CHANGE OF THE DROPDOWN FOR PERIOD
+        #Current period tracks the period that the group is already set to (none, if it's a new group)
         currentperiod = session.query(period).filter(period.periodid == thisgroup.periodid).first()
         if periodid is not None:
             selectedperiod = session.query(period).filter(period.periodid == periodid).first()
-        elif currentperiod is not None:
-            selectedperiod = currentperiod
         else:
-            selectedperiod = session.query(period).filter(period.meal != 1).order_by(period.starttime).first()
+            selectedperiod = currentperiod
         thislocation = session.query(location).join(group).filter(group.groupid == groupid).first()
         #gets the list of players playing in the given group
         thisgroupplayers = session.query(user.userid, user.firstname, user.lastname, groupassignment.instrumentname).join(groupassignment).join(group).\
@@ -337,8 +338,13 @@ def groupedit(userid,groupid,periodid=None):
         for p in thisgroupplayers:
              thisgroupplayers_serialized.append({'userid': p.userid, 'firstname': p.firstname, 'lastname': p.lastname,
                 'instrumentname': p.instrumentname})
+        #handler in case user selected the blank period
+        if selectedperiod is None:
+            selectedperiodid = None
+        else:
+            selectedperiodid = selectedperiod.periodid
         #Finds all players who are already playing in this period (except in this specific group)
-        playersPlayingInPeriod = session.query(user.userid).join(groupassignment).join(group).filter(group.groupid != thisgroup.groupid).filter(group.periodid == selectedperiod.periodid)
+        playersPlayingInPeriod = session.query(user.userid).join(groupassignment).join(group).filter(group.groupid != thisgroup.groupid).filter(group.periodid == selectedperiodid)
         #finds all players who are available to play in this group (they aren't already playing in other groups)
         playersdump = session.query(user.userid,user.firstname,user.lastname,instrument.instrumentname,instrument.grade,instrument.isprimary).\
                     join(instrument).filter(~user.userid.in_(playersPlayingInPeriod)).all()
@@ -346,14 +352,15 @@ def groupedit(userid,groupid,periodid=None):
         for p in playersdump:
             playersdump_serialized.append({'userid': p.userid, 'firstname': p.firstname, 'lastname': p.lastname,
                 'instrumentname': p.instrumentname, 'grade': p.grade, 'isprimary': p.isprimary})
-        #UNFINISHED find the periods that the players in this group are unavailable
-        #to do this, I think I need to join groups back onto itself. Need to look at documentation for this.
 
-        #find the periods in which the players already in this group are available
-        #UNFINISHED - finds every period instead as a workaround
-        periods = session.query(period).order_by(period.starttime).all()
+        #find all periods from now until the end of time to display to the user
+        periods = session.query(period).order_by(period.starttime).filter(period.starttime > datetime.datetime.now()).all()
         locations = session.query(location).all()
         log('This groups status is %s' % thisgroup.status)
+
+        #find all group templates to show in a dropdown
+        grouptemplates = session.query(grouptemplate).all()
+        grouptemplates_serialized = [i.serialize for i in grouptemplates]
 
         session.close()
         return render_template('groupedit.html', \
@@ -371,39 +378,44 @@ def groupedit(userid,groupid,periodid=None):
                             playersdump_serialized=playersdump_serialized, \
                             thisgroupplayers_serialized=thisgroupplayers_serialized, \
                             maximumlevel=int(getconfig('MaximumLevel')), \
+                            grouptemplates=grouptemplates, \
+                            grouptemplates_serialized=grouptemplates_serialized, \
                             )
     
     if request.method == 'DELETE':
-        thisgroupassignments = session.query(groupassignment).filter(groupassignment.groupid == thisgroup.groupid).all()
-        for a in thisgroupassignments:
-            session.delete(a)
-        session.commit()
-        session.delete(thisgroup)
-        session.commit()
+        if groupid is not None:
+            thisgroupassignments = session.query(groupassignment).filter(groupassignment.groupid == thisgroup.groupid).all()
+            for a in thisgroupassignments:
+                session.delete(a)
+            session.commit()
+            session.delete(thisgroup)
+            session.commit()
+        else:
+            session.rollback()
         url = ('/user/' + str(thisuser.userid) + '/')
+        message = 'none'
         log('Sending user to URL: %s' % url)
         session.close()
-        return jsonify(message = 'none', url = url)
+        return jsonify(message = message, url = url)
 
     if request.method == 'POST':
         #format the packet received from the server as JSON
         content = request.json
-        session = Session()
+        if content['groupname'] == '' or content['groupname'] == 'null' or content['groupname'] is None:
+            session.rollback()
+            session.close()
+            return jsonify(message = 'You must give this group a name before saving or autofilling.', url = 'none')
         thisgroupassignments = session.query(groupassignment).filter(groupassignment.groupid == thisgroup.groupid).all()
         for a in thisgroupassignments:
             session.delete(a)
         #add the content in the packet to this group's attributes
-        thisgroup.groupname = content['groupname']
-        thisgroup.periodid = content['periodid']
-        thisgroup.locationid = content['locationid']
-        thisgroup.minimumlevel = content['minimumlevel']
-        thisgroup.maximumlevel = content['maximumlevel']
-        thisgroup.music = content['music']
-        thisgroup.status = content['status']
-        thisgroup.ismusical = content['ismusical']
-        for i in getconfig('Instruments').split(","):
-            log('Setting %s to %s' % (i,content[i]))
-            setattr(thisgroup,i,content[i])
+        for key,value in content.iteritems():
+            if value is not None or value != 'null' or value != '':
+               setattr(thisgroup,key,value)
+        thisgroup.requesteduserid = thisuser.userid
+        if groupid == None:
+            session.add(thisgroup)
+            session.commit()
         foundempty = False
         foundfilled = True
         for p in content['players']:
@@ -438,7 +450,7 @@ def groupedit(userid,groupid,periodid=None):
             return jsonify(message = 'Confirmed groups must have a name, assigned period, assigned location and no empty player slots.', url = 'none')
         
         #----AUTOFILL SECTION----
-        if content['autofill'] == '1':
+        if content['submittype'] == 'autofill':
             log('User selected to autofill the group')
             if content['periodid'] == '' or content['periodid'] is None:
                 session.rollback()
@@ -481,7 +493,8 @@ def groupedit(userid,groupid,periodid=None):
                                     log('Selected %s with playcount %s to play %s' % (pl.userid, pl.playcount, i))
                                     playergroupassignment = groupassignment(userid = pl.userid, groupid = thisgroup.groupid, instrumentname = i)
                                     session.add(playergroupassignment)
-                url = '/user/' + str(thisuser.userid) + '/group/' + str(thisgroup.groupid) + '/edit/'
+        if content['submittype'] == 'autofill' or content['submittype'] == 'save':
+            url = '/user/' + str(thisuser.userid) + '/group/' + str(thisgroup.groupid) + '/edit/'
         else:
             url = '/user/' + str(thisuser.userid) + '/group/' + str(thisgroup.groupid) + '/'
         session.merge(thisgroup)
@@ -489,7 +502,7 @@ def groupedit(userid,groupid,periodid=None):
         session.close()
         return jsonify(message = 'none', url = url)
         
-@app.route('/user/<userid>/group/<groupid>/period/<periodid>/edit/')
+@app.route('/user/<userid>/group/<groupid>/period/<periodid>/edit/', methods=['GET', 'POST', 'DELETE'])
 def groupeditperiod(userid,groupid,periodid):
     return groupedit(userid,groupid,periodid)
 

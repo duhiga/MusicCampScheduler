@@ -151,7 +151,7 @@
                 <td>
                     <a href="/user/{{ thisuser.userid }}/period/{{ p.periodid }}/">{{ p.starttime.strftime('%H:%M') }} - {{ p.endtime.strftime('%H:%M') }}</a>
                 </td>
-                <!--Group Name Column-->
+                <!--Group/Period Name Column, depending on context-->
                 <td>
                     {% if not p.groupname %}
                     {{ p.periodname }}
@@ -191,7 +191,7 @@
             <tr>
                 <th>Time</th>
                 <th>Name</th>
-                <th>Group Creation</th>
+                <th>Create Group</th>
                 <th>Instrumentation</th>
             </tr>
             {% for p in periods %}
@@ -200,7 +200,7 @@
                 <td>
                     <a href="/user/{{ thisuser.userid }}/period/{{ p.periodid }}/">{{ p.starttime.strftime('%H:%M') }} - {{ p.endtime.strftime('%H:%M') }}</a>
                 </td>
-                <!--Group Name Column-->
+                <!--Period Name Column-->
                 <td>{{ p.periodname }}</td>
                 <!--Conductor Columns - only appears if the thisuser is a conductor-->
                 {% if thisuser.isconductor == 1 %}
@@ -220,6 +220,7 @@
                 <th>Time</th>
                 <th>Name</th>
                 <th>Public Event</th>
+                <th>Create Group</th>
             </tr>
             {% for p in periods %}
             <tr>
@@ -227,14 +228,16 @@
                 <td>
                     <a href="/user/{{ thisuser.userid }}/period/{{ p.periodid }}/">{{ p.starttime.strftime('%H:%M') }} - {{ p.endtime.strftime('%H:%M') }}</a>
                 </td>
-                <!--Group Name Column-->
+                <!--Period Name Column-->
                 <td>{{ p.periodname }}</td>
-                <!--Admin Column - only appears if the thisuser is an admin-->
-                {% if thisuser.isadmin == 1 %}
+                <!--Pubilc Event Column-->
                 <td>
                     <a href="/user/{{ thisuser.userid }}/publicevent/{{ p.periodid }}/">Create</a>
                 </td>
-                {% endif %}
+                <!--Admin Group Creation Column-->
+                <td>
+                    <a href="/user/{{ thisuser.userid }}/group/new/period/{{ p.periodid }}/edit/">Create</a>
+                </td>
             </tr>
             {% endfor %}
         </table>

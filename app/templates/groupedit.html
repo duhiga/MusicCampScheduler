@@ -25,6 +25,14 @@
             console.log("Players already playing in this group:");
             console.log(thisgroupplayers);
 
+            {% if grouptemplates_serialized == [] %}
+            var grouptemplates = null;
+            {% else %}
+            var grouptemplates = {{ grouptemplates_serialized|tojson }};
+            {% endif %}
+            console.log("Group Templates:");
+            console.log(grouptemplates);
+
             //changes all player dropdowns to match the players already playing in the group. 
             //Sets the players to bold in their respective dropdowns.
             instrumentcounter = {}
@@ -70,6 +78,30 @@
                 dropdowns[dropdowns.length - 1].remove()
             }
 
+            //run when a user changes the select template dropdown
+            $(document).on("change", '#group_template_dropdown', function () {
+                //get the user selected template and format it so we can iterate over it later
+                var grep_template = $.grep(grouptemplates, function (elt) {
+                    return elt.grouptemplatename === $(group_template_dropdown).val();
+                });
+                selectedTemplate = grep_template[0];
+                console.log('Selected template is:');
+                console.log(selectedTemplate);
+                $('#groupname').val(selectedTemplate.grouptemplatename).change();
+                //for each instrument type in the group template
+                $.each(selectedTemplate, function(key,value) {
+                    //make sure it's an instrument type and not other associated metadata
+                    if (key != 'grouptemplateid' && key != 'grouptemplatename' && key != 'size' && key != 'minimumlevel' && key != 'maximumlevel' && key != 'defaultlocationid') {
+                        console.log(key + ": "+String(value));
+                        if (value == '' || value == null) {
+                            value = 0;
+                        }
+                        $('#number_' + key).val(value).change();
+                        console.log('attempted to change instrument textbox ' + key + ' to ' + value);
+                    }
+                });
+            });
+
             //when user changes any instrument number drop down boxes
             $(document).on("change", '.instrumentnumber_dropdown', function () {
                 updatetotal();
@@ -92,7 +124,11 @@
             //when user changes the period dropdown box, reload the page with data from the new period
             $(document).on("change", '#periodid', function () {
                 console.log('User selected period ' + $(this).val() + ', reloading page for that period');
-                window.location = '/user/{{ thisuser.userid }}/group/{{ thisgroup.groupid }}/period/' + $(this).val() + '/edit/';
+                groupid = '{{ thisgroup.groupid }}'
+                if (groupid == 'None') {
+                    groupid = 'new';
+                }
+                window.location = '/user/{{ thisuser.userid }}/group/' + groupid + '/period/' + $(this).val() + '/edit/';
             });
 
             //run when user changes the content of a player dropdown
@@ -111,7 +147,7 @@
                 }
             });
 
-            //when user presses submit button (either with or without autofill)
+            //when user presses any submit button (submit, save or autofill)
             $(".submit_button").click(function () {
                 if (!isClicked) {
                     isClicked = true;
@@ -121,8 +157,7 @@
                     var request = {}
 
                     //check if this was the autofill button or not, and add this information to the object
-                    if (id == 'submit_with_autofill') { request.autofill = '1' }
-                    else { request.autofill = '0' }
+                    request.submittype = id
 
                     //for each group_attribute dropdown on the page, add the value to the object
                     $('.group_attribute').each(function() {
@@ -149,7 +184,7 @@
                     console.log(request);
                     $.ajax({
                         //make a POST AJAX query to the same web page as the user is currently visiting
-                        url: ('/user/{{ thisuser.userid }}/group/{{ thisgroup.groupid }}/edit/'),
+                        url: (window.location),
                         type: 'POST',
                         contentType: 'application/json;charset=UTF-8',
                         data: JSON.stringify(request, null),
@@ -161,12 +196,7 @@
                                 isClicked = false;
                             }
                             if (data.url != 'none') {
-                                if (id == 'save') {
-                                    location.reload();
-                                }
-                                else {
-                                    window.location = data.url;
-                                }
+                                window.location = data.url;
                             }
                             else {
                                 isClicked = false;
@@ -186,7 +216,7 @@
             });
 
             //when user presses the delete group button
-            $("#delete_button").click(function () {
+            $("#delete").click(function () {
                 if (!isClicked) {
                     console.log('Delete button pressed');
                     var r = confirm('Are you sure you want to delete this group?');
@@ -219,9 +249,9 @@
 {% block tools %}
     <h4><b>Edit</b></h4>
     <a href="#" class="w3-hover-black" id="clear_players">Clear Players</a>
-    <a href="#" class="w3-hover-black submit_button" id="submit_with_autofill">Autofill Missing Players</a>
+    <a href="#" class="w3-hover-black submit_button" id="autofill">Autofill Missing Players</a>
     <a href="#" class="w3-hover-black submit_button" id="save">Save Changes</a>
-    <a href="#" class="w3-hover-black" id="delete_button">Delete Group</a>
+    <a href="#" class="w3-hover-black" id="delete">Delete Group</a>
 {% endblock %}
 {% block content %}
                 <h2>Group Configuration</h2>
@@ -234,7 +264,7 @@
                     <tr>
                         <th>Name</th>
                         <td class="unimportant-column">{{ thisgroup.groupname }}</td>
-                        <td><input type="text" id="groupname" class="group_attribute" value="{{ thisgroup.groupname }}"></td>
+                        <td><input type="text" id="groupname" class="group_attribute" value="{% if thisgroup.groupname != None %}{{ thisgroup.groupname }}{% endif %}"></td>
                     </tr>
                     <tr>
                         <th>Status</th>
@@ -265,7 +295,7 @@
                         {% endif %}
                         <td>
                             <select id="periodid" class="group_attribute">
-                                <option value=""></option>
+                                <option value="None"></option>
                                 {% for p in periods %}
                                 {% if p.periodid == selectedperiod.periodid %}
                                 <option value="{{ p.periodid }}" selected="selected">{{ p.periodname }}, {{ p.starttime.strftime('%a, %d %b') }}, {{ p.starttime.strftime('%H:%M') }}</option>
@@ -367,6 +397,15 @@
                 </table>
                 <h2>Players</h2>
                 <p>Players bolded in the below table are the current players in that group. Player are shown with their grades on the respective instruments before their names.</p>
+                <p>
+                    Optional: Select a group template to autofill the page. Note - this wipes the current configuration.
+                    <select id="group_template_dropdown">
+                        <option value=""></option>
+                        {% for g in grouptemplates %}
+                        <option value="{{ g.grouptemplatename }}">{{ g.grouptemplatename }}</option>
+                        {% endfor %}
+                    </select>
+                </p>
                 <table class="sortable" id="table_players">
                     <tr>
                         <th>Instrument</th>

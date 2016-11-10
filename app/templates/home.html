@@ -219,8 +219,8 @@
             <tr>
                 <th>Time</th>
                 <th>Name</th>
-                <th>Public Event</th>
                 <th>Create Group</th>
+                <th>Public Event</th>
             </tr>
             {% for p in periods %}
             <tr>
@@ -230,13 +230,12 @@
                 </td>
                 <!--Period Name Column-->
                 <td>{{ p.periodname }}</td>
-                <!--Pubilc Event Column-->
-                <td>
-                    <a href="/user/{{ thisuser.userid }}/publicevent/{{ p.periodid }}/">Create</a>
-                </td>
                 <!--Admin Group Creation Column-->
                 <td>
                     <a href="/user/{{ thisuser.userid }}/group/new/period/{{ p.periodid }}/edit/">Create</a>
+                </td><!--Pubilc Event Column-->
+                <td>
+                    <a href="/user/{{ thisuser.userid }}/publicevent/{{ p.periodid }}/">Create</a>
                 </td>
             </tr>
             {% endfor %}

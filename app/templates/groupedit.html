@@ -33,21 +33,6 @@
             console.log("Group Templates:");
             console.log(grouptemplates);
 
-            //changes all player dropdowns to match the players already playing in the group. 
-            //Sets the players to bold in their respective dropdowns.
-            instrumentcounter = {}
-            if (thisgroupplayers != null) {
-                for (var i = 0; i < thisgroupplayers.length; i++) {
-                    if (instrumentcounter[thisgroupplayers[i].instrumentname] == null) {
-                        instrumentcounter[thisgroupplayers[i].instrumentname] = 0;
-                    }
-                    $("#" + thisgroupplayers[i].instrumentname + "_" + instrumentcounter[thisgroupplayers[i].instrumentname]).val(thisgroupplayers[i].userid).change();
-                    $("#" + thisgroupplayers[i].instrumentname + "_" + instrumentcounter[thisgroupplayers[i].instrumentname] + " option:selected").css("font-weight","Bold");
-                    instrumentcounter[thisgroupplayers[i].instrumentname]++;
-
-                };
-            }
-
             //this function updates the table slot containing the total number of players in the group.
             function updatetotal() {
                 var sum = 0;
@@ -56,9 +41,6 @@
                 });
                 $("#total_players").html(sum).change();
             }
-            
-            //when the page loads for the first time, update the total
-            updatetotal();
             
             //adds a player dropdown to a given cell
             function addPlayer(cell) {
@@ -99,6 +81,15 @@
                         $('#number_' + key).val(value).change();
                         console.log('attempted to change instrument textbox ' + key + ' to ' + value);
                     }
+                    if (key == 'minimumlevel' || key == 'maximumlevel') {
+                        if (value == '' || value == 'null') {
+                            $('#' + key).val(0).change();
+                        }
+                        else {
+                            $('#' + key).val(value).change();
+                        }
+                        
+                    }
                 });
             });
 
@@ -120,7 +111,7 @@
                     }
                 } 
             });
-
+            
             //when user changes the period dropdown box, reload the page with data from the new period
             $(document).on("change", '#periodid', function () {
                 console.log('User selected period ' + $(this).val() + ', reloading page for that period');
@@ -243,6 +234,29 @@
                     }
                 }
             });
+
+            //when the page loads for the first time, change the instrument numbers to the correct numbers
+            {% for i in instrumentlist %}
+            $('#number_{{i}}').val({{ thisgroup[i] }}).change();
+            {% endfor %}
+
+            //changes all player dropdowns to match the players already playing in the group. 
+            //Sets the players to bold in their respective dropdowns.
+            //UNFINISHED - does not match up with the current ID numbering created by the above dropdown box creation. Need to be more clever
+            instrumentcounter = {}
+            var breakout = false
+            if (thisgroupplayers != null) {
+                for (var i = 0; i < thisgroupplayers.length; i++) {
+                    breakout = false;
+                    $('.player_dropdown[data-instrument=' + thisgroupplayers[i].instrumentname + ']').each(function() {
+                        if (($(this).val() == '' || $(this).val() == null) && breakout == false) {
+                            $(this).val(thisgroupplayers[i].userid).change();
+                            console.log('Changed dropdown box for instrument ' + thisgroupplayers[i].instrumentname + ' to ' + thisgroupplayers[i].firstname);
+                            breakout = true;
+                        }
+                    });
+                }
+            }
         });
     </script>
 {% endblock %}
@@ -313,9 +327,9 @@
                             <select id="locationid" class="group_attribute">
                                 {% for l in locations %}
                                 {% if l.locationid == thislocation.locationid %}
-                                <option value="{{ l.locationid }}" selected="selected">{{ l.locationname }} - Max Capacity: {{ l.capacity }}</option>
+                                <option value="{{ l.locationid }}" selected="selected">{{ l.locationname }} - Capacity: {{ l.capacity }}</option>
                                 {% else %}
-                                <option value="{{ l.locationid }}">{{ l.locationname}} - Max Capacity: {{ l.capacity }}</option>
+                                <option value="{{ l.locationid }}">{{ l.locationname}} - Capacity: {{ l.capacity }}</option>
                                 {% endif %}
                                 {% endfor %}
                             </select>
@@ -421,7 +435,7 @@
                             <select class="instrumentnumber_dropdown" id="number_{{ i }}" data-instrument="{{i}}">
                                 {% set n = 21 %}
                                 {% for n in range(n) %}
-                                {% if n == thisgroup[i] %}
+                                {% if n == 0 %}
                                 <option value="{{ n }}" selected="selected">{{ n }}</option>
                                 {% else %}
                                 <option value="{{ n }}">{{ n }}</option>
@@ -430,6 +444,11 @@
                             </select>
                         </td>
                         <td class="players_cell" data-instrument="{{i}}">
+
+                            <!--
+                                
+                            THE BELOW WON"T BE NEEDED IF THE JS FUNCTION UP ABOVE IS FINISHED. STILL NEED A FUNCTION TO DO THIS JINJA SCRIPTS JOB"
+
                             {% if thisgroup[i] %}
                             {% for p in range(thisgroup[i]) %}
                             <select class="player_dropdown" id="{{i}}_{{p}}" data-instrument="{{i}}">
@@ -444,6 +463,8 @@
                             </select>
                             {% endfor %}
                             {% endif %}
+                            -->
+
                         </td>
                         <!-- <td class="available_players" data-instrument="{{i}}"></td> -->
                     </tr>

@@ -13,8 +13,6 @@
             {% else %}
             var playersdump = {{ playersdump_serialized|tojson }};
             {% endif %}
-            console.log("Available Players:");
-            console.log(playersdump);
             
             //turn the dump of all players already playing in this group to a JS object
             {% if thisgroupplayers_serialized == [] %}
@@ -22,16 +20,12 @@
             {% else %}
             var thisgroupplayers = {{ thisgroupplayers_serialized|tojson }};
             {% endif %}
-            console.log("Players already playing in this group:");
-            console.log(thisgroupplayers);
 
             {% if grouptemplates_serialized == [] %}
             var grouptemplates = null;
             {% else %}
             var grouptemplates = {{ grouptemplates_serialized|tojson }};
             {% endif %}
-            console.log("Group Templates:");
-            console.log(grouptemplates);
 
             //this function updates the table slot containing the total number of players in the group.
             function updatetotal() {
@@ -74,12 +68,10 @@
                 $.each(selectedTemplate, function(key,value) {
                     //make sure it's an instrument type and not other associated metadata
                     if (key != 'grouptemplateid' && key != 'grouptemplatename' && key != 'size' && key != 'minimumlevel' && key != 'maximumlevel' && key != 'defaultlocationid') {
-                        console.log(key + ": "+String(value));
                         if (value == '' || value == null) {
                             value = 0;
                         }
                         $('#number_' + key).val(value).change();
-                        console.log('attempted to change instrument textbox ' + key + ' to ' + value);
                     }
                     if (key == 'minimumlevel' || key == 'maximumlevel') {
                         if (value == '' || value == 'null') {
@@ -433,40 +425,31 @@
                         <td>{{ i }}</td>
                         <td>
                             <select class="instrumentnumber_dropdown" id="number_{{ i }}" data-instrument="{{i}}">
-                                {% set n = 21 %}
-                                {% for n in range(n) %}
-                                {% if n == 0 %}
-                                <option value="{{ n }}" selected="selected">{{ n }}</option>
-                                {% else %}
-                                <option value="{{ n }}">{{ n }}</option>
-                                {% endif %}
-                                {% endfor %}
+                                <option value="0" selected="selected">0</option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                                <option value="6">6</option>
+                                <option value="7">7</option>
+                                <option value="8">8</option>
+                                <option value="9">9</option>
+                                <option value="10">10</option>
+                                <option value="11">11</option>
+                                <option value="12">12</option>
+                                <option value="13">13</option>
+                                <option value="14">14</option>
+                                <option value="15">15</option>
+                                <option value="16">16</option>
+                                <option value="17">17</option>
+                                <option value="18">18</option>
+                                <option value="19">19</option>
+                                <option value="20">20</option>
                             </select>
                         </td>
                         <td class="players_cell" data-instrument="{{i}}">
-
-                            <!--
-                                
-                            THE BELOW WON"T BE NEEDED IF THE JS FUNCTION UP ABOVE IS FINISHED. STILL NEED A FUNCTION TO DO THIS JINJA SCRIPTS JOB"
-
-                            {% if thisgroup[i] %}
-                            {% for p in range(thisgroup[i]) %}
-                            <select class="player_dropdown" id="{{i}}_{{p}}" data-instrument="{{i}}">
-                                <option value=""></option>
-                                {% for d in playersdump %}
-                                {% if d.instrumentname == 'Conductor' and d.userid == thisgroup.requesteduserid %}
-                                <option value="{{ d.userid }}" selected="selected">{{ d.grade }} - {{ d.firstname }} {{ d.lastname }}</option>
-                                {% elif d.instrumentname == i %}
-                                <option value="{{ d.userid }}">{{ d.grade }} - {{ d.firstname }} {{ d.lastname }}</option>
-                                {% endif %}
-                                {% endfor %}
-                            </select>
-                            {% endfor %}
-                            {% endif %}
-                            -->
-
                         </td>
-                        <!-- <td class="available_players" data-instrument="{{i}}"></td> -->
                     </tr>
                     {% endfor %}
                 </table>

@@ -1,0 +1,280 @@
+﻿{% extends "layout.html" %}
+{% block title %}{{ campname }} Group Editor{% endblock %}
+{% block pagename %}&#34;{{ targetuser.firstname }} {{ targetuser.lastname }}&#34; Editor{% endblock %}
+{% block head %}
+<script>
+    $(document).ready(function () {
+
+
+        //run when user changes the content of a isprimary dropdown to "yes". Sets all others to no.
+        $(document).on("change", '.instrumentconfig[data-type=isprimary]', function (e) {
+            //only run the code if it's the original event to prevent recursion (this function would go infinite otherwise)
+            if (e.originalEvent && ($(this).val() == 1 || $(this).val() == '1')) {
+                console.log('User selected an instrument to be their primary');
+                $('.instrumentconfig[data-type=isprimary]').not(this).each(function () {
+                    if ($(this).val() == 1 || $(this).val() == '1') {
+                        $(this).val("0").change();
+                    }
+                });
+            }
+        });
+
+        //run when user clicks the submit button
+        $(".submit_button").click(function () {
+            console.log('Submit button pressed');
+            //if the button hasn't already been clicked
+            if (!isClicked) {
+                isClicked = true;
+                //request will be our parent object, and will be pushed to the server through AJAX later
+                var request = {};
+                //add the music name and minimum level to the JSON. Establish an array to contain the player names
+                $('.userattribute').each(function () {
+                    request[$(this).attr('class')] = $(this).value();
+                });
+                //establish an array to fill with instrument config
+                request.instruments = []
+                for 
+
+                var i = 0
+                //for each instrument drop down box
+                $('.instrument_dropdown').each(function() {
+                    //if we are on the conductorpage, and we find a blank player box this is bad - it's fine on the normal user page though
+                    if ((conductorpage == "True") && ($("#player" + $(this).data("pairing")).val() == 'null') && $(this).val() != "") {
+                        //this is a bad configuration. alert the user
+                        alert("Sumbission failed. This is the conductor group creation page, so all players must be filled in, you cannot leave blanks.");
+                        invalidConfig = true;
+                        //break out of the loop
+                        isClicked = false;
+                        return false;
+                    }
+                    //create a new object
+                    if ($(this).val() != "") {
+                        var iplayer = {};
+                        //add the contents of the instrument dropdown to the object
+                        iplayer.instrumentname = $(this).val();
+                        //if this is row with ID 0 (only appears on the normal thisuser page) add this user to the object
+                        if ($(this).data("pairing") == 0) {
+                            iplayer.playerid = "{{ thisuser.userid }}";
+                        }
+                            //if it's not row ID 0, add whatever is in the player dropdown in the object
+                        else {
+                            iplayer.playerid = $("#player" + $(this).data("pairing")).val();
+                        }
+                        //push the player object to the players array in the request object
+                        request.players.push(iplayer);
+                        i = i + 1;
+                    }
+                });
+                console.log('Pushing the following object to the server for processing:');
+                console.log(JSON.stringify(request));
+                
+                if (invalidConfig == false) {
+                    $.ajax({
+                        //make a POST AJAX query to the same web page as the user is currently visiting
+                        url: (window.location.href),
+                        type: 'POST',
+                        contentType: 'application/json;charset=UTF-8',
+                        data: JSON.stringify(request, null),
+                        success: function(data) {
+                            //upon success, the server will return a message and a URL. give the user the message and send them to the URL.
+                            console.log(data);
+                            if (data.message != 'none') {
+                                alert(data.message);
+                                isClicked = false;
+                            }
+                            if (data.url != 'none') {
+                                window.location = data.url;
+                            }
+                            else {
+                                isClicked = false;
+                            }
+                        }
+                    });
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}
+{% block tools %}
+<h4><b>Edit</b></h4>
+<a href="#" class="w3-hover-black submit_button" id="save">Submit</a>
+{% endblock %}
+{% block content %}
+<h1>Editing User &#34;{{ targetuser.firstname }} {{ targetuser.lastname }}&#34;</h1>
+<h2>User Attributes</h2>
+<table>
+    <thead>
+        <tr>
+            <th>Attribute</th>
+            <th>Value</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>First Name</td>
+            <td><input type="text" id="firstname" class="userattribute" value="{{ targetuser.firstname }}"></td>
+        </tr>
+        <tr>
+            <td>Last Name</td>
+            <td><input type="text" id="lastname" class="userattribute" value="{{ targetuser.lastname }}"></td>
+        </tr>
+        <tr>
+            <td>Arrival</td>
+            <td>
+                <select id="arrival" class="userattribute">
+                    <option value="None"></option>
+                    {% for p in periods %}
+                    {% if p.starttime == targetuser.arrival %}
+                    <option value="{{ p.periodid }}" selected="selected">{{ p.periodname }}, {{ p.starttime.strftime('%a, %d %b') }}</option>
+                    {% else %}
+                    <option value="{{ p.periodid }}">{{ p.periodname }}, {{ p.starttime.strftime('%a, %d %b') }}</option>
+                    {% endif %}
+                    {% endfor %}
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td>Departure</td>
+            <td>
+                <select id="departure" class="userattribute">
+                    <option value="None"></option>
+                    {% for p in periods %}
+                    {% if p.starttime == targetuser.departure %}
+                    <option value="{{ p.periodid }}" selected="selected">{{ p.periodname }}, {{ p.starttime.strftime('%a, %d %b') }}</option>
+                    {% else %}
+                    <option value="{{ p.periodid }}">{{ p.periodname }}, {{ p.starttime.strftime('%a, %d %b') }}</option>
+                    {% endif %}
+                    {% endfor %}
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td>Announcer</td>
+            <td>
+                <select id="isannouncer" class="userattribute">
+                    {% if targetuser.isannouncer == 1 %}
+                    <option value="0">No</option>
+                    <option value="1" selected="selected">Yes</option>
+                    {% else %}
+                    <option value="0" selected="selected">No</option>
+                    <option value="1">Yes</option>
+                    {% endif %}
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td>Conductor</td>
+            <td>
+                <select id="isconductor" class="userattribute">
+                    {% if targetuser.isconductor == 1 %}
+                    <option value="0">No</option>
+                    <option value="1" selected="selected">Yes</option>
+                    {% else %}
+                    <option value="0" selected="selected">No</option>
+                    <option value="1">Yes</option>
+                    {% endif %}
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td>Admin</td>
+            <td>
+                <select id="isadmin" class="userattribute">
+                    {% if targetuser.isadmin == 1 %}
+                    <option value="0">No</option>
+                    <option value="1" selected="selected">Yes</option>
+                    {% else %}
+                    <option value="0" selected="selected">No</option>
+                    <option value="1">Yes</option>
+                    {% endif %}
+                </select>
+            </td>
+        </tr>
+    </tbody>
+</table>
+<h2>User Instruments</h2>
+<table>
+    <thead>
+        <tr>
+            <th>Instrument</th>
+            <th>Grade</th>
+            <th>Primary</th>
+        </tr>
+    <thead>
+    <tbody>
+        {% for t in targetuserinstruments %}
+            <tr>
+                <td>
+                    <select class="instrumentconfig" data-type="instrumentname" data-instrumentid="{{t.instrumentid}}" data-mapping="{{ loop.index }}">
+                        {% for i in instrumentlist %}
+                        {% if t.instrumentname == i %}
+                        <option value="{{i}}" selected="selected">{{i}}</option>
+                        {% else %}
+                        <option value="{{i}}">{{i}}</option>
+                        {% endif %}
+                        {% endfor %}
+                    </select>
+                </td>
+                <td>
+                    <select class="instrumentconfig" data-type="grade" data-instrumentid="{{t.instrumentid}}" data-mapping="{{ loop.index }}">
+                        {% for n in range(maximumlevel + 1) %}
+                        {% if n == t.grade %}
+                        <option value="{{ n }}" selected="selected">{{ n }}</option>
+                        {% else %}
+                        <option value="{{ n }}">{{ n }}</option>
+                        {% endif %}
+                        {% endfor %}
+                    </select>
+                </td>
+                <td>
+                    <select class="instrumentconfig" data-type="isprimary" data-instrumentid="{{t.instrumentid}}" data-mapping="{{ loop.index }}">
+                        {% if t.isprimary == 1 %}
+                        <option value="0">No</option>
+                        <option value="1" selected="selected">Yes</option>
+                        {% else %}
+                        <option value="0" selected="selected">No</option>
+                        <option value="1">Yes</option>
+                        {% endif %}
+                    </select>
+                </td>
+            </tr>
+        {% endfor %}
+        <tr>
+            <td>
+                <select class="new" data-type="instrumentname" data-instrumentid="new" data-mapping="new">
+                    <option value=""></option>
+                    {% for i in instrumentlist %}
+                    <option value="{{i}}">{{i}}</option>
+                    {% endfor %}
+                </select>
+            </td>
+            <td>
+                <select class="new" data-type="grade" data-instrumentid="new" data-mapping="new">
+                    <option value=""></option>
+                    {% for n in range(maximumlevel + 1) %}
+                    <option value="{{ n }}">{{ n }}</option>
+                    {% endfor %}
+                </select>
+            </td>
+            <td>
+                <select class="new" data-type="isprimary" data-instrumentid="new" data-mapping="new">
+                    <option value=""></option>
+                    <option value="0">No</option>
+                    <option value="1">Yes</option>
+                </select>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+
+{% endblock %}
+{% block footer %}
+<!-- Navbar -->
+<div class="w3-bottom">
+    <ul class="w3-navbar w3-theme w3-bottom w3-left-align w3-large">
+        <li><a href="#" class="w3-hover-white submit_button" id="submit">Submit</a></li>
+    </ul>
+</div>
+{% endblock %}

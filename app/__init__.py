@@ -513,15 +513,19 @@ def grouphistory(userid):
     thisuser = session.query(user).filter(user.userid == userid).first()
     now = datetime.datetime.now() #get the time now
     if thisuser is None:
+        session.close()
         return ('Did not find user in database. You have entered an incorrect URL address.')
     groups = session.query(group.groupname, group.groupid, period.periodid, period.starttime, period.endtime, groupassignment.instrumentname, group.status, location.locationname).\
-                join(groupassignment).outerjoin(period).outerjoin(location).filter(groupassignment.userid == thisuser.userid).order_by(period.starttime)
+                join(groupassignment).outerjoin(period).outerjoin(location).filter(groupassignment.userid == thisuser.userid).order_by(period.starttime).all()
     log(groups)
+    count = playcount(session, thisuser.userid)
+    session.close()
     return render_template('grouphistory.html', \
                             thisuser=thisuser, \
                             groups = groups, \
                             campname=getconfig('Name'), \
                             now=now, \
+                            playcount=count, \
                             )
 
 #Handles the group request page. If a user visits the page, it gives them a form to create a new group request. Pressing submit 
@@ -878,6 +882,72 @@ def periodpage(userid,periodid):
                             period=thisperiod, \
                             instrumentlist=getconfig('Instruments').split(","), \
                             )
+
+#handles the user settings page
+@app.route('/user/<userid>/usersettings/')
+def usersettings(userid):
+    session = Session()
+    #gets the data associated with this user
+    thisuser = session.query(user).filter(user.userid == userid).first()
+    if thisuser is None:
+        return ('Did not find user in database. You have entered an incorrect URL address.')
+    #check if this user is a conductor, if they are not, deny them.
+    if thisuser.isadmin != 1:
+        return ('You are not allowed to view this page.')
+    else:
+        #get the players that have not played yet in this camp, then get the inverse of that list and append a 0 playcount to them
+        already_played_query = session.query(user.userid).join(groupassignment).join(group).filter(group.ismusical == 1, group.status == 'Confirmed')
+        users = session.query(user.userid, user.firstname, user.lastname, sqlalchemy.sql.expression.literal_column("0").label("playcount")).\
+                        filter(~user.userid.in_(already_played_query)).all()
+        #append the players that have already played. Keep the query limited to just the number we need.
+        for p in (session.query(user.userid, user.firstname, user.lastname, func.count(groupassignment.userid).label("playcount")).group_by(user.userid).outerjoin(groupassignment).outerjoin(group).\
+                    filter(group.ismusical == 1, group.status == 'Confirmed').order_by(func.count(groupassignment.userid)).all()):
+            users.append(p)
+        return render_template('usersettings.html', \
+                            thisuser=thisuser, \
+                            users=users, \
+                            campname=getconfig('Name'), \
+                            )
+
+#handles the useredit page
+@app.route('/user/<userid>/edituser/<targetuserid>/', methods=['GET', 'POST'])
+def edituser(userid, targetuserid):
+    session = Session()
+    #gets the data associated with this user
+    thisuser = session.query(user).filter(user.userid == userid).first()
+    if thisuser.isadmin != 1:
+        session.close()
+        return 'You do not have permission to view this page'
+    else:
+        targetuser = session.query(user).filter(user.userid == targetuserid).first()
+        if targetuser is None:
+            return 'Could not find requested user in database'
+        else:
+            targetuserinstruments = session.query(instrument).filter(instrument.userid == targetuser.userid).all()
+            periods = session.query(period).all()
+            #if this is a user requesting the page
+            if request.method == 'GET':
+                session.close()            
+                return render_template('edituser.html', \
+                                        thisuser=thisuser, \
+                                        targetuser=targetuser, \
+                                        targetuserinstruments=targetuserinstruments, \
+                                        campname=getconfig('Name'), \
+                                        periods=periods, \
+                                        instrumentlist = getconfig('Instruments').split(","), \
+                                        maximumlevel=int(getconfig('MaximumLevel')), \
+                                        )
+        
+            #if this is a user that just pressed submit
+            if request.method == 'POST':
+                #create a new announcement object with the submitted content, and send it
+                newannouncement = announcement(content = request.json['content'], creationtime = datetime.datetime.now())
+                session.add(newannouncement)
+                session.commit()
+                url = ('/user/' + str(thisuser.userid) + '/')
+                session.close()
+                #send the user back to their home
+                return jsonify(message = 'none', url = url)
 
 #Handles the conductor instrumentation page.
 @app.route('/user/<userid>/instrumentation/<periodid>/', methods=['GET', 'POST'])

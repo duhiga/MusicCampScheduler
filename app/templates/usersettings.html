@@ -1,0 +1,30 @@
+﻿{% extends "layout.html" %}
+{% block title %}{{ campname }} User Settings{% endblock %}
+{% block pagename %}User Settings{% endblock %}
+{% block head %}{% endblock %}
+{% block tools %}{% endblock %}
+{% block content %}
+    <table style="width:100%" class="sortable-table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Playcount</th>
+                <th>User Home</th>
+                <th>Edit</th>
+            </tr>
+        </thead>
+        <tbody class="zebra-table">
+            {% if users != None %}
+            {% for u in users %}
+            <tr>
+                <td>{{ u.firstname }} {{ u.lastname }}</td>
+                <td>{{ u.playcount }}</td>
+                <td><a href="/user/{{ u.userid }}/">User Home</a></td>
+                <td><a href="/user/{{ thisuser.userid }}/edituser/{{ u.userid }}/">Edit</a></td>
+            </tr>
+            {% endfor %}
+            {% endif %}
+        </tbody>
+    </table>
+{% endblock %}
+{% block footer %}{% endblock %}

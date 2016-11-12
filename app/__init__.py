@@ -884,8 +884,8 @@ def periodpage(userid,periodid):
                             )
 
 #handles the user settings page
-@app.route('/user/<userid>/usersettings/')
-def usersettings(userid):
+@app.route('/user/<userid>/useradmin/')
+def useradmin(userid):
     session = Session()
     #gets the data associated with this user
     thisuser = session.query(user).filter(user.userid == userid).first()
@@ -908,7 +908,7 @@ def usersettings(userid):
         #get the inverse of that - the non-players and add it to the list
         for p in (session.query(user.userid, user.firstname, user.lastname, sqlalchemy.sql.expression.literal_column("'Non Player'").label("playcount")).filter(~user.userid.in_(players_query)).all()):
             users.append(p)
-        return render_template('usersettings.html', \
+        return render_template('useradmin.html', \
                             thisuser=thisuser, \
                             users=users, \
                             campname=getconfig('Name'), \
@@ -924,35 +924,52 @@ def edituser(userid, targetuserid):
         session.close()
         return 'You do not have permission to view this page'
     else:
-        targetuser = session.query(user).filter(user.userid == targetuserid).first()
-        if targetuser is None:
-            return 'Could not find requested user in database'
+        if targetuserid is not None:
+            targetuser = session.query(user).filter(user.userid == targetuserid).first()
+            if targetuser is None:
+                return 'Could not find requested user in database'
         else:
-            targetuserinstruments = session.query(instrument).filter(instrument.userid == targetuser.userid).all()
-            periods = session.query(period).all()
-            #if this is a user requesting the page
-            if request.method == 'GET':
-                session.close()            
-                return render_template('edituser.html', \
-                                        thisuser=thisuser, \
-                                        targetuser=targetuser, \
-                                        targetuserinstruments=targetuserinstruments, \
-                                        campname=getconfig('Name'), \
-                                        periods=periods, \
-                                        instrumentlist = getconfig('Instruments').split(","), \
-                                        maximumlevel=int(getconfig('MaximumLevel')), \
-                                        )
+            targetuser = user()
+        targetuserinstruments = session.query(instrument).filter(instrument.userid == targetuser.userid).all()
+        periods = session.query(period).all()
+        #if this is a user requesting the page
+        if request.method == 'GET':
+            session.close()            
+            return render_template('edituser.html', \
+                                    thisuser=thisuser, \
+                                    targetuser=targetuser, \
+                                    targetuserinstruments=targetuserinstruments, \
+                                    campname=getconfig('Name'), \
+                                    periods=periods, \
+                                    instrumentlist = getconfig('Instruments').split(","), \
+                                    maximumlevel=int(getconfig('MaximumLevel')), \
+                                    )
         
-            #if this is a user that just pressed submit
-            if request.method == 'POST':
-                #create a new announcement object with the submitted content, and send it
-                newannouncement = announcement(content = request.json['content'], creationtime = datetime.datetime.now())
-                session.add(newannouncement)
-                session.commit()
-                url = ('/user/' + str(thisuser.userid) + '/')
+        #if this is a user that just pressed submit
+        if request.method == 'POST':
+            #format the packet received from the server as JSON
+            content = request.json
+            if content['firstname'] == '' or content['firstname'] == 'null' or content['groupname'] is None:
+                session.rollback()
                 session.close()
-                #send the user back to their home
-                return jsonify(message = 'none', url = url)
+                return jsonify(message = 'You must give this group a name before saving or autofilling.', url = 'none')
+            thisgroupassignments = session.query(groupassignment).filter(groupassignment.groupid == thisgroup.groupid).all()
+            for a in thisgroupassignments:
+                session.delete(a)
+            #add the content in the packet to this group's attributes
+            for key,value in content.iteritems():
+                if value is not None or value != 'null' or value != '':
+                    setattr(thisgroup,key,value)
+            thisgroup.requesteduserid = thisuser.userid
+            session.merge(thisuser)
+            url = ('/user/' + str(thisuser.userid) + '/')
+            session.close()
+            #send the user back to their home
+            return jsonify(message = 'none', url = url)
+
+@app.route('/user/<userid>/newuser/', methods=['GET', 'POST'])
+def newuser(userid):
+    return edituser(userid,None)
 
 #Handles the conductor instrumentation page.
 @app.route('/user/<userid>/instrumentation/<periodid>/', methods=['GET', 'POST'])

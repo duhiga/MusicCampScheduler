@@ -14,13 +14,13 @@
         //establish an array to fill with instrument config
         request.instruments = []
         $('.instrumentconfig[data-type=instrumentname').each(function () {
-            datamapping = $(this).data('mapping')
+            datamapping = $(this).data('mapping');
             $('.instrumentconfig[data-mapping=' + datamapping).each(function () {
                 if ($(this).val() != 'null' || $(this).val() != '') {
                     var inst = {};
-                    inst($(this).data('type')) = $(this).val()
-                    console.log('Adding instrument to packet:')
-                    console.log(inst)
+                    inst($(this).data('type')) = $(this).val();
+                    console.log('Adding instrument to packet:');
+                    console.log(inst);
                     request.instruments.push(inst);
                 }
             });
@@ -42,45 +42,12 @@
                 });
             }
         });
-
-        //run when user clicks the submit button
-        $(".submit_button").click(function () {
-            console.log('Submit button pressed');
-            //if the button hasn't already been clicked
-            if (!isClicked) {
-                isClicked = true;
-                //request will be our parent object, and will be pushed to the server through AJAX later
-                var request = {};
-                //add the music name and minimum level to the JSON. Establish an array to contain the player names
-                $('.userattribute').each(function () {
-                    request[$(this).attr('class')] = $(this).value();
-                });
-                //establish an array to fill with instrument config
-                request.instruments = []
-                $('.instrumentconfig[data-type=instrumentname').each(function () {
-                    datamapping = $(this).data('mapping')
-                    $('.instrumentconfig[data-mapping=' + datamapping).each(function () {
-                        if ($(this).val() != 'null' || $(this).val() != '') {
-                            var inst = {};
-                            inst($(this).data('type')) = $(this).val()
-                            console.log('Adding instrument to packet:')
-                            console.log(inst)
-                            request.instruments.push(inst);
-                        }
-                    });
-                });
-
-                console.log('Pushing the following object to the server for processing:');
-                console.log(JSON.stringify(request));
-                sendtoserver(request,'POST')
-            }
-        });
     });
 </script>
 {% endblock %}
 {% block tools %}
 <h4><b>Edit</b></h4>
-<a href="#" class="w3-hover-black submit_button">Submit</a>
+<a href="#" class="w3-hover-black submit_button" data-method="POST">Submit</a>
 {% endblock %}
 {% block content %}
 <h1>Editing User &#34;{{ targetuser.firstname }} {{ targetuser.lastname }}&#34;</h1>
@@ -176,7 +143,7 @@
     </tbody>
 </table>
 <h2>User Instruments</h2>
-<p>This section allows you to edit the intsrument records for this user. If you want to disable one of their instruments, set it to not active. 
+<p>This section allows you to edit the instrument records for this user. If you want to disable one of their instruments, set it to not active. 
     If you want to add an additional instrument, set it up and submit. You can revisit this page if you want to enter more than one instrument.</p>
 <table>
     <thead>
@@ -270,7 +237,7 @@
 <!-- Navbar -->
 <div class="w3-bottom">
     <ul class="w3-navbar w3-theme w3-bottom w3-left-align w3-large">
-        <li><a href="#" class="w3-hover-white submit_button">Submit</a></li>
+        <li><a href="#" class="w3-hover-white submit_button" data-method="POST">Submit</a></li>
     </ul>
 </div>
 {% endblock %}

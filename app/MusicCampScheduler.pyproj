@@ -46,7 +46,7 @@
     <Content Include="requirements.txt" />
     <Content Include="js\jquery.tablesorter.js" />
     <Content Include="templates\edituser.html" />
-    <Content Include="templates\usersettings.html" />
+    <Content Include="templates\useradmin.html" />
     <Content Include="templates\home.html" />
     <Content Include="templates\groupedit.html" />
     <Content Include="templates\group.html" />

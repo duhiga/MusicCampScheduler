@@ -81,7 +81,6 @@ def getgrouplevel(session,inputgroup,min_or_max):
 def useridanddatetoperiods(session,userid,date):
     nextday = date + datetime.timedelta(days=1)
     
-
 def getgroupname(g):
     instrumentlist = getconfig('Instruments').split(",")
     count = 0
@@ -419,27 +418,27 @@ def groupedit(userid,groupid,periodid=None):
         foundempty = False
         foundfilled = True
         for p in content['players']:
-                    if p['userid'] == '' or p['userid'] is None:
-                        foundempty = True
-                    #if the playerid is not null, we create a groupassignment for them and bind it to this group
-                    else:
-                        foundfilled = True
-                        log('Attempting to find user %s' % p['userid'])
-                        playeruser = session.query(user).filter(user.userid == p['userid']).first()
-                        currentassignment = session.query(groupassignment.instrumentname, group.groupname, group.groupid).join(group).filter(groupassignment.userid == p['userid']).filter(group.periodid == content['periodid']).first()
-                        if currentassignment is not None:
-                            if currentassignment.groupid != thisgroup.groupid:
-                                url = 'none'
-                                session.close()
-                                log('Found a clash for %s. They are alrdeay playing %s in %s. Refresh the page and try again.' % (playeruser.firstname, currentassignment.instrumentname, currentassignment.groupname))
-                                return jsonify(message = ('Found a clash for %s. They are alrdeay playing %s in %s. Refresh the page and try again.' % (playeruser.firstname, currentassignment.instrumentname, currentassignment.groupname)), url = url)
-                        if playeruser is not None:
-                            playergroupassignment = groupassignment(userid = playeruser.userid, groupid = thisgroup.groupid, instrumentname = p['instrumentname'])
-                            session.add(playergroupassignment)
-                        else:
-                            url = ('/user/' + str(thisuser.userid) + '/')
-                            session.close()
-                            return jsonify(message = 'Could not find one of your selected players in the database. Please refresh the page and try again.', url = url)
+            if p['userid'] == '' or p['userid'] is None:
+                foundempty = True
+            #if the playerid is not null, we create a groupassignment for them and bind it to this group
+            else:
+                foundfilled = True
+                log('Attempting to find user %s' % p['userid'])
+                playeruser = session.query(user).filter(user.userid == p['userid']).first()
+                currentassignment = session.query(groupassignment.instrumentname, group.groupname, group.groupid).join(group).filter(groupassignment.userid == p['userid']).filter(group.periodid == content['periodid']).first()
+                if currentassignment is not None:
+                    if currentassignment.groupid != thisgroup.groupid:
+                        url = 'none'
+                        session.close()
+                        log('Found a clash for %s. They are alrdeay playing %s in %s. Refresh the page and try again.' % (playeruser.firstname, currentassignment.instrumentname, currentassignment.groupname))
+                        return jsonify(message = ('Found a clash for %s. They are alrdeay playing %s in %s. Refresh the page and try again.' % (playeruser.firstname, currentassignment.instrumentname, currentassignment.groupname)), url = url)
+                if playeruser is not None:
+                    playergroupassignment = groupassignment(userid = playeruser.userid, groupid = thisgroup.groupid, instrumentname = p['instrumentname'])
+                    session.add(playergroupassignment)
+                else:
+                    url = ('/user/' + str(thisuser.userid) + '/')
+                    session.close()
+                    return jsonify(message = 'Could not find one of your selected players in the database. Please refresh the page and try again.', url = url)
         if thisgroup.minimumlevel is None and foundfilled == False:
             session.rollback()
             session.close()
@@ -949,20 +948,38 @@ def edituser(userid, targetuserid):
         if request.method == 'POST':
             #format the packet received from the server as JSON
             content = request.json
-            if content['firstname'] == '' or content['firstname'] == 'null' or content['groupname'] is None:
+            if content['firstname'] == '' or content['firstname'] == 'null' or content['firstname'] == 'None' or \
+                content['lastname'] == '' or content['lastname'] == 'null' or content['lastname'] == 'None':
                 session.rollback()
                 session.close()
-                return jsonify(message = 'You must give this group a name before saving or autofilling.', url = 'none')
-            thisgroupassignments = session.query(groupassignment).filter(groupassignment.groupid == thisgroup.groupid).all()
-            for a in thisgroupassignments:
-                session.delete(a)
+                return jsonify(message = 'You cannot save a user without a firstname and lastname.', url = 'none')
             #add the content in the packet to this group's attributes
             for key,value in content.iteritems():
-                if value is not None or value != 'null' or value != '':
-                    setattr(thisgroup,key,value)
-            thisgroup.requesteduserid = thisuser.userid
-            session.merge(thisuser)
-            url = ('/user/' + str(thisuser.userid) + '/')
+                if not isinstance(value, list) and value is not None and value != 'null' and value != '' and value != 'None':
+                    log('Setting %s to be %s' % (key, value))
+                    setattr(targetuser,key,value)
+
+            #is this user doesn't have an ID yet, they are new and we must set them up
+            if targetuser.userid is None:
+                #assign them a userid from a randomly generated uuid
+                targetuser.userid = str(uuid.uuid4())
+            #if the user already has an ID, merge them - they're new
+            else:
+                session.merge(targetuser)
+            session.commit()
+            for i in content['instruments']:
+                if i['instrumentid'] != 'new':
+                    thisinstrument = session.query(instrument).filter(instrument.instrumentid == i['instrumentid']).first()
+                else:
+                    thisinstrument = instrument(userid = targetuser.userid)
+                    session.add(thisinstrument)
+                    log('Added new instrument for user %s' % targetuser.firstname)
+                for key,value in i.iteritems():
+                    if key != 'instrumentid' and value != 'None':
+                        setattr(thisinstrument,key,value)
+            session.merge(thisinstrument)
+            session.commit()
+            url = ('/user/' + str(thisuser.userid) + '/useradmin/')
             session.close()
             #send the user back to their home
             return jsonify(message = 'none', url = url)

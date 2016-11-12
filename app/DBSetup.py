@@ -43,20 +43,18 @@ class user(Base):
     userid = Column(UUID, primary_key=True, unique=True)
     firstname = Column(String)
     lastname = Column(String)
+    email = Column(String)
     arrival = Column(DateTime)
     departure = Column(DateTime)
     grouprequestcount = Column(Integer)
     isannouncer = Column(Integer)
     isconductor = Column(Integer)
     isadmin = Column(Integer)
+    isactive = Column(Integer)
 
     @property
     def serialize(self):
         return serialize_class(self, self.__class__)
-
-    def __repr__(self):
-        return "<user(userid='%s', firstname='%s', lastname='%s', age='%s', arrival='%s', departure='%s', isannouncer='%s', isconductor='%s', isadmin='%s')>" % (
-            self.userid, self.firstname, self.lastname, self.age, self.arrival, self, departure, self.isannouncer, self.isconductor, self.isadmin)
 
 #both group and grouptemplate tables and classes are initialized without the instrument columns
 class group(Base):
@@ -114,10 +112,6 @@ class instrument(Base):
     def serialize(self):
         return serialize_class(self, self.__class__)
 
-    def __repr__(self):
-        return "<instrument(instrumentid='%s', userid='%s', instrumentname='%s', grade='%s', isprimary='%s')>" % (
-            self.instrumentid,self.userid,self.instrumentname,self.grade,self.isprimary)
-
 class groupassignment(Base):
     __tablename__ = 'groupassignments'
 
@@ -130,10 +124,6 @@ class groupassignment(Base):
     def serialize(self):
         return serialize_class(self, self.__class__)
 
-    def __repr__(self):
-        return "<groupassignment(groupassignmentid='%s', userid='%s', groupid='%s', instrument='%s')>" % (
-            self.groupassignmentid,self.userid,self.groupid,self.instrumentname)
-
 class location(Base):
     __tablename__ = 'locations'
 
@@ -144,10 +134,6 @@ class location(Base):
     @property
     def serialize(self):
         return serialize_class(self, self.__class__)
-
-    def __repr__(self):
-        return "<location(locationid='%s', locationname='%s', capacity='%s')>" % (
-            self.locationid,self.locationname,self.capacity)
 
 class period(Base):
     __tablename__ = 'periods'
@@ -161,10 +147,6 @@ class period(Base):
     @property
     def serialize(self):
         return serialize_class(self, self.__class__)
-
-    def __repr__(self):
-        return "<period(periodid='%s', starttime='%s', endtime='%s', periodname='%s', meal='%s')>" % (
-            self.periodid,self.starttime,self.endtime,self.periodname,self.meal)
 
 class announcement(Base):
     __tablename__ = 'announcements'
@@ -274,6 +256,7 @@ def importusers(file):
         else:
             thisuser = user()
             thisuser.userid = str(uuid.uuid4())
+            thisuser.isactive = 1
             thisuser.grouprequestcount = 0
             thisuser.firstname = row[0]
             thisuser.lastname = row[1][:1] #[:1] means just get the first letter

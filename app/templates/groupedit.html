@@ -3,9 +3,32 @@
 {% block pagename %}&#34;{{ thisgroup.groupname }}&#34; Editor{% endblock %}
 {% block head %}
     <script>
-        $(document).ready(function () {
 
-            var isClicked = false;
+        //function to be used by the submit button. called by the template.
+        function buildrequest() {
+            var request = {};
+            //for each group_attribute dropdown on the page, add the value to the object
+            $('.group_attribute').each(function() {
+                request[$(this).attr('id')] = $(this).val();
+            });
+            $('.instrumentnumber_dropdown').each(function() {
+                request[$(this).data('instrument')] = $(this).val();
+            });
+            //establish an array to fill with player and instruments
+            request.players = []
+            $('.player_dropdown').each(function() {
+                //create a new object
+                var iplayer = {};
+                //add the contents of the instrument dropdown to the object
+                iplayer.instrumentname = $(this).data('instrument');
+                iplayer.userid = $(this).val();
+                //push the player object to the players array in the request object
+                request.players.push(iplayer);
+            });
+            return request
+        }
+
+        $(document).ready(function () {
 
             //turn the dump of all players available in this period to a JS object
             {% if playersdump_serialized == [] %}
@@ -130,66 +153,7 @@
                 }
             });
 
-            //when user presses any submit button (submit, save or autofill)
-            $(".submit_button").click(function () {
-                if (!isClicked) {
-                    isClicked = true;
-                    console.log('Submit button pressed');
-                    var id = $(this).attr('id')
-                    //establish the object we'll send to the server
-                    var request = {}
-
-                    //check if this was the autofill button or not, and add this information to the object
-                    request.submittype = id
-
-                    //for each group_attribute dropdown on the page, add the value to the object
-                    $('.group_attribute').each(function() {
-                        request[$(this).attr('id')] = $(this).val();
-                    });
-
-                    $('.instrumentnumber_dropdown').each(function() {
-                        request[$(this).data('instrument')] = $(this).val();
-                    });
-
-                    //establish an array to fill with player and instruments
-                    request.players = []
-                    $('.player_dropdown').each(function() {
-                        //create a new object
-                        var iplayer = {};
-                        //add the contents of the instrument dropdown to the object
-                        iplayer.instrumentname = $(this).data('instrument');
-                        iplayer.userid = $(this).val();
-                        //push the player object to the players array in the request object
-                        request.players.push(iplayer);
-                    });
-
-                    console.log('Sending the following to the server:');
-                    console.log(request);
-                    $.ajax({
-                        //make a POST AJAX query to the same web page as the user is currently visiting
-                        url: (window.location),
-                        type: 'POST',
-                        contentType: 'application/json;charset=UTF-8',
-                        data: JSON.stringify(request, null),
-                        success: function(data) {
-                            //upon success, the server will return a message and a URL. give the user the message and send them to the URL.
-                            console.log(data);
-                            if (data.message != 'none') {
-                                alert(data.message);
-                                isClicked = false;
-                            }
-                            if (data.url != 'none') {
-                                window.location = data.url;
-                            }
-                            else {
-                                isClicked = false;
-                            }
-                        }
-                    });
-                }
-            });
-
-            //when user presses the delete group button
+            //when user presses the clear players button
             $("#clear_players").click(function () {
                 console.log('Clear players button pressed');
                 $('.player_dropdown').each(function() {
@@ -198,38 +162,13 @@
                 w3_close();
             });
 
-            //when user presses the delete group button
-            $("#delete").click(function () {
-                if (!isClicked) {
-                    console.log('Delete button pressed');
-                    var r = confirm('Are you sure you want to delete this group?');
-                    if (r == true) {
-                        $.ajax({
-                            //make a POST AJAX query to the same web page as the user is currently visiting
-                            url: (window.location.href),
-                            type: 'DELETE',
-                            success: function(data) {
-                                //upon success, the server will return a message and a URL. give the user the message and send them to the URL.
-                                console.log(data);
-                                if (data.message != 'none') {
-                                    alert(data.message);
-                                    isClicked = false;
-                                }
-                                if (data.url != 'none') {
-                                    window.location = data.url;
-                                }
-                                else {
-                                    isClicked = false;
-                                }
-                            }
-                        });
-                    }
-                }
-            });
-
             //when the page loads for the first time, change the instrument numbers to the correct numbers
             {% for i in instrumentlist %}
+            {% if thisgroup[i] == None %}
+            $('#number_{{i}}').val(0).change();
+            {% else %}
             $('#number_{{i}}').val({{ thisgroup[i] }}).change();
+            {% endif %}
             {% endfor %}
 
             //changes all player dropdowns to match the players already playing in the group. 
@@ -255,9 +194,9 @@
 {% block tools %}
     <h4><b>Edit</b></h4>
     <a href="#" class="w3-hover-black" id="clear_players">Clear Players</a>
-    <a href="#" class="w3-hover-black submit_button" id="autofill">Autofill Missing Players</a>
-    <a href="#" class="w3-hover-black submit_button" id="save">Save Changes</a>
-    <a href="#" class="w3-hover-black" id="delete">Delete Group</a>
+    <a href="#" class="w3-hover-black submit_button" data-submittype="autofill" data-method="POST">Autofill Missing Players</a>
+    <a href="#" class="w3-hover-black submit_button" data-submittype="save" data-method="POST">Save Changes</a>
+    <a href="#" class="w3-hover-black submit_button" data-method="DELETE">Delete Group</a>
 {% endblock %}
 {% block content %}
                 <h2>Group Configuration</h2>
@@ -458,7 +397,7 @@
 <!-- Navbar -->
 <div class="w3-bottom">
     <ul class="w3-navbar w3-theme w3-bottom w3-left-align w3-large">
-        <li><a href="#" class="w3-hover-white submit_button" id="submit">Submit</a></li>
+        <li><a href="#" class="w3-hover-white submit_button" data-submittype="submit" data-method="POST">Submit</a></li>
     </ul>
 </div>
 {% endblock %}

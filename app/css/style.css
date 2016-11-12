@@ -77,3 +77,10 @@ ul.tab li a:focus, .active {background-color: #ccc;}
     from {opacity: 0;}
     to {opacity: 1;}
 }
+td.shrink {
+    white-space: nowrap;
+    width: 1px;
+}
+.expand {
+    width: 99%
+}

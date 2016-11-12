@@ -286,7 +286,7 @@ def grouppage(userid,groupid):
         #group AND isn't in the list of users that are already playing in this period.
         substitutes = session.query(instrument.instrumentname, user.userid, user.firstname, user.lastname).join(user).\
             filter(~user.userid.in_(everyone_playing_in_periodquery)).\
-            filter(instrument.instrumentname.in_(instruments_in_group_query), instrument.grade >= minimumgrade, instrument.grade <= maximumgrade).\
+            filter(instrument.instrumentname.in_(instruments_in_group_query), instrument.grade >= minimumgrade, instrument.grade <= maximumgrade, instrument.isactive == 1).\
             order_by(instrument.instrumentname)
     else:
         substitutes = None
@@ -347,7 +347,7 @@ def groupedit(userid,groupid,periodid=None):
         playersPlayingInPeriod = session.query(user.userid).join(groupassignment).join(group).filter(group.groupid != thisgroup.groupid).filter(group.periodid == selectedperiodid)
         #finds all players who are available to play in this group (they aren't already playing in other groups)
         playersdump = session.query(user.userid,user.firstname,user.lastname,instrument.instrumentname,instrument.grade,instrument.isprimary).\
-                    join(instrument).filter(~user.userid.in_(playersPlayingInPeriod)).all()
+                    join(instrument).filter(~user.userid.in_(playersPlayingInPeriod), instrument.isactive == 1).all()
         playersdump_serialized = []
         for p in playersdump:
             playersdump_serialized.append({'userid': p.userid, 'firstname': p.firstname, 'lastname': p.lastname,
@@ -474,7 +474,7 @@ def groupedit(userid,groupid,periodid=None):
                             #combine the last query with another query, finding everyone that both plays an instrument that's found in this
                             #group AND isn't in the list of users that are already playing in this period.
                             possible_players_query = session.query(user.userid).outerjoin(instrument).filter(~user.userid.in_(everyone_playing_in_period_query)).\
-                                filter(instrument.grade >= mingrade, instrument.grade <= maxgrade).filter(instrument.instrumentname == i)
+                                filter(instrument.grade >= mingrade, instrument.grade <= maxgrade, instrument.instrumentname == i, instrument.isactive == 1)
                             log('Found %s possible players of a requested %s for instrument %s.' % (len(possible_players_query.all()), requiredplayers, i))
                             if len(possible_players_query.all()) > 0:
                                 #get the players that have already played in groups at this camp, and inverse it to get the players with playcounts of zero. Limit the query to just the spots we have left.
@@ -484,8 +484,8 @@ def groupedit(userid,groupid,periodid=None):
                                                 filter(~user.userid.in_(already_played_query)).limit(requiredplayers).all()
                                 #append the players that have already played. Keep the query limited to just the number we need.
                                 if len(final_list) < requiredplayers:
-                                    for p in (session.query(user.userid, func.count(groupassignment.userid).label("playcount")).group_by(user.userid).outerjoin(groupassignment).outerjoin(group).\
-                                            filter(group.ismusical == 1).filter(groupassignment.userid.in_(possible_players_query)).order_by(func.count(groupassignment.userid)).limit(requiredplayers - len(final_list)).all()):
+                                    for p in (session.query(user.userid, func.count(groupassignment.userid).label("playcount"), instrument.isprimary).group_by(user.userid).outerjoin(groupassignment).outerjoin(group).outerjoin(instrument, groupassignment.userid == instrument.userid).\
+                                            filter(group.ismusical == 1).filter(groupassignment.userid.in_(possible_players_query)).order_by(func.count(groupassignment.userid), instrument.isprimary.desc()).limit(requiredplayers - len(final_list)).all()):
                                         final_list.append(p)
                                 log('Players in final list with playcounts:')
                                 #add groupassignments for the final player list
@@ -577,13 +577,13 @@ def grouprequestpage(userid,periodid=None):
         else:
             #find all the instruments that everyone plays and serialize them to prepare to inject into the javascript
             playersdump = session.query(user.userid,user.firstname,user.lastname,instrument.instrumentname,instrument.grade,instrument.isprimary).\
-                join(instrument).filter(user.userid != thisuser.userid).all()
+                join(instrument).filter(user.userid != thisuser.userid, instrument.isactive == 1).all()
         playersdump_serialized = []
         for p in playersdump:
             playersdump_serialized.append({'userid': p.userid, 'firstname': p.firstname, 'lastname': p.lastname,
                                             'instrumentname': p.instrumentname, 'grade': p.grade, 'isprimary': p.isprimary})
         #find the instruments this user plays
-        thisuserinstruments = session.query(instrument).filter(instrument.userid == userid).all()
+        thisuserinstruments = session.query(instrument).filter(instrument.userid == userid, instrument.isactive == 1).all()
         thisuserinstruments_serialized = [i.serialize for i in thisuserinstruments]
         log(thisuserinstruments_serialized)
 
@@ -895,13 +895,18 @@ def usersettings(userid):
     if thisuser.isadmin != 1:
         return ('You are not allowed to view this page.')
     else:
-        #get the players that have not played yet in this camp, then get the inverse of that list and append a 0 playcount to them
-        already_played_query = session.query(user.userid).join(groupassignment).join(group).filter(group.ismusical == 1, group.status == 'Confirmed')
+        #get the list of people that play instruments
+        players_query = session.query(instrument.userid).filter(instrument.isactive == 1)
+        #get the players that have not played yet in this camp, add a 0 playcount to them and append them to the list
+        already_played_query = session.query(user.userid).join(groupassignment).join(group).filter(group.ismusical == 1, group.status == 'Confirmed', user.userid.in_(players_query))
         users = session.query(user.userid, user.firstname, user.lastname, sqlalchemy.sql.expression.literal_column("0").label("playcount")).\
-                        filter(~user.userid.in_(already_played_query)).all()
-        #append the players that have already played. Keep the query limited to just the number we need.
+                        filter(~user.userid.in_(already_played_query)).filter(user.userid.in_(players_query)).all()
+        #append the players that have already played.
         for p in (session.query(user.userid, user.firstname, user.lastname, func.count(groupassignment.userid).label("playcount")).group_by(user.userid).outerjoin(groupassignment).outerjoin(group).\
-                    filter(group.ismusical == 1, group.status == 'Confirmed').order_by(func.count(groupassignment.userid)).all()):
+                    filter(group.ismusical == 1, group.status == 'Confirmed', user.userid.in_(players_query)).order_by(func.count(groupassignment.userid)).all()):
+            users.append(p)
+        #get the inverse of that - the non-players and add it to the list
+        for p in (session.query(user.userid, user.firstname, user.lastname, sqlalchemy.sql.expression.literal_column("'Non Player'").label("playcount")).filter(~user.userid.in_(players_query)).all()):
             users.append(p)
         return render_template('usersettings.html', \
                             thisuser=thisuser, \
@@ -973,7 +978,7 @@ def instrumentation(userid,periodid):
             locations_used_query = session.query(location.locationid).join(group).join(period).filter(period.periodid == periodid)
             locations = session.query(location).filter(~location.locationid.in_(locations_used_query)).all()
             #get a list of conductors to fill the dropdown on the page
-            conductors = session.query(user).join(instrument, user.userid == instrument.userid).filter(instrument.instrumentname == 'Conductor').all()
+            conductors = session.query(user).join(instrument, user.userid == instrument.userid).filter(instrument.instrumentname == 'Conductor', instrument.isactive == 1).all()
             #get the list of instruments from the config file
             instrumentlist = getconfig('Instruments').split(",")
             #find all large group templates and serialize them to prepare to inject into the javascript
@@ -1017,7 +1022,7 @@ def instrumentation(userid,periodid):
             session.add(grouprequest)
             #if the user plays the "conductor" instrument (i.e. they are actually a conductor) assign them to this group
             if content['conductoruserid'] is not None and content['conductoruserid'] != 'null' and content['conductoruserid'] != '':
-                userconductor = session.query(user).join(instrument, user.userid == instrument.userid).filter(user.userid == content['conductoruserid'], instrument.instrumentname == "Conductor").first()
+                userconductor = session.query(user).join(instrument, user.userid == instrument.userid).filter(user.userid == content['conductoruserid'], instrument.instrumentname == "Conductor", instrument.isactive == 1).first()
                 if userconductor is not None:
                     userplayinginperiod = session.query(user.userid).join(groupassignment).join(group).join(period).filter(period.periodid == thisperiod.periodid, user.userid == content['conductoruserid']).first()
                     if userplayinginperiod is None:
@@ -1054,11 +1059,12 @@ def godpage(password):
 
     if request.method == 'GET':
         users = session.query(user).all()
+        grouptemplates = session.query(grouptemplate).all()
         session.close()
         return render_template('godpage.html', \
-                                        #user=thisuser, \
                                         users=users, \
                                         campname=getconfig('Name'), \
+                                        grouptemplates=grouptemplates, \
                                         )
     if request.method == 'POST':
         # Get the name of the uploaded file
@@ -1069,10 +1075,6 @@ def godpage(password):
                 return dbbuild(file.read())
             if filename == 'campers.csv':
                 return importusers(file)
-
-
-
-        
 
 #the below creates a new user. The idea for this is that you could concatenate a string up in Excel with your user's details and click 
 #on all the links to create them.

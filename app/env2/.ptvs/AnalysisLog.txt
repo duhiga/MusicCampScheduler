@@ -4522,3 +4522,33 @@ C:\Program Files (x86)\Microsoft Visual Studio 14.0\Common7\IDE\Extensions\Micro
 2016-11-07T18:15:21: Analysis complete
 2016-11-07T18:15:21: Saving group "C:\Users\aduhig\Source\Repos\MusicCampScheduler\app\env2\Lib\site-packages\_markerlib"
 2016-11-07T18:15:21: End of group "C:\Users\aduhig\Source\Repos\MusicCampScheduler\app\env2\Lib\site-packages\_markerlib"
+
+2016-11-12T09:33:35: Start analysis
+2016-11-12T09:33:35: [WARNING] Library was set explicitly - skipping path detection
+2016-11-12T09:33:35: IncludeModulesFromModulePath = win32com
+2016-11-12T09:33:35: Deleting 877 files
+2016-11-12T09:33:36: Scraping builtin modules
+2016-11-12T09:33:36: Command: C:\Users\Alex\Source\MusicCampScheduler\MusicCampScheduler\app\env2\Scripts\python.exe "C:\Program Files (x86)\Microsoft Visual Studio 14.0\Common7\IDE\Extensions\Microsoft\Python Tools for Visual Studio\2.2\PythonScraper.py" C:\Users\Alex\Source\MusicCampScheduler\MusicCampScheduler\app\env2\.ptvs\ "C:\Program Files (x86)\Microsoft Visual Studio 14.0\Common7\IDE\Extensions\Microsoft\Python Tools for Visual Studio\2.2\CompletionDB\\"
+2016-11-12T09:33:36: [WARNING] Errors
+Traceback (most recent call last):
+  File "C:\Users\Alex\Source\MusicCampScheduler\MusicCampScheduler\app\env2\lib\site.py", line 703, in <module>
+    main()
+  File "C:\Users\Alex\Source\MusicCampScheduler\MusicCampScheduler\app\env2\lib\site.py", line 692, in main
+    aliasmbcs()
+  File "C:\Users\Alex\Source\MusicCampScheduler\MusicCampScheduler\app\env2\lib\site.py", line 515, in aliasmbcs
+    import locale, codecs
+  File "C:\Users\Alex\Source\MusicCampScheduler\MusicCampScheduler\app\env2\lib\locale.py", line 17, in <module>
+    import functools
+ImportError: No module named functools
+2016-11-12T09:33:36: [ERROR] Failed to scrape builtin modules (Exit Code: 1)
+2016-11-12T09:33:36: [ERROR] Analysis failed
+System.InvalidOperationException: Failed to scrape builtin modules
+   at Microsoft.PythonTools.Analysis.PyLibAnalyzer.<Scrape>d__53.MoveNext()
+--- End of stack trace from previous location where exception was thrown ---
+   at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+   at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+   at Microsoft.PythonTools.Analysis.PyLibAnalyzer.<RunWorker>d__31.MoveNext()
+--- End of stack trace from previous location where exception was thrown ---
+   at System.Runtime.CompilerServices.TaskAwaiter.ThrowForNonSuccess(Task task)
+   at System.Runtime.CompilerServices.TaskAwaiter.HandleNonSuccessAndDebuggerNotification(Task task)
+   at Microsoft.PythonTools.Analysis.PyLibAnalyzer.<Run>d__30.MoveNext()

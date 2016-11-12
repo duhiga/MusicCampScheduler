@@ -108,6 +108,7 @@ class instrument(Base):
     instrumentname = Column(String)
     grade = Column(Integer)
     isprimary = Column(Integer)
+    isactive = Column(Integer)
 
     @property
     def serialize(self):
@@ -293,20 +294,20 @@ def importusers(file):
             session.add(thisuser)
             print('Created user: %s %s' % (thisuser.firstname, thisuser.lastname))
             session.commit()
-            if row[4] is not 'Non-Player':
-                instrument1 = instrument(userid = thisuser.userid, instrumentname = row[4].capitalize().replace(" ", ""), grade = row[5], isprimary = 1)
+            if row[4] is not '':
+                instrument1 = instrument(userid = thisuser.userid, instrumentname = row[4].capitalize().replace(" ", ""), grade = row[5], isprimary = 1, isactive = 1)
                 session.add(instrument1)
                 print('Created instrument listing: %s at level %s for %s' % (instrument1.instrumentname, instrument1.grade, thisuser.firstname))
             if row[6] is not '':
-                instrument2 = instrument(userid = thisuser.userid, instrumentname = row[6].capitalize().replace(" ", ""), grade = row[7], isprimary = 0)
+                instrument2 = instrument(userid = thisuser.userid, instrumentname = row[6].capitalize().replace(" ", ""), grade = row[7], isprimary = 0, isactive = 1)
                 session.add(instrument2)
                 print('Created instrument listing: %s at level %s for %s' % (instrument2.instrumentname, instrument2.grade, thisuser.firstname))
             if row[8] is not '':
-                instrument3 = instrument(userid = thisuser.userid, instrumentname = row[8].capitalize().replace(" ", ""), grade = row[9], isprimary = 0)
+                instrument3 = instrument(userid = thisuser.userid, instrumentname = row[8].capitalize().replace(" ", ""), grade = row[9], isprimary = 0, isactive = 1)
                 session.add(instrument3)
                 print('Created instrument listing: %s at level %s for %s' % (instrument3.instrumentname, instrument3.grade, thisuser.firstname))
             if row[10] is not '':
-                instrument4 = instrument(userid = thisuser.userid, instrumentname = row[10].capitalize().replace(" ", ""), grade = row[11], isprimary = 0)
+                instrument4 = instrument(userid = thisuser.userid, instrumentname = row[10].capitalize().replace(" ", ""), grade = row[11], isprimary = 0, isactive = 1)
                 session.add(instrument4)
                 print('Created instrument listing: %s at level %s for %s' % (instrument4.instrumentname, instrument4.grade, thisuser.firstname))
         rownum += 1

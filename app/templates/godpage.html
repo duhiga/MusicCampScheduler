@@ -19,13 +19,12 @@
         <div>
             <p>Step 1: upload a config.xml file</p>
             <p>Step 2: upload a campers.csv file</p>
-            <form method="post" enctype="multipart/form-data">
+            <form method="post" enctype="multipart/form-data" onsubmit="setTimeout(function () { window.location.reload(); }, 10)">
                 <input type="file" name="file"><br />
                 <input type="submit" value="Upload">
             </form>
         </div>
     </div>
-    <br>
     <h2>Users in Database</h2>
     <table style="width:100%">
         <tr>
@@ -40,6 +39,23 @@
             <td>{{ u.lastname }}</td>
             <td><a href="/user/{{ u.userid }}/">{{ u.userid }}</a></td>
             <td>{{ u.playcount }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    <h2>Group Templates in Database</h2>
+    <table style="width:100%">
+        <tr>
+            <th>Template Name</th>
+            <th>Size</th>
+            <th>Maximum Level</th>
+            <th>Minimum Level</th>
+        </tr>
+        {% for g in grouptemplates %}
+        <tr>
+            <td>{{ g.grouptemplatename }}</td>
+            <td>{{ g.size }}</td>
+            <td>{{ g.minimumlevel }}</td>
+            <td>{{ g.maximumlevel }}</td>
         </tr>
         {% endfor %}
     </table>

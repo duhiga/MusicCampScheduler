@@ -4,6 +4,31 @@
 {% block head %}
     <script>
 
+        //function to be used by the submit button. called by the template.
+        function buildrequest() {
+            var request = {};
+            request.locationid = $('#location_dropdown').val();
+            request.groupname = $('#textbox_groupname').val();
+            request.music = $('#textbox_music').val();
+            request.minimumlevel = $('#minimumlevel_dropdown').val();
+            request.maximumlevel = $('#maximumlevel_dropdown').val();
+            request.conductoruserid = $('#conductorid').val();
+            //establish an array to fill with instruments and numbers
+            request.instruments = []
+            //for each instrument
+            $('.instrumentnumber_dropdown').each(function() {
+                //if we find a blank instrument box
+                if ($(this).val() == "") {
+                    console.log("Selected " + $(this).attr('id') + " as None");
+                }
+                else {
+                    request[$(this).attr('id')] = $(this).val();
+                    console.log("Selected " + $(this).attr('id') + ' as ' + $(this).val());
+                }
+            });
+            return request
+        }
+
         /* this script handles all user interaction in the group request page. Upon page load, it downloads all players
         in the camp including the instruments they play, all templates as stated by the config.xml, and the instruments
         this user plays. it uses all of this data to populate drop-down boxes, depending on what the user selects. */
@@ -13,8 +38,6 @@
             var grouptemplates = {{ grouptemplates_serialized|tojson }};
             console.log("Grouptemplates:");
             console.log(grouptemplates);
-
-            var isClicked = false;
 
             //run when a user changes the select template dropdown
             $(document).on("change", '#group_template_dropdown', function () {
@@ -44,80 +67,12 @@
                     }
                 });
             });
-
-            //run when user clicks the submit button
-            $(".submit_button").click(function () {
-                console.log('Submit button pressed');
-                if (!isClicked) {
-                    isClicked = true;
-                    //set up a variable to track invalid configuration and the JSON to send through to the server
-                    var invalidConfig = false;
-                    //request will be our parent object, and will be pushed to the server through AJAX later
-                    var request = {};
-                    //add the music name and minimum level to the JSON. Establish an array to contain the player names
-                    request.music = $('#textbox_music').val();
-                    //if this is the conductorpage, we also need to send the selected location - it cannot be blank.
-                    if ($('#location_dropdown').val() == "" || $('#textbox_groupname').val() == "" || $('#textbox_music').val() == "") {
-                        alert("Sumbission failed. You have not filled in required fields. You must fill in the location, music and name of the group.");
-                        isClicked = false;
-                        return false;
-                    }
-                    else {
-                        request.locationid = $('#location_dropdown').val();
-                        request.groupname = $('#textbox_groupname').val();
-                        request.music = $('#textbox_music').val();
-                        request.minimumlevel = $('#minimumlevel_dropdown').val();
-                        request.maximumlevel = $('#maximumlevel_dropdown').val();
-                        request.conductoruserid = $('#conductorid').val();
-                        //establish an array to fill with instruments and numbers
-                        request.instruments = []
-                        //for each instrument
-                        $('.instrumentnumber_dropdown').each(function() {
-                            //if we find a blank instrument box
-                            if ($(this).val() == "") {
-                                console.log("Selected " + $(this).attr('id') + " as None");
-                            }
-                            else {
-                                request[$(this).attr('id')] = $(this).val();
-                                console.log("Selected " + $(this).attr('id') + ' as ' + $(this).val());
-                            }
-                        });
-                        console.log('Pushing the following object to the server for processing:');
-                        console.log(JSON.stringify(request));
-                    
-                        if (invalidConfig == false) {
-                            $.ajax({
-                                //make a POST AJAX query to the same web page as the user is currently visiting
-                                url: (window.location.href),
-                                type: 'POST',
-                                contentType: 'application/json;charset=UTF-8',
-                                data: JSON.stringify(request, null),
-                                success: function(data) {
-                                    //upon success, the server will return a message and a URL. give the user the message and send them to the URL.
-                                    console.log(data);
-                                    if (data.message != 'none') {
-                                        alert(data.message);
-                                        isClicked = false;
-                                    }
-                                    if (data.url != 'none') {
-                                        window.location = data.url;
-                                    }
-                                    else {
-                                        isClicked = false;
-                                    }
-                                }
-                            });
-                        
-                        }
-                    }
-                }
-            });
         });
     </script>
 {% endblock %}
 {% block tools %}
     <h4><b>Tools</b></h4>
-    <a href="#" class="w3-hover-black submit_button">Submit</a>
+    <a href="#" class="w3-hover-black submit_button" data-method="POST">Submit</a>
 {% endblock %}
 {% block content %}
             <p>
@@ -225,7 +180,7 @@
 <!-- Navbar -->
     <div class="w3-bottom">
         <ul class="w3-navbar w3-theme w3-bottom w3-left-align w3-large">
-            <li><a href="#" class="w3-hover-white submit_button">Submit</a></li>
+            <li><a href="#" class="w3-hover-white submit_button" data-method="POST">Submit</a></li>
         </ul>
     </div>
 {% endblock %}

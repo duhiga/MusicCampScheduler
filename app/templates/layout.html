@@ -11,6 +11,34 @@
     <script>if (!window.jQuery) { document.write('<script src="/js/jquery-3.1.1.min.js"><\/script>'); }</script>
     <script src="/js/jquery.tablesorter.js"></script>
     <script>
+        
+        var isClicked = false
+        
+        function sendtoserver (request,method) {
+            //this function handles AJAX sending to the server
+            $.ajax({
+                //make a POST AJAX query to the same web page as the user is currently visiting
+                url: (window.location.href),
+                type: method,
+                contentType: 'application/json;charset=UTF-8',
+                data: JSON.stringify(request, null),
+                success: function(data) {
+                    //upon success, the server will return a message and a URL. give the user the message and send them to the URL.
+                    console.log(data);
+                    if (data.message != 'none') {
+                        alert(data.message);
+                        isClicked = false;
+                    }
+                    if (data.url != 'none') {
+                        window.location = data.url;
+                    }
+                    else {
+                        isClicked = false;
+                    }
+                }
+            });
+        }
+
         $(document).ready(function () {
             {% for i in instrumentlist %}
             console.log('Instrument name: {{ i }}, Loop index: {{ loop.index }})')
@@ -42,7 +70,35 @@
                     }
                 });
             });
+
+            //every page that needs to submit data uses this function. This only works if the page has an element with:
+            //class="submit_button"
+            //data-method="POST" (or "DELETE")
+            //optional: data-submittype="Whatever you like" this is used to pass extra info about the button type to the server
+            $(".submit_button").click(function () {
+                if (!isClicked) {
+                    isClicked = true;
+                    console.log('Submit button pressed with method ' + $(this).data('method'));
+                    if ($(this).data('method') == 'DELETE') {
+                        var r = confirm('Are you sure you want to delete this group?');
+                        if (r == true) {
+                            sendtoserver('null','DELETE')
+                        }
+                    }
+                    else {
+                        //This function relies on a buildrequest function. Every page needs its own in its own script.
+                        var request = buildrequest()
+                        if ($(this).data('submittype') != '' || $(this).data('submittype') != null) {
+                            request.submittype = $(this).data('submittype')
+                        }
+                        console.log('Pushing the request to the server for processing:');
+                        console.log(request);
+                        sendtoserver(request, $(this).data('method'))
+                    }
+                }
+            });
         });
+
     </script>
     <title>{% block title %}{% endblock %}</title>
     {% block head %}{% endblock %}
@@ -66,9 +122,7 @@
         <a href="javascript:void(0)" onclick="w3_close()" class="w3-right w3-xlarge w3-padding-large w3-hover-black w3-hide-large" title="close menu">
             <i class="fa fa-remove"></i>
         </a>
-
         {% block tools %}{% endblock %}
-
         <h4><b>Navigation</b></h4>
         <a href="/user/{{ thisuser.userid }}/" class="w3-hover-black">Home</a>
         <a href="/user/{{ thisuser.userid }}/grouprequest/" class="w3-hover-black">Request a group</a>

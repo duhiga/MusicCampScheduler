@@ -1,38 +1,38 @@
-﻿{% extends "layout.html" %}
+{% extends "layout.html" %}
 {% block title%}{{ campname }} Queued Groups{% endblock %}
 {% block pagename %}Queued Groups{% endblock %}
 {% block content %}
-    <h3>Queued Groups</h3>
-    <table style="width:100%" class="sortable-table">
-        <thead>
+<h3>Queued Groups</h3>
+<table style="width:100%" class="sortable-table">
+    <thead>
+        <tr>
+            <th>Request Time</th>
+            <th>Requestor</th>
+            <th>Group Name</th>
+            <th>Period</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody class="zebra-table">
+        {% if queuedgroups != None %}
+            {% for q in queuedgroups %}
             <tr>
-                <th>Request Time</th>
-                <th>Requestor</th>
-                <th>Group Name</th>
-                <th>Period</th>
-                <th>Status</th>
+                <td>
+                    {% if q.requesttime != None %}
+                    {{ q.requesttime.strftime('%Y-%m-%d %H:%M')}}
+                    {% endif %}
+                </td>
+                <td>{{ q.firstname }} {{ q.lastname }}</td>
+                <td><a href="/user/{{ thisuser.userid }}/group/{{ q.groupid }}/">{{ q.groupname }}</a></td>
+                <td>
+                    {% if q.starttime != None and q.endtime != None %}
+                    {{ q.starttime.strftime('%Y-%m-%d') }}: {{ q.starttime.strftime('%H:%M') }}-{{ q.endtime.strftime('%H:%M') }}
+                    {% endif %}
+                </td>
+                <td>{{ q.status }}</td>
             </tr>
-        </thead>
-        <tbody class="zebra-table">
-            {% if queuedgroups != None %}
-                {% for q in queuedgroups %}
-                <tr>
-                    <td>
-                        {% if q.requesttime != None %}
-                        {{ q.requesttime.strftime('%Y-%m-%d %H:%M')}}
-                        {% endif %}
-                    </td>
-                    <td>{{ q.firstname }} {{ q.lastname }}</td>
-                    <td><a href="/user/{{ thisuser.userid }}/group/{{ q.groupid }}/">{{ q.groupname }}</a></td>
-                    <td>
-                        {% if q.starttime != None and q.endtime != None %}
-                        {{ q.starttime.strftime('%Y-%m-%d') }}: {{ q.starttime.strftime('%H:%M') }}-{{ q.endtime.strftime('%H:%M') }}
-                        {% endif %}
-                    </td>
-                    <td>{{ q.status }}</td>
-                </tr>
-                {% endfor %}
-            {% endif %}
-        </tbody>
-    </table>
+            {% endfor %}
+        {% endif %}
+    </tbody>
+</table>
 {% endblock %}

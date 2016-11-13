@@ -199,199 +199,199 @@
     <a href="#" class="w3-hover-black submit_button" data-method="DELETE">Delete Group</a>
 {% endblock %}
 {% block content %}
-                <h2>Group Configuration</h2>
-                <table style="width:100%">
-                    <tr>
-                        <th>Attribute</th>
-                        <th class="unimportant-column">Current</th>
-                        <th>Change</th>
-                    </tr>
-                    <tr>
-                        <th>Name</th>
-                        <td class="unimportant-column">{{ thisgroup.groupname }}</td>
-                        <td><input type="text" id="groupname" class="group_attribute" value="{% if thisgroup.groupname != None %}{{ thisgroup.groupname }}{% endif %}"></td>
-                    </tr>
-                    <tr>
-                        <th>Status</th>
-                        <td class="unimportant-column">{{ thisgroup.status }}</td>
-                        <td>
-                            <select id="status" class="group_attribute">
-                                {% if thisgroup.status == "Confirmed" %}
-                                <option value="Queued">Queued</option>
-                                <option value="Confirmed" selected="selected">Confirmed</option>
-                                {% else %}
-                                <option value="Queued" selected="selected">Queued</option>
-                                <option value="Confirmed">Confirmed</option>
-                                {% endif %}
-                            </select>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th>Music</th>
-                        <td class="unimportant-column">{{ thisgroup.music }}</td>
-                        <td><input type="text" id="music" class="group_attribute" value="{{ thisgroup.music }}"></td>
-                    </tr>
-                    <tr>
-                        <th>Period</th>
-                        <td class="unimportant-column">
-                            {% if currentperiod != None %}
-                            {{ currentperiod.periodname }}, {{ currentperiod.starttime.strftime('%a, %d %b') }}, {{ currentperiod.starttime.strftime('%H:%M') }}-{{ currentperiod.endtime.strftime('%H:%M') }}
-                        </td>
-                        {% endif %}
-                        <td>
-                            <select id="periodid" class="group_attribute">
-                                <option value="None"></option>
-                                {% for p in periods %}
-                                {% if p.periodid == selectedperiod.periodid %}
-                                <option value="{{ p.periodid }}" selected="selected">{{ p.periodname }}, {{ p.starttime.strftime('%a, %d %b') }}, {{ p.starttime.strftime('%H:%M') }}</option>
-                                {% else %}
-                                <option value="{{ p.periodid }}">{{ p.periodname }}, {{ p.starttime.strftime('%a, %d %b') }}, {{ p.starttime.strftime('%H:%M') }}</option>
-                                {% endif %}
-                                {% endfor %}
-                            </select>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th>Location</th>
-                        <td class="unimportant-column">{{ thislocation.locationname }}</td>
-                        <td>
-                            <select id="locationid" class="group_attribute">
-                                {% for l in locations %}
-                                {% if l.locationid == thislocation.locationid %}
-                                <option value="{{ l.locationid }}" selected="selected">{{ l.locationname }} - Capacity: {{ l.capacity }}</option>
-                                {% else %}
-                                <option value="{{ l.locationid }}">{{ l.locationname}} - Capacity: {{ l.capacity }}</option>
-                                {% endif %}
-                                {% endfor %}
-                            </select>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th>Minimum Level</th>
-                        <td class="unimportant-column">{{ thisgroup.minimumlevel }}</td>
-                        <td>
-                            <select id="minimumlevel" class="group_attribute">
-                                {% for n in range(maximumlevel + 1) %}
-                                {% if n == thisgroup.minimumlevel and n == 0 %}
-                                <option value="{{ n }}" selected="selected">Auto</option>
-                                {% elif n == thisgroup.minimumlevel %}
-                                <option value="{{ n }}" selected="selected">{{ n }}</option>
-                                {% elif n == 0 %}
-                                <option value="{{ n }}">Auto</option>
-                                {% else %}
-                                <option value="{{ n }}">{{ n }}</option>
-                                {% endif %}
-                                {% endfor %}
-                            </select>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th>Maximum Level</th>
-                        <td class="unimportant-column">{{ thisgroup.maximumlevel }}</td>
-                        <td>
-                            <select id="maximumlevel" class="group_attribute">
-                                {% for n in range(maximumlevel + 1) %}
-                                {% if n == thisgroup.maximumlevel and n == 0 %}
-                                <option value="{{ n }}" selected="selected">Auto</option>
-                                {% elif n == thisgroup.maximumlevel %}
-                                <option value="{{ n }}" selected="selected">{{ n }}</option>
-                                {% elif n == 0 %}
-                                <option value="{{ n }}">Auto</option>
-                                {% else %}
-                                <option value="{{ n }}">{{ n }}</option>
-                                {% endif %}
-                                {% endfor %}
-                            </select>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th>Counted towards play totals</th>
-                        <td class="unimportant-column">
-                            {% if thisgroup.ismusical == 0 %}No
-                            {% else %}Yes
-                            {% endif %}
-                        </td>
-                        <td>
-                            <select id="ismusical" class="group_attribute">
-                                {% if thisgroup.ismusical == 0 %}
-                                <option value="1">Yes</option>
-                                <option value="0" selected="selected">No</option>
-                                {% else %}
-                                <option value="1" selected="selected">Yes</option>
-                                <option value="0">No</option>
-                                {% endif %}
-                            </select>
-                        </td>
-                    </tr>
-                    <tr class="unimportant-column">
-                        <th>Requested User</th>
-                        <td colspan="2" class="unimportant-column">{{ thisgroup.requesteduserid }}</td>
-                    </tr>
-                    <tr class="unimportant-column">
-                        <th>Request Time</th>
-                        <td colspan="2" class="unimportant-column">
-                            {% if thisgroup.requesttime != None %}
-                            {{ thisgroup.requesttime.strftime('%A, %Y-%m-%d') }}, {{ thisgroup.requesttime.strftime('%H:%M') }}
-                            {% endif %}
-                        </td>
-                    </tr>
-                    <tr>
-                        <th>Total Players:</th>
-                        <td id="total_players"></td>
-                    </tr>
-                </table>
-                <h2>Players</h2>
-                <p>Players bolded in the below table are the current players in that group. Player are shown with their grades on the respective instruments before their names.</p>
-                <p>
-                    Optional: Select a group template to autofill the page. Note - this wipes the current configuration.
-                    <select id="group_template_dropdown">
-                        <option value=""></option>
-                        {% for g in grouptemplates %}
-                        <option value="{{ g.grouptemplatename }}">{{ g.grouptemplatename }}</option>
-                        {% endfor %}
-                    </select>
-                </p>
-                <table class="sortable" id="table_players">
-                    <tr>
-                        <th>Instrument</th>
-                        <th>Number</th>
-                        <th>Current Players</th>
-                        <!--<th>Available Players</th>-->
-                    </tr>
-                    {% set count = 0 -%}
-                    {% for i in instrumentlist %}
-                    <tr id="row_{{ i }}">
-                        <td>{{ i }}</td>
-                        <td>
-                            <select class="instrumentnumber_dropdown" id="number_{{ i }}" data-instrument="{{i}}">
-                                <option value="0" selected="selected">0</option>
-                                <option value="1">1</option>
-                                <option value="2">2</option>
-                                <option value="3">3</option>
-                                <option value="4">4</option>
-                                <option value="5">5</option>
-                                <option value="6">6</option>
-                                <option value="7">7</option>
-                                <option value="8">8</option>
-                                <option value="9">9</option>
-                                <option value="10">10</option>
-                                <option value="11">11</option>
-                                <option value="12">12</option>
-                                <option value="13">13</option>
-                                <option value="14">14</option>
-                                <option value="15">15</option>
-                                <option value="16">16</option>
-                                <option value="17">17</option>
-                                <option value="18">18</option>
-                                <option value="19">19</option>
-                                <option value="20">20</option>
-                            </select>
-                        </td>
-                        <td class="players_cell" data-instrument="{{i}}">
-                        </td>
-                    </tr>
+    <h2>Group Configuration</h2>
+    <table style="width:100%">
+        <tr>
+            <th>Attribute</th>
+            <th class="unimportant-column">Current</th>
+            <th>Change</th>
+        </tr>
+        <tr>
+            <th>Name</th>
+            <td class="unimportant-column">{{ thisgroup.groupname }}</td>
+            <td><input type="text" id="groupname" class="group_attribute" value="{% if thisgroup.groupname != None %}{{ thisgroup.groupname }}{% endif %}"></td>
+        </tr>
+        <tr>
+            <th>Status</th>
+            <td class="unimportant-column">{{ thisgroup.status }}</td>
+            <td>
+                <select id="status" class="group_attribute">
+                    {% if thisgroup.status == "Confirmed" %}
+                    <option value="Queued">Queued</option>
+                    <option value="Confirmed" selected="selected">Confirmed</option>
+                    {% else %}
+                    <option value="Queued" selected="selected">Queued</option>
+                    <option value="Confirmed">Confirmed</option>
+                    {% endif %}
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <th>Music</th>
+            <td class="unimportant-column">{{ thisgroup.music }}</td>
+            <td><input type="text" id="music" class="group_attribute" value="{{ thisgroup.music }}"></td>
+        </tr>
+        <tr>
+            <th>Period</th>
+            <td class="unimportant-column">
+                {% if currentperiod != None %}
+                {{ currentperiod.periodname }}, {{ currentperiod.starttime.strftime('%a, %d %b') }}, {{ currentperiod.starttime.strftime('%H:%M') }}-{{ currentperiod.endtime.strftime('%H:%M') }}
+            </td>
+            {% endif %}
+            <td>
+                <select id="periodid" class="group_attribute">
+                    <option value="None"></option>
+                    {% for p in periods %}
+                    {% if p.periodid == selectedperiod.periodid %}
+                    <option value="{{ p.periodid }}" selected="selected">{{ p.periodname }}, {{ p.starttime.strftime('%a, %d %b') }}, {{ p.starttime.strftime('%H:%M') }}</option>
+                    {% else %}
+                    <option value="{{ p.periodid }}">{{ p.periodname }}, {{ p.starttime.strftime('%a, %d %b') }}, {{ p.starttime.strftime('%H:%M') }}</option>
+                    {% endif %}
                     {% endfor %}
-                </table>
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <th>Location</th>
+            <td class="unimportant-column">{{ thislocation.locationname }}</td>
+            <td>
+                <select id="locationid" class="group_attribute">
+                    {% for l in locations %}
+                    {% if l.locationid == thislocation.locationid %}
+                    <option value="{{ l.locationid }}" selected="selected">{{ l.locationname }} - Capacity: {{ l.capacity }}</option>
+                    {% else %}
+                    <option value="{{ l.locationid }}">{{ l.locationname}} - Capacity: {{ l.capacity }}</option>
+                    {% endif %}
+                    {% endfor %}
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <th>Minimum Level</th>
+            <td class="unimportant-column">{{ thisgroup.minimumlevel }}</td>
+            <td>
+                <select id="minimumlevel" class="group_attribute">
+                    {% for n in range(maximumlevel + 1) %}
+                    {% if n == thisgroup.minimumlevel and n == 0 %}
+                    <option value="{{ n }}" selected="selected">Auto</option>
+                    {% elif n == thisgroup.minimumlevel %}
+                    <option value="{{ n }}" selected="selected">{{ n }}</option>
+                    {% elif n == 0 %}
+                    <option value="{{ n }}">Auto</option>
+                    {% else %}
+                    <option value="{{ n }}">{{ n }}</option>
+                    {% endif %}
+                    {% endfor %}
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <th>Maximum Level</th>
+            <td class="unimportant-column">{{ thisgroup.maximumlevel }}</td>
+            <td>
+                <select id="maximumlevel" class="group_attribute">
+                    {% for n in range(maximumlevel + 1) %}
+                    {% if n == thisgroup.maximumlevel and n == 0 %}
+                    <option value="{{ n }}" selected="selected">Auto</option>
+                    {% elif n == thisgroup.maximumlevel %}
+                    <option value="{{ n }}" selected="selected">{{ n }}</option>
+                    {% elif n == 0 %}
+                    <option value="{{ n }}">Auto</option>
+                    {% else %}
+                    <option value="{{ n }}">{{ n }}</option>
+                    {% endif %}
+                    {% endfor %}
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <th>Counted towards play totals</th>
+            <td class="unimportant-column">
+                {% if thisgroup.ismusical == 0 %}No
+                {% else %}Yes
+                {% endif %}
+            </td>
+            <td>
+                <select id="ismusical" class="group_attribute">
+                    {% if thisgroup.ismusical == 0 %}
+                    <option value="1">Yes</option>
+                    <option value="0" selected="selected">No</option>
+                    {% else %}
+                    <option value="1" selected="selected">Yes</option>
+                    <option value="0">No</option>
+                    {% endif %}
+                </select>
+            </td>
+        </tr>
+        <tr class="unimportant-column">
+            <th>Requested User</th>
+            <td colspan="2" class="unimportant-column">{{ thisgroup.requesteduserid }}</td>
+        </tr>
+        <tr class="unimportant-column">
+            <th>Request Time</th>
+            <td colspan="2" class="unimportant-column">
+                {% if thisgroup.requesttime != None %}
+                {{ thisgroup.requesttime.strftime('%A, %Y-%m-%d') }}, {{ thisgroup.requesttime.strftime('%H:%M') }}
+                {% endif %}
+            </td>
+        </tr>
+        <tr>
+            <th>Total Players:</th>
+            <td id="total_players"></td>
+        </tr>
+    </table>
+    <h2>Players</h2>
+    <p>Players bolded in the below table are the current players in that group. Player are shown with their grades on the respective instruments before their names.</p>
+    <p>
+        Optional: Select a group template to autofill the page. Note - this wipes the current configuration.
+        <select id="group_template_dropdown">
+            <option value=""></option>
+            {% for g in grouptemplates %}
+            <option value="{{ g.grouptemplatename }}">{{ g.grouptemplatename }}</option>
+            {% endfor %}
+        </select>
+    </p>
+    <table class="sortable" id="table_players">
+        <tr>
+            <th>Instrument</th>
+            <th>Number</th>
+            <th>Current Players</th>
+            <!--<th>Available Players</th>-->
+        </tr>
+        {% set count = 0 -%}
+        {% for i in instrumentlist %}
+        <tr id="row_{{ i }}">
+            <td>{{ i }}</td>
+            <td>
+                <select class="instrumentnumber_dropdown" id="number_{{ i }}" data-instrument="{{i}}">
+                    <option value="0" selected="selected">0</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                    <option value="7">7</option>
+                    <option value="8">8</option>
+                    <option value="9">9</option>
+                    <option value="10">10</option>
+                    <option value="11">11</option>
+                    <option value="12">12</option>
+                    <option value="13">13</option>
+                    <option value="14">14</option>
+                    <option value="15">15</option>
+                    <option value="16">16</option>
+                    <option value="17">17</option>
+                    <option value="18">18</option>
+                    <option value="19">19</option>
+                    <option value="20">20</option>
+                </select>
+            </td>
+            <td class="players_cell" data-instrument="{{i}}">
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
 {% endblock %}
 {% block footer %}
 <!-- Navbar -->

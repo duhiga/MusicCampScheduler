@@ -1,4 +1,4 @@
-﻿{% extends "layout.html" %}
+{% extends "layout.html" %}
 {% block title %}{{ campname }} Group Editor{% endblock %}
 {% block pagename %}
     {% if targetuser.userid is not none %}
@@ -15,7 +15,7 @@
         var request = {};
         //add the music name and minimum level to the JSON. Establish an array to contain the player names
         $('.userattribute').each(function () {
-            if ($(this).val() != 'null' && $(this).val() != '' && $(this).val() != 'None')
+            if ($(this).val() != 'null' && $(this).val() != '' && $(this).val() != 'None' && $(this).val() != '<HIDDEN>')
             console.log('Setting ' + $(this).attr('id') + ' to ' + $(this).val());
             request[$(this).attr('id')] = $(this).val();
         });
@@ -96,18 +96,17 @@
     });
 </script>
 {% endblock %}
-{% block tools %}
-<h4><b>Tools</b></h4>
-<a href="#" class="w3-hover-black submit_button" data-method="POST">Submit</a>
-{% endblock %}
+    {% block tools %}
+        <h4><b>Tools</b></h4>
+        <a href="#" class="w3-hover-black submit_button" data-method="POST">Submit</a>
+    {% endblock %}
 {% block content %}
 {% if targetuser.userid is not none %}
-<h1>Editing User &#34;{{ targetuser.firstname }} {{ targetuser.lastname }}&#34;</h1>
+    <h1>Editing User &#34;{{ targetuser.firstname }} {{ targetuser.lastname }}&#34;</h1>
 {% else %}
-<h1>New User</h1>
+    <h1>New User</h1>
 {% endif %}
 <h2>User Attributes</h2>
-<p>Note: Current user email address is not shown here for security reasons. You can, however, change a users email by entering something in the corresponding box.</p>
 <table>
     <thead>
         <tr>
@@ -139,7 +138,7 @@
         <tr>
             <td>Email</td>
             <td>
-                <input type="text" id="email" class="userattribute" value="">
+                <input type="text" id="email" class="userattribute" value="<HIDDEN>">
             </td>
         </tr>
         <tr>

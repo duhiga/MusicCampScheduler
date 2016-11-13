@@ -2,226 +2,226 @@
 {% block title %}{{ campname }} Group Request{% endblock %}
 {% block pagename %}Request a Group{% endblock %}
 {% block head %}
-    <script>
+<script>
 
-        /* this script handles all thisuser interaction in the group request page. Upon page load, it downloads all players
-        in the camp including the instruments they play, all templates as stated by the config.xml, and the instruments
-        this thisuser plays. it uses all of this data to populate drop-down boxes, depending on what the thisuser selects. */
+    /* this script handles all thisuser interaction in the group request page. Upon page load, it downloads all players
+    in the camp including the instruments they play, all templates as stated by the config.xml, and the instruments
+    this thisuser plays. it uses all of this data to populate drop-down boxes, depending on what the thisuser selects. */
 
-        //function to be used by the submit button. called by the template.
-        function buildrequest() {
-            var request = {};
-            //add the music name and minimum level to the JSON. Establish an array to contain the player names
-            request.music = $('#textbox_music').val();
-            //if this is the conductorpage, we also need to send the selected location - it cannot be blank.
-            if (conductorpage == "True") {
-                if ($('#location_dropdown').val() == "") {
-                    alert("Sumbission failed. You must select a location for this group.");
-                    //break out of the function
-                    isClicked = false;
-                    return false;
-                }
-                else {
-                    request.locationid = $('#location_dropdown').val();
-                }
+    //function to be used by the submit button. called by the template.
+    function buildrequest() {
+        var request = {};
+        //add the music name and minimum level to the JSON. Establish an array to contain the player names
+        request.music = $('#textbox_music').val();
+        //if this is the conductorpage, we also need to send the selected location - it cannot be blank.
+        if (conductorpage == "True") {
+            if ($('#location_dropdown').val() == "") {
+                alert("Sumbission failed. You must select a location for this group.");
+                //break out of the function
+                isClicked = false;
+                return false;
             }
-
-            //establish an array to fill with player and instruments
-            request.players = []
-                
-            var i = 0
-            //for each instrument drop down box
-            $('.instrument_dropdown').each(function() {
-                //if we are on the conductorpage, and we find a blank player box this is bad - it's fine on the normal user page though
-                if ((conductorpage == "True") && ($("#player" + $(this).data("pairing")).val() == 'null') && $(this).val() != "") {
-                    //this is a bad configuration. alert the user
-                    alert("Sumbission failed. This is the conductor group creation page, so all players must be filled in, you cannot leave blanks.");
-                    invalidConfig = true;
-                    //break out of the loop
-                    isClicked = false;
-                    return false;
-                }
-                //create a new object
-                if ($(this).val() != "") {
-                    var iplayer = {};
-                    //add the contents of the instrument dropdown to the object
-                    iplayer.instrumentname = $(this).val();
-                    //if this is row with ID 0 (only appears on the normal thisuser page) add this user to the object
-                    if ($(this).data("pairing") == 0) {
-                        iplayer.playerid = "{{ thisuser.userid }}";
-                    }
-                        //if it's not row ID 0, add whatever is in the player dropdown in the object
-                    else {
-                        iplayer.playerid = $("#player" + $(this).data("pairing")).val();
-                    }
-                    //push the player object to the players array in the request object
-                    request.players.push(iplayer);
-                    i = i + 1;
-                }
-            });
-            return request
+            else {
+                request.locationid = $('#location_dropdown').val();
+            }
         }
 
+        //establish an array to fill with player and instruments
+        request.players = []
+                
+        var i = 0
+        //for each instrument drop down box
+        $('.instrument_dropdown').each(function() {
+            //if we are on the conductorpage, and we find a blank player box this is bad - it's fine on the normal user page though
+            if ((conductorpage == "True") && ($("#player" + $(this).data("pairing")).val() == 'null') && $(this).val() != "") {
+                //this is a bad configuration. alert the user
+                alert("Sumbission failed. This is the conductor group creation page, so all players must be filled in, you cannot leave blanks.");
+                invalidConfig = true;
+                //break out of the loop
+                isClicked = false;
+                return false;
+            }
+            //create a new object
+            if ($(this).val() != "") {
+                var iplayer = {};
+                //add the contents of the instrument dropdown to the object
+                iplayer.instrumentname = $(this).val();
+                //if this is row with ID 0 (only appears on the normal thisuser page) add this user to the object
+                if ($(this).data("pairing") == 0) {
+                    iplayer.playerid = "{{ thisuser.userid }}";
+                }
+                    //if it's not row ID 0, add whatever is in the player dropdown in the object
+                else {
+                    iplayer.playerid = $("#player" + $(this).data("pairing")).val();
+                }
+                //push the player object to the players array in the request object
+                request.players.push(iplayer);
+                i = i + 1;
+            }
+        });
+        return request
+    }
+
         
-        $(document).ready(function () {
+    $(document).ready(function () {
             
-            //these first few variables set up the rest of the script
-            var players = {{ playersdump_serialized|tojson }};
-            console.log("Players:");
-            console.log(players);
+        //these first few variables set up the rest of the script
+        var players = {{ playersdump_serialized|tojson }};
+        console.log("Players:");
+        console.log(players);
 
-            var grouptemplates = {{ grouptemplates_serialized|tojson }};
-            console.log("Grouptemplates:");
-            console.log(grouptemplates);
+        var grouptemplates = {{ grouptemplates_serialized|tojson }};
+        console.log("Grouptemplates:");
+        console.log(grouptemplates);
 
-            var thisuserinstruments = {{ thisuserinstruments_serialized|tojson }};
-            console.log("Instruments played by this user:");
-            console.log(thisuserinstruments);
+        var thisuserinstruments = {{ thisuserinstruments_serialized|tojson }};
+        console.log("Instruments played by this user:");
+        console.log(thisuserinstruments);
 
-            var isClicked = false;
+        var isClicked = false;
             
-            conductorpage = "{{ conductorpage }}"
-            console.log('Conductorpage is ' + conductorpage)
-            //get the user's primary instrument
-            var primaryinstrument = thisuserinstruments.filter(function( obj ) { return obj.isprimary == 1; })[0].instrumentname;
-            console.log('Primary instrument is: ' + primaryinstrument);
-            //create a variable to keep track of the IDs of the rows, used in the addRow() function.
-            var rowId = 2;
-            //this function is called by a few other functions in this script, and adds another table row with appropriate
-            //drop down boxes in each cell. Every row's boxes have unique identifiers, because it increments each time it runs.
-            function addRow() {
-                $('#playersTable tr:last').after('\
-                        <tr>\
-                            <td>\
-                                <select class="instrument_dropdown" id="instrument' + rowId + '" data-pairing="' + rowId + '">\
-                                    <option value=""></option>\
-                                    {% for i in instrumentlist %}<option value="{{ i }}">{{ i }}</option>{% endfor %}\
-                                </select>\
-                            </td>\
-                            <td>\
-                                <select class="player_dropdown" id="player' + rowId + '" data-pairing="' + rowId + '">\
-                                    <option value=""></option>\
-                                </select>\
-                            </td>\
-                        </tr>');
-                rowId = rowId + 1;
+        conductorpage = "{{ conductorpage }}"
+        console.log('Conductorpage is ' + conductorpage)
+        //get the user's primary instrument
+        var primaryinstrument = thisuserinstruments.filter(function( obj ) { return obj.isprimary == 1; })[0].instrumentname;
+        console.log('Primary instrument is: ' + primaryinstrument);
+        //create a variable to keep track of the IDs of the rows, used in the addRow() function.
+        var rowId = 2;
+        //this function is called by a few other functions in this script, and adds another table row with appropriate
+        //drop down boxes in each cell. Every row's boxes have unique identifiers, because it increments each time it runs.
+        function addRow() {
+            $('#playersTable tr:last').after('\
+                    <tr>\
+                        <td>\
+                            <select class="instrument_dropdown" id="instrument' + rowId + '" data-pairing="' + rowId + '">\
+                                <option value=""></option>\
+                                {% for i in instrumentlist %}<option value="{{ i }}">{{ i }}</option>{% endfor %}\
+                            </select>\
+                        </td>\
+                        <td>\
+                            <select class="player_dropdown" id="player' + rowId + '" data-pairing="' + rowId + '">\
+                                <option value=""></option>\
+                            </select>\
+                        </td>\
+                    </tr>');
+            rowId = rowId + 1;
+        }
+
+        //run when user (or javascript) changes the content of an instrument dropdown. Populates the corresponding
+        //player dropdown with people that play that instrument that are not the current user.
+        $(document).on("change", '.instrument_dropdown', function () {                
+            //grab value that was selected on the dropdown
+            var selectedinstrument = $(this).val();
+            console.log('Detected dropdown instrument change to ' + selectedinstrument)
+
+            if (selectedinstrument == "") {
+                $(this).parents('tr').remove();
             }
 
-            //run when user (or javascript) changes the content of an instrument dropdown. Populates the corresponding
-            //player dropdown with people that play that instrument that are not the current user.
-            $(document).on("change", '.instrument_dropdown', function () {                
-                //grab value that was selected on the dropdown
-                var selectedinstrument = $(this).val();
-                console.log('Detected dropdown instrument change to ' + selectedinstrument)
-
-                if (selectedinstrument == "") {
+            $('.instrument_dropdown').each(function() {
+                if ($(this).val() == "") {
                     $(this).parents('tr').remove();
                 }
-
-                $('.instrument_dropdown').each(function() {
-                    if ($(this).val() == "") {
-                        $(this).parents('tr').remove();
-                    }
-                });
-                addRow();
-                // add values to list 
-                var listItems = "<option value='null'></option>";
-                for (var i = 0; i < players.length; i++) {
-                    if (players[i].instrumentname == selectedinstrument) {
-                        listItems += "<option value='" + players[i].userid + "'>" + players[i].firstname + " " + players[i].lastname + "</option>";
-                    };
+            });
+            addRow();
+            // add values to list 
+            var listItems = "<option value='null'></option>";
+            for (var i = 0; i < players.length; i++) {
+                if (players[i].instrumentname == selectedinstrument) {
+                    listItems += "<option value='" + players[i].userid + "'>" + players[i].firstname + " " + players[i].lastname + "</option>";
                 };
-                console.log(listItems)
-                $("#player" + $(this).data("pairing")).html(listItems);
-            });
+            };
+            console.log(listItems)
+            $("#player" + $(this).data("pairing")).html(listItems);
+        });
 
-            //run when user changes the content of a player dropdown. checks for other dropdown boxes that contain the
-            //name of the player that was selected and removes them.
-            $(document).on("change", '.player_dropdown', function (e) {
-                //grab value that was selected on the dropdown
-                var selectedplayer = $(this).val();
-                //only run the code if it's the original event to prevent recursion (this function would go infinite otherwise)
-                if (e.originalEvent) {
-                    $('.player_dropdown').not(this).each(function() {
-                        if ($(this).val() == selectedplayer) {
-                            $(this).val("").change();
-                        }
-                    });
-                }                
-            });
-
-            //run when a user changes the select template dropdown
-            $(document).on("change", '#group_template_dropdown', function () {
-                //get the user selected template and format it so we can iterate over it later
-                var grep_template = $.grep(grouptemplates, function (elt) {
-                    return elt.grouptemplatename === $(group_template_dropdown).val();
-                });
-                selectedTemplate = grep_template[0];
-                console.log('Selected template is:');
-                console.log(selectedTemplate);
-
-                if (conductorpage == "True") {
-                    //remove all rows in the table except the header and first instrument slot
-                    $("#playersTable").find("tr:gt(0)").remove();
-                    addRow();
-                }
-
-                //if this is not the conductor group request, handle which instrument the user plays
-                if (conductorpage == "False") {                    
-                    //remove all rows in the table excapt for the header and row containing the user, and add a new row for later
-                    $("#playersTable").find("tr:gt(1)").remove();
-                    addRow();
-                    var foundprimary = false
-                
-                    //check if the user's primary instrument is in this group. if it is, set it.
-                    $.each(selectedTemplate, function(key,value){
-                        if ((key == primaryinstrument) && (value > 0)) {
-                            console.log('found that the users primary instrument is in this group. Key: ' + key);
-                            var foundprimary = true;
-                            console.log('Changing the associated user instrument to ' + key);
-                            $('#instrument0').val(key).change();
-                        }
-                    });
-                
-                    //if the user's primary instrument is not in the group, find an instrument that is, and set it.
-                    if (foundprimary == false) {
-                        console.log('Found the users primary instrument is not in the requested group. Iterating through the users instruments to see which one matches this group');
-                        $.each(selectedTemplate, function(key,value){
-                            for (var x = 1; x <= value; x++) {
-                                //get the first instrument that this user plays that matches this instrument
-                                matchinginstrument = thisuserinstruments.filter(function(obj){return obj.instrumentname == key;})[0]
-                                if (matchinginstrument) {
-                                    console.log('found this user plays intsrument ' + matchinginstrument.instrumentname + ' which matches instrument in group ' + key);
-                                    console.log('setting this user instrument to ' + key)
-                                    $('#instrument0').val(key).change();
-                                    break;
-                                }
-                            }
-                        });
+        //run when user changes the content of a player dropdown. checks for other dropdown boxes that contain the
+        //name of the player that was selected and removes them.
+        $(document).on("change", '.player_dropdown', function (e) {
+            //grab value that was selected on the dropdown
+            var selectedplayer = $(this).val();
+            //only run the code if it's the original event to prevent recursion (this function would go infinite otherwise)
+            if (e.originalEvent) {
+                $('.player_dropdown').not(this).each(function() {
+                    if ($(this).val() == selectedplayer) {
+                        $(this).val("").change();
                     }
-                }
+                });
+            }                
+        });
 
-                //for each instrument type in the group template
+        //run when a user changes the select template dropdown
+        $(document).on("change", '#group_template_dropdown', function () {
+            //get the user selected template and format it so we can iterate over it later
+            var grep_template = $.grep(grouptemplates, function (elt) {
+                return elt.grouptemplatename === $(group_template_dropdown).val();
+            });
+            selectedTemplate = grep_template[0];
+            console.log('Selected template is:');
+            console.log(selectedTemplate);
+
+            if (conductorpage == "True") {
+                //remove all rows in the table except the header and first instrument slot
+                $("#playersTable").find("tr:gt(0)").remove();
+                addRow();
+            }
+
+            //if this is not the conductor group request, handle which instrument the user plays
+            if (conductorpage == "False") {                    
+                //remove all rows in the table excapt for the header and row containing the user, and add a new row for later
+                $("#playersTable").find("tr:gt(1)").remove();
+                addRow();
+                var foundprimary = false
+                
+                //check if the user's primary instrument is in this group. if it is, set it.
                 $.each(selectedTemplate, function(key,value){
-                    //make sure it's an instrument type and not other associated metadata
-                    if (key != 'grouptemplateid' && key != 'grouptemplatename' && key != 'size' && value > 0) {
-                        console.log(key + ": "+String(value));
-                        //if the current instrument we're looking at is the same as the one that we selected for the user, decrement it because we already have one player
-                        if (key == $("#instrument0").val()) { value = value - 1; }
-                        if (value > 0) {
-                            for (var i = 0; i < value; i++) {
-                                addRow();
-                                var thisinstrumentdropdown = '#instrument' + String(rowId - 1);
-                                console.log(thisinstrumentdropdown)
-                                $(thisinstrumentdropdown).val(key).change();
-                                console.log('attempted to change instrument dropdown with id ' + thisinstrumentdropdown + ' and resolved id ' + $(thisinstrumentdropdown).attr('id') + ' to ' + key);
-                            }
-                        }
+                    if ((key == primaryinstrument) && (value > 0)) {
+                        console.log('found that the users primary instrument is in this group. Key: ' + key);
+                        var foundprimary = true;
+                        console.log('Changing the associated user instrument to ' + key);
+                        $('#instrument0').val(key).change();
                     }
                 });
+                
+                //if the user's primary instrument is not in the group, find an instrument that is, and set it.
+                if (foundprimary == false) {
+                    console.log('Found the users primary instrument is not in the requested group. Iterating through the users instruments to see which one matches this group');
+                    $.each(selectedTemplate, function(key,value){
+                        for (var x = 1; x <= value; x++) {
+                            //get the first instrument that this user plays that matches this instrument
+                            matchinginstrument = thisuserinstruments.filter(function(obj){return obj.instrumentname == key;})[0]
+                            if (matchinginstrument) {
+                                console.log('found this user plays intsrument ' + matchinginstrument.instrumentname + ' which matches instrument in group ' + key);
+                                console.log('setting this user instrument to ' + key)
+                                $('#instrument0').val(key).change();
+                                break;
+                            }
+                        }
+                    });
+                }
+            }
+
+            //for each instrument type in the group template
+            $.each(selectedTemplate, function(key,value){
+                //make sure it's an instrument type and not other associated metadata
+                if (key != 'grouptemplateid' && key != 'grouptemplatename' && key != 'size' && value > 0) {
+                    console.log(key + ": "+String(value));
+                    //if the current instrument we're looking at is the same as the one that we selected for the user, decrement it because we already have one player
+                    if (key == $("#instrument0").val()) { value = value - 1; }
+                    if (value > 0) {
+                        for (var i = 0; i < value; i++) {
+                            addRow();
+                            var thisinstrumentdropdown = '#instrument' + String(rowId - 1);
+                            console.log(thisinstrumentdropdown)
+                            $(thisinstrumentdropdown).val(key).change();
+                            console.log('attempted to change instrument dropdown with id ' + thisinstrumentdropdown + ' and resolved id ' + $(thisinstrumentdropdown).attr('id') + ' to ' + key);
+                        }
+                    }
+                }
             });
         });
-    </script>
+    });
+</script>
 {% endblock %}
 {% block tools %}
 <h4><b>Tools</b></h4>

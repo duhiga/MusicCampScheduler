@@ -1,49 +1,49 @@
-﻿{% extends "layout.html" %}
+{% extends "layout.html" %}
 {% block title %}{{ campname }} Group History{% endblock %}
 {% block pagename %}Group History{% endblock %}
 {% block content %}
-<p>Number of times played so far this camp: {{ playcount }}</p>
-<table style="width:100%" class="sortable-table">
-    <thead>
-        <tr>
-            <th>Date</th>
-            <th>Time</th>
-            <th>Name</th>
-            <th class="unimportant-column">Instrument</th>
-            <th>Location</th>
-            <th>Status</th>
-        </tr>
-    </thead>
-    <tbody class="zebra-table">
-        {% for g in groups %}
-        <tr>
-            <td>
-                {% if g.periodid != None %}
-                <a href="/user/{{ thisuser.userid }}/date/{{ g.starttime.strftime('%Y-%m-%d') }}/">{{ g.starttime.strftime('%d %b') }}</a></td>
-                {% else %}
-                Queued
-                {% endif %}
-            <td>
-                {% if g.periodid != None %}
-                <a href="/user/{{ thisuser.userid }}/period/{{ g.periodid }}/">{{ g.starttime.strftime('%H:%M') }}</a>
-                {% else %}
-                Queued
-                {% endif %}
-            </td>
-            <td><a href="/user/{{ thisuser.userid }}/group/{{ g.groupid }}/">{{ g.groupname }}</a></td>
-            <td class="unimportant-column">{{ g.instrumentname }}</td>
-            <td>{{ g.locationname }}</td>
-            <td>
-                {% if g.status == 'Confirmed' and now > g.endtime %}
-                Complete
-                {% elif g.status == 'Confirmed' and now > g.starttime %}
-                In Progress
-                {% else %}
-                {{ g.status }}
-                {% endif %}
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+    <p>Number of times played so far this camp: {{ playcount }}</p>
+    <table style="width:100%" class="sortable-table">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Name</th>
+                <th class="unimportant-column">Instrument</th>
+                <th>Location</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody class="zebra-table">
+            {% for g in groups %}
+            <tr>
+                <td>
+                    {% if g.periodid != None %}
+                    <a href="/user/{{ thisuser.userid }}/date/{{ g.starttime.strftime('%Y-%m-%d') }}/">{{ g.starttime.strftime('%d %b') }}</a></td>
+                    {% else %}
+                    Queued
+                    {% endif %}
+                <td>
+                    {% if g.periodid != None %}
+                    <a href="/user/{{ thisuser.userid }}/period/{{ g.periodid }}/">{{ g.starttime.strftime('%H:%M') }}</a>
+                    {% else %}
+                    Queued
+                    {% endif %}
+                </td>
+                <td><a href="/user/{{ thisuser.userid }}/group/{{ g.groupid }}/">{{ g.groupname }}</a></td>
+                <td class="unimportant-column">{{ g.instrumentname }}</td>
+                <td>{{ g.locationname }}</td>
+                <td>
+                    {% if g.status == 'Confirmed' and now > g.endtime %}
+                    Complete
+                    {% elif g.status == 'Confirmed' and now > g.starttime %}
+                    In Progress
+                    {% else %}
+                    {{ g.status }}
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 {% endblock %}

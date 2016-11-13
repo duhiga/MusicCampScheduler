@@ -1,23 +1,23 @@
-﻿{% extends "layout.html" %}
+{% extends "layout.html" %}
 {% block title %}{{ campname }} User Admin{% endblock %}
 {% block pagename %}User Administration{% endblock %}
 {% block head %}
-<script>
-    $(document).ready(function () {
+    <script>
+        $(document).ready(function () {
 
-        $(document).on("click", '.selectall', function (e) {
-            id = $(this).attr('id');
-            $('.email_checkbox').each(function () {
-                if (id == 'select') {
-                    $(this).attr('checked', true);
-                }
-                if (id == 'clear') {
-                    $(this).attr('checked', false);
-                }
+            $(document).on("click", '.selectall', function (e) {
+                id = $(this).attr('id');
+                $('.email_checkbox').each(function () {
+                    if (id == 'select') {
+                        $(this).attr('checked', true);
+                    }
+                    if (id == 'clear') {
+                        $(this).attr('checked', false);
+                    }
+                });
             });
         });
-    });
-</script>
+    </script>
 {% endblock %}
 {% block tools %}
 <h4><b>Tools</b></h4>

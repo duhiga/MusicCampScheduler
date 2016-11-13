@@ -1006,8 +1006,8 @@ Welcome to %s! Please find the link to your schedule here:\n
 %s/user/%s/ \n
 If you visit this page each day, you will find your schedule. You can also take advantage of these features:\n
     -You can click into group names to to see possible substitute players and get further details
-    -If you're going to be absent for a session or meal, plesae notify us the day before by clicking the tools tab, then clicking the button next to the corresponding time.
-    -You can request groups with the request group link on the page. Fill in your desired instrumentation, and any players that you'd like to play with and press submit. Leaving blanks for player names is fine, you'll be matched up with other players at the end of the day.\n
+    -If you're going to be absent for a session or meal, plesae notify us the day before by clicking the tools tab on your homepage, then click the button next to the corresponding time. You can look at future dates with the "next" link.
+    -You can request groups with the request group link on the page (on a mobile, click on the menu on the top right of the screen). Fill in your desired instrumentation, and any players that you'd like to play with and press submit. Leaving blanks for player names is fine, you'll be matched up with other players at the end of the day.\n
 If you have any questions, please reply to this email or contact us on %s.\n
 Thanks!\n
 %s %s

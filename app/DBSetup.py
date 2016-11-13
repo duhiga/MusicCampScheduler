@@ -274,6 +274,8 @@ def importusers(file):
                 thisuser.departure = row[3]
             if row[3] is '':
                 thisuser.departure = CampEndTime
+            if row[15] is not '':
+                thisuser.email = row[15]
             session.add(thisuser)
             print('Created user: %s %s' % (thisuser.firstname, thisuser.lastname))
             session.commit()

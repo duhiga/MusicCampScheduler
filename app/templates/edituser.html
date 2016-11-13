@@ -1,6 +1,12 @@
 ﻿{% extends "layout.html" %}
 {% block title %}{{ campname }} Group Editor{% endblock %}
-{% block pagename %}&#34;{{ targetuser.firstname }} {{ targetuser.lastname }}&#34; Editor{% endblock %}
+{% block pagename %}
+    {% if targetuser.userid is not none %}
+    &#34;{{ targetuser.firstname }} {{ targetuser.lastname }}&#34; Editor
+    {% else %}
+    New User Editor
+    {% endif %}
+{% endblock %}
 {% block head %}
 <script>
 
@@ -54,16 +60,54 @@
                 });
             }
         });
+
+        $(document).on("click", '#send_email', function (e) {
+            $(this).prop('disabled', true).addClass('disabled');
+            var request = {}
+            request.users = []
+            var user = {}
+            user.userid = '{{ targetuser.userid }}'
+            request.users.push(user);
+            $.ajax({
+                type: 'POST',
+                url: '/user/{{thisuser.userid}}/email/',
+                contentType: 'application/json;charset=UTF-8',
+                data: JSON.stringify(request, null),
+                success: function (data, textStatus) {
+                    //upon success, the server will return a message and a URL. give the user the message and send them to the URL.
+                    console.log(data);
+                    if (data.message != 'none') {
+                        alert(data.message);
+                        isClicked = false;
+                    }
+                    if (data.url != 'none') {
+                        window.location = data.url;
+                    }
+                    else {
+                        isClicked = false;
+                    }
+                },
+                error: function (xhr, textStatus, errorThrown) {
+                    alert('Submission failed with error: ' + errorThrown);
+                    isClicked = false;
+                },
+            });
+        });
     });
 </script>
 {% endblock %}
 {% block tools %}
-<h4><b>Edit</b></h4>
+<h4><b>Tools</b></h4>
 <a href="#" class="w3-hover-black submit_button" data-method="POST">Submit</a>
 {% endblock %}
 {% block content %}
+{% if targetuser.userid is not none %}
 <h1>Editing User &#34;{{ targetuser.firstname }} {{ targetuser.lastname }}&#34;</h1>
+{% else %}
+<h1>New User</h1>
+{% endif %}
 <h2>User Attributes</h2>
+<p>Note: Current user email address is not shown here for security reasons. You can, however, change a users email by entering something in the corresponding box.</p>
 <table>
     <thead>
         <tr>
@@ -74,15 +118,29 @@
     <tbody>
         <tr>
             <td>First Name</td>
-            <td><input type="text" id="firstname" class="userattribute" value="{{ targetuser.firstname }}"></td>
+            <td>
+                {% if targetuser.userid is not none %}
+                <input type="text" id="firstname" class="userattribute" value="{{ targetuser.firstname }}">
+                {% else %}
+                <input type="text" id="firstname" class="userattribute" value="">
+                {% endif %}
+            </td>
         </tr>
         <tr>
             <td>Last Name</td>
-            <td><input type="text" id="lastname" class="userattribute" value="{{ targetuser.lastname }}"></td>
+            <td>
+                {% if targetuser.userid is not none %}
+                <input type="text" id="lastname" class="userattribute" value="{{ targetuser.lastname }}">
+                {% else %}
+                <input type="text" id="lastname" class="userattribute" value="">
+                {% endif %}
+            </td>
         </tr>
         <tr>
             <td>Email</td>
-            <td><input type="text" id="email" class="userattribute" value="{{ targetuser.email }}"></td>
+            <td>
+                <input type="text" id="email" class="userattribute" value="">
+            </td>
         </tr>
         <tr>
             <td>Arrival</td>
@@ -172,6 +230,7 @@
         </tr>
     </tbody>
 </table>
+<p>Send this user their dashboard link via email: <button type="button" id="send_email">Send Email</button></p>
 <h2>User Instruments</h2>
 <p>This section allows you to edit the instrument records for this user. If you want to disable one of their instruments, set it to not active. 
     If you want to add an additional instrument, set it up and submit. You can revisit this page if you want to enter more than one instrument.</p>

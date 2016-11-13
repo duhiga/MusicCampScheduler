@@ -33,6 +33,9 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="run.py" />
+    <Compile Include="SMTPemail.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="__init__.py" />
     <Compile Include="DBSetup.py" />
   </ItemGroup>
@@ -48,7 +51,7 @@
     <Content Include="templates\edituser.html" />
     <Content Include="templates\useradmin.html" />
     <Content Include="templates\home.html" />
-    <Content Include="templates\groupedit.html" />
+    <Content Include="templates\editgroup.html" />
     <Content Include="templates\group.html" />
     <Content Include="templates\grouphistory.html" />
     <Content Include="templates\instrumentation.html" />

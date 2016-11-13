@@ -1,29 +1,52 @@
 ﻿{% extends "layout.html" %}
-{% block title %}{{ campname }} User Settings{% endblock %}
-{% block pagename %}User Settings{% endblock %}
-{% block head %}{% endblock %}
-{% block tools %}{% endblock %}
+{% block title %}{{ campname }} User Admin{% endblock %}
+{% block pagename %}User Administration{% endblock %}
+{% block head %}
+<script>
+    $(document).ready(function () {
+
+        $(document).on("click", '.selectall', function (e) {
+            id = $(this).attr('id');
+            $('.email_checkbox').each(function () {
+                if (id == 'select') {
+                    $(this).attr('checked', true);
+                }
+                if (id == 'clear') {
+                    $(this).attr('checked', false);
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}
+{% block tools %}
+<h4><b>Tools</b></h4>
+<a href="/user/{{ thisuser.userid }}/newuser/" class="w3-hover-black">New User</a>
+<a href="#" class="w3-hover-black" id="email_users">Email Selected Users</a>
+{% endblock %}
 {% block content %}
-    <a href="/user/{{ thisuser.userid }}/edituser/new/">Create a New User</a>
+    <button type="button" class="selectall" id="select">Select All</button>
+    <button type="button" class="selectall" id="clear">Clear All</button>
+    <a href="/user/{{ thisuser.userid }}/newuser/">Create a New User</a>
     <table style="width:100%" class="sortable-table">
         <thead>
             <tr>
-                <th class="shrink"><button type="button">Email Users</button></th>
-                <th>Name</th>
+                <th>Email Home Links</th>
+                <th>First Name</th>
+                <th>Last Name</th>
                 <th>Playcount</th>
                 <th>User Home</th>
-                <th>Edit</th>
             </tr>
         </thead>
         <tbody class="zebra-table">
             {% if users != None %}
             {% for u in users %}
             <tr>
-                <td class="shrink"><input type="checkbox" name="{{ u.userid }}" value="checked"></td>
-                <td>{{ u.firstname }} {{ u.lastname }}</td>
+                <td><input type="checkbox" id="{{ u.userid }}" class="email_checkbox"></td>
+                <td><a href="/user/{{ thisuser.userid }}/edituser/{{ u.userid }}/">{{ u.firstname }}</a></td>
+                <td><a href="/user/{{ thisuser.userid }}/edituser/{{ u.userid }}/">{{ u.lastname }}</a></td>
                 <td>{{ u.playcount }}</td>
                 <td><a href="/user/{{ u.userid }}/">User Home</a></td>
-                <td><a href="/user/{{ thisuser.userid }}/edituser/{{ u.userid }}/">Edit</a></td>
             </tr>
             {% endfor %}
             {% endif %}

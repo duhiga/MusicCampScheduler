@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css">
     <link rel="stylesheet" href="/css/style.css">
+    <link rel="shortcut icon" href="{{ favicon }}">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"> </script>
     <script>if (!window.jQuery) { document.write('<script src="/js/jquery-3.1.1.min.js"><\/script>'); }</script>
     <script src="/js/jquery.tablesorter.js"></script>
@@ -22,7 +23,7 @@
                 type: method,
                 contentType: 'application/json;charset=UTF-8',
                 data: JSON.stringify(request, null),
-                success: function(data) {
+                success: function(data, textStatus) {
                     //upon success, the server will return a message and a URL. give the user the message and send them to the URL.
                     console.log(data);
                     if (data.message != 'none') {
@@ -35,13 +36,17 @@
                     else {
                         isClicked = false;
                     }
-                }
+                },
+                error: function(xhr, textStatus, errorThrown) {
+                    alert('Submission failed with error: ' + errorThrown);
+                    isClicked = false;
+                },
             });
         }
 
         $(document).ready(function () {
             {% for i in instrumentlist %}
-            console.log('Instrument name: {{ i }}, Loop index: {{ loop.index }})')
+            //console.log('Instrument name: {{ i }}, Loop index: {{ loop.index }})')
             {% endfor %}
             // add parser through the tablesorter addParser method
             $.tablesorter.addParser({
@@ -118,7 +123,7 @@
     </div>
 
     <!-- Sidenav -->
-    <nav class="w3-sidenav w3-collapse w3-theme-l5 w3-animate-left" style="z-index:3;width:250px;padding-bottom:70px" id="mySidenav">
+    <nav class="w3-sidenav w3-collapse w3-theme-l5 w3-animate-left" style="z-index:3;width:250px;padding-bottom:80px" id="mySidenav">
         <a href="javascript:void(0)" onclick="w3_close()" class="w3-right w3-xlarge w3-padding-large w3-hover-black w3-hide-large" title="close menu">
             <i class="fa fa-remove"></i>
         </a>

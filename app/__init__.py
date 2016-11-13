@@ -14,6 +14,7 @@ import os
 from DBSetup import *
 from sqlalchemy import *
 from config import *
+from SMTPemail import *
 
 # Make the WSGI interface available at the top level so wfastcgi can get it.
 app = Flask(__name__)
@@ -190,8 +191,7 @@ def home(userid,inputdate='n'):
                         previousday=datetime.datetime.strftime(previousday, '%Y-%m-%d'), \
                         nextday=datetime.datetime.strftime(nextday, '%Y-%m-%d'), \
                         today=today, \
-                        campname=getconfig('Name'), \
-                        supportemailaddress=getconfig('SupportEmailAddress'), \
+                        campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
                         currentannouncement=currentannouncement, \
                         )
 
@@ -293,18 +293,17 @@ def grouppage(userid,groupid):
     session.close()
     return render_template('group.html', \
                         period=thisperiod, \
-                        campname=getconfig('Name'), \
+                        campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
                         thisgroup=thisgroup, \
                         players=players, \
                         substitutes=substitutes, \
                         thisuser=thisuser, \
                         thislocation=thislocation, \
-                        instrumentlist=getconfig('Instruments').split(","), \
                         )
 
 #Group editor page. Only accessable by admins. Navigate here from a group to edit group.
 @app.route('/user/<userid>/group/<groupid>/edit/', methods=['GET', 'POST', 'DELETE'])
-def groupedit(userid,groupid,periodid=None):
+def editgroup(userid,groupid,periodid=None):
     log('Group editor page requested by %s for groupID %s' % (userid,groupid))
     session = Session()
     #gets the data associated with this user
@@ -362,17 +361,16 @@ def groupedit(userid,groupid,periodid=None):
         grouptemplates_serialized = [i.serialize for i in grouptemplates]
 
         session.close()
-        return render_template('groupedit.html', \
+        return render_template('editgroup.html', \
                             currentperiod=currentperiod, \
                             selectedperiod=selectedperiod, \
-                            campname=getconfig('Name'), \
+                            campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
                             thisgroup=thisgroup, \
                             thisgroupplayers=thisgroupplayers, \
                             thisuser=thisuser, \
                             periods=periods, \
                             thislocation=thislocation, \
                             locations=locations, \
-                            instrumentlist=getconfig('Instruments').split(","), \
                             playersdump=playersdump, \
                             playersdump_serialized=playersdump_serialized, \
                             thisgroupplayers_serialized=thisgroupplayers_serialized, \
@@ -502,8 +500,8 @@ def groupedit(userid,groupid,periodid=None):
         return jsonify(message = 'none', url = url)
         
 @app.route('/user/<userid>/group/<groupid>/period/<periodid>/edit/', methods=['GET', 'POST', 'DELETE'])
-def groupeditperiod(userid,groupid,periodid):
-    return groupedit(userid,groupid,periodid)
+def editgroupperiod(userid,groupid,periodid):
+    return editgroup(userid,groupid,periodid)
 
 @app.route('/user/<userid>/grouphistory/')
 def grouphistory(userid):
@@ -522,7 +520,7 @@ def grouphistory(userid):
     return render_template('grouphistory.html', \
                             thisuser=thisuser, \
                             groups = groups, \
-                            campname=getconfig('Name'), \
+                            campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
                             now=now, \
                             playcount=count, \
                             )
@@ -620,8 +618,7 @@ def grouprequestpage(userid,periodid=None):
                             playerlimit = getconfig('SmallGroupPlayerLimit'), \
                             grouptemplates = grouptemplates, \
                             grouptemplates_serialized=grouptemplates_serialized, \
-                            campname=getconfig('Name'), \
-                            instrumentlist=getconfig('Instruments').split(","), \
+                            campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
                             playersdump_serialized=playersdump_serialized, \
                             conductorpage=conductorpage, \
                             thisperiod=thisperiod, \
@@ -774,7 +771,7 @@ def announcementpage(userid):
             return render_template('announcement.html', \
                                     currentannouncement=currentannouncement, \
                                     thisuser=thisuser, \
-                                    campname=getconfig('Name'), \
+                                    campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
                                     )
         
         #if this is a user that just pressed submit
@@ -805,7 +802,7 @@ def groupqueue(userid):
         return render_template('groupqueue.html', \
                                 queuedgroups=queuedgroups, \
                                 thisuser=thisuser, \
-                                campname=getconfig('Name'), \
+                                campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
                                 )
 
 #This page is for creating a public event. It comes up as an option for adminsitrators on their homes
@@ -831,7 +828,7 @@ def publiceventpage(userid,periodid):
                                     locations=locations, \
                                     thisuser=thisuser, \
                                     thisperiod=thisperiod, \
-                                    campname=getconfig('Name'), \
+                                    campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
                                     )
         
         #if the user pressed "submit" on the public event page
@@ -876,10 +873,9 @@ def periodpage(userid,periodid):
                             players=players, \
                             publicevents=publicevents, \
                             nonplayers=nonplayers, \
-                            campname=getconfig('Name'), \
+                            campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
                             thisuser=thisuser, \
                             period=thisperiod, \
-                            instrumentlist=getconfig('Instruments').split(","), \
                             )
 
 #handles the user settings page
@@ -910,7 +906,7 @@ def useradmin(userid):
         return render_template('useradmin.html', \
                             thisuser=thisuser, \
                             users=users, \
-                            campname=getconfig('Name'), \
+                            campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
                             )
 
 #handles the useredit page
@@ -933,14 +929,13 @@ def edituser(userid, targetuserid):
         periods = session.query(period).all()
         #if this is a user requesting the page
         if request.method == 'GET':
-            session.close()            
+            session.close()
             return render_template('edituser.html', \
                                     thisuser=thisuser, \
                                     targetuser=targetuser, \
                                     targetuserinstruments=targetuserinstruments, \
-                                    campname=getconfig('Name'), \
+                                    campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
                                     periods=periods, \
-                                    instrumentlist = getconfig('Instruments').split(","), \
                                     maximumlevel=int(getconfig('MaximumLevel')), \
                                     )
         
@@ -963,6 +958,7 @@ def edituser(userid, targetuserid):
             if targetuser.userid is None:
                 #assign them a userid from a randomly generated uuid
                 targetuser.userid = str(uuid.uuid4())
+                session.add(targetuser)
             #if the user already has an ID, merge them - they're new
             else:
                 session.merge(targetuser)
@@ -987,6 +983,50 @@ def edituser(userid, targetuserid):
 @app.route('/user/<userid>/newuser/', methods=['GET', 'POST'])
 def newuser(userid):
     return edituser(userid,None)
+
+#sends bulk emails to an array of users sent with the request
+@app.route('/user/<userid>/email/', methods=['POST'])
+def send_home_link_email(userid):
+    session = Session()
+    #gets the data associated with this user
+    thisuser = session.query(user).filter(user.userid == userid).first()
+    if thisuser.isadmin != 1:
+        session.close()
+        return 'You do not have permission to view this page'
+    content = request.json
+    errors = ''
+    for u in content['users']:
+        targetuser = session.query(user).filter(user.userid == u['userid']).first()
+        if targetuser is None:
+            errors = errors + ('Could not find user with id %s in database\n' % u['userid'])
+        else:
+            subject = ('Your link to the %s Scheduler' % getconfig('Name'))
+            body = """Hi %s,\n
+Welcome to %s! Please find the link to your schedule here:\n
+%s/user/%s/ \n
+If you visit this page each day, you will find your schedule. You can also take advantage of these features:\n
+    -You can click into group names to to see possible substitute players and get further details
+    -If you're going to be absent for a session or meal, plesae notify us the day before by clicking the tools tab, then clicking the button next to the corresponding time.
+    -You can request groups with the request group link on the page. Fill in your desired instrumentation, and any players that you'd like to play with and press submit. Leaving blanks for player names is fine, you'll be matched up with other players at the end of the day.\n
+If you have any questions, please reply to this email or contact us on %s.\n
+Thanks!\n
+%s %s
+%s""" % (targetuser.firstname, \
+            getconfig('Name'), \
+            getconfig('Website_URL'), \
+            targetuser.userid, \
+            getconfig('SupportEmailAddress'), \
+            thisuser.firstname, \
+            thisuser.lastname, \
+            getconfig('Name')\
+            )
+        message = send_email(targetuser.email, subject, body)
+        if message == 'Failed to send email to user':
+            errors = errors + ('Failed to send email to %s %s\n' % (targetuser.firstname, targetuser.lastname))
+    session.close()
+    if errors != '':
+        message = 'Completed with errors:\n' + errors
+    return jsonify(message = message, url = 'none')
 
 #Handles the conductor instrumentation page.
 @app.route('/user/<userid>/instrumentation/<periodid>/', methods=['GET', 'POST'])
@@ -1025,8 +1065,7 @@ def instrumentation(userid,periodid):
                                 grouptemplates = grouptemplates, \
                                 conductors=conductors, \
                                 grouptemplates_serialized=grouptemplates_serialized, \
-                                campname=getconfig('Name'), \
-                                instrumentlist = getconfig('Instruments').split(","), \
+                                campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
                                 thisperiod=thisperiod, \
                                 locations=locations, \
                                 maximumlevel=int(getconfig('MaximumLevel')), \
@@ -1097,7 +1136,7 @@ def godpage(password):
         session.close()
         return render_template('godpage.html', \
                                         users=users, \
-                                        campname=getconfig('Name'), \
+                                        campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
                                         grouptemplates=grouptemplates, \
                                         )
     if request.method == 'POST':

@@ -6,17 +6,16 @@
             of the camp. This is used when creating the database.
           -GroupRequeLimit is the maximum number of times a normal user can request a group per day.
           -AutoAssign limits are used when automatically assigning players to groups. The autoassign algorythm picks players
-            according to the lowest level already contained in the group, plus and minus these limits. 
-            
-            Original database URL for SQLite:
-            DATABASE_URL="postgresql://scott:tiger@localhost:5432/mydatabase"
-            -->
+            according to the lowest level already contained in the group, plus and minus these limits. -->
   <CampDetails
-    Name="Camp Name"
-    DATABASE_URL="postgresql://user:password@localhost:5432/databasename"
-    SecretKey="QuaranupIsCool"
-    Instruments="Conductor,Piccolo,Flute,Oboe,Coranglais,Clarinet,Bassoon,Horn,Trumpet,Trombone,Tuba,Percussion,Piano,Saxophone,Violin,Viola,Cello,Doublebass"
-    SupportEmailAddress="email@website.com"
+    Name="Music Camp (Appears on all dashboards)"
+    SMTP_Server="smtp.gmail.com"
+    SMTP_User="username@gmail.com"
+    SMTP_Password="SMTP Password"
+    DATABASE_URL="postgresql://user:password@localhost:5432/postgres"
+    SecretKey="Something Secret"
+    Instruments="Conductor,Piccolo,Flute,Oboe,Coranglais,Clarinet,Bassoon,Horn,Trumpet,Trombone,Tuba,Percussion,Piano,Guitar,Saxophone,Violin,Viola,Cello,Doublebass"
+    SupportEmailAddress="username@gmail.com"
     StartTime="2016-12-28 18:00"
     EndTime="2017-01-05 07:45"
     DailyGroupRequestLimit="1"
@@ -26,6 +25,8 @@
     AutoAssignLimitLow="1"
     MaximumLevel="5"
     Debug="1"
+    Website_URL="https://appname.herokuapp.com"
+    Favicon_URL="https://wherever.your.favicon.is"
     >
     <!-- Fill in the each period object with period names and times. Note the time format, ensure you enter it in the 
          format HH:mm (in 24 hour time). Each of these periods will recur every day that is covered by your start and 

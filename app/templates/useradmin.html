@@ -3,35 +3,53 @@
 {% block pagename %}User Administration{% endblock %}
 {% block head %}
     <script>
+
+        //function to be used by the submit button. called by the template.
+        function buildrequest() {
+            var request = {}
+            request.users = []
+            $('.checkbox:checkbox:checked').each(function () {
+                console.log('Processing email for box checked: ' + $(this).attr('id'));
+                var user = {};
+                user.userid = $(this).attr('id');
+                request.users.push(user);
+            });
+            return request;
+        }
+
         $(document).ready(function () {
 
-            $(document).on("click", '.selectall', function (e) {
-                id = $(this).attr('id');
-                $('.email_checkbox').each(function () {
-                    if (id == 'select') {
-                        $(this).attr('checked', true);
-                    }
-                    if (id == 'clear') {
-                        $(this).attr('checked', false);
-                    }
-                });
+            //select all checkboxes
+            $("#select_all").change(function () {  //"select all" change 
+                $(".checkbox").prop('checked', $(this).prop("checked")); //change all ".checkbox" checked status
+            });
+
+            //".checkbox" change
+            $('.checkbox').change(function () {
+                //uncheck "select all", if one of the listed checkbox item is unchecked
+                if (false == $(this).prop("checked")) { //if this item is unchecked
+                    $("#select_all").prop('checked', false); //change "select all" checked status to false
+                }
+                //check "select all" if all checkbox items are checked
+                if ($('.checkbox:checked').length == $('.checkbox').length) {
+                    $("#select_all").prop('checked', true);
+                }
             });
         });
+
     </script>
 {% endblock %}
 {% block tools %}
 <h4><b>Tools</b></h4>
 <a href="/user/{{ thisuser.userid }}/newuser/" class="w3-hover-black">New User</a>
-<a href="#" class="w3-hover-black" id="email_users">Email Selected Users</a>
+<a href="#" class="w3-hover-black submit_button" id="email_users" data-method="POST" data-url="/user/{{ thisuser.userid }}/email/">Email Selected Users</a>
 {% endblock %}
 {% block content %}
-    <button type="button" class="selectall" id="select">Select All</button>
-    <button type="button" class="selectall" id="clear">Clear All</button>
     <a href="/user/{{ thisuser.userid }}/newuser/">Create a New User</a>
     <table style="width:100%" class="sortable-table">
         <thead>
             <tr>
-                <th>Email Home Links</th>
+                <td><input type="checkbox" id="select_all"></td>
                 <th>First Name</th>
                 <th>Last Name</th>
                 <th>Playcount</th>
@@ -42,7 +60,7 @@
             {% if users != None %}
             {% for u in users %}
             <tr>
-                <td><input type="checkbox" id="{{ u.userid }}" class="email_checkbox"></td>
+                <td><input type="checkbox" id="{{ u.userid }}" class="checkbox"></td>
                 <td><a href="/user/{{ thisuser.userid }}/edituser/{{ u.userid }}/">{{ u.firstname }}</a></td>
                 <td><a href="/user/{{ thisuser.userid }}/edituser/{{ u.userid }}/">{{ u.lastname }}</a></td>
                 <td>{{ u.playcount }}</td>

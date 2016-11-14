@@ -351,6 +351,12 @@
             {% endfor %}
         </select>
     </p>
+    <p><button class="submit_button" data-submittype="autofill" data-method="POST">Autofill</button>
+        <select id="allow_non_primary" class="group_attribute">
+            <option value="1" selected="selected">Only include primary instruments</option>
+            <option value="0">Include primary and secondary instruments</option>
+        </select>
+    </p>
     <table class="sortable" id="table_players">
         <tr>
             <th>Instrument</th>

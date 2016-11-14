@@ -407,7 +407,7 @@ def editgroup(userid,groupid,periodid=None):
             session.delete(a)
         #add the content in the packet to this group's attributes
         for key,value in content.iteritems():
-            if value is not None or value != 'null' or value != '':
+            if value is not None or value != 'null' or value != '' or key != 'allow_non_primary':
                setattr(thisgroup,key,value)
         thisgroup.requesteduserid = thisuser.userid
         if groupid == None:
@@ -479,11 +479,13 @@ def editgroup(userid,groupid,periodid=None):
                                     filter(groupassignment.userid.in_(possible_players_query))
                                 final_list = session.query(user.userid,sqlalchemy.sql.expression.literal_column("0").label("playcount")).filter(user.userid.in_(possible_players_query)).\
                                                 filter(~user.userid.in_(already_played_query)).limit(requiredplayers).all()
-                                #append the players that have already played. Keep the query limited to just the number we need.
+                                #append the players that have already played, ordered by the number of times they've played. Keep the query limited to just the number we need.
                                 if len(final_list) < requiredplayers:
-                                    for p in (session.query(user.userid, func.count(groupassignment.userid).label("playcount"), instrument.isprimary).group_by(user.userid).outerjoin(groupassignment).outerjoin(group).outerjoin(instrument, groupassignment.userid == instrument.userid).\
-                                            filter(group.ismusical == 1).filter(groupassignment.userid.in_(possible_players_query)).order_by(func.count(groupassignment.userid), instrument.isprimary.desc()).limit(requiredplayers - len(final_list)).all()):
+                                    for p in (session.query(user.userid, func.count(groupassignment.userid).label("playcount")).group_by(user.userid).outerjoin(groupassignment).outerjoin(group).outerjoin(instrument, groupassignment.userid == instrument.userid).\
+                                            filter(group.ismusical == 1, instrument.isprimary >= content['allow_non_primary']).filter(groupassignment.userid.in_(possible_players_query)).order_by(func.count(groupassignment.userid)).limit(requiredplayers - len(final_list)).all()):
                                         final_list.append(p)
+                                #if we're still short, add players secondary instruments
+
                                 log('Players in final list with playcounts:')
                                 #add groupassignments for the final player list
                                 for pl in final_list:
@@ -999,20 +1001,27 @@ def send_home_link_email(userid):
         targetuser = session.query(user).filter(user.userid == u['userid']).first()
         if targetuser is None:
             errors = errors + ('Could not find user with id %s in database\n' % u['userid'])
+        elif targetuser.email is None or targetuser.email == '':
+            errors = errors + ('Could not find email for user %s %s\n' % (targetuser.firstname, targetuser.lastname))
         else:
             subject = ('Your link to the %s Scheduler' % getconfig('Name'))
-            body = """Hi %s,\n
-Welcome to %s! Please find the link to your schedule here:\n
+            body = """Hi %s, welcome to %s!\n
+%s\n
+Your homepage, containing your daily schedule, is here:\n
 %s/user/%s/ \n
-If you visit this page each day, you will find your schedule. You can also take advantage of these features:\n
-    -You can click into group names to to see possible substitute players and get further details
-    -If you're going to be absent for a session or meal, plesae notify us the day before by clicking the tools tab on your homepage, then click the button next to the corresponding time. You can look at future dates with the "next" link.
-    -You can request groups with the request group link on the page (on a mobile, click on the menu on the top right of the screen). Fill in your desired instrumentation, and any players that you'd like to play with and press submit. Leaving blanks for player names is fine, you'll be matched up with other players at the end of the day.\n
+WARNING: DO NOT GIVE THIS LINK TO ANYONE ELSE. It is yours, and yours alone and contains your connection credentials.\n
+A small rundown of how to use the web app:\n
+    -Visit this link each day to see your schedule, including times, locations, and the instrument you're playing.
+    -You can click into group names to to see possible substitute players and get further details, or a time period to see the full group listing for that time. Clicking the home button in the top right of your screen will always bring you back to the current day.
+    -You can look at your schedule for future and past days with the next and previous links.
+    -If you're going to be absent for a session or meal, plesae notify us at least one day before by navigating to a future date, clicking the tools tab on your homepage, then clicking the button next to the corresponding time.
+    -You can request groups with the request group link on the page (on a mobile, click on the hamburger menu on the top right of the screen). Fill in your desired instrumentation, and any players that you'd like to play with and press submit. Leaving blanks for player names is fine, you'll be matched up with other players at the end of the day.\n
 If you have any questions, please reply to this email or contact us on %s.\n
 Thanks!\n
 %s %s
 %s""" % (targetuser.firstname, \
             getconfig('Name'), \
+            getconfig('EmailIntroSentence'), \
             getconfig('Website_URL'), \
             targetuser.userid, \
             getconfig('SupportEmailAddress'), \
@@ -1020,9 +1029,9 @@ Thanks!\n
             thisuser.lastname, \
             getconfig('Name')\
             )
-        message = send_email(targetuser.email, subject, body)
-        if message == 'Failed to send email to user':
-            errors = errors + ('Failed to send email to %s %s\n' % (targetuser.firstname, targetuser.lastname))
+            message = send_email(targetuser.email, subject, body)
+            if message == 'Failed to send email to user':
+                errors = errors + ('Failed to send email to %s %s\n' % (targetuser.firstname, targetuser.lastname))
     session.close()
     if errors != '':
         message = 'Completed with errors:\n' + errors

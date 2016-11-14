@@ -16,11 +16,11 @@
         
         var isClicked = false
         
-        function sendtoserver (request,method) {
+        function sendtoserver (request,method,url) {
             //this function handles AJAX sending to the server
             $.ajax({
                 //make a POST AJAX query to the same web page as the user is currently visiting
-                url: (window.location.href),
+                url: (url),
                 type: method,
                 contentType: 'application/json;charset=UTF-8',
                 data: JSON.stringify(request, null),
@@ -46,6 +46,8 @@
         }
 
         $(document).ready(function () {
+            
+            /* CURRENTLY BROKEN
             // add parser through the tablesorter addParser method
             $.tablesorter.addParser({
                 // set a unique id
@@ -61,18 +63,20 @@
                 // set type, either numeric or text
                 type: 'numeric'
             });
+            */
 
             $(function () {
                 $(".sortable-table").tablesorter({
-                    sortList: [2,1],
+                    /*sortList: [2,1],
                     headers: {
                         2: {
                             sorter: 'scoreorder',
                             emptyto: 'top'
                         }
-                    }
+                    }*/
                 });
             });
+            
 
             //every page that needs to submit data uses this function. This only works if the page has an element with:
             //class="submit_button"
@@ -94,9 +98,14 @@
                         if ($(this).data('submittype') != '' || $(this).data('submittype') != null) {
                             request.submittype = $(this).data('submittype')
                         }
+                        if ($(this).data('url') != '' || $(this).data('url') != null) {
+                            url = $(this).data('url')
+                        }
+                        else { url = window.location.href }
+
                         console.log('Pushing the request to the server for processing:');
                         console.log(request);
-                        sendtoserver(request, $(this).data('method'))
+                        sendtoserver(request, $(this).data('method'),url)
                     }
                 }
             });
@@ -126,7 +135,7 @@
         </a>
         {% block tools %}{% endblock %}
         <h4><b>Navigation</b></h4>
-        <a href="/user/{{ thisuser.userid }}/" class="w3-hover-black">Home</a>
+        <a href="/user/{{ thisuser.userid }}/" class="w3-hover-black"><i class="fa fa-home"></i> Home</a>
         <a href="/user/{{ thisuser.userid }}/grouprequest/" class="w3-hover-black">Request a group</a>
         <a href="/user/{{ thisuser.userid }}/grouphistory/" class="w3-hover-black">Group History</a>
         <a href="mailto:{{ supportemailaddress }}" class="w3-hover-black">Contact Camp Administration</a>

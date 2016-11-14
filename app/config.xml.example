@@ -25,6 +25,7 @@
     AutoAssignLimitLow="1"
     MaximumLevel="5"
     Debug="1"
+    EmailIntroSentence="This will go at the beginning of your invitation emails to users."
     Website_URL="https://appname.herokuapp.com"
     Favicon_URL="https://wherever.your.favicon.is"
     >

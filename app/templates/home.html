@@ -66,6 +66,9 @@
     </script>
 {% endblock %}
 {% block content %}
+    {% if thisuser.isactive == 0 %}
+        <h2>You are currently set to inactive. You will not be allocated to any groups.</h2>
+    {% endif %}
     <h3>Announcements</h3>
     <p>{{ currentannouncement.content }}</p>
     <p style="text-align: center;">

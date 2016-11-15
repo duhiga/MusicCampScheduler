@@ -17,7 +17,7 @@ td, th {border: 1px solid #999;}
 ================================================== */
 /* Note: Design for a width of 320px */
 @media all and (max-width: 600px) {
-.unimportant-column {
+.w3-hide-small {
     display:none;
     width:0;
     height:0;

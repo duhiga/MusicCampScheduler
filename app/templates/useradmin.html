@@ -52,6 +52,7 @@
                 <td><input type="checkbox" id="select_all"></td>
                 <th>First Name</th>
                 <th>Last Name</th>
+                <th>Active</th>
                 <th>Playcount</th>
                 <th>User Home</th>
             </tr>
@@ -63,6 +64,7 @@
                 <td><input type="checkbox" id="{{ u.userid }}" class="checkbox"></td>
                 <td><a href="/user/{{ thisuser.userid }}/edituser/{{ u.userid }}/">{{ u.firstname }}</a></td>
                 <td><a href="/user/{{ thisuser.userid }}/edituser/{{ u.userid }}/">{{ u.lastname }}</a></td>
+                <td>{% if u.isactive == 1 %}Yes{% else %}No{% endif %}</td>
                 <td>{{ u.playcount }}</td>
                 <td><a href="/user/{{ u.userid }}/">User Home</a></td>
             </tr>

@@ -19,7 +19,7 @@
     StartTime="2016-12-28 18:00"
     EndTime="2017-01-05 07:45"
     DailyGroupRequestLimit="1"
-    SmallGroupPlayerLimit="8"
+    GroupRequestPlayerLimit="8"
     MealLocation="Dining Room"
     AutoAssignLimitHigh="1"
     AutoAssignLimitLow="1"

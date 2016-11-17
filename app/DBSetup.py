@@ -19,13 +19,6 @@ Session = sessionmaker()
 Session.configure(bind=engine)
 Base = declarative_base()
 
-try:
-    #TESTING WRITING TO A HEROKU APPLICATION CONFIG
-    os.environ['TestParam'] = 'Testing'
-    print('Successfully set environment variable TestParam to %s' % os.environ['TestParam'])
-except Exception as ex:
-    print('Coludnt set environment variable TestParam to Testing with error: %s' % ex)
-
 def serialize_class(inst, cls):
     convert = dict()
     # add your coversions for things like datetime's 

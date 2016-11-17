@@ -1,19 +1,13 @@
 {% extends "layout.html" %}
 {% block title%}{{ campname }} Period Display{% endblock %}
-{% block pagename %}{{ period.periodname }}{% endblock %}
+{% block pagename %}{{ thisperiod.periodname }}{% endblock %}
 {% block content %}
     {% if publicevents[0] != None %}
     {% for e in publicevents %}
     <h2>Public Event At This Time: <a href="/user/{{ thisuser.userid }}/group/{{ e.groupid }}">{{ e.groupname }}</a></h2>
     {% endfor %}
     {% endif %}
-    <table>
-        <tr>
-            <th>Time</th>
-            <td>{{ period.starttime.strftime('%A %d %b') }}, {{ period.starttime.strftime('%H:%M') }}-{{ period.endtime.strftime('%H:%M') }}</td>
-        </tr>
-    </table>
-    <br>
+    <h1>{{ thisperiod.periodname }}: {{ thisperiod.starttime.strftime('%A %d %b') }}, {{ thisperiod.starttime.strftime('%H:%M') }}-{{ thisperiod.endtime.strftime('%H:%M') }}</h1>
     <table style="width:100%" class="sortable-table">
         <thead>
             <tr>

@@ -291,7 +291,7 @@ def grouppage(userid,groupid):
         substitutes = None
 
     session.close()
-    return render_template('group.html', \
+    return render_template('grouppage.html', \
                         period=thisperiod, \
                         campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
                         thisgroup=thisgroup, \
@@ -631,7 +631,7 @@ def grouprequestpage(userid,periodid=None):
                             thisuser=thisuser, \
                             thisuserinstruments=thisuserinstruments, \
                             thisuserinstruments_serialized=thisuserinstruments_serialized, \
-                            playerlimit = getconfig('SmallGroupPlayerLimit'), \
+                            playerlimit = int(getconfig('GroupRequestPlayerLimit')), \
                             grouptemplates = grouptemplates, \
                             grouptemplates_serialized=grouptemplates_serialized, \
                             campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
@@ -648,6 +648,11 @@ def grouprequestpage(userid,periodid=None):
         content = request.json
         session = Session()
         log('Grouprequest received. Whole content of JSON returned is: %s' % content)
+        #if we received too many players, send the user an error
+        if len(content['players']) > int(getconfig('GroupRequestPlayerLimit')) and conductorpage == False:
+            session.rollback()
+            session.close()
+            return jsonify(message = 'You have entered too many players. You may only submit grouprequests of players %s or less.' % getconfig('GroupRequestPlayerLimit'), url = 'none')
         #establish the 'grouprequest' group object. This will be built up from the JSON packet, and then added to the database
         #a minimumlevel and maximumlevel of 0 indicates that they will be automatically be picked on group confirmation
         grouprequest = group(music = content['music'], ismusical = 1, requesteduserid = userid, requesttime = datetime.datetime.now(), minimumlevel = 0, maximumlevel = 0)
@@ -669,13 +674,13 @@ def grouprequestpage(userid,periodid=None):
                     log('Input error. user %s does not exist in the database.' % p['playerid'])
                     session.rollback()
                     session.close()
-                    return 'Input error. One of the sent users does not exist in the database.'
+                    return jsonify(message = 'Input error. One of the sent users does not exist in the database.', url = 'none')
                 #if we find an inactive user, it's also a failure
                 elif puser.isactive != 1:
                     log('User %s %s is inactive. Cannot accept this group request.' % (puser.firstname, puser.lastname))
                     session.rollback()
                     session.close()
-                    return 'A selected user is inactive. Cannot accept this group request. Refresh your page and try again.'
+                    return jsonify(message = 'A selected user is inactive. Cannot accept this group request.', url = 'none')
             log('Incrementing group counter for instrument %s' % p['instrumentname'])
             #increment the instrument counter in the grouprequest object corresponding with this instrument name
             currentinstrumentcount = getattr(grouprequest, p['instrumentname'])
@@ -900,13 +905,13 @@ def periodpage(userid,periodid):
     nonplayers = (session.query(user.userid, user.firstname, user.lastname).filter(~user.userid.in_(players_in_groups_query), user.isactive == 1).all())
     thisperiod = session.query(period).filter(period.periodid == periodid).first()
     session.close()
-    return render_template('period.html', \
+    return render_template('periodpage.html', \
                             players=players, \
                             publicevents=publicevents, \
                             nonplayers=nonplayers, \
                             campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
                             thisuser=thisuser, \
-                            period=thisperiod, \
+                            thisperiod=thisperiod, \
                             )
 
 #handles the admin page

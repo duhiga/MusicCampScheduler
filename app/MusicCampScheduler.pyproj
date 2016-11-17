@@ -42,6 +42,7 @@
   <ItemGroup>
     <Content Include="config.xml" />
     <Content Include="config.xml.example" />
+    <Content Include="css\print.css" />
     <Content Include="css\style.css" />
     <Content Include="css\w3-theme-black.css" />
     <Content Include="css\w3.css" />
@@ -52,13 +53,13 @@
     <Content Include="templates\useradmin.html" />
     <Content Include="templates\home.html" />
     <Content Include="templates\editgroup.html" />
-    <Content Include="templates\group.html" />
+    <Content Include="templates\grouppage.html" />
     <Content Include="templates\grouphistory.html" />
     <Content Include="templates\instrumentation.html" />
     <Content Include="templates\grouprequest.html" />
     <Content Include="templates\index.html" />
     <Content Include="templates\layout.html" />
-    <Content Include="templates\period.html" />
+    <Content Include="templates\periodpage.html" />
     <Content Include="templates\godpage.html" />
     <Content Include="templates\announcement.html" />
     <Content Include="templates\publicevent.html" />

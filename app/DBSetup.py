@@ -38,7 +38,7 @@ def serialize_class(inst, cls):
     return d
 
 class user(Base):
-    __tablename__ = 'aausers'
+    __tablename__ = 'users'
 
     userid = Column(UUID, primary_key=True, unique=True)
     firstname = Column(String)
@@ -62,10 +62,10 @@ class group(Base):
 
     groupid = Column(Integer, primary_key=True, unique=True)
     groupname = Column(String)
-    locationid = Column(Integer, ForeignKey('aalocations.locationid'))
+    locationid = Column(Integer, ForeignKey('locations.locationid'))
     requesttime = Column(DateTime)
-    requesteduserid = Column(UUID, ForeignKey('aausers.userid'))
-    periodid = Column(Integer, ForeignKey('aaperiods.periodid'))
+    requesteduserid = Column(UUID, ForeignKey('users.userid'))
+    periodid = Column(Integer, ForeignKey('periods.periodid'))
     minimumlevel = Column(Integer)
     maximumlevel = Column(Integer)
     music = Column(String)
@@ -78,14 +78,14 @@ class group(Base):
         return serialize_class(self, self.__class__)
 
 class grouptemplate(Base):
-    __tablename__ = 'aagrouptemplates'
+    __tablename__ = 'grouptemplates'
 
     grouptemplateid = Column(Integer, primary_key=True, unique=True)
     grouptemplatename = Column(String)
     size = Column(String)
     minimumlevel = Column(Integer)
     maximumlevel = Column(Integer)
-    defaultlocationid = Column(Integer, ForeignKey('aalocations.locationid'))
+    defaultlocationid = Column(Integer, ForeignKey('locations.locationid'))
 
     @property
     def serialize(self):
@@ -102,7 +102,7 @@ class instrument(Base):
     __tablename__ = 'instruments'
 
     instrumentid = Column(Integer, primary_key=True, unique=True)
-    userid = Column(UUID, ForeignKey('aausers.userid'))
+    userid = Column(UUID, ForeignKey('users.userid'))
     instrumentname = Column(String)
     grade = Column(Integer)
     isprimary = Column(Integer)
@@ -116,7 +116,7 @@ class groupassignment(Base):
     __tablename__ = 'groupassignments'
 
     groupassignmentid = Column(Integer, primary_key=True, unique=True)
-    userid = Column(UUID, ForeignKey('aausers.userid'))
+    userid = Column(UUID, ForeignKey('users.userid'))
     groupid = Column(Integer, ForeignKey('groups.groupid'))
     instrumentname = Column(String)
 
@@ -125,7 +125,7 @@ class groupassignment(Base):
         return serialize_class(self, self.__class__)
 
 class location(Base):
-    __tablename__ = 'aalocations'
+    __tablename__ = 'locations'
 
     locationid = Column(Integer, primary_key=True, unique=True)
     locationname = Column(String)
@@ -136,7 +136,7 @@ class location(Base):
         return serialize_class(self, self.__class__)
 
 class period(Base):
-    __tablename__ = 'aaperiods'
+    __tablename__ = 'periods'
 
     periodid = Column(Integer, primary_key=True, unique=True)
     starttime = Column(DateTime)

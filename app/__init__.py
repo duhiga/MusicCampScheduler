@@ -284,7 +284,7 @@ def grouppage(userid,groupid):
         #combine the last two queries with another query, finding everyone that both plays an instrument that's found in this
         #group AND isn't in the list of users that are already playing in this period.
         substitutes = session.query(instrument.instrumentname, user.userid, user.firstname, user.lastname).join(user).\
-            filter(~user.userid.in_(everyone_playing_in_periodquery), user.isactive == 1).\
+            filter(~user.userid.in_(everyone_playing_in_periodquery), user.isactive == 1, user.arrival <= thisperiod.starttime, user.departure >= thisperiod.endtime).\
             filter(instrument.instrumentname.in_(instruments_in_group_query), instrument.grade >= minimumgrade, instrument.grade <= maximumgrade, instrument.isactive == 1).\
             order_by(instrument.instrumentname)
     else:
@@ -345,7 +345,7 @@ def editgroup(userid,groupid,periodid=None):
         playersPlayingInPeriod = session.query(user.userid).join(groupassignment).join(group).filter(group.groupid != thisgroup.groupid).filter(group.periodid == selectedperiodid)
         #finds all players who are available to play in this group (they aren't already playing in other groups)
         playersdump = session.query(user.userid,user.firstname,user.lastname,instrument.instrumentname,instrument.grade,instrument.isprimary).\
-                    join(instrument).filter(~user.userid.in_(playersPlayingInPeriod), user.isactive == 1, instrument.isactive == 1).all()
+                    join(instrument).filter(~user.userid.in_(playersPlayingInPeriod), user.isactive == 1, user.arrival <= selectedperiod.starttime, user.departure >= selectedperiod.endtime, instrument.isactive == 1).all()
         playersdump_serialized = []
         for p in playersdump:
             playersdump_serialized.append({'userid': p.userid, 'firstname': p.firstname, 'lastname': p.lastname,
@@ -402,6 +402,11 @@ def editgroup(userid,groupid,periodid=None):
             session.rollback()
             session.close()
             return jsonify(message = 'You must give this group a name before saving or autofilling.', url = 'none')
+        thisperiod = session.query(period).filter(period.periodid == content['periodid']).first()
+        if thisperiod is None:
+            session.rollback()
+            session.close()
+            return jsonify(message = 'Could not find a period with the selected id. Refresh the page and try again.', url = 'none')
         thisgroupassignments = session.query(groupassignment).filter(groupassignment.groupid == thisgroup.groupid).all()
         for a in thisgroupassignments:
             session.delete(a)
@@ -424,7 +429,7 @@ def editgroup(userid,groupid,periodid=None):
                 log('Attempting to find user %s' % p['userid'])
                 playeruser = session.query(user).filter(user.userid == p['userid']).first()
                 #if the player is already playing in something, we have a clash and we have to exit completely. This may happen if multiple people are creating groups at the same time.
-                currentassignment = session.query(groupassignment.instrumentname, group.groupname, group.groupid).join(group).filter(groupassignment.userid == p['userid']).filter(group.periodid == content['periodid']).first()
+                currentassignment = session.query(groupassignment.instrumentname, group.groupname, group.groupid).join(group).filter(groupassignment.userid == p['userid']).filter(group.periodid == thisperiod.periodid).first()
                 if currentassignment is not None:
                     #if the player is already playing in something, we have a clash and we have to exit completely. This may happen if multiple people are creating groups at the same time.
                     if currentassignment.groupid != thisgroup.groupid:
@@ -440,8 +445,8 @@ def editgroup(userid,groupid,periodid=None):
                     session.close()
                     return jsonify(message = 'Could not find one of your selected players in the database. Please refresh the page and try again.', url = url)
                 else:
-                    #if the player is inactive, they should never have been shown to the admin and chosen - this could happen if they were set to inactive while the admin had the page open
-                    if playeruser.isactive != 1:
+                    #if the player is inactive or not attending camp at this time, they should never have been shown to the admin and chosen - this could happen if they were set to inactive while the admin had the page open
+                    if playeruser.isactive != 1 or playeruser.arrival > thisperiod.starttime or playeruser.departure < thisperiod.endtime:
                         url = 'none'
                         session.rollback()
                         session.close()
@@ -483,7 +488,7 @@ def editgroup(userid,groupid,periodid=None):
                             everyone_playing_in_period_query = session.query(user.userid).join(groupassignment).join(group).join(period).filter(period.periodid == thisgroup.periodid)
                             #combine the last query with another query, finding everyone that both plays an instrument that's found in this
                             #group AND isn't in the list of users that are already playing in this period.
-                            possible_players_query = session.query(user.userid).outerjoin(instrument).filter(~user.userid.in_(everyone_playing_in_period_query), user.isactive == 1).\
+                            possible_players_query = session.query(user.userid).outerjoin(instrument).filter(~user.userid.in_(everyone_playing_in_period_query), user.isactive == 1, user.arrival <= thisperiod.starttime, user.departure >= thisperiod.endtime).\
                                 filter(instrument.grade >= mingrade, instrument.grade <= maxgrade, instrument.instrumentname == i, instrument.isactive == 1)
                             log('Found %s possible players of a requested %s for instrument %s.' % (len(possible_players_query.all()), requiredplayers, i))
                             #if we found at least one possible player
@@ -548,10 +553,20 @@ def grouprequestpage(userid,periodid=None):
     session = Session()
     #gets the data associated with this user
     thisuser = session.query(user).filter(user.userid == userid).first()
+    today = datetime.datetime.combine(datetime.date.today(), datetime.time.min) #get today's date
+    intwodays = today + datetime.timedelta(days=2)
+    now = datetime.datetime.now() #get the time now
     if thisuser is None:
+        session.close()
         return ('Did not find user in database. You have entered an incorrect URL address.')
-    if thisuser.isactive != 1 and thisuser.isadmin != 1 and thisuser.conductor != 1:
-        return ('Your user is currently set to inactive. Inactive users cannot request groups.')
+    #if this camper is inactive, has not arrived at camp yet, or is departing before the end of tomorrow
+    if (thisuser.isactive != 1 or thisuser.arrival > now or thisuser.departure < intwodays) and periodid is None:
+        session.close()
+        return render_template('errorpage.html', \
+                            thisuser=thisuser, \
+                            campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
+                            errormessage = 'Your user is currently set to inactive or are not attending camp at this time. Inactive users cannot request groups. Navigate to your settings and change them, or revisit this page at another time.'
+                            )
     #check if this user is really a conductor and actually requested a conductorpage for a specific period
     if thisuser.isconductor == 1 and periodid is not None:
         conductorpage = True
@@ -561,8 +576,6 @@ def grouprequestpage(userid,periodid=None):
     else:
         conductorpage = False
         thisperiod = None
-    today = datetime.datetime.combine(datetime.date.today(), datetime.time.min) #get today's date
-    now = datetime.datetime.now() #get the time now
     #if this user isn't a conductor and/or they didn't request the conductor page and they've already surpassed their group-per-day limit, deny them.
     #UNTESTED!!! WHEN DOING A TRIAL RUN THIS NEEDS TO BE TESTED.
     if conductorpage == False:
@@ -586,7 +599,7 @@ def grouprequestpage(userid,periodid=None):
             #Finds all players who aren't already playing in this period
             playersPlayingInPeriod = session.query(user.userid).join(groupassignment).join(group).filter(group.periodid == periodid)
             playersdump = session.query(user.userid,user.firstname,user.lastname,instrument.instrumentname,instrument.grade,instrument.isprimary).\
-                join(instrument).filter(~user.userid.in_(playersPlayingInPeriod), user.isactive == 1).all()
+                join(instrument).filter(~user.userid.in_(playersPlayingInPeriod), user.isactive == 1, user.arrival <= thisperiod.starttime, user.departure >= thisperiod.endtime).all()
         else:
             #find all the instruments that everyone plays and serialize them to prepare to inject into the javascript
             playersdump = session.query(user.userid,user.firstname,user.lastname,instrument.instrumentname,instrument.grade,instrument.isprimary).\
@@ -890,19 +903,20 @@ def periodpage(userid,periodid):
     thisuser = session.query(user).filter(user.userid == userid).first()
     if thisuser is None:
         return ('Did not find user in database. You have entered an incorrect URL address.')
+    thisperiod = session.query(period).filter(period.periodid == periodid).first()
     #find any public events on during this period
     publicevents = session.query(group.groupname,group.groupid).filter(group.iseveryone == 1).filter(group.periodid == periodid).all()
     #start with the players that are playing in groups in the period
     players = session.query(user.userid, user.firstname, user.lastname, period.starttime, period.endtime, group.groupname,\
         groupassignment.instrumentname, location.locationname, groupassignment.groupid).\
         join(groupassignment).join(group).join(period).outerjoin(location).\
-        filter(user.isactive == 1, group.periodid == periodid, group.status == 'Confirmed').order_by(group.groupname,groupassignment.instrumentname).all()
+        filter(user.isactive == 1, user.arrival <= thisperiod.starttime, user.departure >= thisperiod.endtime, group.periodid == thisperiod.periodid, group.status == 'Confirmed').order_by(group.groupname,groupassignment.instrumentname).all()
     #grab just the userids of those players to be used in the next query
     players_in_groups_query = session.query(user.userid).\
         join(groupassignment).join(group).join(period).\
-        filter(user.isactive == 1, group.periodid == periodid, group.status == 'Confirmed')
+        filter(user.isactive == 1, user.arrival <= thisperiod.starttime, user.departure >= thisperiod.endtime, group.periodid == thisperiod.periodid, group.status == 'Confirmed')
     #find all other players to be displayed to the user
-    nonplayers = (session.query(user.userid, user.firstname, user.lastname).filter(~user.userid.in_(players_in_groups_query), user.isactive == 1).all())
+    nonplayers = (session.query(user.userid, user.firstname, user.lastname).filter(~user.userid.in_(players_in_groups_query), user.isactive == 1, user.arrival <= thisperiod.starttime, user.departure >= thisperiod.endtime).all())
     thisperiod = session.query(period).filter(period.periodid == periodid).first()
     session.close()
     return render_template('periodpage.html', \
@@ -1144,7 +1158,7 @@ def instrumentation(userid,periodid):
             session.add(grouprequest)
             #if the user plays the "conductor" instrument (i.e. they are actually a conductor) assign them to this group
             if content['conductoruserid'] is not None and content['conductoruserid'] != 'null' and content['conductoruserid'] != '':
-                userconductor = session.query(user).join(instrument, user.userid == instrument.userid).filter(user.userid == content['conductoruserid'], instrument.instrumentname == "Conductor", instrument.isactive == 1, user.isactive == 1).first()
+                userconductor = session.query(user).join(instrument, user.userid == instrument.userid).filter(user.userid == content['conductoruserid'], instrument.instrumentname == "Conductor", instrument.isactive == 1, user.isactive == 1, user.arrival <= thisperiod.starttime, user.departure >= thisperiod.endtime).first()
                 if userconductor is not None:
                     userplayinginperiod = session.query(user.userid).join(groupassignment).join(group).join(period).filter(period.periodid == thisperiod.periodid, user.userid == content['conductoruserid']).first()
                     if userplayinginperiod is None:

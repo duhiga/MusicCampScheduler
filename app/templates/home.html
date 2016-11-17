@@ -69,9 +69,6 @@
     {% if thisuser.isactive == 0 %}
         <h2>You are currently set to inactive. You will not be allocated to any groups.</h2>
     {% endif %}
-    {% if thisuser.arrival >= nextday or thisuser.departure <= previousday %}
-        <h2>You are not set as attending camp for this date. You will not be allocated to groups.</h2>
-    {% endif %}
     <h3>Announcements</h3>
     <p>{{ currentannouncement.content }}</p>
     <p style="text-align: center;">
@@ -119,12 +116,12 @@
                     </td>
                     <!--Group Name Column-->
                     <td>
-                        {% if not p.groupname %}
+                        {% if not p.groupname and p.starttime >= thisuser.arrival and p.endtime <= thisuser.departure %}
                         {{ p.periodname }}
 
                         {% else %}{% if p.ismusical == 1 %}
                         <a href="/user/{{ thisuser.userid }}/group/{{ p.groupid }}/">{{ p.groupname }}</a>
-                        {% else %}{% if p.groupname == "absent" %}
+                        {% else %}{% if p.groupname == "absent" or p.starttime < thisuser.arrival or p.endtime > thisuser.departure %}
                         ABSENT
                         {% else %}
                         {{ p.groupname }}
@@ -132,8 +129,20 @@
                         {% endif %}
                         {% endif %}
                     </td>
-                    <td>{{ p.instrumentname }}</td>
-                    <td>{{ p.locationname }}</td>
+                    <td>
+                        {% if p.groupname == "absent" or p.starttime < thisuser.arrival or p.endtime > thisuser.departure %}
+                        ABSENT
+                        {% else %}
+                        {{ p.instrumentname }}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if p.groupname == "absent" or p.starttime < thisuser.arrival or p.endtime > thisuser.departure %}
+                        ABSENT
+                        {% else %}
+                        {{ p.locationname }}
+                        {% endif %}
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>

@@ -142,7 +142,9 @@
         {% block tools %}{% endblock %}
         <h4><b>Navigation</b></h4>
         <a href="/user/{{ thisuser.userid }}/" class="w3-hover-black"><i class="fa fa-home"></i> Home</a>
+        {% if thisuser.isactive == 1 %}
         <a href="/user/{{ thisuser.userid }}/grouprequest/" class="w3-hover-black">Request a group</a>
+        {% endif %}
         <a href="/user/{{ thisuser.userid }}/grouphistory/" class="w3-hover-black">Group History</a>
         <a href="/user/{{ thisuser.userid }}/settings/" class="w3-hover-black">Settings</a>
         <a href="mailto:{{ supportemailaddress }}" class="w3-hover-black">Contact Camp Administration</a>

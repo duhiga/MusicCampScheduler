@@ -50,6 +50,7 @@
     <Content Include="requirements.txt" />
     <Content Include="js\jquery.tablesorter.js" />
     <Content Include="templates\edituser.html" />
+    <Content Include="templates\errorpage.html" />
     <Content Include="templates\useradmin.html" />
     <Content Include="templates\home.html" />
     <Content Include="templates\editgroup.html" />

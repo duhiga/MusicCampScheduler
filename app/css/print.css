@@ -1,1 +1,10 @@
-﻿.no-print, .no-print * { visibility: hidden !important; }
+﻿.no-print, .no-print * { display: none !important; }
+.no-print-margin { margin-left:0px !important; }
+body {
+      color: #000 !important;
+      background: #fff !important;
+   }
+body
+{
+  margin: 25mm 25mm 25mm 25mm !important;
+}

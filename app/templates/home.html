@@ -69,19 +69,22 @@
     {% if thisuser.isactive == 0 %}
         <h2>You are currently set to inactive. You will not be allocated to any groups.</h2>
     {% endif %}
+    {% if thisuser.arrival >= nextday or thisuser.departure <= previousday %}
+        <h2>You are not set as attending camp for this date. You will not be allocated to groups.</h2>
+    {% endif %}
     <h3>Announcements</h3>
     <p>{{ currentannouncement.content }}</p>
     <p style="text-align: center;">
         {% if previousday == today %}
         <a href="/user/{{ thisuser.userid }}/">Previous</a>
         {% else %}
-        <a href="/user/{{ thisuser.userid }}/date/{{ previousday }}/">Previous</a>
+        <a href="/user/{{ thisuser.userid }}/date/{{ previousday.strftime('%Y-%m-%d') }}/">Previous</a>
         {% endif %}
         <b> Schedule for {{ date.strftime('%a, %d %b') }}</b>
         {% if nextday == today %}
         <a href="/user/{{ thisuser.userid }}/">Next</a>
         {% else %}
-        <a href="/user/{{ thisuser.userid }}/date/{{ nextday }}/">Next</a>
+        <a href="/user/{{ thisuser.userid }}/date/{{ nextday.strftime('%Y-%m-%d') }}/">Next</a>
         {% endif %}
     </p>
     <ul class="tab">

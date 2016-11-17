@@ -188,8 +188,8 @@ def home(userid,inputdate='n'):
                         count=count, \
                         date=displaydate,\
                         periods=periods, \
-                        previousday=datetime.datetime.strftime(previousday, '%Y-%m-%d'), \
-                        nextday=datetime.datetime.strftime(nextday, '%Y-%m-%d'), \
+                        previousday=previousday, \
+                        nextday=nextday, \
                         today=today, \
                         campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
                         currentannouncement=currentannouncement, \
@@ -951,74 +951,80 @@ def edituser(userid, targetuserid):
     session = Session()
     #gets the data associated with this user
     thisuser = session.query(user).filter(user.userid == userid).first()
-    if thisuser.isadmin != 1:
-        session.close()
-        return 'You do not have permission to view this page'
-    else:
-        if targetuserid is not None:
-            targetuser = session.query(user).filter(user.userid == targetuserid).first()
-            if targetuser is None:
+    if targetuserid is not None:
+        targetuser = session.query(user).filter(user.userid == targetuserid).first()
+        if targetuser is None:
                 return 'Could not find requested user in database'
-        else:
-            targetuser = user()
-        targetuserinstruments = session.query(instrument).filter(instrument.userid == targetuser.userid).all()
-        periods = session.query(period).all()
-        #if this is a user requesting the page
-        if request.method == 'GET':
+        elif thisuser.isadmin != 1 and thisuser.userid != targetuser.userid:
             session.close()
-            return render_template('edituser.html', \
-                                    thisuser=thisuser, \
-                                    targetuser=targetuser, \
-                                    targetuserinstruments=targetuserinstruments, \
-                                    campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
-                                    periods=periods, \
-                                    maximumlevel=int(getconfig('MaximumLevel')), \
-                                    )
+            return 'You do not have permission to view this page'
+    else:
+        targetuser = user()
+    targetuserinstruments = session.query(instrument).filter(instrument.userid == targetuser.userid).all()
+    periods = session.query(period).all()
+    #if this is a user requesting the page
+    if request.method == 'GET':
+        session.close()
+        return render_template('edituser.html', \
+                                thisuser=thisuser, \
+                                targetuser=targetuser, \
+                                targetuserinstruments=targetuserinstruments, \
+                                campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
+                                periods=periods, \
+                                maximumlevel=int(getconfig('MaximumLevel')), \
+                                )
         
-        #if this is a user that just pressed submit
-        if request.method == 'POST':
-            #format the packet received from the server as JSON
-            content = request.json
-            if content['firstname'] == '' or content['firstname'] == 'null' or content['firstname'] == 'None' or \
-                content['lastname'] == '' or content['lastname'] == 'null' or content['lastname'] == 'None':
-                session.rollback()
-                session.close()
-                return jsonify(message = 'You cannot save a user without a firstname and lastname.', url = 'none')
-            #add the content in the packet to this group's attributes
-            for key,value in content.iteritems():
-                if not isinstance(value, list) and value is not None and value != 'null' and value != '' and value != 'None':
-                    log('Setting %s to be %s' % (key, value))
-                    setattr(targetuser,key,value)
-
-            #is this user doesn't have an ID yet, they are new and we must set them up
-            if targetuser.userid is None:
-                #assign them a userid from a randomly generated uuid
-                targetuser.userid = str(uuid.uuid4())
-                session.add(targetuser)
-            #if the user already has an ID, merge them - they're new
-            else:
-                session.merge(targetuser)
-            session.commit()
-            for i in content['instruments']:
-                if i['instrumentid'] != 'new':
-                    thisinstrument = session.query(instrument).filter(instrument.instrumentid == i['instrumentid']).first()
-                else:
-                    thisinstrument = instrument(userid = targetuser.userid)
-                    session.add(thisinstrument)
-                    log('Added new instrument for user %s' % targetuser.firstname)
-                for key,value in i.iteritems():
-                    if key != 'instrumentid' and value != 'None':
-                        setattr(thisinstrument,key,value)
-            session.merge(thisinstrument)
-            session.commit()
-            url = ('/user/' + str(thisuser.userid) + '/useradmin/')
+    #if this is a user that just pressed submit
+    if request.method == 'POST':
+        #format the packet received from the server as JSON
+        content = request.json
+        if content['firstname'] == '' or content['firstname'] == 'null' or content['firstname'] == 'None' or \
+            content['lastname'] == '' or content['lastname'] == 'null' or content['lastname'] == 'None':
+            session.rollback()
             session.close()
-            #send the user back to their home
-            return jsonify(message = 'none', url = url)
+            return jsonify(message = 'You cannot save a user without a firstname and lastname.', url = 'none')
+        if content['arrival'] >= content['departure']:
+            session.rollback()
+            session.close()
+            return jsonify(message = 'Your departure time must be after your arrival time.', url = 'none')
+        #add the content in the packet to this group's attributes
+        for key,value in content.iteritems():
+            if not isinstance(value, list) and value is not None and value != 'null' and value != '' and value != 'None':
+                log('Setting %s to be %s' % (key, value))
+                setattr(targetuser,key,value)
+
+        #is this user doesn't have an ID yet, they are new and we must set them up
+        if targetuser.userid is None:
+            #assign them a userid from a randomly generated uuid
+            targetuser.userid = str(uuid.uuid4())
+            session.add(targetuser)
+        #if the user already has an ID, merge them - they're new
+        else:
+            session.merge(targetuser)
+        session.commit()
+        for i in content['instruments']:
+            if i['instrumentid'] != 'new':
+                thisinstrument = session.query(instrument).filter(instrument.instrumentid == i['instrumentid']).first()
+            else:
+                thisinstrument = instrument(userid = targetuser.userid)
+                session.add(thisinstrument)
+                log('Added new instrument for user %s' % targetuser.firstname)
+            for key,value in i.iteritems():
+                if key != 'instrumentid' and value != 'None':
+                    setattr(thisinstrument,key,value)
+        session.merge(thisinstrument)
+        session.commit()
+        session.close()
+        #send the user back to their home
+        return jsonify(message = 'Success! New settings applied.', url = 'none')
 
 @app.route('/user/<userid>/newuser/', methods=['GET', 'POST'])
 def newuser(userid):
     return edituser(userid,None)
+
+@app.route('/user/<userid>/settings/', methods=['GET', 'POST'])
+def settings(userid):
+    return edituser(userid,userid)
 
 #sends bulk emails to an array of users sent with the request
 @app.route('/user/<userid>/email/', methods=['POST'])

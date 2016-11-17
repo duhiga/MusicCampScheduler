@@ -1,8 +1,10 @@
 {% extends "layout.html" %}
 {% block title %}{{ campname }} Group Editor{% endblock %}
 {% block pagename %}
-    {% if targetuser.userid is not none %}
+    {% if targetuser.userid is not none and thisuser.isadmin == 1 %}
     &#34;{{ targetuser.firstname }} {{ targetuser.lastname }}&#34; Editor
+    {% elif thisuser.isadmin != 1 %}
+    Settings
     {% else %}
     New User Editor
     {% endif %}
@@ -15,7 +17,7 @@
         var request = {};
         //add the music name and minimum level to the JSON. Establish an array to contain the player names
         $('.userattribute').each(function () {
-            if ($(this).val() != 'null' && $(this).val() != '' && $(this).val() != 'None' && $(this).val() != '<HIDDEN>')
+            if ($(this).val() != null && $(this).val() != '' && $(this).val() != 'None' && $(this).val() != '<HIDDEN>')
             console.log('Setting ' + $(this).attr('id') + ' to ' + $(this).val());
             request[$(this).attr('id')] = $(this).val();
         });
@@ -102,24 +104,23 @@
     {% endblock %}
 {% block content %}
 {% if targetuser.userid is not none %}
+    {% if thisuser.isadmin == 1 %}
     <h1>Editing User &#34;{{ targetuser.firstname }} {{ targetuser.lastname }}&#34;</h1>
+    {% endif %}
 {% else %}
     <h1>New User</h1>
 {% endif %}
-<h2>User Attributes</h2>
+<h2>{% if thisuser.isadmin == 1 %}User{% else %}Your{% endif %} Settings</h2>
+<p>Note: You will only be assigned a group if you are set to Active, and the group is whithin your arrival and departure times.</p>
 <table>
-    <thead>
-        <tr>
-            <th>Attribute</th>
-            <th>Value</th>
-        </tr>
-    </thead>
     <tbody>
         <tr>
             <td>First Name</td>
             <td>
-                {% if targetuser.userid is not none %}
+                {% if targetuser.userid is not none and thisuser.isadmin == 1 %}
                 <input type="text" id="firstname" class="userattribute" value="{{ targetuser.firstname }}">
+                {% elif thisuser.isadmin != 1 %}
+                {{ targetuser.firstname }}
                 {% else %}
                 <input type="text" id="firstname" class="userattribute" value="">
                 {% endif %}
@@ -128,19 +129,23 @@
         <tr>
             <td>Last Name</td>
             <td>
-                {% if targetuser.userid is not none %}
+                {% if targetuser.userid is not none and thisuser.isadmin == 1 %}
                 <input type="text" id="lastname" class="userattribute" value="{{ targetuser.lastname }}">
+                {% elif thisuser.isadmin != 1 %}
+                {{ targetuser.lastname }}
                 {% else %}
                 <input type="text" id="lastname" class="userattribute" value="">
                 {% endif %}
             </td>
         </tr>
+        {% if thisuser.isadmin == 1 %}
         <tr>
             <td>Email</td>
             <td>
                 <input id="email" type="email" class="userattribute" value="<HIDDEN>">
             </td>
         </tr>
+        {% endif %}
         <tr>
             <td>Arrival</td>
             <td>
@@ -148,9 +153,9 @@
                     <option value="None"></option>
                     {% for p in periods %}
                     {% if p.starttime == targetuser.arrival %}
-                    <option value="{{ p.periodid }}" selected="selected">{{ p.periodname }}, {{ p.starttime.strftime('%a, %d %b') }}</option>
+                    <option value="{{ p.starttime }}" selected="selected">{{ p.periodname }}, {{ p.starttime.strftime('%a, %d %b') }}</option>
                     {% else %}
-                    <option value="{{ p.periodid }}">{{ p.periodname }}, {{ p.starttime.strftime('%a, %d %b') }}</option>
+                    <option value="{{ p.starttime }}">{{ p.periodname }}, {{ p.starttime.strftime('%a, %d %b') }}</option>
                     {% endif %}
                     {% endfor %}
                 </select>
@@ -163,14 +168,29 @@
                     <option value="None"></option>
                     {% for p in periods %}
                     {% if p.starttime == targetuser.departure %}
-                    <option value="{{ p.periodid }}" selected="selected">{{ p.periodname }}, {{ p.starttime.strftime('%a, %d %b') }}</option>
+                    <option value="{{ p.starttime }}" selected="selected">{{ p.periodname }}, {{ p.starttime.strftime('%a, %d %b') }}</option>
                     {% else %}
-                    <option value="{{ p.periodid }}">{{ p.periodname }}, {{ p.starttime.strftime('%a, %d %b') }}</option>
+                    <option value="{{ p.starttime }}">{{ p.periodname }}, {{ p.starttime.strftime('%a, %d %b') }}</option>
                     {% endif %}
                     {% endfor %}
                 </select>
             </td>
         </tr>
+        <tr>
+            <td>Active</td>
+            <td>
+                <select id="isactive" class="userattribute">
+                    {% if targetuser.isactive == 0 %}
+                    <option value="0" selected="selected">Inactive</option>
+                    <option value="1">Active</option>
+                    {% else %}
+                    <option value="0">Inactive</option>
+                    <option value="1" selected="selected">Active</option>
+                    {% endif %}
+                </select>
+            </td>
+        </tr>
+        {% if thisuser.isadmin == 1 %}
         <tr>
             <td>Announcer</td>
             <td>
@@ -213,26 +233,14 @@
                 </select>
             </td>
         </tr>
-        <tr>
-            <td>Active</td>
-            <td>
-                <select id="isactive" class="userattribute">
-                    {% if targetuser.isactive == 0 %}
-                    <option value="0" selected="selected">No</option>
-                    <option value="1">Yes</option>
-                    {% else %}
-                    <option value="0">No</option>
-                    <option value="1" selected="selected">Yes</option>
-                    {% endif %}
-                </select>
-            </td>
-        </tr>
+        {% endif %}
     </tbody>
 </table>
+{% if thisuser.isadmin == 1 %}
 <p>Send this user their dashboard link via email: <button type="button" id="send_email">Send Email</button></p>
-<h2>User Instruments</h2>
-<p>This section allows you to edit the instrument records for this user. If you want to disable one of their instruments, set it to not active. 
-    If you want to add an additional instrument, set it up and submit. You can revisit this page if you want to enter more than one instrument.</p>
+{% endif %}
+<h2>{% if thisuser.isadmin == 1 %}User{% else %}Your{% endif %} Instruments</h2>
+<p>Note: An instrument set to inactive will cause you to no longer be assigned to play this instrument.</p>
 <table>
     <thead>
         <tr>
@@ -281,11 +289,11 @@
                 <td>
                     <select class="instrumentconfig" data-type="isactive" data-instrumentid="{{t.instrumentid}}" data-mapping="{{ loop.index }}">
                         {% if t.isactive == 1 %}
-                        <option value="0">No</option>
-                        <option value="1" selected="selected">Yes</option>
+                        <option value="0">Inactive</option>
+                        <option value="1" selected="selected">Active</option>
                         {% else %}
-                        <option value="0" selected="selected">No</option>
-                        <option value="1">Yes</option>
+                        <option value="0" selected="selected">Inactive</option>
+                        <option value="1">Active</option>
                         {% endif %}
                     </select>
                 </td>

@@ -21,7 +21,7 @@ Base = declarative_base()
 
 def serialize_class(inst, cls):
     convert = dict()
-    # add your coversions for things like datetime's 
+    # add your coversions for things like datetimes 
     # and what-not that aren't serializable.
     d = dict()
     for c in cls.__table__.columns:

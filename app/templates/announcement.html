@@ -1,21 +1,6 @@
 {% extends "layout.html" %}
 {% block title %}{{ campname }} Announcement Editor{% endblock %}
 {% block pagename %}Announcement Editor{% endblock %}
-{% block head %}
-    <script>
-
-        //function to be used by the submit button. called by the template.
-        function buildrequest() {
-            var request = {};
-            request.content = $("#announcement_text").val();
-            return request
-        }
-        
-        $(document).ready(function () {
-        });
-        
-    </script>
-{% endblock %}
 {% block tools %}
 <h4><b>Tools</b></h4>
 <a href="#" class="w3-hover-black submit_button" data-method="POST">Submit</a>
@@ -24,7 +9,7 @@
     <p>
         This page is used to edit the announcement that shows up on all user dashboards.
     </p>
-    <p><textarea id="announcement_text" cols="40" rows="5">{{ currentannouncement.content }}</textarea></p>
+    <p><textarea class="form-attribute" id="content" cols="40" rows="5">{{ currentannouncement.content }}</textarea></p>
 {% endblock %}
 {% block footer %}
 <!-- Navbar -->

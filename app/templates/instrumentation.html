@@ -4,31 +4,6 @@
 {% block head %}
     <script>
 
-        //function to be used by the submit button. called by the template.
-        function buildrequest() {
-            var request = {};
-            request.locationid = $('#location_dropdown').val();
-            request.groupname = $('#textbox_groupname').val();
-            request.music = $('#textbox_music').val();
-            request.minimumlevel = $('#minimumlevel_dropdown').val();
-            request.maximumlevel = $('#maximumlevel_dropdown').val();
-            request.conductoruserid = $('#conductorid').val();
-            //establish an array to fill with instruments and numbers
-            request.instruments = []
-            //for each instrument
-            $('.instrumentnumber_dropdown').each(function() {
-                //if we find a blank instrument box
-                if ($(this).val() == "") {
-                    console.log("Selected " + $(this).attr('id') + " as None");
-                }
-                else {
-                    request[$(this).attr('id')] = $(this).val();
-                    console.log("Selected " + $(this).attr('id') + ' as ' + $(this).val());
-                }
-            });
-            return request
-        }
-
         /* this script handles all user interaction in the group request page. Upon page load, it downloads all players
         in the camp including the instruments they play, all templates as stated by the config.xml, and the instruments
         this user plays. it uses all of this data to populate drop-down boxes, depending on what the user selects. */
@@ -48,21 +23,18 @@
                 selectedTemplate = grep_template[0];
                 console.log('Selected template is:');
                 console.log(selectedTemplate);
-                $("#textbox_groupname").val(selectedTemplate.grouptemplatename)
-                console.log('This group template minimum level is ' + selectedTemplate.minimumlevel)
-                $("#minimumlevel_dropdown").val(selectedTemplate.minimumlevel).change()
-                $("#maximumlevel_dropdown").val(selectedTemplate.maximumlevel).change()
-                $("#location_dropdown").val(selectedTemplate.defaultlocationid).change()
+                $("#groupname").val(selectedTemplate.grouptemplatename)
+                $("#minimumlevel").val(selectedTemplate.minimumlevel).change()
+                $("#maximumleveln").val(selectedTemplate.maximumlevel).change()
+                $("#locationid").val(selectedTemplate.defaultlocationid).change()
                 //for each instrument type in the group template
                 $.each(selectedTemplate, function(key,value){
                     //make sure it's an instrument type and not other associated metadata
                     if (key != 'grouptemplateid' && key != 'grouptemplatename' && key != 'size') {
-                        console.log(key + ": "+String(value));
                         //if the current instrument we're looking at is the same as the one that we selected for the user, decrement it because we already have one player
                         $('#' + key).val('').change();
                         if (value > 0) {
                             $('#' + key).val(value).change();
-                            console.log('attempted to change instrument textbox ' + key + ' to ' + value);
                         }
                     }
                 });
@@ -96,16 +68,16 @@
                 </tr>
                 <tr>
                     <th>Group Name</th>
-                    <td><input type="text" id="textbox_groupname"></td>
+                    <td><input type="text" class="form-attribute" id="groupname"></td>
                 </tr>
                 <tr>
                     <th>Music</th>
-                    <td><input type="text" id="textbox_music"></td>
+                    <td><input type="text" class="form-attribute" id="music"></td>
                 </tr>
                 <tr>
                     <th>Location</th>
                     <td>
-                        <select id="location_dropdown">
+                        <select class="form-attribute" id="locationid">
                             {% for l in locations %}
                             <option value="{{ l.locationid }}">{{ l.locationname }}</option>
                             {% endfor %}
@@ -115,7 +87,7 @@
                 <tr>
                     <th>Minimum Level</th>
                     <td>
-                        <select id="minimumlevel_dropdown">
+                        <select class="form-attribute" id="minimumlevel">
                             {% for n in range(maximumlevel + 1) %}
                             {% if n  == 0 %}
                             <option value="{{ n }}">Auto</option>
@@ -129,7 +101,7 @@
                 <tr>
                     <th>Maximum Level</th>
                     <td>
-                        <select id="maximumlevel_dropdown">
+                        <select class="form-attribute" id="maximumlevel">
                             {% for n in range(maximumlevel + 1) %}
                             {% if n  == 0 %}
                             <option value="{{ n }}">Auto</option>
@@ -143,7 +115,7 @@
             </table>
             <p>
                 Conductor Name:
-                <select id="conductorid">
+                <select class="form-attribute" id="conductoruserid">
                     <option value=""></option>
                     {% for c in conductors %}
                         {% if c.userid == thisuser.userid %}
@@ -165,7 +137,7 @@
                 <tr>
                     <td>{{ i }}</td>
                     <td>
-                        <select class="instrumentnumber_dropdown" id="{{ i }}">
+                        <select class="instrumentnumber_dropdown form-attribute" id="{{ i }}">
                             {% set n = 21 %}
                             {% for n in range(n) %}
                                 <option value="{{ n }}">{{ n }}</option>

@@ -1,22 +1,6 @@
 {% extends "layout.html" %}
 {% block title %}{{ campname }} Public Event Creation{% endblock %}
 {% block pagename %}Create Public Event{% endblock %}
-{% block head %}
-    <script>
-
-        //function to be used by the submit button. called by the template.
-        function buildrequest() {
-            var request = {};
-            request.name = $("#name_textbox").val();
-            request.location = $("#location_dropdown").val();
-            return request
-        }
-
-        $(document).ready(function () {
-        });
-
-    </script>
-{% endblock %}
 {% block tools %}
 <h4><b>Tools</b></h4>
 <a href="#" class="w3-hover-black submit_button" data-method="POST">Submit</a>
@@ -40,10 +24,10 @@
     This page is used to create a public event, such as a Quiz night, Drinks, Dance, etc. It appears on everyone's dashboards
     unless they are assigned to another group. Any specific group assignment overwrites this public invitation.
 </p>
-<p>What is the name of the event? This will appear on all user's dashboards. <input type="text" id="name_textbox"></p>
+<p>What is the name of the event? This will appear on all user's dashboards. <input type="text" class="form-attribute" id="groupname"></p>
 <p>
     Where will this event be held? 
-    <select id="location_dropdown">
+    <select class="form-attribute" id="locationid">
         <option value=""></option>
         {% for l in locations %}
         <option value="{{ l.locationid }}">{{ l.locationname }}</option>

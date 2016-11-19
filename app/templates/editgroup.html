@@ -4,30 +4,6 @@
 {% block head %}
     <script>
 
-        //function to be used by the submit button. called by the template.
-        function buildrequest() {
-            var request = {};
-            //for each group_attribute dropdown on the page, add the value to the object
-            $('.group_attribute').each(function() {
-                request[$(this).attr('id')] = $(this).val();
-            });
-            $('.instrumentnumber_dropdown').each(function() {
-                request[$(this).data('instrument')] = $(this).val();
-            });
-            //establish an array to fill with player and instruments
-            request.players = []
-            $('.player_dropdown').each(function() {
-                //create a new object
-                var iplayer = {};
-                //add the contents of the instrument dropdown to the object
-                iplayer.instrumentname = $(this).data('instrument');
-                iplayer.userid = $(this).val();
-                //push the player object to the players array in the request object
-                request.players.push(iplayer);
-            });
-            return request
-        }
-
         $(document).ready(function () {
 
             //turn the dump of all players available in this period to a JS object
@@ -50,6 +26,8 @@
             var grouptemplates = {{ grouptemplates_serialized|tojson }};
             {% endif %}
 
+            var uid = 0
+
             //this function updates the table slot containing the total number of players in the group.
             function updatetotal() {
                 var sum = 0;
@@ -62,50 +40,57 @@
             //adds a player dropdown to a given cell
             function addPlayer(cell) {
                 instrument = cell.attr('data-instrument')
-                var sel = ($('<select class="player_dropdown" data-instrument="' + instrument + '">')).appendTo(cell);
+                var sel = ($('<select class="player_dropdown form-object-master" data-instrument="' + instrument + '" data-key="userid" data-mapping="' + uid + '">')).appendTo(cell);
                 sel.append($("<option>").attr('value',""));
                 for (var i = 0; i < playersdump.length; i++) {
                     if (playersdump[i].instrumentname == instrument) {
                         sel.append($("<option>").attr('value',playersdump[i].userid).text(playersdump[i].grade + ' - ' + playersdump[i].firstname + ' ' + playersdump[i].lastname));
                     }
                 }
+                $('<input type="hidden" class="hidden_instrument_name" data-key="instrumentname" value="' + instrument + '" data-mapping="' + uid + '">').appendTo(cell);
+                uid = uid + 1;
             }
 
             //removes the last player dropdown in a cell
             function removePlayer(cell) {
                 dropdowns = jQuery(cell).find('.player_dropdown')
-                dropdowns[dropdowns.length - 1].remove()
+                lastdropdown = dropdowns[dropdowns.length - 1]
+                $('.hidden_instrument_name[data-mapping=' + $(lastdropdown).data('mapping') + ']').remove()
+                lastdropdown.remove()
             }
 
             //run when a user changes the select template dropdown
             $(document).on("change", '#group_template_dropdown', function () {
-                //get the user selected template and format it so we can iterate over it later
-                var grep_template = $.grep(grouptemplates, function (elt) {
-                    return elt.grouptemplatename === $(group_template_dropdown).val();
-                });
-                selectedTemplate = grep_template[0];
-                console.log('Selected template is:');
-                console.log(selectedTemplate);
-                $('#groupname').val(selectedTemplate.grouptemplatename).change();
-                //for each instrument type in the group template
-                $.each(selectedTemplate, function(key,value) {
-                    //make sure it's an instrument type and not other associated metadata
-                    if (key != 'grouptemplateid' && key != 'grouptemplatename' && key != 'size' && key != 'minimumlevel' && key != 'maximumlevel' && key != 'defaultlocationid') {
-                        if (value == '' || value == null) {
-                            value = 0;
+                if ($(this).val() != '') {
+                    //get the user selected template and format it so we can iterate over it later
+                    var grep_template = $.grep(grouptemplates, function (elt) {
+                        return elt.grouptemplatename === $(group_template_dropdown).val();
+                    });
+                    selectedTemplate = grep_template[0];
+                    console.log('Selected template is:');
+                    console.log(selectedTemplate);
+                    $('#groupname').val(selectedTemplate.grouptemplatename).change();
+                    //for each instrument type in the group template
+                    $.each(selectedTemplate, function(key,value) {
+                        //make sure it's an instrument type and not other associated metadata
+                        if (key != 'grouptemplateid' && key != 'grouptemplatename' && key != 'size' && key != 'minimumlevel' && key != 'maximumlevel' && key != 'defaultlocationid') {
+                            if (value == '' || value == null) {
+                                value = 0;
+                            }
+                            $('.instrumentnumber_dropdown[data-instrument=' + key + ']').val(value).change();
                         }
-                        $('#number_' + key).val(value).change();
-                    }
-                    if (key == 'minimumlevel' || key == 'maximumlevel') {
-                        if (value == '' || value == 'null') {
-                            $('#' + key).val(0).change();
-                        }
-                        else {
-                            $('#' + key).val(value).change();
-                        }
+                        if (key == 'minimumlevel' || key == 'maximumlevel') {
+                            if (value == '' || value == 'null') {
+                                $('#' + key).val(0).change();
+                            }
+                            else {
+                                $('#' + key).val(value).change();
+                            }
                         
-                    }
-                });
+                        }
+                    });
+                }
+                
             });
 
             //when user changes any instrument number drop down boxes
@@ -164,11 +149,7 @@
 
             //when the page loads for the first time, change the instrument numbers to the correct numbers
             {% for i in instrumentlist %}
-            {% if thisgroup[i] == None %}
-            $('#number_{{i}}').val(0).change();
-            {% else %}
-            $('#number_{{i}}').val({{ thisgroup[i] }}).change();
-            {% endif %}
+            $('.instrumentnumber_dropdown[data-instrument={{i}}]').val({{ thisgroup[i] }}).change();
             {% endfor %}
 
             //changes all player dropdowns to match the players already playing in the group. 
@@ -209,13 +190,13 @@
         <tr>
             <th>Name</th>
             <td class="w3-hide-small">{{ thisgroup.groupname }}</td>
-            <td><input type="text" id="groupname" class="group_attribute" value="{% if thisgroup.groupname != None %}{{ thisgroup.groupname }}{% endif %}"></td>
+            <td><input type="text" id="groupname" class="form-attribute" value="{% if thisgroup.groupname != None %}{{ thisgroup.groupname }}{% endif %}"></td>
         </tr>
         <tr>
             <th>Status</th>
             <td class="w3-hide-small">{{ thisgroup.status }}</td>
             <td>
-                <select id="status" class="group_attribute">
+                <select id="status" class="form-attribute">
                     {% if thisgroup.status == "Confirmed" %}
                     <option value="Queued">Queued</option>
                     <option value="Confirmed" selected="selected">Confirmed</option>
@@ -229,7 +210,7 @@
         <tr>
             <th>Music</th>
             <td class="w3-hide-small">{{ thisgroup.music }}</td>
-            <td><input type="text" id="music" class="group_attribute" value="{{ thisgroup.music }}"></td>
+            <td><input type="text" id="music" class="form-attribute" value="{{ thisgroup.music }}"></td>
         </tr>
         <tr>
             <th>Period</th>
@@ -239,7 +220,7 @@
             </td>
             {% endif %}
             <td>
-                <select id="periodid" class="group_attribute">
+                <select id="periodid" class="form-attribute">
                     <option value="None"></option>
                     {% for p in periods %}
                     {% if p.periodid == selectedperiod.periodid %}
@@ -255,7 +236,7 @@
             <th>Location</th>
             <td class="w3-hide-small">{{ thislocation.locationname }}</td>
             <td>
-                <select id="locationid" class="group_attribute">
+                <select id="locationid" class="form-attribute">
                     {% for l in locations %}
                     {% if l.locationid == thislocation.locationid %}
                     <option value="{{ l.locationid }}" selected="selected">{{ l.locationname }} - Capacity: {{ l.capacity }}</option>
@@ -270,7 +251,7 @@
             <th>Minimum Level</th>
             <td class="w3-hide-small">{{ thisgroup.minimumlevel }}</td>
             <td>
-                <select id="minimumlevel" class="group_attribute">
+                <select id="minimumlevel" class="form-attribute">
                     {% for n in range(maximumlevel + 1) %}
                     {% if n == thisgroup.minimumlevel and n == 0 %}
                     <option value="{{ n }}" selected="selected">Auto</option>
@@ -289,7 +270,7 @@
             <th>Maximum Level</th>
             <td class="w3-hide-small">{{ thisgroup.maximumlevel }}</td>
             <td>
-                <select id="maximumlevel" class="group_attribute">
+                <select id="maximumlevel" class="form-attribute">
                     {% for n in range(maximumlevel + 1) %}
                     {% if n == thisgroup.maximumlevel and n == 0 %}
                     <option value="{{ n }}" selected="selected">Auto</option>
@@ -312,7 +293,7 @@
                 {% endif %}
             </td>
             <td>
-                <select id="ismusical" class="group_attribute">
+                <select id="ismusical" class="form-attribute">
                     {% if thisgroup.ismusical == 0 %}
                     <option value="1">Yes</option>
                     <option value="0" selected="selected">No</option>
@@ -362,14 +343,13 @@
             <th>Instrument</th>
             <th>Number</th>
             <th>Current Players</th>
-            <!--<th>Available Players</th>-->
         </tr>
         {% set count = 0 -%}
         {% for i in instrumentlist %}
         <tr id="row_{{ i }}">
             <td>{{ i }}</td>
             <td>
-                <select class="instrumentnumber_dropdown" id="number_{{ i }}" data-instrument="{{i}}">
+                <select class="instrumentnumber_dropdown form-attribute" id="{{ i }}" data-instrument="{{ i }}">
                     <option value="0" selected="selected">0</option>
                     <option value="1">1</option>
                     <option value="2">2</option>
@@ -393,7 +373,7 @@
                     <option value="20">20</option>
                 </select>
             </td>
-            <td class="players_cell" data-instrument="{{i}}">
+            <td class="players_cell" data-instrument="{{ i }}">
             </td>
         </tr>
         {% endfor %}

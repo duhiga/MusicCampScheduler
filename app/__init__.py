@@ -413,14 +413,15 @@ def editgroup(userid,groupid,periodid=None):
         #add the content in the packet to this group's attributes
         for key,value in content.iteritems():
             if value is not None or value != 'null' or value != '' or key != 'allow_non_primary':
-               setattr(thisgroup,key,value)
+                log('Setting %s to be %s' % (key, value))
+                setattr(thisgroup,key,value)
         thisgroup.requesteduserid = thisuser.userid
         if groupid == None:
             session.add(thisgroup)
             session.commit()
         foundempty = False
         foundfilled = True
-        for p in content['players']:
+        for p in content['objects']:
             if p['userid'] == '' or p['userid'] is None:
                 foundempty = True
             #if the playerid is not null, we create a groupassignment for them and bind it to this group
@@ -509,14 +510,22 @@ def editgroup(userid,groupid,periodid=None):
                                     log('Selected %s with playcount %s to play %s' % (pl.userid, pl.playcount, i))
                                     playergroupassignment = groupassignment(userid = pl.userid, groupid = thisgroup.groupid, instrumentname = i)
                                     session.add(playergroupassignment)
-        if content['submittype'] == 'autofill' or content['submittype'] == 'save':
+        try:
+            session.merge(thisgroup)
+            session.commit()
+        except Exception as ex:
+            log('failed to commit changes to database after a groupedit on group %s with error: %s' % (thisgroup.groupid,ex))
+        if content['submittype'] == 'autofill':
             url = '/user/' + str(thisuser.userid) + '/group/' + str(thisgroup.groupid) + '/edit/'
+            message = 'none'
+        elif content['submittype'] == 'save':
+            url = 'none'
+            message = 'Changes Saved'
         else:
             url = '/user/' + str(thisuser.userid) + '/group/' + str(thisgroup.groupid) + '/'
-        session.merge(thisgroup)
-        session.commit()
+            message = 'none'
         session.close()
-        return jsonify(message = 'none', url = url)
+        return jsonify(message = message, url = url)
         
 @app.route('/user/<userid>/group/<groupid>/period/<periodid>/edit/', methods=['GET', 'POST', 'DELETE'])
 def editgroupperiod(userid,groupid,periodid):
@@ -548,7 +557,7 @@ def grouphistory(userid):
 #sends a post containing configuration data. Their group request is queued until an adminsitrator approves it and assigns it to 
 #a period.
 @app.route('/user/<userid>/grouprequest/', methods=['GET', 'POST'])
-def grouprequestpage(userid,periodid=None):
+def grouprequest(userid,periodid=None):
     
     session = Session()
     #gets the data associated with this user
@@ -611,7 +620,6 @@ def grouprequestpage(userid,periodid=None):
         #find the instruments this user plays
         thisuserinstruments = session.query(instrument).filter(instrument.userid == userid, instrument.isactive == 1).all()
         thisuserinstruments_serialized = [i.serialize for i in thisuserinstruments]
-        log(thisuserinstruments_serialized)
 
         #if this is the conductorpage, the user will need a list of the locations that are not being used in the period selected
         if conductorpage == True:
@@ -638,7 +646,6 @@ def grouprequestpage(userid,periodid=None):
 
         #serialize the grouptemplates so the JS can read them properly
         grouptemplates_serialized = [i.serialize for i in grouptemplates]
-        log(grouptemplates_serialized)
         session.close()
         return render_template('grouprequest.html', \
                             thisuser=thisuser, \
@@ -662,10 +669,14 @@ def grouprequestpage(userid,periodid=None):
         session = Session()
         log('Grouprequest received. Whole content of JSON returned is: %s' % content)
         #if we received too many players, send the user an error
-        if len(content['players']) > int(getconfig('GroupRequestPlayerLimit')) and conductorpage == False:
+        if len(content['objects']) > int(getconfig('GroupRequestPlayerLimit')) and conductorpage == False:
             session.rollback()
             session.close()
             return jsonify(message = 'You have entered too many players. You may only submit grouprequests of players %s or less.' % getconfig('GroupRequestPlayerLimit'), url = 'none')
+        if len(content['objects']) == 0:
+            session.rollback()
+            session.close()
+            return jsonify(message = 'You must have at least one player in the group', url = 'none')
         #establish the 'grouprequest' group object. This will be built up from the JSON packet, and then added to the database
         #a minimumlevel and maximumlevel of 0 indicates that they will be automatically be picked on group confirmation
         grouprequest = group(music = content['music'], ismusical = 1, requesteduserid = userid, requesttime = datetime.datetime.now(), minimumlevel = 0, maximumlevel = 0)
@@ -674,17 +685,21 @@ def grouprequestpage(userid,periodid=None):
             grouprequest.status = "Queued"
         #if the conductorpage is true, we expect to also receive a locationid from the JSON packet, so we add it to the grouprequest, we also confirm the request
         if conductorpage == True:
+            if content['locationid'] == '':
+                session.rollback()
+                session.close()
+                return jsonify(message = 'You must select a location for this group', url = 'none')
             grouprequest.locationid = content['locationid']
             grouprequest.status = "Confirmed"
         #for each player object in the players array in the JSON packet
-        for p in content['players']:
+        for p in content['objects']:
             #if it's not a blank dropdown
-            if p['playerid'] != 'null' and p['playerid'] != '':
+            if p['userid'] != 'null' and p['userid'] != '':
                 #try to find a user that matches this id
-                puser = session.query(user).filter(user.userid == p['playerid']).first()
+                puser = session.query(user).filter(user.userid == p['userid']).first()
                 #if we don't find one, this grouprequset is a failiure
                 if puser is None:
-                    log('Input error. user %s does not exist in the database.' % p['playerid'])
+                    log('Input error. user %s does not exist in the database.' % p['userid'])
                     session.rollback()
                     session.close()
                     return jsonify(message = 'Input error. One of the sent users does not exist in the database.', url = 'none')
@@ -701,8 +716,11 @@ def grouprequestpage(userid,periodid=None):
                 setattr(grouprequest, p['instrumentname'], 1)
             else:
                 setattr(grouprequest, p['instrumentname'], (currentinstrumentcount + 1))
-        #run the getgroupname function, which logically names the group
-        grouprequest.groupname = getgroupname(grouprequest)
+        if content['groupname'] != '':
+            grouprequest.groupname = content['groupname']
+        else:
+            #run the getgroupname function, which logically names the group
+            grouprequest.groupname = getgroupname(grouprequest)
         #if we are on the conductorpage, instantly confirm this group (assign it to the period the user submitted)
         if conductorpage == True:
             grouprequest.periodid = thisperiod.periodid     
@@ -723,9 +741,9 @@ def grouprequestpage(userid,periodid=None):
                     (content['music'] is not None and content['music'] != '' and content['music'] != 'null') or (content['music'] == m.music):
                     #for each specific player in the request, check if there's a free spot in the matching group
                     #for each player in the group request
-                    for p in content['players']:
+                    for p in content['objects']:
                         #if it's a named player, not a blank drop-down
-                        if p['playerid'] != 'null' and p['playerid'] != '':
+                        if p['userid'] != 'null' and p['userid'] != '':
                             #find a list of players that are already assigned to this group, and play the instrument requested by the grouprequest
                             instrumentclash = session.query(groupassignment).filter(groupassignment.instrumentname == p['instrumentname'],\
                                 groupassignment.groupid == m.groupid).all()
@@ -736,7 +754,7 @@ def grouprequestpage(userid,periodid=None):
                                     clash = True
                                     break
                             #found out if this player is already playing in the found group and make a clash if they are
-                            playerclash = session.query(groupassignment).filter(groupassignment.userid == p['playerid'], groupassignment.groupid == m.groupid).all()
+                            playerclash = session.query(groupassignment).filter(groupassignment.userid == p['userid'], groupassignment.groupid == m.groupid).all()
                             if playerclash is not None and playerclash != []:
                                 log('Found group not suitable, already has this player playing in it. Found the following group assignment: %s' % playerclash)
                                 clash = True
@@ -761,20 +779,22 @@ def grouprequestpage(userid,periodid=None):
         thisuser.grouprequestcount = thisuser.grouprequestcount + 1
         log('%s %s has now made %s group requests' % (thisuser.firstname, thisuser.lastname, thisuser.grouprequestcount))
         #for each player object in the players array in the JSON packet
-        for p in content['players']:
+        for p in content['objects']:
             #if we are on the conductorpage, you cannot submit blank players. Give the user an error and take them back to their home.
-            if p['playerid'] == 'null' and conductorpage == True:
+            if p['userid'] == 'null' and conductorpage == True:
                 url = ('/user/' + str(thisuser.userid) + '/')
+                session.rollback()
                 session.close()
-                return jsonify(message = 'Something went wrong. You are not allowed to have null players in a conductor group request.', url = url)
+                return jsonify(message = 'You cannot have any empty player boxes in the group, because this is the conductor version of the group request page.', url = 'none')
             #if the playerid is not null, we create a groupassignment for them and bind it to this group
-            if p['playerid'] != 'null':
-                playeruser = session.query(user).filter(user.userid == p['playerid']).first()
+            if p['userid'] != 'null':
+                playeruser = session.query(user).filter(user.userid == p['userid']).first()
                 if playeruser is not None:
                     playergroupassignment = groupassignment(userid = playeruser.userid, groupid = grouprequest.groupid, instrumentname = p['instrumentname'])
                     session.add(playergroupassignment)
                 else:
                     url = ('/user/' + str(thisuser.userid) + '/')
+                    session.rollback()
                     session.close()
                     return jsonify(message = 'Could not find one of your selected players in the database. Please refresh the page and try again.', url = url)
             #if none of the above are satisfied - that's ok. you're allowed to submit null playernames in the user request page, these will be 
@@ -789,7 +809,7 @@ def grouprequestpage(userid,periodid=None):
         return jsonify(message = 'none', url = url)
 
 @app.route('/user/<userid>/grouprequest/conductor/<periodid>/', methods=['GET', 'POST'])
-def conductorgrouprequestpage(userid,periodid):
+def conductorgrouprequest(userid,periodid):
     
     session = Session()
     #gets the data associated with this user
@@ -798,7 +818,7 @@ def conductorgrouprequestpage(userid,periodid):
         return ('Did not find user in database. You have entered an incorrect URL address.')
     if thisuser.isconductor != 1:
         return ('You are not a conductor and cannot visit this page.')
-    return grouprequestpage(userid,periodid)
+    return grouprequest(userid,periodid)
 
 #This page is used by an "announcer" to edit the announcement that users see when they open their homes
 @app.route('/user/<userid>/announcement/', methods=['GET', 'POST'])
@@ -882,13 +902,13 @@ def publiceventpage(userid,periodid):
         
         #if the user pressed "submit" on the public event page
         if request.method == 'POST':
-            if request.json['location'] == '' or request.json['name'] == '':
+            if request.json['locationid'] == '' or request.json['groupname'] == '':
                 session.rollback()
                 url = ('none')
                 session.close()
                 return jsonify(message = 'Submission failed. You must submit both an event name and location.', url = url)
-            event = group(periodid = periodid, iseveryone = 1, groupname =  request.json['name'], requesteduserid = thisuser.userid,\
-                ismusical = 0, locationid = request.json['location'], status = "Confirmed", requesttime = datetime.datetime.now())
+            event = group(periodid = periodid, iseveryone = 1, groupname =  request.json['groupname'], requesteduserid = thisuser.userid,\
+                ismusical = 0, locationid = request.json['locationid'], status = "Confirmed", requesttime = datetime.datetime.now())
             session.add(event)
             session.commit()
             url = ('/user/' + str(thisuser.userid) + '/group/' + str(event.groupid) + '/')
@@ -1003,7 +1023,7 @@ def edituser(userid, targetuserid):
             return jsonify(message = 'Your departure time must be after your arrival time.', url = 'none')
         #add the content in the packet to this group's attributes
         for key,value in content.iteritems():
-            if not isinstance(value, list) and value is not None and value != 'null' and value != '' and value != 'None':
+            if not isinstance(value, list) and value is not None and value != 'null' and value != '' and value != 'None' and value != '<HIDDEN>':
                 log('Setting %s to be %s' % (key, value))
                 setattr(targetuser,key,value)
 
@@ -1016,7 +1036,7 @@ def edituser(userid, targetuserid):
         else:
             session.merge(targetuser)
         session.commit()
-        for i in content['instruments']:
+        for i in content['objects']:
             if i['instrumentid'] != 'new':
                 thisinstrument = session.query(instrument).filter(instrument.instrumentid == i['instrumentid']).first()
             else:
@@ -1051,7 +1071,7 @@ def send_home_link_email(userid):
         return 'You do not have permission to view this page'
     content = request.json
     errors = ''
-    for u in content['users']:
+    for u in content['objects']:
         targetuser = session.query(user).filter(user.userid == u['userid']).first()
         if targetuser is None:
             errors = errors + ('Could not find user with id %s in database\n' % u['userid'])
@@ -1083,7 +1103,7 @@ Thanks!\n
             thisuser.lastname, \
             getconfig('Name')\
             )
-            message = send_email(targetuser.email, subject, body)
+            #message = send_email(targetuser.email, subject, body)
             if message == 'Failed to send email to user':
                 errors = errors + ('Failed to send email to %s %s\n' % (targetuser.firstname, targetuser.lastname))
     session.close()
@@ -1153,6 +1173,12 @@ def instrumentation(userid,periodid):
                 return jsonify(message = 'Could not create instrumentation, there is already a group named %s in this period.' % namecheck.groupname, url = url)
             #for each player object in the players array in the JSON packet
             for key, value in content.items():
+                if (key == 'groupname' or key == 'music' or key == 'maximumlevel' or key == 'mininumlevel') and value == '':
+                    url = 'none'
+                    log('Instrumentation creation failed, misconfiguration')
+                    session.close()
+                    session.rollback()
+                    return jsonify(message = 'Could not create instrumentation, you must enter a groupname, music, maximumlevel and mininumlevel', url = url)
                 setattr(grouprequest, key, value)
             #create the group and the groupassinments configured above in the database
             session.add(grouprequest)

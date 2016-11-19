@@ -11,58 +11,33 @@
     //function to be used by the submit button. called by the template.
     function buildrequest() {
         var request = {};
-        //add the music name and minimum level to the JSON. Establish an array to contain the player names
-        request.music = $('#textbox_music').val();
-        //if this is the conductorpage, we also need to send the selected location - it cannot be blank.
-        if (conductorpage == "True") {
-            if ($('#location_dropdown').val() == "") {
-                alert("Sumbission failed. You must select a location for this group.");
-                //break out of the function
-                isClicked = false;
-                return false;
-            }
-            else {
-                request.locationid = $('#location_dropdown').val();
-            }
-        }
+        //for each item marked form-attribute, add its value to the request
+        $('.form-attribute').each(function() {
+            request[$(this).attr('id')] = $(this).val();
+        });
 
-        //establish an array to fill with player and instruments
-        request.players = []
-                
-        var i = 0
-        //for each instrument drop down box
-        $('.instrument_dropdown').each(function() {
-            //if we are on the conductorpage, and we find a blank player box this is bad - it's fine on the normal user page though
-            if ((conductorpage == "True") && ($("#player" + $(this).data("pairing")).val() == 'null') && $(this).val() != "") {
-                //this is a bad configuration. alert the user
-                alert("Sumbission failed. This is the conductor group creation page, so all players must be filled in, you cannot leave blanks.");
-                invalidConfig = true;
-                //break out of the loop
-                isClicked = false;
-                return false;
-            }
-            //create a new object
-            if ($(this).val() != "") {
-                var iplayer = {};
-                //add the contents of the instrument dropdown to the object
-                iplayer.instrumentname = $(this).val();
-                //if this is row with ID 0 (only appears on the normal thisuser page) add this user to the object
-                if ($(this).data("pairing") == 0) {
-                    iplayer.playerid = "{{ thisuser.userid }}";
-                }
-                    //if it's not row ID 0, add whatever is in the player dropdown in the object
-                else {
-                    iplayer.playerid = $("#player" + $(this).data("pairing")).val();
-                }
-                //push the player object to the players array in the request object
-                request.players.push(iplayer);
-                i = i + 1;
+        //establish an array under request to deal with a group of objects. This will:
+        //1. cycle through every object with the class form-object-master and grab it's data-mapping id
+        //2. cycle through this and every other object with that data-mapping and add its value to the object
+        //3. push the resulting object to the request object
+        request.objects = []
+        //for each dropdown contiaining the instrument names
+        $('.form-object-master').each(function () {
+            if (($(this).val() != 'null' && $(this).val() != '' && $(this).val() != 'None') || ($(this).is("checkbox") && $(this).prop("checked"))) {
+                //create a variable to dump this instrument's data into
+                var ob = {};
+                $('[data-mapping=' + $(this).data('mapping') + ']').each(function () {
+                    ob[$(this).data('key')] = $(this).val();
+                });
+                //push its variable into the request.instruments array
+                request.objects.push(ob);
             }
         });
+        console.log('Sending request packet to server:')
+        console.log(request)
         return request
     }
 
-        
     $(document).ready(function () {
             
         //these first few variables set up the rest of the script
@@ -93,13 +68,13 @@
             $('#playersTable tr:last').after('\
                     <tr>\
                         <td>\
-                            <select class="instrument_dropdown" id="instrument' + rowId + '" data-pairing="' + rowId + '">\
+                            <select class="form-object-master instrument_dropdown" data-key="instrumentname" data-mapping="' + rowId + '">\
                                 <option value=""></option>\
                                 {% for i in instrumentlist %}<option value="{{ i }}">{{ i }}</option>{% endfor %}\
                             </select>\
                         </td>\
                         <td>\
-                            <select class="player_dropdown" id="player' + rowId + '" data-pairing="' + rowId + '">\
+                            <select class="player_dropdown" data-key="userid" data-mapping="' + rowId + '">\
                                 <option value=""></option>\
                             </select>\
                         </td>\
@@ -109,7 +84,7 @@
 
         //run when user (or javascript) changes the content of an instrument dropdown. Populates the corresponding
         //player dropdown with people that play that instrument that are not the current user.
-        $(document).on("change", '.instrument_dropdown', function () {                
+        $(document).on("change", '.instrument_dropdown[data-mapping!=0]', function () {                
             //grab value that was selected on the dropdown
             var selectedinstrument = $(this).val();
             console.log('Detected dropdown instrument change to ' + selectedinstrument)
@@ -132,7 +107,7 @@
                 };
             };
             console.log(listItems)
-            $("#player" + $(this).data("pairing")).html(listItems);
+            $(".player_dropdown[data-mapping=" + $(this).data('mapping') + "]").html(listItems);
         });
 
         //run when user changes the content of a player dropdown. checks for other dropdown boxes that contain the
@@ -151,10 +126,10 @@
         });
 
         //run when a user changes the select template dropdown
-        $(document).on("change", '#group_template_dropdown', function () {
+        $(document).on("change", '#groupname', function () {
             //get the user selected template and format it so we can iterate over it later
             var grep_template = $.grep(grouptemplates, function (elt) {
-                return elt.grouptemplatename === $(group_template_dropdown).val();
+                return elt.grouptemplatename === $(groupname).val();
             });
             selectedTemplate = grep_template[0];
             console.log('Selected template is:');
@@ -179,7 +154,7 @@
                         console.log('found that the users primary instrument is in this group. Key: ' + key);
                         var foundprimary = true;
                         console.log('Changing the associated user instrument to ' + key);
-                        $('#instrument0').val(key).change();
+                        $('.instrument_dropdown[data-mapping=0]').val(key).change();
                     }
                 });
                 
@@ -193,7 +168,7 @@
                             if (matchinginstrument) {
                                 console.log('found this user plays intsrument ' + matchinginstrument.instrumentname + ' which matches instrument in group ' + key);
                                 console.log('setting this user instrument to ' + key)
-                                $('#instrument0').val(key).change();
+                                $('.instrument_dropdown[data-mapping=0]').val(key).change();
                                 break;
                             }
                         }
@@ -207,14 +182,11 @@
                 if (key != 'grouptemplateid' && key != 'grouptemplatename' && key != 'size' && value > 0) {
                     console.log(key + ": "+String(value));
                     //if the current instrument we're looking at is the same as the one that we selected for the user, decrement it because we already have one player
-                    if (key == $("#instrument0").val()) { value = value - 1; }
+                    if (key == $(".instrument_dropdown[data-mapping=0]").val()) { value = value - 1; }
                     if (value > 0) {
                         for (var i = 0; i < value; i++) {
                             addRow();
-                            var thisinstrumentdropdown = '#instrument' + String(rowId - 1);
-                            console.log(thisinstrumentdropdown)
-                            $(thisinstrumentdropdown).val(key).change();
-                            console.log('attempted to change instrument dropdown with id ' + thisinstrumentdropdown + ' and resolved id ' + $(thisinstrumentdropdown).attr('id') + ' to ' + key);
+                            $('.instrument_dropdown[data-mapping=' + String(rowId - 1) + ']').val(key).change();
                         }
                     }
                 }
@@ -246,7 +218,7 @@
     </p>
     <p>
         Where will this group be held?
-        <select id="location_dropdown">
+        <select class="form-attribute" id="locationid">
             <option value=""></option>
             {% for l in locations %}
             <option value="{{ l.locationid }}">{{ l.locationname }}</option>
@@ -267,14 +239,14 @@
     {% endif %}
     <p>
         Optional: Select a group template to autofill the page
-        <select id="group_template_dropdown">
+        <select class="form-attribute group_template_dropdown" id="groupname">
             <option value="" selected="selected">No Template</option>
             {% for g in grouptemplates %}
             <option value="{{ g.grouptemplatename }}">{{ g.grouptemplatename }}</option>
             {% endfor %}
         </select>
     </p>
-    <p>Optional: What music do you want to play? <input type="text" id="textbox_music"></p>
+    <p>Optional: What music do you want to play? <input class="form-attribute" type="text" id="music"></p>
     <table id="playersTable">
         <!--Table Headers-->
         <tr>
@@ -285,19 +257,23 @@
         <tr>
             <!--Row 1 (only appears for the non-conductor group page and is locked to the player name)-->
             <td>
-                <select class="instrument_dropdown" id="instrument0" data-pairing="0">
+                <select class="form-object-master" data-key="instrumentname" data-pairing="0">
                     {% for i in thisuserinstruments %}
                     <option value="{{ i.instrumentname }}">{{ i.instrumentname }}</option>
                     {% endfor %}
                 </select>
             </td>
-            <td>{{ thisuser.firstname }} {{ thisuser.lastname }}</td>
+            <td>
+                <select data-pairing="0" data-key="userid">
+                    <option value="{{ thisuser.userid }}">{{ thisuser.firstname }} {{ thisuser.lastname }}</option>
+                </select>
+            </td>
         </tr>
         {% endif %}
         <tr>
             <!--Row 2 (drop down menu containing instrument, player names are autofilled by the JS upon selection)-->
             <td>
-                <select class="instrument_dropdown" id="instrument1" data-pairing="1">
+                <select class="form-object-master instrument_dropdown" data-key="instrumentname" data-mapping="1">
                     <option value=""></option>
                     {% for i in instrumentlist %}
                     <option value="{{ i }}">{{ i }}</option>
@@ -305,7 +281,7 @@
                 </select>
             </td>
             <td>
-                <select class="player_dropdown" id="player1" data-pairing="1">
+                <select class="player_dropdown" data-key="userid" data-mapping="1">
                     <option value=""></option>
                 </select>
             </td>

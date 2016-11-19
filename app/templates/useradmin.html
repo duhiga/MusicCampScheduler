@@ -4,19 +4,6 @@
 {% block head %}
     <script>
 
-        //function to be used by the submit button. called by the template.
-        function buildrequest() {
-            var request = {}
-            request.users = []
-            $('.checkbox:checkbox:checked').each(function () {
-                console.log('Processing email for box checked: ' + $(this).attr('id'));
-                var user = {};
-                user.userid = $(this).attr('id');
-                request.users.push(user);
-            });
-            return request;
-        }
-
         $(document).ready(function () {
 
             //select all checkboxes
@@ -61,7 +48,7 @@
             {% if users != None %}
             {% for u in users %}
             <tr>
-                <td><input type="checkbox" id="{{ u.userid }}" class="checkbox"></td>
+                <td><input type="checkbox" value="{{ u.userid }}" data-key="userid" data-mapping="{{ u.userid }}" class="checkbox form-object-master"></td>
                 <td><a href="/user/{{ thisuser.userid }}/edituser/{{ u.userid }}/">{{ u.firstname }}</a></td>
                 <td><a href="/user/{{ thisuser.userid }}/edituser/{{ u.userid }}/">{{ u.lastname }}</a></td>
                 <td>{% if u.isactive == 1 %}Yes{% else %}No{% endif %}</td>

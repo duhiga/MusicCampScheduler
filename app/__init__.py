@@ -1153,7 +1153,6 @@ def instrumentation(userid,periodid):
             #find all large group templates and serialize them to prepare to inject into the javascript
             grouptemplates = session.query(grouptemplate).filter(grouptemplate.size == 'L').all()
             grouptemplates_serialized = [i.serialize for i in grouptemplates]
-            log(grouptemplates_serialized)
             session.close()
             return render_template('instrumentation.html', \
                                 thisuser=thisuser, \
@@ -1219,7 +1218,7 @@ def instrumentation(userid,periodid):
             url = ('/user/' + str(thisuser.userid) + '/group/' + str(grouprequest.groupid) + '/')
             log('Sending user to URL: %s' % url)
             session.close()
-            return jsonify(message = 'none', url = url)
+            return jsonify(message = 'none', url = 'none')
 
 #Shows the godpage to the user. Godpage contains all user names and links to all their homes. Right now uses a shared password,
 #but would be better if tied to a user's admin account. However, there's no easy way to currently see what the userid of the admin is

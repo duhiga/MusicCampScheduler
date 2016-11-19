@@ -23,7 +23,7 @@
                     {% endif %}
                 </td>
                 <td>{{ q.firstname }} {{ q.lastname }}</td>
-                <td><a href="/user/{{ thisuser.userid }}/group/{{ q.groupid }}/">{{ q.groupname }}</a></td>
+                <td><a href="/user/{{ thisuser.userid }}/group/{{ q.groupid }}/edit/">{{ q.groupname }}</a></td>
                 <td>
                     {% if q.starttime != None and q.endtime != None %}
                     {{ q.starttime.strftime('%Y-%m-%d') }}: {{ q.starttime.strftime('%H:%M') }}-{{ q.endtime.strftime('%H:%M') }}

@@ -149,7 +149,9 @@
 
             //when the page loads for the first time, change the instrument numbers to the correct numbers
             {% for i in instrumentlist %}
+            {% if thisgroup[i] != None %}
             $('.instrumentnumber_dropdown[data-instrument={{i}}]').val({{ thisgroup[i] }}).change();
+            {% endif %}
             {% endfor %}
 
             //changes all player dropdowns to match the players already playing in the group. 

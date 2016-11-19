@@ -157,6 +157,18 @@ class announcement(Base):
 
 Base.metadata.create_all(engine)
 
+session = Session()
+admin = session.query(user).filter(user.userid == getconfig('AdminUUID')).first()
+if admin is None:
+    findadmin = session.query(user).filter(user.firstname == 'Administrator').first()
+    if findadmin is not None:
+        print('Configured AdminUUID does not match the current administrator. Cannot proceed. Either reset the database, or set the administrator to the correct UUID in the configuration.')
+    admin = user(userid = getconfig('AdminUUID'), firstname = 'Administrator', lastname = '', isadmin = 1, isactive = 0, \
+        arrival = datetime.datetime.strptime(getconfig('StartTime'), '%Y-%m-%d %H:%M'), departure = datetime.datetime.strptime(getconfig('EndTime'), '%Y-%m-%d %H:%M'))
+    session.add(admin)
+session.commit()
+session.close()
+
 def createlocation(session,name,capacity):
     find_location = session.query(location).filter(location.locationname == name).first()
     if find_location is None:

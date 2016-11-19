@@ -62,7 +62,7 @@
     <Content Include="templates\index.html" />
     <Content Include="templates\layout.html" />
     <Content Include="templates\periodpage.html" />
-    <Content Include="templates\godpage.html" />
+    <Content Include="templates\setup.html" />
     <Content Include="templates\announcement.html" />
     <Content Include="templates\publicevent.html" />
     <Content Include="templates\groupqueue.html" />

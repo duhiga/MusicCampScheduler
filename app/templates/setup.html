@@ -1,0 +1,20 @@
+{% extends "layout.html" %}
+{% block title %}{{ campname }} Application Setup{% endblock %}
+{% block pagename %}Application Setup{% endblock %}
+{% block tools %}
+<h4><b>Tools</b></h4>
+<a href="#" class="w3-hover-black submit_button" data-method="POST">Submit</a>
+{% endblock %}
+{% block content %}
+<div class="container">
+    <h2>Application Setup</h2>
+    <div>
+        <p>Step 1: upload a config.xml file</p>
+        <p>Step 2: upload a campers.csv file</p>
+        <form method="post" enctype="multipart/form-data">
+            <input type="file" name="file"><br />
+            <input type="submit" value="Upload">
+        </form>
+    </div>
+</div>
+{% endblock %}

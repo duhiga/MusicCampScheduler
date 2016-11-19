@@ -1224,83 +1224,36 @@ def instrumentation(userid,periodid):
 #Shows the godpage to the user. Godpage contains all user names and links to all their homes. Right now uses a shared password,
 #but would be better if tied to a user's admin account. However, there's no easy way to currently see what the userid of the admin is
 #after it's been created. Hmm... a conundrum.
-@app.route('/godpage/<password>/', methods=["GET", "POST"])
-def godpage(password):
-    if password != getconfig('SecretKey'):
-        return 'Wrong password'
-    else:
-        session = Session()
-
-    if request.method == 'GET':
-        users = session.query(user).all()
-        grouptemplates = session.query(grouptemplate).all()
-        session.close()
-        return render_template('godpage.html', \
-                                        users=users, \
-                                        campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
-                                        grouptemplates=grouptemplates, \
-                                        )
-    if request.method == 'POST':
-        # Get the name of the uploaded file
-        file = request.files['file']
-        if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            if filename == 'config.xml':
-                return dbbuild(file.read())
-            if filename == 'campers.csv':
-                return importusers(file)
-
-#the below creates a new user. The idea for this is that you could concatenate a string up in Excel with your user's details and click 
-#on all the links to create them.
-@app.route('/new/user/<firstname>/<lastname>/<age>/<arrival>/<departure>/<isannouncer>/<isconductor>/<isadmin>/')
-def new_user(firstname,lastname,age,arrival,departure,isannouncer,isconductor,isadmin):
+@app.route('/user/<userid>/setup/', methods=["GET", "POST"])
+def setup(userid):
     session = Session()
-    arrival = datetime.datetime.strptime(arrival, '%Y-%m-%d %H:%M')
-    departure = datetime.datetime.strptime(departure, '%Y-%m-%d %H:%M')
-    log('user is staying at camp starting %s and ending %s' % (arrival,departure))
-    userid = str(uuid.uuid4())
-    newuser = user(userid=userid, firstname=firstname, lastname=lastname, age=age, arrival=arrival, departure=departure, isannouncer=isannouncer, isconductor=isconductor, isadmin=isadmin)
-    session.add(newuser)
-    absentgroups = session.query(group.groupid).join(period).filter(or_(period.starttime < arrival, period.starttime > departure)).all()
-    for g in absentgroups:
-        log('assigning user to absent group with id %s' % g.groupid)
-        ga = groupassignment(userid = userid, groupid = g.groupid, instrumentname = 'absent')
-        session.add(ga)
-    session.commit()
-    session.close()
-    return ('user created with id %s' % userid)
-
-#the below creates a new user-instrument relationship.
-@app.route('/new/instrument/<userid>/<instrumentname>/<grade>/<isprimary>/')
-def new_instrument(userid,instrumentname,grade,isprimary):
-    session = Session()
-    thisuser = session.query(user).filter(user.userid == userid).first()    
-    checkduplicate = session.query(instrument).filter(instrument.userid == thisuser.userid, instrument.instrumentname == instrumentname).first()
-    checkprimary = session.query(instrument).filter(instrument.userid == thisuser.userid, instrument.isprimary == 1).first()
+    #gets the data associated with this user
+    thisuser = session.query(user).filter(user.userid == userid).first()
     if thisuser is None:
-        session.close()
         return ('Did not find user in database. You have entered an incorrect URL address.')
-    elif checkduplicate is not None:
-        session.close()
-        return ('This user is already associated with this instrument.')
-    elif 1 > int(grade) > 5:
-        log('User submitted grade of %s' % grade)
-        session.close()
-        return ('incorrect grade. Grade should be between 1 and 5.')
-    elif not (int(isprimary) == 0 or int(isprimary) == 1):
-        log('User submitted isprimary of %s' % isprimary)
-        session.close()
-        return ('incorrect isprimary value. isprimary should be a 0 or a 1.')
-    elif int(isprimary) == 1 and checkprimary is not None:
-        session.close()
-        return ('This user already has a primary instrument. Cannot create another primary instrument record.')
+    #check if this user is a conductor, if they are not, deny them.
+    if thisuser.isadmin != 1:
+        return ('You are not allowed to view this page.')
     else:
-        thisinstrumentname = instrument(userid = thisuser.userid, instrumentname = instrumentname, grade = grade, isprimary = isprimary)
-        session.add(thisinstrument)
-        session.commit()
-        return ('intsrument link created for user with id %s' % thisuser.userid)
-        session.close()
-    return ('something went wrong. you should never get this message. Inside new_instrument method with no caught errors.')
+        if request.method == 'GET':
+            users = session.query(user).all()
+            grouptemplates = session.query(grouptemplate).all()
+            session.close()
+            return render_template('setup.html', \
+                                            thisuser=thisuser, \
+                                            campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
+                                            grouptemplates=grouptemplates, \
+                                            )
+        if request.method == 'POST':
+            # Get the name of the uploaded file
+            file = request.files['file']
+            if file and allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                if filename == 'config.xml':
+                    return dbbuild(file.read())
+                if filename == 'campers.csv':
+                    log(importusers(file))
+                    return useradmin(thisuser.userid)
 
 @app.route('/js/<path:path>')
 def send_js(path):

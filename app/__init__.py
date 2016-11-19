@@ -140,7 +140,6 @@ def home(userid,inputdate='n'):
     #if the user has not submitted a date and today is before the start of camp, use the first day of camp as the display date
     elif today < datetime.datetime.strptime(getconfig('StartTime'), '%Y-%m-%d %H:%M'): 
         displaydate = datetime.datetime.strptime(getconfig('StartTime').split()[0], '%Y-%m-%d')
-        log(displaydate)
     #if today is after the start of camp, use today as the display date
     else:
         displaydate = today
@@ -153,32 +152,25 @@ def home(userid,inputdate='n'):
     #for each period in the requested day
     for p in session.query(period).filter(period.starttime > displaydate, period.endtime < nextday).all():
         #try to find a group assignment for the user
-        log('Attempting to find group assignment for user for period %s with id %s' % (p.periodname, p.periodid))
         g = session.query(group.groupname, period.starttime, period.endtime, location.locationname, group.groupid, group.ismusical, \
                             group.iseveryone, period.periodid, period.periodname, groupassignment.instrumentname).\
                             join(period).join(groupassignment).join(user).join(instrument).outerjoin(location).\
                             filter(user.userid == userid, group.periodid == p.periodid, group.status == 'Confirmed').first()
         if g is not None:
-            log('Found group assignment named %s' % g.groupname)
             periods.append(g)
         e = None
         #if we didn't find an assigned group...
         if g is None:
-            log('Failed')
             #try to find an iseveryone group at the time of this period
-            log('Attempting to find an "iseveryone" group for period %s with Id %s' % (p.periodname, p.periodid))
             e = session.query(group.groupname, period.starttime, period.endtime, location.locationname, group.groupid, group.ismusical, \
                             group.iseveryone, period.periodid, period.periodname).\
                             join(period).join(location).\
                             filter(group.iseveryone == 1, group.periodid == p.periodid).first()
         if e is not None:
-            log('Found an "iseveryone" group named %s, from %s to %s' % (e.groupname, e.starttime, e.endtime))
             periods.append(e)
         #if we didn't find an assigned group or an iseveryone group...
         if e is None and g is None:
             #just add the period detalis
-            log('Failed')
-            log("Couldn't find a group during period %s. Adding the period details." % p.periodname)
             periods.append(p)
 
     session.close()
@@ -1012,39 +1004,59 @@ def edituser(userid, targetuserid):
     if request.method == 'POST':
         #format the packet received from the server as JSON
         content = request.json
-        if content['firstname'] == '' or content['firstname'] == 'null' or content['firstname'] == 'None' or \
-            content['lastname'] == '' or content['lastname'] == 'null' or content['lastname'] == 'None':
-            session.rollback()
-            session.close()
-            return jsonify(message = 'You cannot save a user without a firstname and lastname.', url = 'none')
         if content['arrival'] >= content['departure']:
-            session.rollback()
-            session.close()
-            return jsonify(message = 'Your departure time must be after your arrival time.', url = 'none')
+                    session.rollback()
+                    session.close()
+                    return jsonify(message = 'Your departure time must be after your arrival time.', url = 'none')
+        if thisuser.isadmin == 1:
+            if content['firstname'] == '' or content['firstname'] == 'null' or content['firstname'] == 'None' or \
+                        content['lastname'] == '' or content['lastname'] == 'null' or content['lastname'] == 'None':
+                session.rollback()
+                session.close()
+                return jsonify(message = 'You cannot save a user without a firstname and lastname.', url = 'none')
+            #is this user doesn't have an ID yet, they are new and we must set them up
+            if targetuser.userid is None:
+                #assign them a userid from a randomly generated uuid
+                targetuser.userid = str(uuid.uuid4())
+                session.add(targetuser)
+
         #add the content in the packet to this group's attributes
         for key,value in content.iteritems():
-            if not isinstance(value, list) and value is not None and value != 'null' and value != '' and value != 'None' and value != '<HIDDEN>':
+            if thisuser.isadmin != 1 and key != arrival and key != departure and key != isactive:
+                session.rollback()
+                session.close()
+                return jsonify(message = 'Users are not allowed to edit this attribute. The page should not have given you this option.', url = 'none')
+            elif not isinstance(value, list) and value is not None and value != 'null' and value != '' and value != 'None' and value != '<HIDDEN>':
                 log('Setting %s to be %s' % (key, value))
                 setattr(targetuser,key,value)
-
-        #is this user doesn't have an ID yet, they are new and we must set them up
-        if targetuser.userid is None:
-            #assign them a userid from a randomly generated uuid
-            targetuser.userid = str(uuid.uuid4())
-            session.add(targetuser)
-        #if the user already has an ID, merge them - they're new
-        else:
-            session.merge(targetuser)
+        session.merge(targetuser)
         session.commit()
+        #for each instrument object in the receiving packet
         for i in content['objects']:
-            if i['instrumentid'] != 'new':
-                thisinstrument = session.query(instrument).filter(instrument.instrumentid == i['instrumentid']).first()
-            else:
+            if i['instrumentid'] == 'new' and thisuser.isadmin == 1:
                 thisinstrument = instrument(userid = targetuser.userid)
+            elif i['instrumentid'] != 'new':
+                thisinstrument = session.query(instrument).filter(instrument.instrumentid == i['instrumentid']).first()
+                if thisinstrument is None:
+                    session.rollback()
+                    session.close()
+                    return jsonify(message = 'Instrument listing not found, could not modify the listing.', url = 'none')
+                if thisuser.isadmin != 1 and thisinstrument.userid != thisuser.userid:
+                    session.rollback()
+                    session.close()
+                    return jsonify(message = 'You cannot change an instrument listing for another user.', url = 'none')
+            else:
+                session.rollback()
+                session.close()
+                return jsonify(message = 'You have submitted illegal parameters for your instrument. No changes have been made to your instrument listings.', url = 'none')
                 session.add(thisinstrument)
                 log('Added new instrument for user %s' % targetuser.firstname)
             for key,value in i.iteritems():
-                if key != 'instrumentid' and value != 'None':
+                if thisuser.isadmin != 1 and key != isactive and key != isprimary:
+                    session.rollback()
+                    session.close()
+                    return jsonify(message = 'You have submitted illegal parameters for your instrument. No changes have been made to your instrument listings.', url = 'none')
+                elif key != 'instrumentid' and value != 'None':
                     setattr(thisinstrument,key,value)
         session.merge(thisinstrument)
         session.commit()

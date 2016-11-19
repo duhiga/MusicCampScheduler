@@ -1,0 +1,31 @@
+{% extends "layout.html" %}
+{% block title %}{{ campname }} Template Admin{% endblock %}
+{% block pagename %}Template Administration{% endblock %}
+{% block tools %}
+<h4><b>Tools</b></h4>
+<a href="/user/{{ thisuser.userid }}/newuser/" class="w3-hover-black">New Item</a>
+<a href="#" class="w3-hover-black submit_button" id="email_users" data-method="POST" data-url="/user/{{ thisuser.userid }}/email/">Submit</a>
+{% endblock %}
+{% block content %}
+<a href="/user/{{ thisuser.userid }}/newuser/">Create a New User</a>
+<table style="width:100%" class="sortable-table">
+    <thead>
+        <tr>
+            {% for key, value in o.iteritems() %}
+                <th>{{key}}</th>
+            {% endfor %}
+        </tr>
+    </thead>
+    <tbody class="zebra-table">
+        {% for o in objects %}
+            {% set outer_loop = loop %}
+            <tr>
+                {% for key, value in o.iteritems() %}
+                    <td><input type="text" data-key="{{o.key}}" data-mapping="{{ outer_loop.index }}" value="{{o.value}}"></td>
+                {% endfor %}
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
+{% block footer %}{% endblock %}

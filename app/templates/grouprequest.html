@@ -4,6 +4,15 @@
 {% block head %}
 <script>
 
+    function validate(ob) {
+        if (ob.val() != '') {
+            return true
+        }
+        else {
+            return false
+        }
+    }
+
     /* this script handles all thisuser interaction in the group request page. Upon page load, it downloads all players
     in the camp including the instruments they play, all templates as stated by the config.xml, and the instruments
     this thisuser plays. it uses all of this data to populate drop-down boxes, depending on what the thisuser selects. */
@@ -80,6 +89,7 @@
                         </td>\
                     </tr>');
             rowId = rowId + 1;
+            validate_all();
         }
 
         //run when user (or javascript) changes the content of an instrument dropdown. Populates the corresponding
@@ -100,13 +110,12 @@
             });
             addRow();
             // add values to list 
-            var listItems = "<option value='null'></option>";
+            var listItems = "<option value=''></option>";
             for (var i = 0; i < players.length; i++) {
                 if (players[i].instrumentname == selectedinstrument) {
                     listItems += "<option value='" + players[i].userid + "'>" + players[i].firstname + " " + players[i].lastname + "</option>";
                 };
             };
-            console.log(listItems)
             $(".player_dropdown[data-mapping=" + $(this).data('mapping') + "]").html(listItems);
         });
 
@@ -195,10 +204,6 @@
     });
 </script>
 {% endblock %}
-{% block tools %}
-<h4><b>Tools</b></h4>
-<a href="#" class="w3-hover-black submit_button" data-method="POST">Submit</a>
-{% endblock %}
 {% block content %}
     {% if conductorpage %}
     <table id="configTable">
@@ -218,7 +223,7 @@
     </p>
     <p>
         Where will this group be held?
-        <select class="form-attribute" id="locationid">
+        <select class="form-attribute form-validate" id="locationid">
             <option value=""></option>
             {% for l in locations %}
             <option value="{{ l.locationid }}">{{ l.locationname }}</option>
@@ -257,14 +262,14 @@
         <tr>
             <!--Row 1 (only appears for the non-conductor group page and is locked to the player name)-->
             <td>
-                <select class="form-object-master" data-key="instrumentname" data-pairing="0">
+                <select class="form-object-master form-validate" data-key="instrumentname" data-pairing="0">
                     {% for i in thisuserinstruments %}
                     <option value="{{ i.instrumentname }}">{{ i.instrumentname }}</option>
                     {% endfor %}
                 </select>
             </td>
             <td>
-                <select data-pairing="0" data-key="userid">
+                <select data-pairing="0" data-key="userid" class="form-validate">
                     <option value="{{ thisuser.userid }}">{{ thisuser.firstname }} {{ thisuser.lastname }}</option>
                 </select>
             </td>
@@ -273,7 +278,7 @@
         <tr>
             <!--Row 2 (drop down menu containing instrument, player names are autofilled by the JS upon selection)-->
             <td>
-                <select class="form-object-master instrument_dropdown" data-key="instrumentname" data-mapping="1">
+                <select class="form-object-master instrument_dropdown form-validate" data-key="instrumentname" data-mapping="1">
                     <option value=""></option>
                     {% for i in instrumentlist %}
                     <option value="{{ i }}">{{ i }}</option>
@@ -281,18 +286,10 @@
                 </select>
             </td>
             <td>
-                <select class="player_dropdown" data-key="userid" data-mapping="1">
+                <select class="player_dropdown form-validate" data-key="userid" data-mapping="1">
                     <option value=""></option>
                 </select>
             </td>
         </tr>
     </table>
-{% endblock %}
-{% block footer %}
-<!-- Navbar -->
-<div class="w3-bottom">
-    <ul class="w3-navbar w3-theme w3-bottom w3-left-align w3-large">
-        <li><a href="#" class="w3-hover-white submit_button" data-method="POST">Submit</a></li>
-    </ul>
-</div>
 {% endblock %}

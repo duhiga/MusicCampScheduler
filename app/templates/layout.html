@@ -73,7 +73,7 @@
                 validity = true;
 
                 //if it's a checkbox, don't do anything if it's unchecked
-                if ($(this).is('checkbox') == true && $(this).is(':checked') == false) {
+                if ($(this).is('checkbox') == true && false == $(this).prop("checked")) {
                     console.log('Found an unchecked checkbox');
                     validity = false;
                 }
@@ -107,8 +107,51 @@
             return request
         }
 
+        //iterate through all of the objects on the page requiring validation, and run the page's specific validation fuction on each.
+        function validate_all() {
+            var valid = true
+            $('.form-validate').each(function () {
+                //if the object is good, clear the red border
+                if (validate($(this))) {
+                    $(this).css("border-color", "");
+                    $(this).css("border-style", "");
+                }
+                    //if the object is bad, give it a red border
+                else {
+                    $(this).css("border-color", "red");
+                    $(this).css("border-style", "solid");
+                    valid = false
+                }
+            });
+            //if there are no bad objects, and this page has something to submit, show the submit button
+            if (valid == true && ($('.form-attribute')[0])) {
+                $(".submit_hide").show();
+            }
+                //if there is at least one bad object, hide the submit button
+            else {
+                $(".submit_hide").hide();
+            }
+        }
+
         $(document).ready(function () {
+
             
+
+
+            //try to validate the form at the start, and whenever anything is changed. If valid, show the submit buttons.
+            //form-validate: these are the elements that get tested against the validation function inside the child template
+            //form-attribute: these trigger the validation checks, and get sent to the server when submit is pressed
+            try {
+                validate_all();
+            }
+            catch (err) {
+                console.log('Did not find validate function on this page.');
+            }
+            
+            $(document).on("keyup keydown keypress blur change click", '.form-attribute, .form-object-master, .form-validate', function () {
+                validate_all()
+            });
+
             /* CURRENTLY BROKEN
             // add parser through the tablesorter addParser method
             $.tablesorter.addParser({
@@ -170,6 +213,7 @@
                         sendtoserver(request, $(this).data('method'),url)
                     }
                 }
+                w3_close();
             });
         });
 
@@ -184,7 +228,7 @@
                 <a class="w3-hover-white w3-large w3-theme-l1" href="javascript:void(0)" onclick="w3_open()"><i class="fa fa-bars"></i></a>
             </li>
             <li class="w3-opennav w3-left"><a href="/user/{{ thisuser.userid }}/" class="w3-hover-white w3-large w3-theme-l1"><i class="fa fa-home"></i></a></li>
-            <li><a href="#" class="w3-theme-l1">{% block pagename %}{% endblock %}</a></li>
+            <li><a href="#" class="w3-theme-l1">&nbsp;{% block pagename %}{% endblock %}</a></li>
             <li class="w3-hide-small"><a href="/user/{{ thisuser.userid }}/grouprequest/" class="w3-hover-white">Request a group</a></li>
             <li class="w3-hide-small w3-hide-medium"><a href="/user/{{ thisuser.userid }}/grouphistory/" class="w3-hover-white">Group History</a></li>
         </ul>
@@ -195,7 +239,12 @@
         <a href="javascript:void(0)" onclick="w3_close()" class="w3-right w3-xlarge w3-padding-large w3-hover-black w3-hide-large" title="close menu">
             <i class="fa fa-remove"></i>
         </a>
-        {% block tools %}{% endblock %}
+        <div class="submit_hide">
+            <h4><b>Tools</b></h4>
+            {% block tools %}{% endblock %}
+            <a href="#" class="w3-hover-black submit_button" data-method="POST">Submit</a>
+        </div>
+        {% block sidenav %}{% endblock %}
         <h4><b>Navigation</b></h4>
         <a href="/user/{{ thisuser.userid }}/" class="w3-hover-black"><i class="fa fa-home"></i> Home</a>
         {% if thisuser.isactive == 1 %}
@@ -227,7 +276,12 @@
                 {% block content %}{% endblock %}
             </div>
         </div>
-        {% block footer %}{% endblock %}
+        <!-- Navbar -->
+        <div class="w3-bottom">
+            <ul class="w3-navbar w3-theme w3-animate-bottom w3-left-align w3-large submit_hide">
+                <li><a href="#" class="w3-hover-white submit_button" data-submittype="submit" data-method="POST">Submit</a></li>
+            </ul>
+        </div>
     </div>
     <script>
         // Get the Sidenav

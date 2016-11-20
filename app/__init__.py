@@ -185,6 +185,7 @@ def home(userid,inputdate='n'):
                         today=today, \
                         campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
                         currentannouncement=currentannouncement, \
+                        now = datetime.datetime.now(), \
                         )
 
 #When the user selects the "next day" and "previous day" links on their home, it goes to this URL. this route redirects them back
@@ -1175,7 +1176,8 @@ def instrumentation(userid,periodid):
             locations_used_query = session.query(location.locationid).join(group).join(period).filter(period.periodid == periodid)
             locations = session.query(location).filter(~location.locationid.in_(locations_used_query)).all()
             #get a list of conductors to fill the dropdown on the page
-            conductors = session.query(user).join(instrument, user.userid == instrument.userid).filter(instrument.instrumentname == 'Conductor', instrument.isactive == 1).all()
+            everyone_playing_in_periodquery = session.query(user.userid).join(groupassignment).join(group).join(period).filter(period.periodid == thisperiod.periodid)
+            conductors = session.query(user).join(instrument, user.userid == instrument.userid).filter(instrument.instrumentname == 'Conductor', instrument.isactive == 1).filter(~user.userid.in_(everyone_playing_in_periodquery)).all()
             #get the list of instruments from the config file
             instrumentlist = getconfig('Instruments').split(",")
             #find all large group templates and serialize them to prepare to inject into the javascript

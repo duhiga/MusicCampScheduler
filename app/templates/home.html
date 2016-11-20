@@ -86,10 +86,10 @@
     </p>
     <ul class="tab">
         <li><a href="javascript:void(0)" class="tablinks" onclick="openTab(event, 'Schedule')" id="defaultOpen">Schedule</a></li>
-        {% if date > today or thisuser.isconductor == 1 or thisuser.isadmin == 1 %}
+        {% if date > today %}
         <li><a href="javascript:void(0)" class="tablinks" onclick="openTab(event, 'Tools')">Tools</a></li>
         {% endif %}
-        {% if thisuser.isconductor == 1 %}
+        {% if thisuser.isconductor == 1 and date > today %}
         <li><a href="javascript:void(0)" class="tablinks" onclick="openTab(event, 'Conductor')">Conductor</a></li>
         {% endif %}
         {% if thisuser.isadmin == 1 %}
@@ -245,10 +245,14 @@
                 <td>{{ p.periodname }}</td>
                 <!--Admin Group Creation Column-->
                 <td>
+                    {% if p.starttime > now %}
                     <a href="/user/{{ thisuser.userid }}/group/new/period/{{ p.periodid }}/edit/">Create</a>
+                    {% endif %}
                 </td><!--Pubilc Event Column-->
                 <td>
+                    {% if p.starttime > now %}
                     <a href="/user/{{ thisuser.userid }}/publicevent/{{ p.periodid }}/">Create</a>
+                    {% endif %}
                 </td>
             </tr>
             {% endfor %}

@@ -3,31 +3,18 @@
 {% block pagename %}{% if thisgroup.groupname == None %}New Group{% else %}&#34;{{ thisgroup.groupname }}&#34; Editor{% endif %}{% endblock %}
 {% block head %}
     <script>
-
+        
         function validate() {
-            if ($('#groupname').val() != '') {
-                true
+            if ($('#groupname').val() != ''
+                ) {
+                return true
             }
             else {
-                false
+                return false
             }
         }
 
         $(document).ready(function () {
-
-            $(document).on("change", '#groupname', function () {
-                var valid = validate()
-                if (valid) {
-                    $(".submit_hide").show();
-                }
-            });
-
-            $(document).on("keypress", '#groupname', function () {
-                var valid = validate()
-                if (valid) {
-                    $(".submit_hide").show();
-                }
-            });
             
             //turn the dump of all players available in this period to a JS object
             {% if playersdump_serialized == [] %}
@@ -201,7 +188,6 @@
     </script>
 {% endblock %}
 {% block tools %}
-    <h4><b>Edit</b></h4>
         <a class="accordion" href="#">
             Autofill <i class="fa fa-caret-down"></i>
         </a>
@@ -248,7 +234,7 @@
             {% endfor %}
         </div>
     <a href="#" class="w3-hover-black" id="clear_players">Clear Players</a>
-    <a href="#" class="w3-hover-black submit_button" data-submittype="save" data-method="POST">Save Changes</a>
+    <div class="submit_hide"><a href="#" class="w3-hover-black submit_button" data-submittype="save" data-method="POST">Save Changes</a></div>
     <a href="#" class="w3-hover-black submit_button" data-method="DELETE">Delete Group</a>
 {% endblock %}
 {% block content %}
@@ -262,7 +248,7 @@
         <tr>
             <th>Name</th>
             <td class="w3-hide-small">{{ thisgroup.groupname }}</td>
-            <td><input type="text" id="groupname" class="form-attribute" value="{% if thisgroup.groupname != None %}{{ thisgroup.groupname }}{% endif %}"></td>
+            <td><input type="text" id="groupname" class="form-attribute form-validate" value="{% if thisgroup.groupname != None %}{{ thisgroup.groupname }}{% endif %}"></td>
         </tr>
         <tr>
             <th>Status</th>
@@ -396,12 +382,4 @@
         </tr>
         {% endfor %}
     </table>
-{% endblock %}
-{% block footer %}
-<!-- Navbar -->
-<div class="w3-bottom">
-    <ul class="w3-navbar w3-theme w3-animate-bottom w3-left-align w3-large submit_hide" style="display:none;">
-        <li><a href="#" class="w3-hover-white submit_button" data-submittype="submit" data-method="POST">Submit</a></li>
-    </ul>
-</div>
 {% endblock %}

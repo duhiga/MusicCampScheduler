@@ -4,6 +4,15 @@
 {% block head %}
     <script>
 
+        function validate(ob) {
+            if (ob.val() != '') {
+                return true
+            }
+            else {
+                return false
+            }
+        }
+
         /* this script handles all user interaction in the group request page. Upon page load, it downloads all players
         in the camp including the instruments they play, all templates as stated by the config.xml, and the instruments
         this user plays. it uses all of this data to populate drop-down boxes, depending on what the user selects. */
@@ -44,115 +53,108 @@
 {% endblock %}
 {% block tools %}
     <h4><b>Tools</b></h4>
-    <a href="#" class="w3-hover-black submit_button" data-method="POST">Submit</a>
-{% endblock %}
-{% block content %}
-            <p>
-                Optional: Select a group template to autofill the page
-                <select id="group_template_dropdown">
+    <div class="submit_hide"><a href="#" class="w3-hover-black submit_button submit_hide" data-method="POST">Submit</a></div>
+    {% endblock %}
+    {% block content %}
+    <p>
+        Optional: Select a group template to autofill the page
+        <select id="group_template_dropdown">
+            <option value=""></option>
+            {% for g in grouptemplates %}
+            <option value="{{ g.grouptemplatename }}">{{ g.grouptemplatename }}</option>
+            {% endfor %}
+        </select>
+    </p>
+    <h2>Group Configuration</h2>
+    <table id="configTable">
+        <tr>
+            <th>Period Name</th>
+            <td>{{ thisperiod.periodname }}</td>
+        </tr>
+        <tr>
+            <th>Date</th>
+            <td>{{ thisperiod.starttime.strftime('%A, %Y-%m-%d') }}</td>
+        </tr>
+        <tr>
+            <th>Group Name</th>
+            <td><input type="text" class="form-attribute form-validate" id="groupname"></td>
+        </tr>
+        <tr>
+            <th>Music</th>
+            <td><input type="text" class="form-attribute form-validate" id="music"></td>
+        </tr>
+        <tr>
+            <th>Location</th>
+            <td>
+                <select class="form-attribute form-validate" id="locationid">
                     <option value=""></option>
-                    {% for g in grouptemplates %}
-                    <option value="{{ g.grouptemplatename }}">{{ g.grouptemplatename }}</option>
+                    {% for l in locations %}
+                    <option value="{{ l.locationid }}">{{ l.locationname }}</option>
                     {% endfor %}
                 </select>
-            </p>
-            <h2>Group Configuration</h2>
-            <table id="configTable">
-                <tr>
-                    <th>Period Name</th>
-                    <td>{{ thisperiod.periodname }}</td>
-                </tr>
-                <tr>
-                    <th>Date</th>
-                    <td>{{ thisperiod.starttime.strftime('%A, %Y-%m-%d') }}</td>
-                </tr>
-                <tr>
-                    <th>Group Name</th>
-                    <td><input type="text" class="form-attribute" id="groupname"></td>
-                </tr>
-                <tr>
-                    <th>Music</th>
-                    <td><input type="text" class="form-attribute" id="music"></td>
-                </tr>
-                <tr>
-                    <th>Location</th>
-                    <td>
-                        <select class="form-attribute" id="locationid">
-                            {% for l in locations %}
-                            <option value="{{ l.locationid }}">{{ l.locationname }}</option>
-                            {% endfor %}
-                        </select>
-                    </td>
-                </tr>
-                <tr>
-                    <th>Minimum Level</th>
-                    <td>
-                        <select class="form-attribute" id="minimumlevel">
-                            {% for n in range(maximumlevel + 1) %}
-                            {% if n  == 0 %}
-                            <option value="{{ n }}">Auto</option>
-                            {%else%}
-                            <option value="{{ n }}">{{ n }}</option>
-                            {%endif%}
-                            {% endfor %}
-                        </select>
-                    </td>
-                </tr>
-                <tr>
-                    <th>Maximum Level</th>
-                    <td>
-                        <select class="form-attribute" id="maximumlevel">
-                            {% for n in range(maximumlevel + 1) %}
-                            {% if n  == 0 %}
-                            <option value="{{ n }}">Auto</option>
-                            {%else%}
-                            <option value="{{ n }}">{{ n }}</option>
-                            {%endif%}
-                            {% endfor %}
-                        </select>
-                    </td>
-                </tr>
-            </table>
-            <p>
-                Conductor Name:
-                <select class="form-attribute" id="conductoruserid">
-                    <option value=""></option>
-                    {% for c in conductors %}
-                        {% if c.userid == thisuser.userid %}
-                            <option value="{{ c.userid }}" selected="selected">{{ c.firstname }} {{ c.lastname }}</option>
-                        {% else %}
-                            <option value="{{ c.userid }}">{{ c.firstname }} {{ c.lastname }}</option>
-                        {% endif %}
+            </td>
+        </tr>
+        <tr>
+            <th>Minimum Level</th>
+            <td>
+                <select class="form-attribute" id="minimumlevel">
+                    {% for n in range(maximumlevel + 1) %}
+                    {% if n  == 0 %}
+                    <option value="{{ n }}">Auto</option>
+                    {%else%}
+                    <option value="{{ n }}">{{ n }}</option>
+                    {%endif%}
                     {% endfor %}
                 </select>
-            </p>
-            <h2>Group Instrumentation</h2>
-            <table id="playersTable">
-                <!--Table Headers-->
-                <tr>
-                    <th>Instrument</th>
-                    <th>Number</th>
-                </tr>
-                {% for i in instrumentlist %}
-                <tr>
-                    <td>{{ i }}</td>
-                    <td>
-                        <select class="instrumentnumber_dropdown form-attribute" id="{{ i }}">
-                            {% set n = 21 %}
-                            {% for n in range(n) %}
-                                <option value="{{ n }}">{{ n }}</option>
-                            {% endfor %}
-                        </select>
-                    </td>
-                </tr>
-                {% endfor %}
-            </table>
-{% endblock %}
-{% block footer %}
-<!-- Navbar -->
-    <div class="w3-bottom">
-        <ul class="w3-navbar w3-theme w3-bottom w3-left-align w3-large">
-            <li><a href="#" class="w3-hover-white submit_button" data-method="POST">Submit</a></li>
-        </ul>
-    </div>
-{% endblock %}
+            </td>
+        </tr>
+        <tr>
+            <th>Maximum Level</th>
+            <td>
+                <select class="form-attribute" id="maximumlevel">
+                    {% for n in range(maximumlevel + 1) %}
+                    {% if n  == 0 %}
+                    <option value="{{ n }}">Auto</option>
+                    {%else%}
+                    <option value="{{ n }}">{{ n }}</option>
+                    {%endif%}
+                    {% endfor %}
+                </select>
+            </td>
+        </tr>
+    </table>
+    <p>
+        Conductor Name:
+        <select class="form-attribute" id="conductoruserid">
+            <option value=""></option>
+            {% for c in conductors %}
+            {% if c.userid == thisuser.userid %}
+            <option value="{{ c.userid }}" selected="selected">{{ c.firstname }} {{ c.lastname }}</option>
+            {% else %}
+            <option value="{{ c.userid }}">{{ c.firstname }} {{ c.lastname }}</option>
+            {% endif %}
+            {% endfor %}
+        </select>
+    </p>
+    <h2>Group Instrumentation</h2>
+    <table id="playersTable">
+        <!--Table Headers-->
+        <tr>
+            <th>Instrument</th>
+            <th>Number</th>
+        </tr>
+        {% for i in instrumentlist %}
+        <tr>
+            <td>{{ i }}</td>
+            <td>
+                <select class="instrumentnumber_dropdown form-attribute form-validate" id="{{ i }}">
+                    {% set n = 21 %}
+                    {% for n in range(n) %}
+                    <option value="{{ n }}">{{ n }}</option>
+                    {% endfor %}
+                </select>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% endblock %}

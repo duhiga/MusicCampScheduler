@@ -12,6 +12,15 @@
 {% block head %}
 <script>
 
+    function validate(ob) {
+        if (ob.val() != '') {
+            return true
+        }
+        else {
+            return false
+        }
+    }
+
     //function to be used by the submit button. called by the template.
     function buildrequest() {
         var request = {};
@@ -93,8 +102,9 @@
 </script>
 {% endblock %}
     {% block tools %}
-        <h4><b>Tools</b></h4>
-        <a href="#" class="w3-hover-black submit_button" data-method="POST">Submit</a>
+    {% if thisuser.isadmin == 1 %}
+    {% endif %}
+        <a href="#" class="w3-hover-black" id="send_email" data-method="POST">Send Invite Email</a>
     {% endblock %}
 {% block content %}
 {% if targetuser.userid is not none %}
@@ -112,11 +122,11 @@
             <td>First Name</td>
             <td>
                 {% if targetuser.userid is not none and thisuser.isadmin == 1 %}
-                <input type="text" id="firstname" class="form-attribute" value="{{ targetuser.firstname }}">
+                <input type="text" id="firstname" class="form-attribute form-validate" value="{{ targetuser.firstname }}">
                 {% elif thisuser.isadmin != 1 %}
                 {{ targetuser.firstname }}
                 {% else %}
-                <input type="text" id="firstname" class="form-attribute" value="">
+                <input type="text" id="firstname" class="form-attribute form-validate" value="">
                 {% endif %}
             </td>
         </tr>
@@ -124,11 +134,11 @@
             <td>Last Name</td>
             <td>
                 {% if targetuser.userid is not none and thisuser.isadmin == 1 %}
-                <input type="text" id="lastname" class="form-attribute" value="{{ targetuser.lastname }}">
+                <input type="text" id="lastname" class="form-attribute form-validate" value="{{ targetuser.lastname }}">
                 {% elif thisuser.isadmin != 1 %}
                 {{ targetuser.lastname }}
                 {% else %}
-                <input type="text" id="lastname" class="form-attribute" value="">
+                <input type="text" id="lastname" class="form-attribute form-validate" value="">
                 {% endif %}
             </td>
         </tr>
@@ -232,9 +242,6 @@
         {% endif %}
     </tbody>
 </table>
-{% if thisuser.isadmin == 1 %}
-<p>Send this user their dashboard link via email: <button type="button" id="send_email">Send Email</button></p>
-{% endif %}
 <h2>{% if thisuser.isadmin == 1 %}User{% else %}Your{% endif %} Instruments</h2>
 <p>Note: You won't be assigned to play an instrument if it's set to inactive. The instrument you have set to primary will be allocated more than the others. If you wish to add any more instruments, contact camp administration.</p>
 <table>

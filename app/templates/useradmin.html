@@ -4,6 +4,15 @@
 {% block head %}
     <script>
 
+        function validate(ob) {
+            if ($('.checkbox:checked').length > 0) {
+                return true
+            }
+            else {
+                return false
+            }
+        }
+
         $(document).ready(function () {
 
             //select all checkboxes
@@ -26,10 +35,10 @@
 
     </script>
 {% endblock %}
-{% block tools %}
+{% block sidenav %}
 <h4><b>Tools</b></h4>
-<a href="/user/{{ thisuser.userid }}/newuser/" class="w3-hover-black">New User</a>
 <a href="#" class="w3-hover-black submit_button" id="email_users" data-method="POST" data-url="/user/{{ thisuser.userid }}/email/">Email Selected Users</a>
+<a href="/user/{{ thisuser.userid }}/newuser/" class="w3-hover-black">New User</a>
 {% endblock %}
 {% block content %}
     <p>Total number of users: {{ users|length }}</p>
@@ -48,7 +57,7 @@
             {% if users != None %}
             {% for u in users %}
             <tr>
-                <td><input type="checkbox" value="{{ u.userid }}" data-key="userid" data-mapping="{{ u.userid }}" class="checkbox form-object-master"></td>
+                <td><input type="checkbox" value="{{ u.userid }}" data-key="userid" data-mapping="{{ u.userid }}" class="checkbox form-object-master form-validate"></td>
                 <td><a href="/user/{{ thisuser.userid }}/edituser/{{ u.userid }}/">{{ u.firstname }}</a></td>
                 <td><a href="/user/{{ thisuser.userid }}/edituser/{{ u.userid }}/">{{ u.lastname }}</a></td>
                 <td>{% if u.isactive == 1 %}Yes{% else %}No{% endif %}</td>

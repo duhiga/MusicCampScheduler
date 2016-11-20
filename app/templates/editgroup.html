@@ -4,8 +4,31 @@
 {% block head %}
     <script>
 
+        function validate() {
+            if ($('#groupname').val() != '') {
+                true
+            }
+            else {
+                false
+            }
+        }
+
         $(document).ready(function () {
 
+            $(document).on("change", '#groupname', function () {
+                var valid = validate()
+                if (valid) {
+                    $(".submit_hide").show();
+                }
+            });
+
+            $(document).on("keypress", '#groupname', function () {
+                var valid = validate()
+                if (valid) {
+                    $(".submit_hide").show();
+                }
+            });
+            
             //turn the dump of all players available in this period to a JS object
             {% if playersdump_serialized == [] %}
             var playersdump = null;
@@ -59,37 +82,40 @@
                 lastdropdown.remove()
             }
 
+            console.log(grouptemplates)
             //run when a user changes the select template dropdown
-            $(document).on("change", '#group_template_dropdown', function () {
-                if ($(this).val() != '') {
-                    //get the user selected template and format it so we can iterate over it later
-                    var grep_template = $.grep(grouptemplates, function (elt) {
-                        return elt.grouptemplatename === $(group_template_dropdown).val();
-                    });
-                    selectedTemplate = grep_template[0];
-                    console.log('Selected template is:');
-                    console.log(selectedTemplate);
-                    $('#groupname').val(selectedTemplate.grouptemplatename).change();
-                    //for each instrument type in the group template
-                    $.each(selectedTemplate, function(key,value) {
-                        //make sure it's an instrument type and not other associated metadata
-                        if (key != 'grouptemplateid' && key != 'grouptemplatename' && key != 'size' && key != 'minimumlevel' && key != 'maximumlevel' && key != 'defaultlocationid') {
-                            if (value == '' || value == null) {
-                                value = 0;
-                            }
-                            $('.instrumentnumber_dropdown[data-instrument=' + key + ']').val(value).change();
+            $(document).on("click", '.group_template_button', function () {
+                var templateid = $(this).attr('id');
+                console.log('Template selected with id: ' + templateid)
+
+                //get the user selected template and format it so we can iterate over it later
+                var grep_template = $.grep(grouptemplates, function (elt) {
+                    return elt.grouptemplateid == templateid;
+                });
+                selectedTemplate = grep_template[0];
+                console.log('Selected template is:');
+                console.log(selectedTemplate);
+                $('#groupname').val(selectedTemplate.grouptemplatename).change();
+                //for each instrument type in the group template
+                $.each(selectedTemplate, function(key,value) {
+                    //make sure it's an instrument type and not other associated metadata
+                    if (key != 'grouptemplateid' && key != 'grouptemplatename' && key != 'size' && key != 'minimumlevel' && key != 'maximumlevel' && key != 'defaultlocationid') {
+                        if (value == '' || value == null) {
+                            value = 0;
                         }
-                        if (key == 'minimumlevel' || key == 'maximumlevel') {
-                            if (value == '' || value == 'null') {
-                                $('#' + key).val(0).change();
-                            }
-                            else {
-                                $('#' + key).val(value).change();
-                            }
+                        $('.instrumentnumber_dropdown[data-instrument=' + key + ']').val(value).change();
+                    }
+                    if (key == 'minimumlevel' || key == 'maximumlevel') {
+                        if (value == '' || value == 'null') {
+                            $('#' + key).val(0).change();
+                        }
+                        else {
+                            $('#' + key).val(value).change();
+                        }
                         
-                        }
-                    });
-                }
+                    }
+                });
+                w3_close();
                 
             });
 
@@ -176,8 +202,52 @@
 {% endblock %}
 {% block tools %}
     <h4><b>Edit</b></h4>
+        <a class="accordion" href="#">
+            Autofill <i class="fa fa-caret-down"></i>
+        </a>
+        <div id="autofill_settings" class="w3-accordion-content w3-card-4 panel">
+            <a href="#">Primary Only <select id="primary_only" class="form-attribute">
+                <option value="1" selected="selected">Yes</option>
+                <option value="0">No</option>
+            </select></a>
+            <a href="#">Minimum Level <select id="minimumlevel" class="form-attribute">
+                    {% for n in range(maximumlevel + 1) %}
+                    {% if n == thisgroup.minimumlevel and n == 0 %}
+                    <option value="{{ n }}" selected="selected">Auto</option>
+                    {% elif n == thisgroup.minimumlevel %}
+                    <option value="{{ n }}" selected="selected">{{ n }}</option>
+                    {% elif n == 0 %}
+                    <option value="{{ n }}">Auto</option>
+                    {% else %}
+                    <option value="{{ n }}">{{ n }}</option>
+                    {% endif %}
+                    {% endfor %}
+                </select>
+            </a>
+            <a href="#">Maximum Level <select id="maximumlevel" class="form-attribute">
+                    {% for n in range(maximumlevel + 1) %}
+                    {% if n == thisgroup.maximumlevel and n == 0 %}
+                    <option value="{{ n }}" selected="selected">Auto</option>
+                    {% elif n == thisgroup.maximumlevel %}
+                    <option value="{{ n }}" selected="selected">{{ n }}</option>
+                    {% elif n == 0 %}
+                    <option value="{{ n }}">Auto</option>
+                    {% else %}
+                    <option value="{{ n }}">{{ n }}</option>
+                    {% endif %}
+                    {% endfor %}
+                </select></a>
+            <a href="#" class="w3-hover-black submit_button" data-submittype="autofill" data-method="POST">Autofill Missing Players</a>
+        </div>
+    <a class="accordion" href="#">
+        Apply a Template <i class="fa fa-caret-down"></i>
+    </a>
+        <div id="templates" class="w3-accordion-content w3-card-4 panel">
+            {% for g in grouptemplates %}
+            <a href="#" class="w3-hover-black group_template_button" id="{{ g.grouptemplateid }}">{{ g.grouptemplatename }}</a>
+            {% endfor %}
+        </div>
     <a href="#" class="w3-hover-black" id="clear_players">Clear Players</a>
-    <a href="#" class="w3-hover-black submit_button" data-submittype="autofill" data-method="POST">Autofill Missing Players</a>
     <a href="#" class="w3-hover-black submit_button" data-submittype="save" data-method="POST">Save Changes</a>
     <a href="#" class="w3-hover-black submit_button" data-method="DELETE">Delete Group</a>
 {% endblock %}
@@ -250,44 +320,6 @@
             </td>
         </tr>
         <tr>
-            <th>Minimum Level</th>
-            <td class="w3-hide-small">{{ thisgroup.minimumlevel }}</td>
-            <td>
-                <select id="minimumlevel" class="form-attribute">
-                    {% for n in range(maximumlevel + 1) %}
-                    {% if n == thisgroup.minimumlevel and n == 0 %}
-                    <option value="{{ n }}" selected="selected">Auto</option>
-                    {% elif n == thisgroup.minimumlevel %}
-                    <option value="{{ n }}" selected="selected">{{ n }}</option>
-                    {% elif n == 0 %}
-                    <option value="{{ n }}">Auto</option>
-                    {% else %}
-                    <option value="{{ n }}">{{ n }}</option>
-                    {% endif %}
-                    {% endfor %}
-                </select>
-            </td>
-        </tr>
-        <tr>
-            <th>Maximum Level</th>
-            <td class="w3-hide-small">{{ thisgroup.maximumlevel }}</td>
-            <td>
-                <select id="maximumlevel" class="form-attribute">
-                    {% for n in range(maximumlevel + 1) %}
-                    {% if n == thisgroup.maximumlevel and n == 0 %}
-                    <option value="{{ n }}" selected="selected">Auto</option>
-                    {% elif n == thisgroup.maximumlevel %}
-                    <option value="{{ n }}" selected="selected">{{ n }}</option>
-                    {% elif n == 0 %}
-                    <option value="{{ n }}">Auto</option>
-                    {% else %}
-                    <option value="{{ n }}">{{ n }}</option>
-                    {% endif %}
-                    {% endfor %}
-                </select>
-            </td>
-        </tr>
-        <tr>
             <th>Counted towards play totals</th>
             <td class="w3-hide-small">
                 {% if thisgroup.ismusical == 0 %}No
@@ -324,22 +356,6 @@
         </tr>
     </table>
     <h2>Players</h2>
-    <p>Players bolded in the below table are the current players in that group. Player are shown with their grades on the respective instruments before their names.</p>
-    <p>
-        Optional: Select a group template to autofill the page. Note - this wipes the current configuration.
-        <select id="group_template_dropdown">
-            <option value=""></option>
-            {% for g in grouptemplates %}
-            <option value="{{ g.grouptemplatename }}">{{ g.grouptemplatename }}</option>
-            {% endfor %}
-        </select>
-    </p>
-    <p><button class="submit_button" data-submittype="autofill" data-method="POST">Autofill</button>
-        <select id="allow_non_primary" class="form-attribute">
-            <option value="1" selected="selected">Only include primary instruments</option>
-            <option value="0">Include primary and secondary instruments</option>
-        </select>
-    </p>
     <table class="sortable" id="table_players">
         <tr>
             <th>Instrument</th>
@@ -384,7 +400,7 @@
 {% block footer %}
 <!-- Navbar -->
 <div class="w3-bottom">
-    <ul class="w3-navbar w3-theme w3-bottom w3-left-align w3-large">
+    <ul class="w3-navbar w3-theme w3-animate-bottom w3-left-align w3-large submit_hide" style="display:none;">
         <li><a href="#" class="w3-hover-white submit_button" data-submittype="submit" data-method="POST">Submit</a></li>
     </ul>
 </div>

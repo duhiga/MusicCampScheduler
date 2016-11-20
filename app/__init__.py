@@ -404,12 +404,13 @@ def editgroup(userid,groupid,periodid=None):
             session.delete(a)
         #add the content in the packet to this group's attributes
         for key,value in content.iteritems():
-            if value is not None or value != 'null' or value != '' or key != 'allow_non_primary':
+            if value is not None or value != 'null' or value != '' or key != 'primary_only':
                 log('Setting %s to be %s' % (key, value))
                 setattr(thisgroup,key,value)
         thisgroup.requesteduserid = thisuser.userid
         if groupid == None:
             session.add(thisgroup)
+            thisgroup.requesttime = datetime.datetime.now()
             session.commit()
         foundfilled = False
         for p in content['objects']:
@@ -456,6 +457,7 @@ def editgroup(userid,groupid,periodid=None):
         #----AUTOFILL SECTION----
         if content['submittype'] == 'autofill':
             log('User selected to autofill the group')
+            log('Primary_only switch set to %s' % content['primary_only'])
             if content['periodid'] == '' or content['periodid'] is None:
                 session.rollback()
                 session.close()
@@ -487,10 +489,10 @@ def editgroup(userid,groupid,periodid=None):
                                     filter(groupassignment.userid.in_(possible_players_query))
                                 final_list = session.query(user.userid,sqlalchemy.sql.expression.literal_column("0").label("playcount")).filter(user.userid.in_(possible_players_query)).\
                                                 filter(~user.userid.in_(already_played_query)).limit(requiredplayers).all()
-                                #append the players that have already played, ordered by the number of times they've played. Keep the query limited to just the number we need. The admin controls if the query allows non-primary instruments by the content['allow_non_primary']
+                                #append the players that have already played, ordered by the number of times they've played. Keep the query limited to just the number we need. The admin controls if the query allows non-primary instruments by the content['primary_only']
                                 if len(final_list) < requiredplayers:
                                     for p in (session.query(user.userid, func.count(groupassignment.userid).label("playcount")).group_by(user.userid).outerjoin(groupassignment).outerjoin(group).outerjoin(instrument, groupassignment.userid == instrument.userid).\
-                                            filter(group.ismusical == 1, instrument.isprimary >= content['allow_non_primary']).filter(groupassignment.userid.in_(possible_players_query)).order_by(func.count(groupassignment.userid)).limit(requiredplayers - len(final_list)).all()):
+                                            filter(group.ismusical == 1, instrument.isprimary >= content['primary_only']).filter(groupassignment.userid.in_(possible_players_query)).order_by(func.count(groupassignment.userid)).limit(requiredplayers - len(final_list)).all()):
                                         final_list.append(p)
                                 log('Players in final list with playcounts:')
                                 #add groupassignments for the final player list

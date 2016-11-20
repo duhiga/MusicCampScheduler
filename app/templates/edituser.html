@@ -144,9 +144,10 @@
             <td>Arrival</td>
             <td>
                 <select id="arrival" class="form-attribute">
-                    <option value="None"></option>
                     {% for p in periods %}
-                    {% if p.starttime == targetuser.arrival %}
+                    {% if targetuser.userid != None and p.starttime == targetuser.arrival %}
+                    <option value="{{ p.starttime }}" selected="selected">{{ p.periodname }}, {{ p.starttime.strftime('%a, %d %b') }}</option>
+                    {% elif targetuser.userid == None and p.starttime == periods[0].starttime %}
                     <option value="{{ p.starttime }}" selected="selected">{{ p.periodname }}, {{ p.starttime.strftime('%a, %d %b') }}</option>
                     {% else %}
                     <option value="{{ p.starttime }}">{{ p.periodname }}, {{ p.starttime.strftime('%a, %d %b') }}</option>
@@ -159,9 +160,10 @@
             <td>Departure</td>
             <td>
                 <select id="departure" class="form-attribute">
-                    <option value="None"></option>
                     {% for p in periods %}
-                    {% if p.starttime == targetuser.departure %}
+                    {% if targetuser.userid != None and p.starttime == targetuser.departure %}
+                    <option value="{{ p.starttime }}" selected="selected">{{ p.periodname }}, {{ p.starttime.strftime('%a, %d %b') }}</option>
+                    {% elif targetuser.userid == None and p.starttime == periods[periods|length - 1].starttime %}
                     <option value="{{ p.starttime }}" selected="selected">{{ p.periodname }}, {{ p.starttime.strftime('%a, %d %b') }}</option>
                     {% else %}
                     <option value="{{ p.starttime }}">{{ p.periodname }}, {{ p.starttime.strftime('%a, %d %b') }}</option>

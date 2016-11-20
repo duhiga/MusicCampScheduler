@@ -411,13 +411,9 @@ def editgroup(userid,groupid,periodid=None):
         if groupid == None:
             session.add(thisgroup)
             session.commit()
-        foundempty = False
-        foundfilled = True
+        foundfilled = False
         for p in content['objects']:
-            if p['userid'] == '' or p['userid'] is None:
-                foundempty = True
-            #if the playerid is not null, we create a groupassignment for them and bind it to this group
-            else:
+            if p['userid'] == '' or p['userid'] is not None:
                 foundfilled = True
                 log('Attempting to find user %s' % p['userid'])
                 playeruser = session.query(user).filter(user.userid == p['userid']).first()
@@ -448,11 +444,11 @@ def editgroup(userid,groupid,periodid=None):
                     else:
                         playergroupassignment = groupassignment(userid = playeruser.userid, groupid = thisgroup.groupid, instrumentname = p['instrumentname'])
                         session.add(playergroupassignment)
-        if thisgroup.minimumlevel is None and foundfilled == False:
+        if content['submittype'] == 'autofill' and (thisgroup.minimumlevel is None or thisgroup.minimumlevel == 0 or thisgroup.maximumlevel is None or thisgroup.maximumlevel == 0):
             session.rollback()
             session.close()
-            return jsonify(message = 'You cannot have all empty players and an auto level. Set the level or at least one player.', url = 'none')
-        if thisgroup.status == 'Confirmed' and (thisgroup.periodid == '' or thisgroup.groupname == '' or thisgroup.locationid == '' or foundempty == True):
+            return jsonify(message = 'You cannot autofill with all empty players and an auto minimum or maximum level. Set the level or at least one player.', url = 'none')
+        if thisgroup.status == 'Confirmed' and (thisgroup.periodid == '' or thisgroup.groupname == '' or thisgroup.locationid == ''):
             session.rollback()
             session.close()
             return jsonify(message = 'Confirmed groups must have a name, assigned period, assigned location and no empty player slots.', url = 'none')
@@ -502,6 +498,19 @@ def editgroup(userid,groupid,periodid=None):
                                     log('Selected %s with playcount %s to play %s' % (pl.userid, pl.playcount, i))
                                     playergroupassignment = groupassignment(userid = pl.userid, groupid = thisgroup.groupid, instrumentname = i)
                                     session.add(playergroupassignment)
+
+        #Check for empty instrument slots if group is set to confirmed - if there are empties we have to switch it back to queued
+        if thisgroup.status == 'Confirmed':
+            for i in getconfig('Instruments').split(","):
+                log('This group has a required %s number of %s and an assigned %s.' % (i, getattr(thisgroup,i), session.query(user).join(groupassignment).filter(groupassignment.groupid == thisgroup.groupid, groupassignment.instrumentname == i).count()))
+                if int(session.query(user).join(groupassignment).filter(groupassignment.groupid == thisgroup.groupid, groupassignment.instrumentname == i).count()) != int(getattr(thisgroup,i)):
+                    thisgroup.status = 'Queued'
+                    try:
+                        session.merge(thisgroup)
+                        session.commit()
+                    except Exception as ex:
+                        log('failed to commit changes to database after a groupedit on group %s with error: %s' % (thisgroup.groupid,ex))
+                    return jsonify(message = 'Your group is not confirmed because there are empty instrument slots. Your other changes have been saved.', url = '/user/' + str(thisuser.userid) + '/group/' + str(thisgroup.groupid) + '/edit/')
         try:
             session.merge(thisgroup)
             session.commit()
@@ -922,7 +931,7 @@ def periodpage(userid,periodid):
     players = session.query(user.userid, user.firstname, user.lastname, period.starttime, period.endtime, group.groupname,\
         groupassignment.instrumentname, location.locationname, groupassignment.groupid).\
         join(groupassignment).join(group).join(period).outerjoin(location).\
-        filter(user.isactive == 1, user.arrival <= thisperiod.starttime, user.departure >= thisperiod.endtime, group.periodid == thisperiod.periodid, group.status == 'Confirmed').order_by(group.groupname,groupassignment.instrumentname).all()
+        filter(user.arrival <= thisperiod.starttime, user.departure >= thisperiod.endtime, group.periodid == thisperiod.periodid, group.status == 'Confirmed', group.groupname != 'absent').order_by(group.groupid,groupassignment.instrumentname).all()
     #grab just the userids of those players to be used in the next query
     players_in_groups_query = session.query(user.userid).\
         join(groupassignment).join(group).join(period).\
@@ -1058,11 +1067,15 @@ def edituser(userid, targetuserid):
                     return jsonify(message = 'You have submitted illegal parameters for your instrument. No changes have been made to your instrument listings.', url = 'none')
                 elif key != 'instrumentid' and value != 'None':
                     setattr(thisinstrument,key,value)
-        session.merge(thisinstrument)
+            session.merge(thisinstrument)
         session.commit()
+        if targetuserid is None:
+            url = ('/user/' + str(thisuser.userid) + '/edituser/' + str(targetuser.userid) + '/')
+        else:
+            url = 'none'
         session.close()
         #send the user back to their home
-        return jsonify(message = 'Success! New settings applied.', url = 'none')
+        return jsonify(message = 'Success! New settings applied.', url = url)
 
 @app.route('/user/<userid>/newuser/', methods=['GET', 'POST'])
 def newuser(userid):
@@ -1218,7 +1231,7 @@ def instrumentation(userid,periodid):
             url = ('/user/' + str(thisuser.userid) + '/group/' + str(grouprequest.groupid) + '/')
             log('Sending user to URL: %s' % url)
             session.close()
-            return jsonify(message = 'none', url = 'none')
+            return jsonify(message = 'none', url = url)
 
 #Shows the godpage to the user. Godpage contains all user names and links to all their homes. Right now uses a shared password,
 #but would be better if tied to a user's admin account. However, there's no easy way to currently see what the userid of the admin is

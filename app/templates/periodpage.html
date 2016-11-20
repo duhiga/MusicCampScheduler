@@ -2,12 +2,13 @@
 {% block title%}{{ campname }} Period Display{% endblock %}
 {% block pagename %}{{ thisperiod.periodname }}{% endblock %}
 {% block content %}
+    <h1>{{ thisperiod.periodname }}: {{ thisperiod.starttime.strftime('%A %d %b') }}, {{ thisperiod.starttime.strftime('%H:%M') }}-{{ thisperiod.endtime.strftime('%H:%M') }}</h1>
     {% if publicevents[0] != None %}
     {% for e in publicevents %}
     <h2>Public Event At This Time: <a href="/user/{{ thisuser.userid }}/group/{{ e.groupid }}">{{ e.groupname }}</a></h2>
     {% endfor %}
     {% endif %}
-    <h1>{{ thisperiod.periodname }}: {{ thisperiod.starttime.strftime('%A %d %b') }}, {{ thisperiod.starttime.strftime('%H:%M') }}-{{ thisperiod.endtime.strftime('%H:%M') }}</h1>
+    <p>Total number of attendees: {{ players|length + nonplayers|length }}</p>
     <table style="width:100%" class="sortable-table">
         <thead>
             <tr>

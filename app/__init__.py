@@ -520,7 +520,10 @@ def editgroup(userid,groupid,periodid=None):
             url = '/user/' + str(thisuser.userid) + '/group/' + str(thisgroup.groupid) + '/edit/'
             message = 'none'
         elif content['submittype'] == 'save':
-            url = 'none'
+            if groupid == None:
+                url = '/user/' + str(thisuser.userid) + '/group/' + str(thisgroup.groupid) + '/edit/'
+            else:
+                url = 'none'
             message = 'Changes Saved'
         else:
             url = '/user/' + str(thisuser.userid) + '/group/' + str(thisgroup.groupid) + '/'
@@ -577,15 +580,28 @@ def grouprequest(userid,periodid=None):
                             campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
                             errormessage = 'Your user is currently set to inactive or are not attending camp at this time. Inactive users cannot request groups. Navigate to your settings and change them, or revisit this page at another time.'
                             )
+
+    #find the instruments this user plays
+    thisuserinstruments = session.query(instrument).filter(instrument.userid == userid, instrument.isactive == 1).all()
+    thisuserinstruments_serialized = [i.serialize for i in thisuserinstruments]
+
     #check if this user is really a conductor and actually requested a conductorpage for a specific period
     if thisuser.isconductor == 1 and periodid is not None:
         conductorpage = True
         thisperiod = session.query(period).filter(period.periodid == periodid).first()
         if thisperiod is None:
             return ('Did not find period in database. Something has gone wrong.')
+    elif thisuserinstruments is None:
+        session.close()
+        return render_template('errorpage.html', \
+                            thisuser=thisuser, \
+                            campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
+                            errormessage = 'You do not play any instruments. You cannot make a group request.'
+                            )
     else:
         conductorpage = False
         thisperiod = None
+
     #if this user isn't a conductor and/or they didn't request the conductor page and they've already surpassed their group-per-day limit, deny them.
     #UNTESTED!!! WHEN DOING A TRIAL RUN THIS NEEDS TO BE TESTED.
     if conductorpage == False:
@@ -618,9 +634,6 @@ def grouprequest(userid,periodid=None):
         for p in playersdump:
             playersdump_serialized.append({'userid': p.userid, 'firstname': p.firstname, 'lastname': p.lastname,
                                             'instrumentname': p.instrumentname, 'grade': p.grade, 'isprimary': p.isprimary})
-        #find the instruments this user plays
-        thisuserinstruments = session.query(instrument).filter(instrument.userid == userid, instrument.isactive == 1).all()
-        thisuserinstruments_serialized = [i.serialize for i in thisuserinstruments]
 
         #if this is the conductorpage, the user will need a list of the locations that are not being used in the period selected
         if conductorpage == True:

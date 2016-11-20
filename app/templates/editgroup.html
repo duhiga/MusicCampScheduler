@@ -1,6 +1,6 @@
 {% extends "layout.html" %}
 {% block title %}{{ campname }} Group Editor{% endblock %}
-{% block pagename %}&#34;{{ thisgroup.groupname }}&#34; Editor{% endblock %}
+{% block pagename %}{% if thisgroup.groupname == None %}New Group{% else %}&#34;{{ thisgroup.groupname }}&#34; Editor{% endif %}{% endblock %}
 {% block head %}
     <script>
 

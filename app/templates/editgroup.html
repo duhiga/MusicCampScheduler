@@ -99,7 +99,9 @@
                         else {
                             $('#' + key).val(value).change();
                         }
-                        
+                    }
+                    if (key == 'defaultlocationid' && value != '' && value != 'None' && value != 'null') {
+                        $('#locationid').val(value).change();
                     }
                 });
                 w3_close();

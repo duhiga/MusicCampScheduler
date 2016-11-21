@@ -101,11 +101,16 @@
     });
 </script>
 {% endblock %}
-    {% block tools %}
+{% block sidenav %}
+    <div class="submit_hide">
     {% if thisuser.isadmin == 1 %}
-    {% endif %}
+        <h4><b>Tools</b></h4>
         <a href="#" class="w3-hover-black" id="send_email" data-method="POST">Send Invite Email</a>
-    {% endblock %}
+    {% endif %}
+    <h4><b>Save</b></h4>
+    <a href="#" class="w3-hover-black submit_button" data-method="POST">Save Changes</a>
+    </div>
+{% endblock %}
 {% block content %}
 {% if targetuser.userid is not none %}
     {% if thisuser.isadmin == 1 %}

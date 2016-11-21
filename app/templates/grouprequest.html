@@ -204,6 +204,12 @@
     });
 </script>
 {% endblock %}
+{% block sidenav %}
+<div class="submit_hide">
+    <h4><b>Save</b></h4>
+    <a href="#" class="w3-hover-black submit_button" data-method="POST">Submit</a>
+</div>
+{% endblock %}
 {% block content %}
     {% if conductorpage %}
     <table id="configTable">

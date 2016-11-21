@@ -239,11 +239,6 @@
         <a href="javascript:void(0)" onclick="w3_close()" class="w3-right w3-xlarge w3-padding-large w3-hover-black w3-hide-large" title="close menu">
             <i class="fa fa-remove"></i>
         </a>
-        <div class="submit_hide">
-            <h4><b>Tools</b></h4>
-            {% block tools %}{% endblock %}
-            <a href="#" class="w3-hover-black submit_button" data-method="POST">Submit</a>
-        </div>
         {% block sidenav %}{% endblock %}
         <h4><b>Navigation</b></h4>
         <a href="/user/{{ thisuser.userid }}/" class="w3-hover-black"><i class="fa fa-home"></i> Home</a>

@@ -15,9 +15,15 @@
 
 </script>
 {% endblock %}
+{% block sidenav %}
+<div class="submit_hide">
+    <h4><b>Save</b></h4>
+    <a href="#" class="w3-hover-black submit_button" data-method="POST">Submit</a>
+</div>
+{% endblock %}
 {% block content %}
-    <p>
-        This page is used to edit the announcement that shows up on all user dashboards.
-    </p>
-    <p><textarea class="form-attribute form-validate" id="content" cols="40" rows="5">{{ currentannouncement.content }}</textarea></p>
+<p>
+    This page is used to edit the announcement that shows up on all user dashboards.
+</p>
+<p><textarea class="form-attribute form-validate" id="content" cols="40" rows="5">{{ currentannouncement.content }}</textarea></p>
 {% endblock %}

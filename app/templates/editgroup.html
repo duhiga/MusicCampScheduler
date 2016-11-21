@@ -187,16 +187,31 @@
         });
     </script>
 {% endblock %}
-{% block tools %}
+{% block sidenav %}
+    <h4><b>Tools</b></h4>
+    <a href="#" class="w3-hover-black" id="clear_players">Clear Players</a>
+    <a href="#" class="w3-hover-black submit_button" data-method="DELETE">Delete Group</a>
+    <a class="accordion" href="#">
+        Apply a Template <i class="fa fa-caret-down"></i>
+    </a>
+        <div id="templates" class="w3-accordion-content w3-card-4 panel">
+            {% for g in grouptemplates %}
+            <a href="#" class="w3-hover-black group_template_button" id="{{ g.grouptemplateid }}">{{ g.grouptemplatename }}</a>
+            {% endfor %}
+        </div>
+    <div class="submit_hide">
         <a class="accordion" href="#">
             Autofill <i class="fa fa-caret-down"></i>
         </a>
         <div id="autofill_settings" class="w3-accordion-content w3-card-4 panel">
-            <a href="#">Primary Only <select id="primary_only" class="form-attribute">
-                <option value="1" selected="selected">Yes</option>
-                <option value="0">No</option>
-            </select></a>
-            <a href="#">Minimum Level <select id="minimumlevel" class="form-attribute">
+            <a href="#">
+                Primary Only <select id="primary_only" class="form-attribute">
+                    <option value="1" selected="selected">Yes</option>
+                    <option value="0">No</option>
+                </select>
+            </a>
+            <a href="#">
+                Minimum Level <select id="minimumlevel" class="form-attribute">
                     {% for n in range(maximumlevel + 1) %}
                     {% if n == thisgroup.minimumlevel and n == 0 %}
                     <option value="{{ n }}" selected="selected">Auto</option>
@@ -210,7 +225,8 @@
                     {% endfor %}
                 </select>
             </a>
-            <a href="#">Maximum Level <select id="maximumlevel" class="form-attribute">
+            <a href="#">
+                Maximum Level <select id="maximumlevel" class="form-attribute">
                     {% for n in range(maximumlevel + 1) %}
                     {% if n == thisgroup.maximumlevel and n == 0 %}
                     <option value="{{ n }}" selected="selected">Auto</option>
@@ -222,20 +238,15 @@
                     <option value="{{ n }}">{{ n }}</option>
                     {% endif %}
                     {% endfor %}
-                </select></a>
-            <a href="#" class="w3-hover-black submit_button" data-submittype="autofill" data-method="POST">Autofill Missing Players</a>
+                </select>
+                </a>
+                <a href="#" class="w3-hover-black submit_button" data-submittype="autofill" data-method="POST">Autofill Missing Players</a>
+            </div>
+        
+            <h4><b>Save</b></h4>
+            <a href="#" class="w3-hover-black submit_button" data-submittype="save" data-method="POST">Save Changes</a>
+            <a href="#" class="w3-hover-black submit_button" data-method="POST">Submit</a>
         </div>
-    <a class="accordion" href="#">
-        Apply a Template <i class="fa fa-caret-down"></i>
-    </a>
-        <div id="templates" class="w3-accordion-content w3-card-4 panel">
-            {% for g in grouptemplates %}
-            <a href="#" class="w3-hover-black group_template_button" id="{{ g.grouptemplateid }}">{{ g.grouptemplatename }}</a>
-            {% endfor %}
-        </div>
-    <a href="#" class="w3-hover-black" id="clear_players">Clear Players</a>
-    <div class="submit_hide"><a href="#" class="w3-hover-black submit_button" data-submittype="save" data-method="POST">Save Changes</a></div>
-    <a href="#" class="w3-hover-black submit_button" data-method="DELETE">Delete Group</a>
 {% endblock %}
 {% block content %}
     <h2>Group Configuration</h2>

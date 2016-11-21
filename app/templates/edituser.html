@@ -101,6 +101,11 @@
     });
 </script>
 {% endblock %}
+{% block navbar %}
+<div class="submit_hide">
+    <li class="w3-opennav w3-right w3-animate-right"><a href="#" class="w3-hover-white w3-large w3-theme-l1 submit_button" data-submittype="save" data-method="POST"><i class="fa fa-save"></i></a></li>
+</div>
+{% endblock %}
 {% block sidenav %}
     <div class="submit_hide">
     {% if thisuser.isadmin == 1 %}
@@ -108,7 +113,7 @@
         <a href="#" class="w3-hover-black" id="send_email" data-method="POST">Send Invite Email</a>
     {% endif %}
     <h4><b>Save</b></h4>
-    <a href="#" class="w3-hover-black submit_button" data-method="POST">Save Changes</a>
+    <a href="#" class="w3-hover-black submit_button" data-submittype="submit" data-method="POST">Save Changes</a>
     </div>
 {% endblock %}
 {% block content %}
@@ -120,7 +125,7 @@
     <h1>New User</h1>
 {% endif %}
 <h2>{% if thisuser.isadmin == 1 %}User{% else %}Your{% endif %} Settings</h2>
-<p>Note: You will only be assigned a group if you are set to Active, and the group plays betwen your arrival and departure times.</p>
+<p>Note: You will only be assigned a group if you are set to Active, and the group plays between your arrival and departure times.</p>
 <table>
     <tbody>
         <tr>
@@ -248,7 +253,7 @@
     </tbody>
 </table>
 <h2>{% if thisuser.isadmin == 1 %}User{% else %}Your{% endif %} Instruments</h2>
-<p>Note: You won't be assigned to play an instrument if it's set to inactive. The instrument you have set to primary will be allocated more than the others. If you wish to add any more instruments, contact camp administration.</p>
+<p>Note: You won't be assigned to play an instrument if it's set to inactive. Your primary instrument is significantly more likely to be allocated to groups than non-primary instruments.{% if thisuser.isadmin != 1 %} If you wish to add any more instruments, <a href="mailto:{{ supportemailaddress }}">contact camp administration</a>.{% endif %}</p>
 <table>
     <thead>
         <tr>

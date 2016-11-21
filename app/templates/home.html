@@ -73,15 +73,15 @@
     <p>{{ currentannouncement.content }}</p>
     <p style="text-align: center;">
         {% if previousday == today %}
-        <a href="/user/{{ thisuser.userid }}/">Previous</a>
+        <a href="/user/{{ thisuser.userid }}/"><i class="fa fa-arrow-left"></i></a>
         {% else %}
-        <a href="/user/{{ thisuser.userid }}/date/{{ previousday.strftime('%Y-%m-%d') }}/">Previous</a>
+        <a href="/user/{{ thisuser.userid }}/date/{{ previousday.strftime('%Y-%m-%d') }}/"><i class="fa fa-arrow-left"></i></a>
         {% endif %}
         <b> Schedule for {{ date.strftime('%a, %d %b') }}</b>
         {% if nextday == today %}
-        <a href="/user/{{ thisuser.userid }}/">Next</a>
+        <a href="/user/{{ thisuser.userid }}/"><i class="fa fa-arrow-right"></i></a>
         {% else %}
-        <a href="/user/{{ thisuser.userid }}/date/{{ nextday.strftime('%Y-%m-%d') }}/">Next</a>
+        <a href="/user/{{ thisuser.userid }}/date/{{ nextday.strftime('%Y-%m-%d') }}/"><i class="fa fa-arrow-right"></i></a>
         {% endif %}
     </p>
     <ul class="tab">

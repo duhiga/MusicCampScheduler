@@ -1047,7 +1047,7 @@ def edituser(userid, targetuserid):
 
         #add the content in the packet to this group's attributes
         for key,value in content.iteritems():
-            if thisuser.isadmin != 1 and key != arrival and key != departure and key != isactive:
+            if int(thisuser.isadmin) != 1 and key != 'arrival' and key != 'departure' and key != 'isactive':
                 session.rollback()
                 session.close()
                 return jsonify(message = 'Users are not allowed to edit this attribute. The page should not have given you this option.', url = 'none')
@@ -1085,13 +1085,23 @@ def edituser(userid, targetuserid):
                     setattr(thisinstrument,key,value)
             session.merge(thisinstrument)
         session.commit()
-        if targetuserid is None:
-            url = ('/user/' + str(thisuser.userid) + '/edituser/' + str(targetuser.userid) + '/')
+
+        if content['submittype'] == 'submit':
+            url = '/user/' + str(thisuser.userid) + '/'
+            message = 'none'
+        elif content['submittype'] == 'save':
+            if targetuserid is None:
+                url = ('/user/' + str(thisuser.userid) + '/edituser/' + str(targetuser.userid) + '/')
+                message = 'Save Successful'
+            else:
+                url = 'none'
+                message = 'Save Successful'
         else:
             url = 'none'
+            message = 'Incomplete request. Request failed.'
         session.close()
         #send the user back to their home
-        return jsonify(message = 'Success! New settings applied.', url = url)
+        return jsonify(message = message, url = url)
 
 @app.route('/user/<userid>/newuser/', methods=['GET', 'POST'])
 def newuser(userid):

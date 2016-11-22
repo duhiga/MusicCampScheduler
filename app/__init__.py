@@ -527,7 +527,7 @@ def editgroup(userid,groupid,periodid=None):
                 url = '/user/' + str(thisuser.userid) + '/group/' + str(thisgroup.groupid) + '/edit/'
             else:
                 url = 'none'
-            message = 'Changes Saved'
+            message = 'none'
         else:
             url = '/user/' + str(thisuser.userid) + '/group/' + str(thisgroup.groupid) + '/'
             message = 'none'
@@ -1047,8 +1047,6 @@ def edituser(userid, targetuserid):
 
         #add the content in the packet to this group's attributes
         for key,value in content.iteritems():
-            log(key)
-            log(value)
             if (thisuser.isadmin != 1 and thisuser.isadmin != '1') and key != 'arrival' and key != 'departure' and key != 'isactive' and key != 'submittype' and key != 'objects':
                 session.rollback()
                 session.close()
@@ -1094,10 +1092,10 @@ def edituser(userid, targetuserid):
         elif content['submittype'] == 'save':
             if targetuserid is None:
                 url = ('/user/' + str(thisuser.userid) + '/edituser/' + str(targetuser.userid) + '/')
-                message = 'Save Successful'
+                message = 'none'
             else:
                 url = 'none'
-                message = 'Save Successful'
+                message = 'none'
         else:
             url = 'none'
             message = 'Incomplete request. Request failed.'

@@ -191,7 +191,11 @@
 {% endblock %}
 {% block navbar %}
 <div class="submit_hide">
-    <li class="w3-opennav w3-right w3-animate-right"><a href="#" class="w3-hover-white w3-large w3-theme-l1 submit_button" data-submittype="save" data-method="POST"><i class="fa fa-save"></i></a></li>
+    <li class="w3-opennav w3-right w3-animate-right">
+        <a href="#" class="w3-hover-white w3-large w3-theme-l1 submit_button" data-submittype="save" data-method="POST">
+            <i class="fa fa-save save_icon"></i><i class="fa fa-circle-o-notch fa-spin spin_icon"></i>
+        </a>
+    </li>
 </div>
 {% endblock %}
 {% block sidenav %}
@@ -251,8 +255,8 @@
             </div>
         
             <h4><b>Save</b></h4>
-            <a href="#" class="w3-hover-black submit_button" data-submittype="save" data-method="POST">Save Changes</a>
-            <a href="#" class="w3-hover-black submit_button" data-submittype="submit" data-method="POST">Submit</a>
+            <a href="#" class="w3-hover-black submit_button" data-submittype="save" data-method="POST"><i class="fa fa-save save_icon"></i><i class="fa fa-circle-o-notch fa-spin spin_icon"></i> Save Changes</a>
+            <a href="#" class="w3-hover-black submit_button" data-submittype="submit" data-method="POST"><i class="fa fa-check save_icon"></i><i class="fa fa-circle-o-notch fa-spin spin_icon"></i> Submit</a>
         </div>
 {% endblock %}
 {% block content %}

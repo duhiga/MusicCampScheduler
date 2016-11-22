@@ -20,8 +20,8 @@
     <script src="/js/jquery.tablesorter.js"></script>
     <script>
         
-        var isClicked = false
-        
+        var isClicked = false;
+
         function sendtoserver(request, method, url) {
 
             //this function handles AJAX sending to the server
@@ -34,6 +34,8 @@
                 success: function(data, textStatus) {
                     //upon success, the server will return a message and a URL. give the user the message and send them to the URL.
                     console.log(data);
+                    $('.spin_icon').hide();
+                    $('.save_icon').show();
                     if (data.message != 'none') {
                         alert(data.message);
                         isClicked = false;
@@ -46,15 +48,20 @@
                     }
                 },
                 error: function(xhr, textStatus, errorThrown) {
+                    $('.spin_icon').hide();
+                    $('.save_icon').show();
                     alert('Submission failed with error: ' + errorThrown);
                     isClicked = false;
+                    
                 },
             });
+            //if someone pressed the save button, turn it back into a save button
         }
 
         //function to be used by the submit button. called by the template.
         //all form objects must have the form-attribute class, and their ids must match class attributes on the server
         function buildrequest() {
+
             var request = {};
             //for each item marked form-attribute, add its value to the request
             $('.form-attribute').each(function () {
@@ -135,7 +142,7 @@
 
         $(document).ready(function () {
 
-            
+            $('.spin_icon').hide();
 
 
             //try to validate the form at the start, and whenever anything is changed. If valid, show the submit buttons.
@@ -191,6 +198,7 @@
                 if (!isClicked) {
                     isClicked = true;
                     console.log('Submit button pressed with method ' + $(this).data('method'));
+
                     if ($(this).data('method') == 'DELETE') {
                         var r = confirm('Are you sure you want to delete this group?');
                         if (r == true) {
@@ -198,8 +206,15 @@
                         }
                     }
                     else {
+                        //if someone pressed the save button, turn it into a spinning circle
+                        if ($(this).data('submittype') == 'save') {
+                            $('.save_icon').hide();
+                            $('.spin_icon').show();
+                        }
+
                         //This function relies on a buildrequest function. Every page needs its own in its own script.
                         var request = buildrequest()
+
                         if ($(this).data('submittype') != '' || $(this).data('submittype') != null) {
                             request.submittype = $(this).data('submittype')
                         }
@@ -210,9 +225,10 @@
 
                         console.log('Pushing the request to the server for processing:');
                         console.log(request);
-                        sendtoserver(request, $(this).data('method'),url)
+                        sendtoserver(request, $(this).data('method'), url)
+
+                        }
                     }
-                }
                 w3_close();
             });
         });
@@ -275,7 +291,7 @@
         <!-- Navbar -->
         <div class="w3-bottom">
             <ul class="w3-navbar w3-theme w3-animate-bottom w3-left-align w3-large submit_hide">
-                <li><a href="#" class="w3-hover-white submit_button" data-submittype="submit" data-method="POST">Submit</a></li>
+                <li><a href="#" class="w3-hover-white submit_button" data-submittype="submit" data-method="POST"><i class="fa fa-check save_icon"></i><i class="fa fa-circle-o-notch fa-spin spin_icon"></i> Submit</a></li>
             </ul>
         </div>
     </div>

@@ -1047,7 +1047,9 @@ def edituser(userid, targetuserid):
 
         #add the content in the packet to this group's attributes
         for key,value in content.iteritems():
-            if int(thisuser.isadmin) != 1 and key != 'arrival' and key != 'departure' and key != 'isactive':
+            log(key)
+            log(value)
+            if (thisuser.isadmin != 1 and thisuser.isadmin != '1') and key != 'arrival' and key != 'departure' and key != 'isactive' and key != 'submittype' and key != 'objects':
                 session.rollback()
                 session.close()
                 return jsonify(message = 'Users are not allowed to edit this attribute. The page should not have given you this option.', url = 'none')

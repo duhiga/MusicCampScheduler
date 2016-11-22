@@ -127,7 +127,7 @@ def home(userid,inputdate='n'):
     #gets the data associated with this user
     thisuser = session.query(user).filter(user.userid == userid).first()
     if thisuser is None:
-        return ('Did not find user in database. You have entered an incorrect URL address.')       
+        return ('Did not find user in database. You have entered an incorrect URL address.')
     #find the number of times a user has played in groups in the past
     count = playcount(session, userid)
     #get the current announcement

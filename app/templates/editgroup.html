@@ -54,7 +54,7 @@
                 sel.append($("<option>").attr('value',""));
                 for (var i = 0; i < playersdump.length; i++) {
                     if (playersdump[i].instrumentname == instrument) {
-                        sel.append($("<option>").attr('value',playersdump[i].userid).text(playersdump[i].grade + ' - ' + playersdump[i].firstname + ' ' + playersdump[i].lastname));
+                        sel.append($("<option>").attr('value',playersdump[i].userid).text('L' + playersdump[i].grade + ' - ' + playersdump[i].firstname + ' ' + playersdump[i].lastname));
                     }
                 }
                 $('<input type="hidden" class="hidden_instrument_name" data-key="instrumentname" value="' + instrument + '" data-mapping="' + uid + '">').appendTo(cell);
@@ -200,8 +200,6 @@
 {% endblock %}
 {% block sidenav %}
     <h4><b>Tools</b></h4>
-    <a href="#" class="w3-hover-black" id="clear_players">Clear Players</a>
-    <a href="#" class="w3-hover-black submit_button" data-method="DELETE">Delete Group</a>
     <a class="accordion" href="#">
         Apply a Template <i class="fa fa-caret-down"></i>
     </a>
@@ -251,9 +249,12 @@
                     {% endfor %}
                 </select>
                 </a>
-                <a href="#" class="w3-hover-black submit_button" data-submittype="autofill" data-method="POST">Autofill Missing Players</a>
+                <a href="#" class="w3-hover-black submit_button" data-submittype="autofill" data-method="POST">
+                    <i class="fa fa-flask save_icon"></i><i class="fa fa-circle-o-notch fa-spin spin_icon"></i> Autofill Missing Players
+                </a>
             </div>
-        
+        <a href="#" class="w3-hover-black" id="clear_players"><i class="fa fa-eraser"></i> Clear Players</a>
+        <a href="#" class="w3-hover-black submit_button" data-method="DELETE"><i class="fa fa-trash save_icon"></i><i class="fa fa-circle-o-notch fa-spin spin_icon"></i> Delete Group</a>
             <h4><b>Save</b></h4>
             <a href="#" class="w3-hover-black submit_button" data-submittype="save" data-method="POST"><i class="fa fa-save save_icon"></i><i class="fa fa-circle-o-notch fa-spin spin_icon"></i> Save Changes</a>
             <a href="#" class="w3-hover-black submit_button" data-submittype="submit" data-method="POST"><i class="fa fa-check save_icon"></i><i class="fa fa-circle-o-notch fa-spin spin_icon"></i> Submit</a>

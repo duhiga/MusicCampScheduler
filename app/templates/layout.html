@@ -198,6 +198,9 @@
                 if (!isClicked) {
                     isClicked = true;
                     console.log('Submit button pressed with method ' + $(this).data('method'));
+                    //hide the save and submit icons, show the spinning circle
+                    $('.save_icon').hide();
+                    $('.spin_icon').show();
 
                     if ($(this).data('method') == 'DELETE') {
                         var r = confirm('Are you sure you want to delete this group?');
@@ -206,12 +209,6 @@
                         }
                     }
                     else {
-                        //if someone pressed the save button, turn it into a spinning circle
-                        if ($(this).data('submittype') == 'save') {
-                            $('.save_icon').hide();
-                            $('.spin_icon').show();
-                        }
-
                         //This function relies on a buildrequest function. Every page needs its own in its own script.
                         var request = buildrequest()
 
@@ -267,13 +264,13 @@
         <a href="mailto:{{ supportemailaddress }}" class="w3-hover-black"><i class="fa fa-envelope"></i> Contact Support</a>
         {% if thisuser.isannouncer == 1 %}
         <h4><b>Announcer</b></h4>
-        <a href="/user/{{ thisuser.userid }}/announcement/" class="w3-hover-black">Announcement Editor</a>
+        <a href="/user/{{ thisuser.userid }}/announcement/" class="w3-hover-black"><i class="fa fa-comment"></i> Announcement Editor</a>
         {% endif %}
         {% if thisuser.isadmin == 1 %}
         <h4><b>Admin</b></h4>
-        <a href="/user/{{ thisuser.userid }}/groupqueue/" class="w3-hover-black">Queued Groups</a>
-        <a href="/user/{{ thisuser.userid }}/useradmin/" class="w3-hover-black">User Administration</a>
-        <a href="/user/{{ thisuser.userid }}/setup/" class="w3-hover-black">Application Setup</a>
+        <a href="/user/{{ thisuser.userid }}/groupqueue/" class="w3-hover-black"><i class="fa fa-ellipsis-h"></i> Queued Groups</a>
+        <a href="/user/{{ thisuser.userid }}/useradmin/" class="w3-hover-black"><i class="fa fa-universal-access"></i> User Administration</a>
+        <a href="/user/{{ thisuser.userid }}/setup/" class="w3-hover-black"><i class="fa fa-wrench"></i> Application Setup</a>
         {% endif %}
     </nav>
 

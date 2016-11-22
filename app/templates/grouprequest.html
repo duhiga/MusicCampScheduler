@@ -113,7 +113,7 @@
             var listItems = "<option value=''></option>";
             for (var i = 0; i < players.length; i++) {
                 if (players[i].instrumentname == selectedinstrument) {
-                    listItems += "<option value='" + players[i].userid + "'>" + players[i].firstname + " " + players[i].lastname + "</option>";
+                    listItems += "<option value='" + players[i].userid + "'>" + {% if conductorpage %}'Level ' + players[i].grade + ' - ' +{% endif %} players[i].firstname + " " + players[i].lastname + "</option>";
                 };
             };
             $(".player_dropdown[data-mapping=" + $(this).data('mapping') + "]").html(listItems);
@@ -207,7 +207,7 @@
 {% block sidenav %}
 <div class="submit_hide">
     <h4><b>Save</b></h4>
-    <a href="#" class="w3-hover-black submit_button" data-method="POST">Submit</a>
+    <a href="#" class="w3-hover-black submit_button" data-submittype="submit" data-method="POST"><i class="fa fa-check save_icon"></i><i class="fa fa-circle-o-notch fa-spin spin_icon"></i> Submit</a>
 </div>
 {% endblock %}
 {% block content %}

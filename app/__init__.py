@@ -55,9 +55,11 @@ def getgrouplevel(session,inputgroup,min_or_max):
             if minimumgradeob is not None:
                 log('Found minimum grade in group %s to be %s %s playing %s with grade %s' % (inputgroup.groupid, minimumgradeob.firstname, minimumgradeob.lastname, minimumgradeob.instrumentname, minimumgradeob.grade))
                 level = int(minimumgradeob.grade) - int(getconfig('AutoAssignLimitLow'))
-            #if we don't find a player in this group, set the minimum level to be 1
+                if level < 1:
+                    level = 1
+            #if we don't find a player in this group, set the minimum level to be 0 (not allowed to autofill)
             else: 
-                level = 1
+                level = 0
         #if this group's minimum level is explicitly set, use that setting
         else:
             level = inputgroup.minimumlevel
@@ -70,9 +72,11 @@ def getgrouplevel(session,inputgroup,min_or_max):
             if minimumgradeob is not None:
                 log('Found minimum grade in group %s to be %s %s playing %s with grade %s' % (inputgroup.groupid, minimumgradeob.firstname, minimumgradeob.lastname, minimumgradeob.instrumentname, minimumgradeob.grade))
                 level = int(minimumgradeob.grade) + int(getconfig('AutoAssignLimitHigh'))
-            #if we don't find a player in this group, set the maximum level to be the highest possible
+                if level > int(getconfig('AutoAssignLimitHigh')):
+                    level = getconfig('MaximumLevel')
+            #if we don't find a player in this group, set the maximum level to 0 (not allowed to autofill)
             else:
-                level = getconfig('MaximumLevel')
+                level = 0
         #if this group's maximum level is explicitly set, use that setting
         else:
             level = inputgroup.maximumlevel
@@ -453,10 +457,13 @@ def editgroup(userid,groupid,periodid=None):
                     else:
                         playergroupassignment = groupassignment(userid = playeruser.userid, groupid = thisgroup.groupid, instrumentname = p['instrumentname'])
                         session.add(playergroupassignment)
-        if content['submittype'] == 'autofill' and (thisgroup.minimumlevel is None or thisgroup.minimumlevel == 0 or thisgroup.maximumlevel is None or thisgroup.maximumlevel == 0):
+        #get the minimum level of this group
+        mingrade = getgrouplevel(session,thisgroup,'min')
+        maxgrade = getgrouplevel(session,thisgroup,'max')
+        if content['submittype'] == 'autofill' and (mingrade == 0 or maxgrade == 0) and foundfilled != True:
             session.rollback()
             session.close()
-            return jsonify(message = 'You cannot autofill with all empty players and an auto minimum or maximum level. Set the level or at least one player.', url = 'none')
+            return jsonify(message = 'You cannot autofill with all empty players and an auto minimum or maximum level. Set the level or pick at least one player.', url = 'none')
         if thisgroup.status == 'Confirmed' and (thisgroup.periodid == '' or thisgroup.groupname == '' or thisgroup.locationid == ''):
             session.rollback()
             session.close()
@@ -471,9 +478,6 @@ def editgroup(userid,groupid,periodid=None):
                 session.close()
                 return jsonify(message = 'You must have a period selected before autofilling.', url = 'none')
             else:
-                #get the minimum level of this group
-                mingrade = getgrouplevel(session,thisgroup,'min')
-                maxgrade = getgrouplevel(session,thisgroup,'max')
                 for i in getconfig('Instruments').split(","):
                     numberinstrument = getattr(thisgroup,i)
                     if int(getattr(thisgroup,i)) > 0:

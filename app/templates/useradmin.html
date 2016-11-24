@@ -46,11 +46,11 @@
         <thead>
             <tr>
                 <td><input type="checkbox" id="select_all"></td>
-                <th>First Name <i class="fa fa-sort"></i></th>
-                <th>Last Name <i class="fa fa-sort"></i></th>
+                <th>First <div class="w3-hide-small">Name </div><i class="fa fa-sort"></i></th>
+                <th>Last <div class="w3-hide-small">Name </div><i class="fa fa-sort"></i></th>
                 <th class="w3-hide-small">Active <i class="fa fa-sort"></i></th>
-                <th>Playcount <i class="fa fa-sort"></i></th>
-                <th>User Home <i class="fa fa-sort"></i></th>
+                <th>Play<div class="w3-hide-small">count</div> <i class="fa fa-sort"></i></th>
+                <th><div class="w3-hide-small">User </div>Home <i class="fa fa-sort"></i></th>
             </tr>
         </thead>
         <tbody class="zebra-table">
@@ -62,7 +62,7 @@
                 <td><a href="/user/{{ thisuser.userid }}/edituser/{{ u.userid }}/">{{ u.lastname }}</a></td>
                 <td class="w3-hide-small">{% if u.isactive == 1 %}Yes{% else %}No{% endif %}</td>
                 <td>{{ u.playcount }}</td>
-                <td><a href="/user/{{ u.userid }}/">User Home</a></td>
+                <td><a href="/user/{{ u.userid }}/">Home</a></td>
             </tr>
             {% endfor %}
             {% endif %}

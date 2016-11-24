@@ -6,18 +6,27 @@
 <table style="width:100%" class="sortable-table">
     <thead>
         <tr>
-            <th>Request Time</th>
-            <th>Requestor</th>
-            <th>Group Name</th>
-            <th>Period</th>
-            <th>Status</th>
+            <th class="w3-hide-medium w3-hide-large">Time <i class="fa fa-sort"></i></th>
+            <th class="w3-hide-small">Request Time <i class="fa fa-sort"></i></th>
+            <th class="w3-hide-medium w3-hide-large">Requ <i class="fa fa-sort"></i></th>
+            <th class="w3-hide-small">Requestor <i class="fa fa-sort"></i></th>
+            <th class="w3-hide-medium w3-hide-large">Name <i class="fa fa-sort"></i></th>
+            <th class="w3-hide-small">Group Name <i class="fa fa-sort"></i></th>
+            <th>Period <i class="fa fa-sort"></i></th>
+            <th class="w3-hide-medium w3-hide-large">Stat <i class="fa fa-sort"></i></th>
+            <th class="w3-hide-small">Status <i class="fa fa-sort"></i></th>
         </tr>
     </thead>
     <tbody class="zebra-table">
         {% if queuedgroups != None %}
             {% for q in queuedgroups %}
             <tr>
-                <td>
+                <td class="w3-hide-medium w3-hide-large">
+                    {% if q.requesttime != None %}
+                    {{ q.requesttime.strftime('%d %b %H:%M')}}
+                    {% endif %}
+                </td>
+                <td class="w3-hide-small">
                     {% if q.requesttime != None %}
                     {{ q.requesttime.strftime('%Y-%m-%d %H:%M')}}
                     {% endif %}
@@ -26,7 +35,7 @@
                 <td><a href="/user/{{ thisuser.userid }}/group/{{ q.groupid }}/edit/">{{ q.groupname }}</a></td>
                 <td>
                     {% if q.starttime != None and q.endtime != None %}
-                    {{ q.starttime.strftime('%Y-%m-%d') }}: {{ q.starttime.strftime('%H:%M') }}-{{ q.endtime.strftime('%H:%M') }}
+                    {{ q.starttime.strftime('%d %b') }} {{ q.periodname }}
                     {% endif %}
                 </td>
                 <td>{{ q.status }}</td>

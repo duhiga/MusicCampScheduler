@@ -32,7 +32,7 @@
                 </td>
                 <td><a href="/user/{{ thisuser.userid }}/group/{{ g.groupid }}/">{{ g.groupname }}</a></td>
                 <td class="w3-hide-small">{{ g.instrumentname }}</td>
-                <td>{{ g.locationname }}</td>
+                <td class="w3-hide-small">{{ g.locationname }}</td>
                 <td>
                     {% if g.status == 'Confirmed' and now > g.endtime %}
                     Complete

@@ -128,8 +128,6 @@ def home(userid,inputdate='n'):
     thisuser = session.query(user).filter(user.userid == userid).first()
     if thisuser is None:
         return ('Did not find user in database. You have entered an incorrect URL address.')
-    #find the number of times a user has played in groups in the past
-    count = playcount(session, userid)
     #get the current announcement
     currentannouncement = session.query(announcement).order_by(desc(announcement.creationtime)).first()
     #get impontant datetimes
@@ -177,7 +175,6 @@ def home(userid,inputdate='n'):
 
     return render_template('home.html', \
                         thisuser=thisuser, \
-                        count=count, \
                         date=displaydate,\
                         periods=periods, \
                         previousday=previousday, \
@@ -881,7 +878,7 @@ def groupqueue(userid):
         session.close()
         return 'You do not have permission to view this page'
     else:
-        queuedgroups = session.query(group.groupid, group.requesttime, group.status, group.groupname, period.starttime, period.endtime, user.firstname, user.lastname).\
+        queuedgroups = session.query(group.groupid, group.requesttime, group.status, group.groupname, period.periodname, period.starttime, period.endtime, user.firstname, user.lastname).\
             outerjoin(period).outerjoin(user).filter(group.status == "Queued", user.isactive == 1).order_by(group.requesttime).all()
         log("Found %s queued groups to show the user" % len(queuedgroups))
         session.close()

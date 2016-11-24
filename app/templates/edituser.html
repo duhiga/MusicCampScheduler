@@ -171,11 +171,11 @@
                 <select id="arrival" class="form-attribute">
                     {% for p in periods %}
                     {% if targetuser.userid != None and p.starttime == targetuser.arrival %}
-                    <option value="{{ p.starttime }}" selected="selected">{{ p.periodname }}, {{ p.starttime.strftime('%a, %d %b') }}</option>
+                    <option value="{{ p.starttime }}" selected="selected">{{ p.starttime.strftime('%d %b') }}: {{ p.periodname }}</option>
                     {% elif targetuser.userid == None and p.starttime == periods[0].starttime %}
-                    <option value="{{ p.starttime }}" selected="selected">{{ p.periodname }}, {{ p.starttime.strftime('%a, %d %b') }}</option>
+                    <option value="{{ p.starttime }}" selected="selected">{{ p.starttime.strftime('%d %b') }}: {{ p.periodname }}</option>
                     {% else %}
-                    <option value="{{ p.starttime }}">{{ p.periodname }}, {{ p.starttime.strftime('%a, %d %b') }}</option>
+                    <option value="{{ p.starttime }}">{{ p.starttime.strftime('%d %b') }}: {{ p.periodname }}</option>
                     {% endif %}
                     {% endfor %}
                 </select>
@@ -187,11 +187,11 @@
                 <select id="departure" class="form-attribute">
                     {% for p in periods %}
                     {% if targetuser.userid != None and p.starttime == targetuser.departure %}
-                    <option value="{{ p.starttime }}" selected="selected">{{ p.periodname }}, {{ p.starttime.strftime('%a, %d %b') }}</option>
+                    <option value="{{ p.starttime }}" selected="selected">{{ p.starttime.strftime('%d %b') }}: {{ p.periodname }}</option>
                     {% elif targetuser.userid == None and p.starttime == periods[periods|length - 1].starttime %}
-                    <option value="{{ p.starttime }}" selected="selected">{{ p.periodname }}, {{ p.starttime.strftime('%a, %d %b') }}</option>
+                    <option value="{{ p.starttime }}" selected="selected">{{ p.starttime.strftime('%d %b') }}: {{ p.periodname }}</option>
                     {% else %}
-                    <option value="{{ p.starttime }}">{{ p.periodname }}, {{ p.starttime.strftime('%a, %d %b') }}</option>
+                    <option value="{{ p.starttime }}">{{ p.starttime.strftime('%d %b') }}: {{ p.periodname }}</option>
                     {% endif %}
                     {% endfor %}
                 </select>

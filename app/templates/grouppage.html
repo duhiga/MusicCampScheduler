@@ -3,8 +3,8 @@
 {% block pagename %}{{ thisgroup.groupname }} Details{% endblock %}
 {% if thisuser.isadmin == 1 %}
 {% block navbar %}
-<li class="w3-opennav w3-right w3-animate-right">
-    <a href="/user/{{ thisuser.userid }}/group/{{ thisgroup.groupid }}/edit/" class="w3-hover-black "><i class="fa fa-edit"></i></a>
+<li class="w3-opennav w3-right">
+    <a href="/user/{{ thisuser.userid }}/group/{{ thisgroup.groupid }}/edit/" class="w3-hover-white w3-large w3-theme-l1"><i class="fa fa-edit"></i></a>
 </li>
 {% endblock %}
 {% block sidenav %}

@@ -305,9 +305,9 @@
                     <option value="None"></option>
                     {% for p in periods %}
                     {% if p.periodid == selectedperiod.periodid %}
-                    <option value="{{ p.periodid }}" selected="selected">{{ p.periodname }}, {{ p.starttime.strftime('%a, %d %b') }}, {{ p.starttime.strftime('%H:%M') }}</option>
+                    <option value="{{ p.periodid }}" selected="selected">{{ p.starttime.strftime('%d %b') }}: {{ p.periodname }}</option>
                     {% else %}
-                    <option value="{{ p.periodid }}">{{ p.periodname }}, {{ p.starttime.strftime('%a, %d %b') }}, {{ p.starttime.strftime('%H:%M') }}</option>
+                    <option value="{{ p.periodid }}">{{ p.starttime.strftime('%d %b') }}: {{ p.periodname }}</option>
                     {% endif %}
                     {% endfor %}
                 </select>
@@ -320,9 +320,9 @@
                 <select id="locationid" class="form-attribute">
                     {% for l in locations %}
                     {% if l.locationid == thislocation.locationid %}
-                    <option value="{{ l.locationid }}" selected="selected">{{ l.locationname }} - Capacity: {{ l.capacity }}</option>
+                    <option value="{{ l.locationid }}" selected="selected">{{ l.locationname }} - Cap: {{ l.capacity }}</option>
                     {% else %}
-                    <option value="{{ l.locationid }}">{{ l.locationname}} - Capacity: {{ l.capacity }}</option>
+                    <option value="{{ l.locationid }}">{{ l.locationname}} - Cap: {{ l.capacity }}</option>
                     {% endif %}
                     {% endfor %}
                 </select>

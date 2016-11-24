@@ -12,18 +12,22 @@
     <table style="width:100%" class="sortable-table">
         <thead>
             <tr>
-                <th>First Name <i class="fa fa-sort"></i></th>
-                <th>Last Name <i class="fa fa-sort"></i></th>
-                <th>Instrument <i class="fa fa-sort"></i></th>
-                <th>Group Name <i class="fa fa-sort"></i></th>
+                <th class="w3-hide-medium w3-hide-large">Name <i class="fa fa-sort"></i></th>
+                <th class="w3-hide-small">First Name <i class="fa fa-sort"></i></th>
+                <th class="w3-hide-small">Last Name <i class="fa fa-sort"></i></th>
+                <th class="w3-hide-medium w3-hide-large">Inst <i class="fa fa-sort"></i></th>
+                <th class="w3-hide-small">Instrument <i class="fa fa-sort"></i></th>
+                <th class="w3-hide-medium w3-hide-large">Group <i class="fa fa-sort"></i></th>
+                <th class="w3-hide-small">Group Name <i class="fa fa-sort"></i></th>
                 <th>Location <i class="fa fa-sort"></i></th>
             </tr>
         </thead>
         <tbody class="zebra-table">
             {% for p in players %}
             <tr>
-                <td>{{ p.firstname }}</td>
-                <td>{{ p.lastname }}</td>
+                <td class="w3-hide-medium w3-hide-large">{{ p.firstname }} {{ p.lastname }}</td>
+                <td class="w3-hide-small">{{ p.firstname }}</td>
+                <td class="w3-hide-small">{{ p.lastname }}</td>
                 <td>{{ p.instrumentname }}</td>
                 <td><a href="/user/{{ thisuser.userid }}/group/{{ p.groupid }}/">{{ p.groupname }}</a></td>
                 <td>{{ p.locationname }}</td>
@@ -31,8 +35,9 @@
             {% endfor %}
             {% for p in nonplayers %}
             <tr>
-                <td>{{ p.firstname }}</td>
-                <td>{{ p.lastname }}</td>
+                <td class="w3-hide-medium w3-hide-large">{{ p.firstname }} {{ p.lastname }}</td>
+                <td class="w3-hide-small">{{ p.firstname }}</td>
+                <td class="w3-hide-small">{{ p.lastname }}</td>
                 <td>{{ p.instrumentname }}</td>
                 <td>{{ p.groupname }}</td>
                 <td>{{ p.locationname }}</td>

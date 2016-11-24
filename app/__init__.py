@@ -197,7 +197,7 @@ def home(userid,inputdate='n'):
                             nextday=nextday, \
                             today=today, \
                             campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
-                            currentannouncement=currentannouncement, \
+                            currentannouncement=currentannouncement.content.replace("\n","<br />"), \
                             now = datetime.datetime.now(), \
                             )
 

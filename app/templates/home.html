@@ -83,8 +83,10 @@
     {% if thisuser.isactive == 0 %}
         <h2>You are currently set to inactive. You will not be allocated to any groups.</h2>
     {% endif %}
+    {% if currentannouncement != '' and currentannouncement != None %}
     <h3>Announcements</h3>
-    <p>{{ currentannouncement.content }}</p>
+    <p>{{ currentannouncement|safe }}</p>
+    {% endif %}
     <p style="text-align: center;">
         <a href="#" class="previous"><i class="fa fa-arrow-left"></i></a>
         <select class="date_select">

@@ -242,9 +242,8 @@
             </li>
             <li class="w3-opennav w3-left"><a href="/user/{{ thisuser.userid }}/" class="w3-hover-white w3-large w3-theme-l1"><i class="fa fa-home"></i></a></li>
             {% block navbar%}{% endblock %}
-            <li><a href="#" class="w3-theme-l1">&nbsp;{% block pagename %}{% endblock %}</a></li>
-            <li class="w3-hide-small"><a href="/user/{{ thisuser.userid }}/grouprequest/" class="w3-hover-white">Request a group</a></li>
-            <li class="w3-hide-small w3-hide-medium"><a href="/user/{{ thisuser.userid }}/grouphistory/" class="w3-hover-white">Group History</a></li>
+            <li><a href="#" class="w3-theme-l1">&nbsp;{{ thisuser.firstname }} {{ thisuser.lastname }}</a></li>
+            {% block breadcrumbs %}{% endblock %}
         </ul>
     </div>
 

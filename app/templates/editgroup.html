@@ -1,6 +1,5 @@
 {% extends "layout.html" %}
 {% block title %}{{ campname }} Group Editor{% endblock %}
-{% block pagename %}{% if thisgroup.groupname == None %}New Group{% else %}&#34;{{ thisgroup.groupname }}&#34; Editor{% endif %}{% endblock %}
 {% block head %}
     <script>
         
@@ -197,6 +196,12 @@
         </a>
     </li>
 </div>
+{% endblock %}
+{% block breadcrumbs %}
+<li class="w3-hide-small"><a href="/user/{{ thisuser.userid }}/date/{{ selectedperiod.starttime.strftime('%Y-%m-%d') }}/" class="w3-hover-white">{{ selectedperiod.starttime.strftime('%d %b') }}</a></li>
+<li class="w3-hide-small"><a href="/user/{{ thisuser.userid }}/period/{{ selectedperiod.periodid }}/" class="w3-hover-white">{{ selectedperiod.periodname }}</a></li>
+<li class="w3-hide-small w3-hide-medium"><a href="#" class="w3-hover-white">{{ thisgroup.groupname }}</a></li>
+<li class="w3-hide-small w3-hide-medium"><a href="#" class="w3-hover-white">Edit</a></li>
 {% endblock %}
 {% block sidenav %}
     <h4><b>Tools</b></h4>

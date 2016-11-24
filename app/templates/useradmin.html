@@ -1,6 +1,5 @@
 {% extends "layout.html" %}
 {% block title %}{{ campname }} User Admin{% endblock %}
-{% block pagename %}User Administration{% endblock %}
 {% block head %}
     <script>
 
@@ -34,6 +33,9 @@
         });
 
     </script>
+{% endblock %}
+{% block breadcrumbs %}
+<li class="w3-hide-small"><a href="#" class="w3-hover-white">User Administration</a></li>
 {% endblock %}
 {% block sidenav %}
 <h4><b>Tools</b></h4>

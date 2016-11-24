@@ -1,6 +1,5 @@
 {% extends "layout.html" %}
 {% block title %}{{ campname }} Group Request{% endblock %}
-{% block pagename %}Request a Group{% endblock %}
 {% block head %}
 <script>
 
@@ -203,6 +202,15 @@
         });
     });
 </script>
+{% endblock %}
+{% block breadcrumbs %}
+{% if conductorpage %}
+<li class="w3-hide-small"><a href="/user/{{ thisuser.userid }}/date/{{thisperiod.starttime.strftime('%Y-%m-%d')}}/" class="w3-hover-white">{{ thisperiod.starttime.strftime('%d %b') }}</a></li>
+<li class="w3-hide-small"><a href="/user/{{ thisuser.userid }}/period/{{ thisperiod.periodid }}/" class="w3-hover-white">{{ thisperiod.periodname }}</a></li>
+<li class="w3-hide-small w3-hide-medium"><a href="#" class="w3-hover-white">Create a Group</a></li>
+{% else %}
+<li class="w3-hide-small"><a href="#" class="w3-hover-white">Group Request</a></li>
+{% endif %}
 {% endblock %}
 {% block sidenav %}
 <div class="submit_hide">

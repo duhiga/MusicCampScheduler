@@ -1,6 +1,9 @@
 {% extends "layout.html" %}
 {% block title%}{{ campname }} Period Display{% endblock %}
-{% block pagename %}{{ thisperiod.periodname }}{% endblock %}
+{% block breadcrumbs %}
+<li class="w3-hide-small"><a href="/user/{{ thisuser.userid }}/date/{{thisperiod.starttime.strftime('%Y-%m-%d')}}/" class="w3-hover-white">{{ thisperiod.starttime.strftime('%d %b') }}</a></li>
+<li class="w3-hide-small"><a href="#" class="w3-hover-white">{{ thisperiod.periodname }}</a></li>
+{% endblock %}
 {% block content %}
     <h1>{{ thisperiod.periodname }}: {{ thisperiod.starttime.strftime('%A %d %b') }}, {{ thisperiod.starttime.strftime('%H:%M') }}-{{ thisperiod.endtime.strftime('%H:%M') }}</h1>
     {% if publicevents[0] != None %}

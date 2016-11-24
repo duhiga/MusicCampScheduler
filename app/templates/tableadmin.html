@@ -1,6 +1,8 @@
 {% extends "layout.html" %}
 {% block title %}{{ campname }} Template Admin{% endblock %}
-{% block pagename %}Template Administration{% endblock %}
+{% block breadcrumbs %}
+<li class="w3-hide-small"><a href="#" class="w3-hover-white">Template Administration</a></li>
+{% endblock %}
 {% block tools %}
 <h4><b>Tools</b></h4>
 <a href="/user/{{ thisuser.userid }}/newuser/" class="w3-hover-black">New Item</a>

@@ -1,6 +1,8 @@
 {% extends "layout.html" %}
 {% block title%}{{ campname }} Queued Groups{% endblock %}
-{% block pagename %}Queued Groups{% endblock %}
+{% block breadcrumbs %}
+<li class="w3-hide-small"><a href="#" class="w3-hover-white">Queued Groups</a></li>
+{% endblock %}
 {% block content %}
 <h3>Queued Groups</h3>
 <table style="width:100%" class="sortable-table">

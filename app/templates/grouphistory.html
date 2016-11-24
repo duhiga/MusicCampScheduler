@@ -1,6 +1,8 @@
 {% extends "layout.html" %}
 {% block title %}{{ campname }} Group History{% endblock %}
-{% block pagename %}Group History{% endblock %}
+{% block breadcrumbs %}
+<li class="w3-hide-small"><a href="#" class="w3-hover-white">Group History</a></li>
+{% endblock %}
 {% block content %}
     <p>Number of times played so far this camp: {{ playcount }}</p>
     <table style="width:100%" class="sortable-table">

@@ -1,6 +1,10 @@
 {% extends "layout.html" %}
 {% block title %}{{ campname }} Group Display{% endblock %}
-{% block pagename %}{{ thisgroup.groupname }} Details{% endblock %}
+{% block breadcrumbs %}
+<li class="w3-hide-small"><a href="/user/{{ thisuser.userid }}/date/{{thisperiod.starttime.strftime('%Y-%m-%d')}}/" class="w3-hover-white">{{ thisperiod.starttime.strftime('%d %b') }}</a></li>
+<li class="w3-hide-small"><a href="/user/{{ thisuser.userid }}/period/{{ thisperiod.periodid }}/" class="w3-hover-white">{{ thisperiod.periodname }}</a></li>
+<li class="w3-hide-small w3-hide-medium"><a href="#" class="w3-hover-white">{{ thisgroup.groupname }}</a></li>
+{% endblock %}
 {% if thisuser.isadmin == 1 %}
 {% block navbar %}
 <li class="w3-opennav w3-right">
@@ -30,20 +34,20 @@
                 <tr>
                     <th>Date</th>
                     <td>
-                        {% if period == None %}
+                        {% if thisperiod == None %}
                         Not yet allocated
                         {% else %}
-                        {{ period.starttime.strftime('%A, %Y-%m-%d') }}
+                        {{ thisperiod.starttime.strftime('%A, %Y-%m-%d') }}
                         {% endif %}
                     </td>
                 </tr>
                 <tr>
                     <th>Time</th>
                     <td>
-                        {% if period == None %}
+                        {% if thisperiod == None %}
                         Not yet allocated
                         {% else %}
-                        <a href="/user/{{ thisuser.userid }}/period/{{ period.periodid }}/">{{ period.starttime.strftime('%H:%M') }} - {{ period.endtime.strftime('%H:%M') }}</a>
+                        <a href="/user/{{ thisuser.userid }}/period/{{ thisperiod.periodid }}/">{{ thisperiod.starttime.strftime('%H:%M') }} - {{ thisperiod.endtime.strftime('%H:%M') }}</a>
                         {% endif %}
                     </td>
                 </tr>

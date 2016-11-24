@@ -1,6 +1,5 @@
 {% extends "layout.html" %}
 {% block title %}{{ campname }} Announcement Editor{% endblock %}
-{% block pagename %}Announcement Editor{% endblock %}
 {% block head %}
 <script>
 
@@ -14,6 +13,9 @@
     }
 
 </script>
+{% endblock %}
+{% block breadcrumbs %}
+<li class="w3-hide-small"><a href="#" class="w3-hover-white">Announcement Editor</a></li>
 {% endblock %}
 {% block sidenav %}
 <div class="submit_hide">

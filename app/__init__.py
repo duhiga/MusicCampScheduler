@@ -323,7 +323,7 @@ def grouppage(userid,groupid):
 
         session.close()
         return render_template('grouppage.html', \
-                            period=thisperiod, \
+                            thisperiod=thisperiod, \
                             campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
                             thisgroup=thisgroup, \
                             players=players, \
@@ -1293,7 +1293,7 @@ Your homepage, containing your daily schedule, is here:\n
 %s/user/%s/ \n
 WARNING: DO NOT GIVE THIS LINK TO ANYONE ELSE. It is yours, and yours alone and contains your connection credentials.\n
 A small rundown of how to use the web app:\n
-    -Visit this link each day to see your schedule, including times, locations, and the instrument you're playing.
+    -Visit this page each day to see your schedule, including times, locations, and the instrument you're playing.
     -You can click into group names to to see possible substitute players and get further details, or a time period to see the full group listing for that time. Clicking the home button in the top right of your screen will always bring you back to the current day.
     -You can look at your schedule for future and past days with the next and previous links.
     -If you're going to be absent for a session or meal, plesae notify us at least one day before by navigating to a future date, clicking the tools tab on your homepage, then clicking the button next to the corresponding time.

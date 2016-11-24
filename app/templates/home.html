@@ -1,6 +1,5 @@
 {% extends "layout.html" %}
 {% block title%}{{ campname }} Home{% endblock %}
-{% block pagename %}{{ thisuser.firstname }} {{ thisuser.lastname }}{% endblock %}
 {% block head %}
     <script>
 
@@ -76,6 +75,9 @@
             });
         });
     </script>
+{% endblock %}
+{% block breadcrumbs %}
+<li class="w3-hide-small"><a href="#" class="w3-hover-white">{{ date.strftime('%d %b') }}</a></li>
 {% endblock %}
 {% block content %}
     {% if thisuser.isactive == 0 %}

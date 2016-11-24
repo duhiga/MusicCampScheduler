@@ -11,6 +11,7 @@ import untangle
 import uuid
 import sqlalchemy
 import os
+from datetime import date, timedelta
 from DBSetup import *
 from sqlalchemy import *
 from config import *
@@ -132,6 +133,8 @@ def home(userid,inputdate='n'):
     currentannouncement = session.query(announcement).order_by(desc(announcement.creationtime)).first()
     #get impontant datetimes
     today = datetime.datetime.combine(datetime.date.today(), datetime.time.min) #get today's date
+    campstarttime = datetime.datetime.strptime(getconfig('StartTime'), '%Y-%m-%d %H:%M')
+    campendtime = datetime.datetime.strptime(getconfig('EndTime'), '%Y-%m-%d %H:%M')
     #if the suer has submitted a date, convert it to a datetime and use it as the display date
     if inputdate != 'n': 
         displaydate = datetime.datetime.strptime(inputdate, '%Y-%m-%d')
@@ -144,6 +147,12 @@ def home(userid,inputdate='n'):
     
     previousday = displaydate + datetime.timedelta(days=-1)
     nextday = displaydate + datetime.timedelta(days=1)
+
+    dates = []
+    for d in range((campendtime-campstarttime).days + 2):
+        dates.append(campstarttime + timedelta(days=d))
+    log('Dates of camp:')
+    log(dates)
 
     #get the information needed to fill in the user's schedule table
     periods = []
@@ -177,6 +186,7 @@ def home(userid,inputdate='n'):
                         thisuser=thisuser, \
                         date=displaydate,\
                         periods=periods, \
+                        dates=dates, \
                         previousday=previousday, \
                         nextday=nextday, \
                         today=today, \

@@ -1,5 +1,23 @@
 {% extends "layout.html" %}
 {% block title%}{{ campname }} Period Display{% endblock %}
+{% block head %}
+<script>
+    $(document).ready(function () {
+        $(function () {
+            $(".tablesorter").tablesorter({
+                emptyTo: 'bottom',
+                headers: {
+                    2: {
+                        sorter: 'scoreorder',
+                        empty: 'bottom'
+                    },
+                },
+                sortList: [[3, 1], [2, 0],[0, 0]],
+            });
+        });
+    });
+</script>
+{% endblock %}
 {% block breadcrumbs %}
 <li class="w3-hide-small"><a href="/user/{{ thisuser.userid }}/date/{{thisperiod.starttime.strftime('%Y-%m-%d')}}/" class="w3-hover-white">{{ thisperiod.starttime.strftime('%d %b') }}</a></li>
 <li class="w3-hide-small"><a href="#" class="w3-hover-white">{{ thisperiod.periodname }}</a></li>
@@ -12,25 +30,19 @@
     {% endfor %}
     {% endif %}
     <p>Total number of attendees: {{ players|length + nonplayers|length }}</p>
-    <table style="width:100%" class="sortable-table">
+    <table style="width:100%" class="tablesorter">
         <thead>
             <tr>
-                <th class="w3-hide-medium w3-hide-large">Name <i class="fa fa-sort"></i></th>
-                <th class="w3-hide-small">First Name <i class="fa fa-sort"></i></th>
-                <th class="w3-hide-small">Last Name <i class="fa fa-sort"></i></th>
-                <th class="w3-hide-medium w3-hide-large">Inst <i class="fa fa-sort"></i></th>
-                <th class="w3-hide-small">Instrument <i class="fa fa-sort"></i></th>
-                <th class="w3-hide-medium w3-hide-large">Group <i class="fa fa-sort"></i></th>
-                <th class="w3-hide-small">Group Name <i class="fa fa-sort"></i></th>
-                <th>Location <i class="fa fa-sort"></i></th>
+                <th>Name</th>
+                <th>Instrument</th>
+                <th data-empty="bottom">Group</th>
+                <th>Location</th>
             </tr>
         </thead>
         <tbody class="zebra-table">
             {% for p in players %}
             <tr>
-                <td class="w3-hide-medium w3-hide-large">{{ p.firstname }} {{ p.lastname }}</td>
-                <td class="w3-hide-small">{{ p.firstname }}</td>
-                <td class="w3-hide-small">{{ p.lastname }}</td>
+                <td>{{ p.firstname }} {{ p.lastname }}</td>
                 <td>{{ p.instrumentname }}</td>
                 <td><a href="/user/{{ thisuser.userid }}/group/{{ p.groupid }}/">{{ p.groupname }}</a></td>
                 <td>{{ p.locationname }}</td>
@@ -38,9 +50,7 @@
             {% endfor %}
             {% for p in nonplayers %}
             <tr>
-                <td class="w3-hide-medium w3-hide-large">{{ p.firstname }} {{ p.lastname }}</td>
-                <td class="w3-hide-small">{{ p.firstname }}</td>
-                <td class="w3-hide-small">{{ p.lastname }}</td>
+                <td>{{ p.firstname }} {{ p.lastname }}</td>
                 <td>{{ p.instrumentname }}</td>
                 <td>{{ p.groupname }}</td>
                 <td>{{ p.locationname }}</td>

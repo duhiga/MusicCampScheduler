@@ -17,7 +17,8 @@
     <title>{% block title %}{% endblock %}</title>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"> </script>
     <script>if (!window.jQuery) { document.write('<script src="/js/jquery-3.1.1.min.js"><\/script>'); }</script>
-    <script src="/js/jquery.tablesorter.js"></script>
+    <script src="/js/jquery.tablesorter.min.js"></script>
+    <!-- Scripts that apply to all pages -->
     <script>
         
         var isClicked = false;
@@ -159,7 +160,6 @@
                 validate_all()
             });
 
-            /* CURRENTLY BROKEN
             // add parser through the tablesorter addParser method
             $.tablesorter.addParser({
                 // set a unique id
@@ -170,25 +170,11 @@
                 },
                 format: function (s) {
                     // format your data for normalization
-                    return s.toLowerCase(){% for i in instrumentlist %}.replace(/{{ i }}/, {{ loop.index }}){% endfor %};
+                    return s{% for i in instrumentlist %}.replace(/{{ i }}/, {{ loop.index }}){% endfor %};
                 },
                 // set type, either numeric or text
                 type: 'numeric'
             });
-            */
-
-            $(function () {
-                $(".sortable-table").tablesorter({
-                    /*sortList: [2,1],
-                    headers: {
-                        2: {
-                            sorter: 'scoreorder',
-                            emptyto: 'top'
-                        }
-                    }*/
-                });
-            });
-            
 
             //every page that needs to submit data uses this function. This only works if the page has an element with:
             //class="submit_button"
@@ -231,6 +217,7 @@
         });
 
     </script>
+    <!-- Scripts that apply to single pages are inserted here -->
     {% block head %}{% endblock %}
 </head>
 <body height="100%">
@@ -243,6 +230,7 @@
             <li class="w3-opennav w3-left"><a href="/user/{{ thisuser.userid }}/" class="w3-hover-white w3-large w3-theme-l1"><i class="fa fa-home"></i></a></li>
             {% block navbar%}{% endblock %}
             <li><a href="#" class="w3-theme-l1">&nbsp;{{ thisuser.firstname }} {{ thisuser.lastname }}</a></li>
+            <!-- Specific page breadcrumbs/title pages go here -->
             {% block breadcrumbs %}{% endblock %}
         </ul>
     </div>
@@ -252,6 +240,7 @@
         <a href="javascript:void(0)" onclick="w3_close()" class="w3-right w3-xlarge w3-padding-large w3-hover-black w3-hide-large" title="close menu">
             <i class="fa fa-remove"></i>
         </a>
+        <!-- Specific page sidenav points go here -->
         {% block sidenav %}{% endblock %}
         <h4><b>Navigation</b></h4>
         <a href="/user/{{ thisuser.userid }}/" class="w3-hover-black"><i class="fa fa-home"></i> Home</a>

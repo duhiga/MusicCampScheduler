@@ -1439,9 +1439,7 @@ def instrumentation(userid,periodid):
                             errormessage = 'Failed to display page with exception: %s.' % ex
                             )
 
-#Shows the godpage to the user. Godpage contains all user names and links to all their homes. Right now uses a shared password,
-#but would be better if tied to a user's admin account. However, there's no easy way to currently see what the userid of the admin is
-#after it's been created. Hmm... a conundrum.
+#Application setup page. This needs to be run at the start, just after the app has been deployed. The user uploads config files and user lists to populate the database.
 @app.route('/user/<userid>/setup/', methods=["GET", "POST"])
 def setup(userid):
 
@@ -1456,13 +1454,17 @@ def setup(userid):
             return ('You are not allowed to view this page.')
         else:
             if request.method == 'GET':
-                users = session.query(user).all()
-                grouptemplates = session.query(grouptemplate).all()
+                locations = session.query(location).all()
+                templates = session.query(grouptemplate)
+                grouptemplates = templates.all()
+                grouptemplates_dict = dict((col, getattr(templates.first(), col)) for col in templates.first().__table__.columns.keys())
                 session.close()
                 return render_template('setup.html', \
                                                 thisuser=thisuser, \
                                                 campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
                                                 grouptemplates=grouptemplates, \
+                                                grouptemplates_dict=grouptemplates_dict, \
+                                                locations = locations, \
                                                 )
             if request.method == 'POST':
                 # Get the name of the uploaded file
@@ -1493,6 +1495,6 @@ def send_js(path):
 def send_css(path):
     return send_from_directory('css', path)
 
-@app.route('/png/<path:path>')
+@app.route('/img/<path:path>')
 def send_png(path):
-    return send_from_directory('png', path)
+    return send_from_directory('img', path)

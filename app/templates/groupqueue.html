@@ -1,34 +1,37 @@
 {% extends "layout.html" %}
 {% block title%}{{ campname }} Queued Groups{% endblock %}
+{% block head %}
+<script>
+        $(document).ready(function () {
+
+            $(function () {
+                $(".tablesorter").tablesorter({
+                    sortList: [[0, 0]]
+                });
+            });
+        });
+</script>
+{% endblock %}
 {% block breadcrumbs %}
 <li class="w3-hide-small"><a href="#" class="w3-hover-white">Queued Groups</a></li>
 {% endblock %}
 {% block content %}
 <h3>Queued Groups</h3>
-<table style="width:100%" class="sortable-table">
+<table style="width:100%" class="tablesorter">
     <thead>
         <tr>
-            <th class="w3-hide-medium w3-hide-large">Time <i class="fa fa-sort"></i></th>
-            <th class="w3-hide-small">Request Time <i class="fa fa-sort"></i></th>
-            <th class="w3-hide-medium w3-hide-large">Requ <i class="fa fa-sort"></i></th>
-            <th class="w3-hide-small">Requestor <i class="fa fa-sort"></i></th>
-            <th class="w3-hide-medium w3-hide-large">Name <i class="fa fa-sort"></i></th>
-            <th class="w3-hide-small">Group Name <i class="fa fa-sort"></i></th>
-            <th>Period <i class="fa fa-sort"></i></th>
-            <th class="w3-hide-medium w3-hide-large">Stat <i class="fa fa-sort"></i></th>
-            <th class="w3-hide-small">Status <i class="fa fa-sort"></i></th>
+            <th>Request Time</th>
+            <th>Requestor</th>
+            <th>Group Name</th>
+            <th>Period</th>
+            <th>Status</th>
         </tr>
     </thead>
     <tbody class="zebra-table">
         {% if queuedgroups != None %}
             {% for q in queuedgroups %}
             <tr>
-                <td class="w3-hide-medium w3-hide-large">
-                    {% if q.requesttime != None %}
-                    {{ q.requesttime.strftime('%d %b %H:%M')}}
-                    {% endif %}
-                </td>
-                <td class="w3-hide-small">
+                <td>
                     {% if q.requesttime != None %}
                     {{ q.requesttime.strftime('%Y-%m-%d %H:%M')}}
                     {% endif %}

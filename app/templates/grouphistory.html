@@ -1,19 +1,30 @@
 {% extends "layout.html" %}
 {% block title %}{{ campname }} Group History{% endblock %}
+{% block head %}
+<script>
+        $(document).ready(function () {
+
+            $(function () {
+                $(".tablesorter").tablesorter({
+                });
+            });
+        });
+</script>
+{% endblock %}
 {% block breadcrumbs %}
 <li class="w3-hide-small"><a href="#" class="w3-hover-white">Group History</a></li>
 {% endblock %}
 {% block content %}
     <p>Number of times played so far this camp: {{ playcount }}</p>
-    <table style="width:100%" class="sortable-table">
+    <table style="width:100%" class="tablesorter">
         <thead>
             <tr>
-                <th>Date <i class="fa fa-sort"></i></th>
-                <th>Time <i class="fa fa-sort"></i></th>
-                <th>Name <i class="fa fa-sort"></i></th>
-                <th class="w3-hide-small">Instrument <i class="fa fa-sort"></i></th>
-                <th class="w3-hide-small">Location <i class="fa fa-sort"></i></th>
-                <th>Status <i class="fa fa-sort"></i></th>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Name</th>
+                <th class="w3-hide-small">Instrument</th>
+                <th class="w3-hide-small">Location</th>
+                <th>Status</th>
             </tr>
         </thead>
         <tbody class="zebra-table">

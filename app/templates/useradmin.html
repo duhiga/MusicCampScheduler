@@ -14,6 +14,12 @@
 
         $(document).ready(function () {
 
+            $(function () {
+                $(".tablesorter").tablesorter({
+                    sortList: [[4, 1]]
+                });
+            });
+
             //select all checkboxes
             $("#select_all").change(function () {  //"select all" change 
                 $(".checkbox").prop('checked', $(this).prop("checked")); //change all ".checkbox" checked status
@@ -44,15 +50,15 @@
 {% endblock %}
 {% block content %}
     <p>Total number of users: {{ users|length }}</p>
-    <table style="width:100%" class="sortable-table">
+    <table style="width:100%" class="tablesorter">
         <thead>
             <tr>
                 <td><input type="checkbox" id="select_all"></td>
-                <th>First <div class="w3-hide-small">Name </div><i class="fa fa-sort"></i></th>
-                <th>Last <div class="w3-hide-small">Name </div><i class="fa fa-sort"></i></th>
-                <th class="w3-hide-small">Active <i class="fa fa-sort"></i></th>
-                <th>Play<div class="w3-hide-small">count</div> <i class="fa fa-sort"></i></th>
-                <th><div class="w3-hide-small">User </div>Home <i class="fa fa-sort"></i></th>
+                <th>First</th>
+                <th>Last</th>
+                <th class="w3-hide-small">Active</th>
+                <th>Playcount</th>
+                <th>Home</th>
             </tr>
         </thead>
         <tbody class="zebra-table">

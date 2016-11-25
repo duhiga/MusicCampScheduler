@@ -1,5 +1,5 @@
 {% extends "layout.html" %}
-{% block title%}Period Display - {{ campname }}{% endblock %}
+{% block title%}Period Details - {{ campname }}{% endblock %}
 {% block head %}
 <script>
     $(document).ready(function () {
@@ -31,7 +31,7 @@
     <p>Total number of attendees: {{ players|length + nonplayers|length }}</p>
     <table style="width:100%" class="tablesorter">
         <thead>
-            <tr>
+            <tr class="dark-row">
                 <th>Name</th>
                 <th>Instrument</th>
                 <th>Group</th>

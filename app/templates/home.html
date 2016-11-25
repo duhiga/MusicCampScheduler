@@ -88,8 +88,8 @@
     <p>{{ currentannouncement|safe }}</p>
     {% endif %}
     <p style="text-align: center;">
-        <a href="#" class="previous"><i class="fa fa-arrow-left"></i></a>
-        <select class="date_select">
+        <button type="button" class="previous"><i class="fa fa-arrow-left"></i></button>
+        <select class="date_select" style="font-size: 18px;">
             {% for d in dates %}
             {% if d.strftime('%Y-%m-%d') == date.strftime('%Y-%m-%d') %}
             <option value="{{d.strftime('%Y-%m-%d')}}" selected="selected">{{ d.strftime('%a, %d %b') }}</option>
@@ -98,8 +98,8 @@
             {% endif %}
             {% endfor %}
         </select>
-        <a href="#" class="next"><i class="fa fa-arrow-right"></i></a>
-    </p>
+        <button type="button" class="next"><i class="fa fa-arrow-right"></i></button>
+</p>
     <ul class="tab">
         <li><a href="javascript:void(0)" class="tablinks" onclick="openTab(event, 'Schedule')" id="defaultOpen">Schedule</a></li>
         {% if date > today %}

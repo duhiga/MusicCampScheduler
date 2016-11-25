@@ -1,5 +1,5 @@
 {% extends "layout.html" %}
-{% block title %}{{ campname }} Group Editor{% endblock %}
+{% block title %}{% if thisuser.isadmin == 1 %}User Editor - {{ campname }}{% else %}Settings - {{ campname }}{% endif %}{% endblock %}
 {% block head %}
 <script>
 

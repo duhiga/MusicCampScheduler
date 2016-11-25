@@ -608,7 +608,7 @@ def grouphistory(userid):
     try:
         now = datetime.datetime.now() #get the time now
         groups = session.query(group.groupname, group.groupid, period.periodid, period.starttime, period.endtime, groupassignment.instrumentname, group.status, location.locationname).\
-                    join(groupassignment).outerjoin(period).outerjoin(location).filter(groupassignment.userid == thisuser.userid).order_by(period.starttime).all()
+                    join(groupassignment).outerjoin(period).outerjoin(location).filter(groupassignment.userid == thisuser.userid, group.groupname != 'absent').order_by(period.starttime).all()
         log(groups)
         count = playcount(session, thisuser.userid)
         session.close()

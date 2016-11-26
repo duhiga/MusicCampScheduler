@@ -139,6 +139,10 @@ def home(userid,inputdate='n'):
         log('date modifier is currently set to %s' % inputdate)
         #get the current announcement
         currentannouncement = session.query(announcement).order_by(desc(announcement.creationtime)).first()
+        if currentannouncement is not None:
+            announcementcontent = currentannouncement.content.replace("\n","<br />")
+        else:
+            announcementcontent = ''
         #get impontant datetimes
         today = datetime.datetime.combine(datetime.date.today(), datetime.time.min) #get today's date
         campstarttime = datetime.datetime.strptime(getconfig('StartTime'), '%Y-%m-%d %H:%M')
@@ -197,7 +201,7 @@ def home(userid,inputdate='n'):
                             nextday=nextday, \
                             today=today, \
                             campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
-                            currentannouncement=currentannouncement.content.replace("\n","<br />"), \
+                            currentannouncement=announcementcontent, \
                             now = datetime.datetime.now(), \
                             )
 

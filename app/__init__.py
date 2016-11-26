@@ -1106,7 +1106,7 @@ def useradmin(userid):
         return ('Did not find user in database. You have entered an incorrect URL address.')
     try:
         #check if this user is a conductor, if they are not, deny them.
-        if thisuser.isadmin != 1:
+        if thisuser.isadmin != 1 and thisuser.userid != getconfig('AdminUUID'):
             return ('You are not allowed to view this page.')
         else:
             #get the list of people that play instruments
@@ -1293,11 +1293,11 @@ Your homepage, containing your daily schedule, is here:\n
 %s/user/%s/ \n
 WARNING: DO NOT GIVE THIS LINK TO ANYONE ELSE. It is yours, and yours alone and contains your connection credentials.\n
 A small rundown of how to use the web app:\n
-    -Visit this page each day to see your schedule, including times, locations, and the instrument you're playing.
-    -You can click into group names to to see possible substitute players and get further details, or a time period to see the full group listing for that time. Clicking the home button in the top right of your screen will always bring you back to the current day.
-    -You can look at your schedule for future and past days with the next and previous links.
-    -If you're going to be absent for a session or meal, plesae notify us at least one day before by navigating to a future date, clicking the tools tab on your homepage, then clicking the button next to the corresponding time.
-    -You can request groups with the request group link on the page (on a mobile, click on the hamburger menu on the top right of the screen). Fill in your desired instrumentation, and any players that you'd like to play with and press submit. Leaving blanks for player names is fine, you'll be matched up with other players at the end of the day.\n
+    -Visit this page each day to see your schedule, including times, locations, and the instrument you're playing. Don't forget to refresh it, your phone may not refresh the page if you minimise it and come back to it later.
+    -You can click into group names to to see possible substitute players and get further details, or a time period to see the full group listing for that time. Clicking the home button in the top left of your screen will always bring you back to your schedule on the current day.
+    -You can look at your schedule for future and past days drop down date picker, and the forward and back links on your home screen.
+    -If you're going to be absent for a session or meal, plesae notify us at least one day before by navigating to a future date, clicking the tools tab on your homepage, then clicking the "Mark me as absent" button next to the corresponding time.
+    -You can request groups with the request group link on the left (on a mobile, click on the hamburger menu on the top left of the screen). Fill in your desired instrumentation, and any players that you'd like to play with and press submit. Leaving blanks for player names is fine, you'll be matched up with other players at the end of the day.\n
 If you have any questions, please reply to this email or contact us on %s.\n
 Thanks!\n
 %s %s
@@ -1311,7 +1311,7 @@ Thanks!\n
                 thisuser.lastname, \
                 getconfig('Name')\
                 )
-                #message = send_email(targetuser.email, subject, body)
+                message = send_email(targetuser.email, subject, body)
                 if message == 'Failed to send email to user':
                     errors = errors + ('Failed to send email to %s %s\n' % (targetuser.firstname, targetuser.lastname))
         session.close()
@@ -1449,24 +1449,18 @@ def setup(userid):
     if thisuser is None:
         return ('Did not find user in database. You have entered an incorrect URL address.')
     try:
-        #check if this user is a conductor, if they are not, deny them.
-        if thisuser.isadmin != 1:
+        #check if this user is an admin or the Administrator superuser, if they are not, deny them.
+        if thisuser.isadmin != 1 and thisuser.userid != getconfig('AdminUUID'):
             return ('You are not allowed to view this page.')
         else:
             if request.method == 'GET':
-                locations = session.query(location).all()
-                templates = session.query(grouptemplate)
-                grouptemplates = templates.all()
-                grouptemplates_dict = dict((col, getattr(templates.first(), col)) for col in templates.first().__table__.columns.keys())
                 session.close()
                 return render_template('setup.html', \
                                                 thisuser=thisuser, \
                                                 campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
-                                                grouptemplates=grouptemplates, \
-                                                grouptemplates_dict=grouptemplates_dict, \
-                                                locations = locations, \
                                                 )
             if request.method == 'POST':
+                session.close()
                 # Get the name of the uploaded file
                 file = request.files['file']
                 if file and allowed_file(file.filename):
@@ -1475,7 +1469,7 @@ def setup(userid):
                         return dbbuild(file.read())
                     if filename == 'campers.csv':
                         log(importusers(file))
-                        return useradmin(thisuser.userid)
+                        return useradmin(userid)
     
     except Exception as ex:
         log('Failed to display page to user %s %s with exception: %s.' % (thisuser.firstname, thisuser.lastname, ex))
@@ -1486,6 +1480,32 @@ def setup(userid):
                             campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
                             errormessage = 'Failed to display page with exception: %s.' % ex
                             )
+
+#UNFINISHED - setup page for other tables
+@app.route('/user/<userid>/tableadmin/', methods=["GET", "POST"])
+def tableadmin(userid):
+
+    session = Session()
+    #gets the data associated with this user
+    thisuser = session.query(user).filter(user.userid == userid).first()
+    if thisuser is None:
+        return ('Did not find user in database. You have entered an incorrect URL address.')
+    try:
+        locations = session.query(location).all()
+        templates = session.query(grouptemplate)
+        grouptemplates = templates.all()
+        grouptemplates_dict = dict((col, getattr(templates.first(), col)) for col in templates.first().__table__.columns.keys())
+
+    except Exception as ex:
+            log('Failed to display page to user %s %s with exception: %s.' % (thisuser.firstname, thisuser.lastname, ex))
+            session.rollback()
+            session.close()
+            return render_template('errorpage.html', \
+                                thisuser=thisuser, \
+                                campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
+                                errormessage = 'Failed to display page with exception: %s.' % ex
+                                )
+
 
 @app.route('/js/<path:path>')
 def send_js(path):

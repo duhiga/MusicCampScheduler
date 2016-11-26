@@ -81,7 +81,7 @@
                 validity = true;
 
                 //if it's a checkbox, don't do anything if it's unchecked
-                if ($(this).is('checkbox') == true && false == $(this).prop("checked")) {
+                if (false == $(this).prop("checked")) {
                     console.log('Found an unchecked checkbox');
                     validity = false;
                 }

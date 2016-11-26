@@ -45,8 +45,8 @@
 {% endblock %}
 {% block sidenav %}
 <h4><b>Tools</b></h4>
-<a href="#" class="w3-hover-black submit_button" id="email_users" data-method="POST" data-url="/user/{{ thisuser.userid }}/email/"><i class="fa fa-envelope-o"></i> Email Selected Users</a>
 <a href="/user/{{ thisuser.userid }}/newuser/" class="w3-hover-black"><i class="fa fa-male"></i> New User</a>
+<a href="#" class="w3-hover-black submit_button" id="email_users" data-method="POST" data-url="/user/{{ thisuser.userid }}/email/"><i class="fa fa-envelope-o"></i> Email Selected Users</a>
 {% endblock %}
 {% block content %}
     <p>Total number of users: {{ users|length }}</p>

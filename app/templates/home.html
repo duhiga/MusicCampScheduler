@@ -91,11 +91,19 @@
         <button type="button" class="previous"><i class="fa fa-arrow-left"></i></button>
         <select class="date_select" style="font-size: 18px;">
             {% for d in dates %}
-            {% if d.strftime('%Y-%m-%d') == date.strftime('%Y-%m-%d') %}
-            <option value="{{d.strftime('%Y-%m-%d')}}" selected="selected">{{ d.strftime('%a, %d %b') }}</option>
-            {% else %}
-            <option value="{{d.strftime('%Y-%m-%d')}}">{{ d.strftime('%a, %d %b') }}</option>
-            {% endif %}
+                {% if d.strftime('%Y-%m-%d') == date.strftime('%Y-%m-%d') %}
+                    {% if d.strftime('%Y-%m-%d') == today.strftime('%Y-%m-%d') %}
+                        <option value="{{d.strftime('%Y-%m-%d')}}" selected="selected">Today</option>
+                    {% else %}
+                        <option value="{{d.strftime('%Y-%m-%d')}}" selected="selected">{{ d.strftime('%a, %d %b') }}</option>
+                    {% endif %}
+                {% else %}
+                    {% if d.strftime('%Y-%m-%d') == today.strftime('%Y-%m-%d') %}
+                        <option value="{{d.strftime('%Y-%m-%d')}}">Today</option>
+                    {% else %}
+                        <option value="{{d.strftime('%Y-%m-%d')}}">{{ d.strftime('%a, %d %b') }}</option>
+                    {% endif %}
+                {% endif %}
             {% endfor %}
         </select>
         <button type="button" class="next"><i class="fa fa-arrow-right"></i></button>

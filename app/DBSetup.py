@@ -157,17 +157,28 @@ class announcement(Base):
 
 Base.metadata.create_all(engine)
 
+#this section manages the admin user. This will be the user that the admin will use to set up the database from the webapp
 session = Session()
-admin = session.query(user).filter(user.userid == getconfig('AdminUUID')).first()
+#try to find a user named 'Administrator' whos ID matches the app's configured AdminUUID
+admin = session.query(user).filter(user.userid == getconfig('AdminUUID'), user.firstname == 'Administrator').first()
+#if we don't find one, it means that this is the first boot, or the AdminUUID has been changed
 if admin is None:
+    #try to find a user called Administrator
     findadmin = session.query(user).filter(user.firstname == 'Administrator').first()
+    #if we find one, it means that someone has changed the AdminUUID parameter. Update this user to match it.
     if findadmin is not None:
-        print('Configured AdminUUID does not match the current administrator. Cannot proceed. Either reset the database, or set the administrator to the correct UUID in the configuration.')
-    admin = user(userid = getconfig('AdminUUID'), firstname = 'Administrator', lastname = '', isadmin = 1, isactive = 0, \
-        arrival = datetime.datetime.strptime(getconfig('StartTime'), '%Y-%m-%d %H:%M'), departure = datetime.datetime.strptime(getconfig('EndTime'), '%Y-%m-%d %H:%M'))
-    session.add(admin)
-session.commit()
+        print('Found Administrator user did not match AdminUUID parameter. Updating the user details to match.')
+        findadmin.userid = getconfig('AdminUUID')
+        session.merge(findadmin)
+    #if we don't find one, this is the first boot of the app. Create the administrator user.
+    else:
+        print('Welcome to the music camp scheduler! This is the first boot of the app. Look in your applicaiton parameters for the AdminUUID parameter, then log in to the setup page with websitename/user/AdminUUID(replace this with your admin UUID)/setup/')
+        admin = user(userid = getconfig('AdminUUID'), firstname = 'Administrator', lastname = 'A', isactive = 0, \
+            arrival = datetime.datetime.strptime(getconfig('StartTime'), '%Y-%m-%d %H:%M'), departure = datetime.datetime.strptime(getconfig('EndTime'), '%Y-%m-%d %H:%M'))
+        session.add(admin)
+    session.commit()
 session.close()
+session.flush()
 
 def createlocation(session,name,capacity):
     find_location = session.query(location).filter(location.locationname == name).first()

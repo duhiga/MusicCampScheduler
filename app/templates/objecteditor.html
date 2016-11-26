@@ -1,0 +1,92 @@
+{% extends "layout.html" %}
+{% block title %}{{ type }} Editor - {{ campname }}{% endblock %}
+{% block head %}
+<script>
+    function validate(ob) {
+        var foundempty = false
+        $('[data-mapping=' + ob.data('mapping') + ']').each(function () {
+            if (!($(this).hasClass('form-validate'))) {
+                $(this).addClass('form-validate');
+            }
+            if ($(this).hasClass('master') && !($(this).hasClass('form-object-master'))) {
+                $(this).addClass('form-object-master');
+            }
+            if ($(this).data('key').substr($(this).data('key').length - 4) == 'name' && $(this).val() == '') {
+                foundempty = true;
+            }
+        });
+
+        if (foundempty == false) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
+
+    $(document).ready(function () {
+
+        $(document).on("keyup keydown keypress change", '.attribute', function () {
+            if (!($(this).hasClass('form-validate'))) {
+                $(this).addClass('form-validate');
+            }
+         });
+    });
+
+
+
+
+</script>
+{% endblock %}
+{% block breadcrumbs %}
+<li class="w3-hide-small"><a href="#" class="w3-hover-white">{{ type }}s</a></li>
+{% endblock %}
+{% block content %}
+<h1>WARNING</h1>
+<p>Do <strong>NOT</strong> mess around in here without knowing what you're doing. There's very little form validation, and you can really screw things up if you make any mistakes. Use extreme caution.</p>
+<h2>Select a {{ type }} to Edit</h2>
+
+    {% for key, value in object_dict.iteritems() %}
+        {% if key == table + 'name' %}
+            {% set name = key %}
+            {% for key, value in object_dict.iteritems() %}
+                {% if key == table + 'id' %}
+                    {% set id = key %}
+                    {% for o in objects %}
+                    <button class="accordion">{{ o[name] }} <i class="fa fa-caret-down w3-right"></i></button>
+                    <div id="{{ o[name] }}" class="w3-accordion-content w3-card-4 panel">
+                        <input type="hidden" data-key="{{ id }}" data-mapping="{{ o[id] }}" class="master" value="{{ o[id] }}">
+                        <table>
+                            {% for key, value in object_dict.iteritems() %}
+                            <tr>
+                                {% if key != table + 'id' %}
+                                <th>{{ key }}</th>
+                                <td><input type="text" class="attribute" data-key="{{ key }}" data-mapping="{{ o[id] }}" value="{{ o[key] }}"></td>
+                                {% endif %}
+                            </tr>
+                            {% endfor %}
+                        </table>
+                        <button type="button" id="{{ o[id] }}" class="w3-hover-black submit_button" data-method="DELETE"><i class="fa fa-trash save_icon"></i><i class="fa fa-circle-o-notch fa-spin spin_icon"></i> Delete</button>
+                    </div>
+                    {% endfor %}
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+    {% endfor %}
+<h2>Create a New {{ type }}</h2>
+<button class="accordion">New {{ type }} <i class="fa fa-caret-down w3-right"></i></button>
+<div id="new" class="w3-accordion-content w3-card-4 panel">
+    <input type="hidden" data-key="{{ table }}id" data-mapping="new" class="master" value="new">
+    <table>
+        {% for key, value in object_dict.iteritems() %}
+        <tr>
+            {% if key != table + 'id' %}
+            <th>{{ key }}</th>
+            <td><input type="text" class="attribute" data-key="{{ key }}" data-mapping="new" value=""></td>
+            {% endif %}
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}

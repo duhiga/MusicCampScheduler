@@ -3,7 +3,7 @@ from config import *
 
 def send_email(recipient, subject, body):
     print('Email send requested for user %s' % recipient)
-    FROM = getconfig('SMTP_User')
+    FROM = getconfig('Name')
     TO = recipient if type(recipient) is list else [recipient]
     SUBJECT = subject
     TEXT = body
@@ -27,6 +27,7 @@ def send_email(recipient, subject, body):
         #server.login(getconfig('SMTP_User'), getconfig('SMTP_Password'))
         #server.sendmail(FROM, TO, message)
         #server.close()
+
         print 'Successfully sent email to %s' % recipient
         return 'Successfully sent email'
     except Exception as ex:

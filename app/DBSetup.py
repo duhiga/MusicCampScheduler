@@ -248,7 +248,10 @@ def dbbuild(configfile):
             template = grouptemplate()
             attributelist = [a for a in dir(template) if not a.startswith('_') and not callable(getattr(template,a)) and not a == 'grouptemplateid' and not a == 'metadata' and not a == 'serialize']
             for v in attributelist:
-                setattr(template, v, conf.root.CampDetails.GroupTemplate[x]['%s' % v])
+                if conf.root.CampDetails.GroupTemplate[x]['%s' % v] is not None:
+                    setattr(template, v, conf.root.CampDetails.GroupTemplate[x]['%s' % v])
+                else:
+                    setattr(template, v, 0)
             setattr(template, 'grouptemplatename', conf.root.CampDetails.GroupTemplate[x]['Name'])
             setattr(template, 'size', conf.root.CampDetails.GroupTemplate[x]['Size'])
             setattr(template, 'minimumlevel', conf.root.CampDetails.GroupTemplate[x]['MinimumLevel'])

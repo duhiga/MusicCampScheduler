@@ -468,7 +468,7 @@ def editgroup(userid,groupid,periodid=None):
                 session.commit()
             foundfilled = False
             for p in content['objects']:
-                if p['userid'] == '' or p['userid'] is not None:
+                if p['userid'] != '' and p['userid'] is not None:
                     foundfilled = True
                     log('Attempting to find user %s' % p['userid'])
                     playeruser = session.query(user).filter(user.userid == p['userid']).first()
@@ -1451,6 +1451,7 @@ def setup(userid):
     #gets the data associated with this user
     thisuser = session.query(user).filter(user.userid == userid).first()
     if thisuser is None:
+        session.close()
         return ('Did not find user in database. You have entered an incorrect URL address.')
     try:
         #check if this user is an admin or the Administrator superuser, if they are not, deny them.
@@ -1485,22 +1486,60 @@ def setup(userid):
                             errormessage = 'Failed to display page with exception: %s.' % ex
                             )
 
-#UNFINISHED - setup page for other tables
-@app.route('/user/<userid>/tableadmin/', methods=["GET", "POST"])
-def tableadmin(userid):
+#This page is viewable by the admin only, it lets them edit different objects in the database - grouptemplates, locations, periods, etc.
+@app.route('/user/<userid>/objecteditor/<input>/', methods=["GET","POST","DELETE"])
+def objecteditor(userid, input, objectid=None):
 
     session = Session()
     #gets the data associated with this user
     thisuser = session.query(user).filter(user.userid == userid).first()
     if thisuser is None:
+        session.close()
         return ('Did not find user in database. You have entered an incorrect URL address.')
-    try:
-        locations = session.query(location).all()
-        templates = session.query(grouptemplate)
-        grouptemplates = templates.all()
-        grouptemplates_dict = dict((col, getattr(templates.first(), col)) for col in templates.first().__table__.columns.keys())
+    if thisuser.isadmin != 1:
+        session.close()
+        return render_template('errorpage.html', \
+                                thisuser=thisuser, \
+                                campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
+                                errormessage = 'You do not have permission to view this page.'
+                                )
 
-    except Exception as ex:
+    log('User requested objects with type %s' % input)
+    if input == 'grouptemplate':
+        table = 'grouptemplate'
+        type = 'Group Template'
+        objects_query = session.query(grouptemplate)
+    elif input == 'location':
+        table = 'location'
+        type = 'Location'
+        objects_query = session.query(location)
+    elif input == 'period':
+        table = 'period'
+        type = 'Period'
+        objects_query = session.query(period)
+    else:
+        session.close()
+        return render_template('errorpage.html', \
+                            thisuser=thisuser, \
+                            campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
+                            errormessage = 'Invalid input.'
+                            )
+    if request.method == 'GET':
+        try:
+            object_dict = dict((col, getattr(objects_query.first(), col)) for col in objects_query.first().__table__.columns.keys())
+            objects = objects_query.all()
+            session.close()
+            return render_template('objecteditor.html', \
+                                thisuser=thisuser, \
+                                object_dict=object_dict, \
+                                objects=objects, \
+                                type=type, \
+                                table=table, \
+                                objectid=objectid, \
+                                campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
+                                )
+            
+        except Exception as ex:
             log('Failed to display page to user %s %s with exception: %s.' % (thisuser.firstname, thisuser.lastname, ex))
             session.rollback()
             session.close()
@@ -1510,6 +1549,53 @@ def tableadmin(userid):
                                 errormessage = 'Failed to display page with exception: %s.' % ex
                                 )
 
+    if request.method == 'POST':
+        try:
+            #format the packet received from the server as JSON
+            content = request.json
+            for o in content['objects']:
+                if o[table + 'id'] != '' and o[table + 'id'] is not None:
+                    if o[table + 'id'] == 'new':
+                        log('Found a new object to create')
+                        if table == 'grouptemplate':
+                            object = grouptemplate()
+                        elif table == 'location':
+                            object = location()
+                        elif table == 'period':
+                            object = period()
+                        session.add(object)
+                    else:
+                        log('Trying to find a %s object with id %s' % (table, o[table + 'id']))
+                        object = objects_query.filter(getattr(globals()[table],(table + 'id')) == o[table + 'id']).first()
+                        if object is None:
+                            session.rollback()
+                            session.close()
+                            return jsonify(message = 'Could not find one of your requested objects. This is a malformed request packet.', url = 'none')
+                    for key, value in o.iteritems():
+                        if key != table + 'id':
+                            log('Changing object %s key %s to %s' % (table, key, value))
+                            setattr(object,key,value)
+                    session.merge(object)
+                    url = '/user/' + thisuser.userid + '/viewer/' + table + '/'
+                    session.commit()
+                    session.close()
+                    return jsonify(message = 'none', url = url)
+        except Exception as ex:
+            session.rollback()
+            session.close()
+            return jsonify(message = 'Failed to post update with exception: %s' % ex, url = url)
+
+    if request.method == 'DELETE':
+        try:
+            session.delete(objects_query.filter(getattr(globals()[table],(table + 'id')) == request.json).first())
+            url = '/user/' + thisuser.userid + '/viewer/' + table + '/'
+            session.commit()
+            session.close()
+            return jsonify(message = 'none', url = url)
+        except Exception as ex:
+            session.rollback()
+            session.close()
+            return jsonify(message = 'Failed to delete object with exception %s' % ex, url = 'none')
 
 @app.route('/js/<path:path>')
 def send_js(path):

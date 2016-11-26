@@ -35,8 +35,6 @@
                 success: function(data, textStatus) {
                     //upon success, the server will return a message and a URL. give the user the message and send them to the URL.
                     console.log(data);
-                    $('.spin_icon').hide();
-                    $('.save_icon').show();
                     if (data.message != 'none') {
                         alert(data.message);
                         isClicked = false;
@@ -45,6 +43,8 @@
                         window.location = data.url;
                     }
                     else {
+                        $('.spin_icon').hide();
+                        $('.save_icon').show();
                         isClicked = false;
                     }
                 },
@@ -56,7 +56,6 @@
                     
                 },
             });
-            //if someone pressed the save button, turn it back into a save button
         }
 
         //function to be used by the submit button. called by the template.
@@ -70,8 +69,8 @@
             });
 
             //establish an array under request to deal with a group of objects. This will:
-            //1. cycle through every object with the class form-object-master and grab it's data-mapping id
-            //2. cycle through this and every other object with that data-mapping and add its value to the object
+            //1. cycle through every object with the class form-object-master and grab its data-mapping id
+            //2. cycle through this and every other object with that data-mapping and add its value to the object, bound to its data-key for each value's key
             //3. push the resulting object to the request object
             request.objects = []
             //for each dropdown contiaining the instrument names
@@ -79,7 +78,7 @@
 
                 //check its validity
                 validity = true;
-
+                /*
                 //if it's a checkbox, don't do anything if it's unchecked
                 if (false == $(this).prop("checked")) {
                     console.log('Found an unchecked checkbox');
@@ -87,7 +86,7 @@
                 }
 
                     //if it's a dropdown or input, don't do anything if it's not set to anything
-                else if ($(this).val() == 'null' || $(this).val() == '' || $(this).val() == 'None') {
+                else */if ($(this).val() == 'null' || $(this).val() == '' || $(this).val() == 'None') {
                     console.log('Found an empty dropdown or textbox');
                     validity = false;
                 }
@@ -132,7 +131,7 @@
                 }
             });
             //if there are no bad objects, and this page has something to submit, show the submit button
-            if (valid == true && ($('.form-attribute')[0])) {
+            if (valid == true && ($('.form-attribute')[0] || $('.form-object-master')[0])) {
                 $(".submit_hide").show();
             }
                 //if there is at least one bad object, hide the submit button
@@ -189,9 +188,9 @@
                     $('.spin_icon').show();
 
                     if ($(this).data('method') == 'DELETE') {
-                        var r = confirm('Are you sure you want to delete this group?');
+                        var r = confirm('Are you sure you want to delete?');
                         if (r == true) {
-                            sendtoserver('null','DELETE')
+                            sendtoserver($(this).attr('id'),'DELETE')
                         }
                     }
                     else {
@@ -258,7 +257,15 @@
         <h4><b>Admin</b></h4>
         <a href="/user/{{ thisuser.userid }}/groupqueue/" class="w3-hover-black"><i class="fa fa-ellipsis-h"></i> Queued Groups</a>
         <a href="/user/{{ thisuser.userid }}/useradmin/" class="w3-hover-black"><i class="fa fa-universal-access"></i> User Administration</a>
-        <a href="/user/{{ thisuser.userid }}/setup/" class="w3-hover-black"><i class="fa fa-wrench"></i> Application Setup</a>
+        <a class="accordion" href="#">
+            Database Editor <i class="fa fa-caret-down w3-right"></i>
+        </a>
+        <div id="editor" class="w3-accordion-content w3-card-4 panel">
+            <a href="/user/{{ thisuser.userid }}/setup/" class="w3-hover-black"><i class="fa fa-wrench"></i> Initial Setup</a>
+            <a href="/user/{{ thisuser.userid }}/objecteditor/grouptemplate/" class="w3-hover-black">Group Templates</a>
+            <a href="/user/{{ thisuser.userid }}/objecteditor/location/" class="w3-hover-black">Locations</a>
+            <a href="/user/{{ thisuser.userid }}/objecteditor/period/" class="w3-hover-black">Periods</a>
+        </div>
         {% endif %}
     </nav>
 

@@ -1553,6 +1553,7 @@ def objecteditor(userid, input, objectid=None):
         try:
             #format the packet received from the server as JSON
             content = request.json
+            log('Received packet for modifying %ss with content: %s' % (type, content))
             for o in content['objects']:
                 if o[table + 'id'] != '' and o[table + 'id'] is not None:
                     if o[table + 'id'] == 'new':
@@ -1576,7 +1577,7 @@ def objecteditor(userid, input, objectid=None):
                             log('Changing object %s key %s to %s' % (table, key, value))
                             setattr(object,key,value)
                     session.merge(object)
-                    url = '/user/' + thisuser.userid + '/viewer/' + table + '/'
+                    url = '/user/' + thisuser.userid + '/objecteditor/' + table + '/'
                     session.commit()
                     session.close()
                     return jsonify(message = 'none', url = url)
@@ -1588,7 +1589,7 @@ def objecteditor(userid, input, objectid=None):
     if request.method == 'DELETE':
         try:
             session.delete(objects_query.filter(getattr(globals()[table],(table + 'id')) == request.json).first())
-            url = '/user/' + thisuser.userid + '/viewer/' + table + '/'
+            url = '/user/' + thisuser.userid + '/objecteditor/' + table + '/'
             session.commit()
             session.close()
             return jsonify(message = 'none', url = url)

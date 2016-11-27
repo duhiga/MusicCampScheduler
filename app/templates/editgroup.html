@@ -113,7 +113,6 @@
                 thisinstrument = $(this).attr('data-instrument');
                 playerscell = $('.players_cell[data-instrument="' + thisinstrument + '"]');
                 difference = $(this).val() - $('.player_dropdown[data-instrument="' + thisinstrument + '"]').length;
-                console.log('Need to add ' + difference + ' dropdowns');
                 if (difference > 0) {
                     for (i=0; i < difference; i++) {
                         addPlayer(playerscell);

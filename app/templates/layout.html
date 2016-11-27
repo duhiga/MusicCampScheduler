@@ -34,7 +34,7 @@
                 data: JSON.stringify(request, null),
                 success: function(data, textStatus) {
                     //upon success, the server will return a message and a URL. give the user the message and send them to the URL.
-                    console.log(data);
+                    console.log('Server returned ' + textStatus)
                     if (data.message != 'none') {
                         alert(data.message);
                         isClicked = false;
@@ -49,6 +49,7 @@
                     }
                 },
                 error: function(xhr, textStatus, errorThrown) {
+                    console.log('Server returned ' + textStatus)
                     $('.spin_icon').hide();
                     $('.save_icon').show();
                     alert('Submission failed with error: ' + errorThrown);
@@ -78,15 +79,15 @@
 
                 //check its validity
                 validity = true;
-                /*
+                
                 //if it's a checkbox, don't do anything if it's unchecked
-                if (false == $(this).prop("checked")) {
+                if (false == $(this).prop("checked") && $(this).attr("type") == 'checkbox') {
                     console.log('Found an unchecked checkbox');
                     validity = false;
                 }
 
                     //if it's a dropdown or input, don't do anything if it's not set to anything
-                else */if ($(this).val() == 'null' || $(this).val() == '' || $(this).val() == 'None') {
+                else if ($(this).val() == 'null' || $(this).val() == '' || $(this).val() == 'None') {
                     console.log('Found an empty dropdown or textbox');
                     validity = false;
                 }

@@ -117,7 +117,7 @@
 
         //iterate through all of the objects on the page requiring validation, and run the page's specific validation fuction on each.
         function validate_all() {
-            var valid = true
+            var valid = true;
             $('.form-validate').each(function () {
                 //if the object is good, clear the red border
                 if (validate($(this))) {
@@ -128,7 +128,7 @@
                 else {
                     $(this).css("border-color", "red");
                     $(this).css("border-style", "solid");
-                    valid = false
+                    valid = false;
                 }
             });
             //if there are no bad objects, and this page has something to submit, show the submit button
@@ -157,7 +157,7 @@
             }
             
             $(document).on("keyup keydown keypress blur change click", '.form-attribute, .form-object-master, .form-validate', function () {
-                validate_all()
+                validate_all();
             });
 
             // add parser for score order through the tablesorter addParser method
@@ -191,7 +191,12 @@
                     if ($(this).data('method') == 'DELETE') {
                         var r = confirm('Are you sure you want to delete?');
                         if (r == true) {
-                            sendtoserver($(this).attr('id'),'DELETE')
+                            sendtoserver($(this).attr('id'),'DELETE');
+                        }
+                        else {
+                            $('.spin_icon').hide();
+                            $('.save_icon').show();
+                            isClicked = false;
                         }
                     }
                     else {
@@ -199,16 +204,16 @@
                         var request = buildrequest()
 
                         if ($(this).data('submittype') != '' || $(this).data('submittype') != null) {
-                            request.submittype = $(this).data('submittype')
+                            request.submittype = $(this).data('submittype');
                         }
                         if ($(this).data('url') != '' || $(this).data('url') != null) {
-                            url = $(this).data('url')
+                            url = $(this).data('url');
                         }
                         else { url = window.location.href }
 
                         console.log('Pushing the request to the server for processing:');
                         console.log(request);
-                        sendtoserver(request, $(this).data('method'), url)
+                        sendtoserver(request, $(this).data('method'), url);
 
                         }
                     }

@@ -24,18 +24,15 @@
         }
     }
 
-
     $(document).ready(function () {
 
         $(document).on("keyup keydown keypress change", '.attribute', function () {
             if (!($(this).hasClass('form-validate'))) {
                 $(this).addClass('form-validate');
+                $(this).removeClass('attribute')
             }
          });
     });
-
-
-
 
 </script>
 {% endblock %}

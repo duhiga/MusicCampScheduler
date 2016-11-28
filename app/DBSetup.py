@@ -242,6 +242,7 @@ def dbbuild(configfile):
                 loop = 'stop'
         ThisDay = ThisDay + datetime.timedelta(days=1)    
     #create group templates
+    session.commit()
     for x in range(0,len(conf.root.CampDetails.GroupTemplate)):
         find_template = session.query(grouptemplate).filter(grouptemplate.grouptemplatename == conf.root.CampDetails.GroupTemplate[x]['Name']).first()
         if find_template is None:
@@ -260,7 +261,12 @@ def dbbuild(configfile):
                 defaultloc = session.query(location).filter(location.locationname == conf.root.CampDetails.GroupTemplate[x]['DefaultLocation']).first()
                 print('Found group default location for %s to be %s' % (template.grouptemplatename, defaultloc.locationname))
                 setattr(template, 'defaultlocationid', defaultloc.locationid)
+            else:
+                noneloc = session.query(location).filter(location.locationname == 'None').first()
+                print('No default location set for template %s. Setting default location to be %s' % (template.grouptemplatename, noneloc.locationname))
+                setattr(template, 'defaultlocationid', noneloc.locationid)
             session.add(template)
+            session.commit()
             print('Created grouptemplate: %s with size %s' % (template.grouptemplatename, template.size))
     session.commit()
     session.close()

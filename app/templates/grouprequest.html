@@ -4,7 +4,10 @@
 <script>
 
     function validate(ob) {
-        if (ob.val() != '') {
+        if (ob.val() == '' && ob.closest("tr").is(":nth-child(2)")) {
+            return false
+        }
+        else if (ob.val() != '' || ob.closest("tr").is(":last-child")) {
             return true
         }
         else {
@@ -61,6 +64,8 @@
         console.log("Instruments played by this user:");
         console.log(thisuserinstruments);
 
+        var instrumentlist_string = '{{ instrumentlist_string }}';
+
         var isClicked = false;
             
         conductorpage = "{{ conductorpage }}"
@@ -76,13 +81,13 @@
             $('#playersTable tr:last').after('\
                     <tr>\
                         <td>\
-                            <select class="form-object-master instrument_dropdown" data-key="instrumentname" data-mapping="' + rowId + '">\
+                            <select class="form-object-master instrument_dropdown form-validate" data-key="instrumentname" data-mapping="' + rowId + '">\
                                 <option value=""></option>\
                                 {% for i in instrumentlist %}<option value="{{ i }}">{{ i }}</option>{% endfor %}\
                             </select>\
                         </td>\
                         <td>\
-                            <select class="player_dropdown" data-key="userid" data-mapping="' + rowId + '">\
+                            <select class="player_dropdown form-validate" data-key="userid" data-mapping="' + rowId + '">\
                                 <option value=""></option>\
                             </select>\
                         </td>\
@@ -187,13 +192,13 @@
             //for each instrument type in the group template
             $.each(selectedTemplate, function(key,value){
                 //make sure it's an instrument type and not other associated metadata
-                if (key != 'grouptemplateid' && key != 'grouptemplatename' && key != 'size' && value > 0) {
+                if ((instrumentlist_string.split(',').indexOf(key) > -1) && value > 0) {
                     console.log(key + ": "+String(value));
                     //if the current instrument we're looking at is the same as the one that we selected for the user, decrement it because we already have one player
                     if (key == $(".instrument_dropdown[data-mapping=0]").val()) { value = value - 1; }
                     if (value > 0) {
                         for (var i = 0; i < value; i++) {
-                            addRow();
+                            //addRow();
                             $('.instrument_dropdown[data-mapping=' + String(rowId - 1) + ']').val(key).change();
                         }
                     }
@@ -276,14 +281,14 @@
         <tr>
             <!--Row 1 (only appears for the non-conductor group page and is locked to the player name)-->
             <td>
-                <select class="form-object-master form-validate" data-key="instrumentname" data-pairing="0">
+                <select class="form-object-master form-validate" data-key="instrumentname" data-mapping="0">
                     {% for i in thisuserinstruments %}
                     <option value="{{ i.instrumentname }}">{{ i.instrumentname }}</option>
                     {% endfor %}
                 </select>
             </td>
             <td>
-                <select data-pairing="0" data-key="userid" class="form-validate">
+                <select data-mapping="0" data-key="userid" class="form-validate">
                     <option value="{{ thisuser.userid }}">{{ thisuser.firstname }} {{ thisuser.lastname }}</option>
                 </select>
             </td>

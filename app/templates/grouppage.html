@@ -17,9 +17,13 @@
 </script>
 {% endblock %}
 {% block breadcrumbs %}
+{% if thisperiod != None %}
 <li class="w3-hide-small"><a href="/user/{{ thisuser.userid }}/date/{{thisperiod.starttime.strftime('%Y-%m-%d')}}/" class="w3-hover-white">{{ thisperiod.starttime.strftime('%d %b') }}</a></li>
 <li class="w3-hide-small"><a href="/user/{{ thisuser.userid }}/period/{{ thisperiod.periodid }}/" class="w3-hover-white">{{ thisperiod.periodname }}</a></li>
 <li class="w3-hide-small w3-hide-medium"><a href="#" class="w3-hover-white">{{ thisgroup.groupname }}</a></li>
+{% else %}
+<li class="w3-hide-small"><a href="#" class="w3-hover-white">{{ thisgroup.groupname }}</a></li>
+{% endif %}
 {% endblock %}
 {% if thisuser.isadmin == 1 %}
 {% block navbar %}

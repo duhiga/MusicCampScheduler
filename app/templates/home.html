@@ -63,7 +63,13 @@
 
             //handler for the user changing the dropdown date picker
             $(document).on("change", '.date_select', function () {
-                window.location.replace('/user/{{ thisuser.userid }}/date/' + $(this).val() + '/')
+                window.location.replace("/user/{{ thisuser.userid }}/date/" + $(this).val() + "/")
+                /*
+                request = {};
+                request.date = $(this).val();
+                response = sendtoserver(request, 'POST', "/user/{{ thisuser.userid }}/requestschedule/");
+                console.log(response);
+                */
             });
             //handler for the user clicking the next day button
             $(document).on("click", '.next', function () {
@@ -89,7 +95,7 @@
     {% endif %}
     <p style="text-align: center;">
         <button type="button" class="previous"><i class="fa fa-arrow-left"></i></button>
-        <select class="date_select" style="font-size: 18px;">
+        <select class="date_select" id="date_dropdown" style="font-size: 18px;">
             {% for d in dates %}
                 {% if d.strftime('%Y-%m-%d') == date.strftime('%Y-%m-%d') %}
                     {% if d.strftime('%Y-%m-%d') == today.strftime('%Y-%m-%d') %}
@@ -132,7 +138,7 @@
                 </tr>
             </thead>
             <tbody class="zebra-table">
-                {% for p in periods %}
+                {% for p in schedule %}
                 <tr>
                     <!--Time Column-->
                     <td>
@@ -182,7 +188,7 @@
                 <th>Mark yourself absent</th>
                 {% endif %}
             </tr>
-            {% for p in periods %}
+            {% for p in schedule %}
             <tr>
                 <!--Time Column-->
                 <td>
@@ -231,7 +237,7 @@
                 <th>Create Group</th>
                 <th>Instrumentation</th>
             </tr>
-            {% for p in periods %}
+            {% for p in schedule %}
             <tr>
                 <!--Time Column-->
                 <td>
@@ -259,7 +265,7 @@
                 <th>Create Group</th>
                 <th>Public Event</th>
             </tr>
-            {% for p in periods %}
+            {% for p in schedule %}
             <tr>
                 <!--Time Column-->
                 <td>
@@ -283,4 +289,5 @@
         </table>
     </div>
     {% endif %}
+<p>Last updated: {{ now.strftime('%Y-%m-%d %H:%M:%S') }}</p>
 {% endblock %}

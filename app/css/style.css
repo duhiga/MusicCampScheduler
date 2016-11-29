@@ -110,18 +110,20 @@ div.panel.show {
 }
 
 /* tablesorter */
-table.tablesorter thead tr .header {
-	background-image: url(/img/bg.gif);
-	background-repeat: no-repeat;
-	background-position: center right;
-	cursor: pointer;
-}
+@media all and (min-width: 600px) {
+    table.tablesorter thead tr .header {
+	    background-image: url(/img/bg.gif);
+	    background-repeat: no-repeat;
+	    background-position: center right;
+	    cursor: pointer;
+    }
+    table.tablesorter thead tr .headerSortUp {
+        background-image: url(/img/asc.gif);
+    }
 
-table.tablesorter thead tr .headerSortUp {
-	background-image: url(/img/asc.gif);
-}
-table.tablesorter thead tr .headerSortDown {
-	background-image: url(/img/desc.gif);
+    table.tablesorter thead tr .headerSortDown {
+        background-image: url(/img/desc.gif);
+    }
 }
 table.tablesorter thead tr .headerSortDown, table.tablesorter thead tr .headerSortUp {
 background-color: #c2c2c2;

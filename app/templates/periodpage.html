@@ -6,7 +6,7 @@
         $(function () {
             $(".tablesorter").tablesorter({
                 emptyTo: 'bottom',
-                sortList: [[2, 1], [1, 0], [0, 0]],
+                sortList: [[3, 1], [1, 0], [0, 0]],
                 headers: {
                     1: {
                         sorter: 'scoreorder',
@@ -33,9 +33,9 @@
         <thead>
             <tr class="dark-row">
                 <th>Name</th>
-                <th>Instrument</th>
+                <th><div class="w3-hide-small">Instrument</div><div class="w3-hide-medium w3-hide-large">Inst.</div></th>
                 <th>Group</th>
-                <th>Location</th>
+                <th><div class="w3-hide-small">Location</div><div class="w3-hide-medium w3-hide-large">Loc.</div></th>
             </tr>
         </thead>
         <tbody class="zebra-table">

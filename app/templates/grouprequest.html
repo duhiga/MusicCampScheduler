@@ -5,13 +5,16 @@
 
     function validate(ob) {
         if (ob.val() == '' && ob.closest("tr").is(":nth-child(2)")) {
-            return false
+            return false;
         }
         else if (ob.val() != '' || ob.closest("tr").is(":last-child")) {
-            return true
+            return true;
+        }
+        else if ('{{ conductorpage }}' == 'False') {
+            return true;
         }
         else {
-            return false
+            return false;
         }
     }
 

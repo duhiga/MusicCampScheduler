@@ -57,7 +57,7 @@
                 <th>First</th>
                 <th>Last</th>
                 <th class="w3-hide-small">Active</th>
-                <th>Playcount</th>
+                <th><div class="w3-hide-small">Playcount</div><div class="w3-hide-medium w3-hide-large">Plays</div></th>
                 <th>Home</th>
             </tr>
         </thead>
@@ -69,7 +69,7 @@
                 <td><a href="/user/{{ thisuser.userid }}/edituser/{{ u.userid }}/">{{ u.firstname }}</a></td>
                 <td><a href="/user/{{ thisuser.userid }}/edituser/{{ u.userid }}/">{{ u.lastname }}</a></td>
                 <td class="w3-hide-small">{% if u.isactive == 1 %}Yes{% else %}No{% endif %}</td>
-                <td>{{ u.playcount }}</td>
+                <td>{% if u.playcount != 'Non Player' %}{{ u.playcount }}{% else %}&nbsp;{% endif %}</td>
                 <td><a href="/user/{{ u.userid }}/">Home</a></td>
             </tr>
             {% endfor %}

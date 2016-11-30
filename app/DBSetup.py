@@ -56,6 +56,21 @@ class user(Base):
     def serialize(self):
         return serialize_class(self, self.__class__)
 
+class music(Base):
+    __tablename__ = 'musics'
+
+    musicid = Column(Integer, primary_key=True, unique=True)
+    composer = Column(String)
+    musicname = Column(String)
+    source = Column(String)
+    notes = Column(String)
+    link = Column(String)
+    grouptemplateid = Column(Integer, ForeignKey('grouptemplates.grouptemplateid'))
+
+    @property
+    def serialize(self):
+        return serialize_class(self, self.__class__)
+
 #both group and grouptemplate tables and classes are initialized without the instrument columns
 class group(Base):
     __tablename__ = 'groups'
@@ -68,7 +83,8 @@ class group(Base):
     periodid = Column(Integer, ForeignKey('periods.periodid'))
     minimumlevel = Column(Integer)
     maximumlevel = Column(Integer)
-    music = Column(String)
+    musicid = Column(Integer, ForeignKey('musics.musicid',ondelete='SET NULL'), nullable=True)
+    musicwritein = Column(String)
     ismusical = Column(Integer)
     iseveryone = Column(Integer)
     status = Column(String)
@@ -97,6 +113,7 @@ print('Setting up columns for instruments in database: %s' % getconfig('Instrume
 for i in instrumentlist:
     setattr(group, i, Column(Integer))
     setattr(grouptemplate, i, Column(Integer))
+    setattr(music, i, Column(Integer))
 
 class instrument(Base):
     __tablename__ = 'instruments'
@@ -332,3 +349,24 @@ def importusers(file):
     userscount = session.query(user).count()
     session.close()
     return ('User Build Successful. There are now %s total users in the database.' % userscount)
+
+def importmusic(file):
+    session = Session()
+    reader = csv.reader(file)
+    headers = reader.next()
+    print(headers)
+    for row in reader:
+        print('NEW ROW')
+        thismusic = music()
+        for header in headers:
+            if header in getconfig('Instruments').split(",") and row[headers.index(header)] == '':
+                print('%s Found empty instrument slot, filling with 0' % header)
+                setattr(thismusic,header,0)
+            elif row[headers.index(header)] != '':
+                print('%s Found non-empty slot, filling with %s' % (header, row[headers.index(header)]))
+                setattr(thismusic,header,row[headers.index(header)])
+        session.add(thismusic)
+    session.commit()
+    session.close()
+    return ('Imported music')
+

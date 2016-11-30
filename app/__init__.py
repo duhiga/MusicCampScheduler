@@ -665,6 +665,34 @@ def grouphistory(userid):
                             errormessage = 'Failed to display page with exception: %s.' % ex
                             )
 
+@app.route('/user/<userid>/musiclibrary/')
+def musiclibrary(userid):
+
+    session = Session()
+    #gets the data associated with this user
+    thisuser = session.query(user).filter(user.userid == userid).first()
+    if thisuser is None:
+        return ('Did not find user in database. You have entered an incorrect URL address.')
+    try:
+        musics = session.query(music).all()
+        grouptemplates = session.query(grouptemplate).filter(grouptemplate.size == 'S').all()
+        session.close()
+        return render_template('musiclibrary.html', \
+                                thisuser=thisuser, \
+                                musics=musics, \
+                                grouptemplates=grouptemplates, \
+                                campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
+                                )
+    except Exception as ex:
+        log('Failed to display page to user %s %s with exception: %s.' % (thisuser.firstname, thisuser.lastname, ex))
+        session.rollback()
+        session.close()
+        return render_template('errorpage.html', \
+                            thisuser=thisuser, \
+                            campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
+                            errormessage = 'Failed to display page with exception: %s.' % ex
+                            )
+
 #Handles the group request page. If a user visits the page, it gives them a form to create a new group request. Pressing submit 
 #sends a post containing configuration data. Their group request is queued until an adminsitrator approves it and assigns it to 
 #a period.
@@ -748,8 +776,11 @@ def grouprequest(userid,periodid=None):
             if conductorpage == True:
                 locations_used_query = session.query(location.locationid).join(group).join(period).filter(period.periodid == periodid)
                 locations = session.query(location).filter(~location.locationid.in_(locations_used_query)).all()
+                musics_used_query = session.query(music.musicid).join(group).join(period).filter(period.periodid == periodid)
+                musics = session.query(music).filter(~music.musicid.in_(musics_used_query)).all()
             else: 
                 locations = None
+                musics = session.query(music).all()
 
             #find all group templates and serialize them to prepare to inject into the javascript
             allgrouptemplates = session.query(grouptemplate).filter(grouptemplate.size == 'S').all()
@@ -783,6 +814,7 @@ def grouprequest(userid,periodid=None):
                                 conductorpage=conductorpage, \
                                 thisperiod=thisperiod, \
                                 locations=locations, \
+                                musics=musics, \
                                 )
 
         #The below runs when a user presses "Submit" on the grouprequest page. It creates a group object with the configuraiton selected by 
@@ -1508,8 +1540,9 @@ def setup(userid):
                     if filename == 'config.xml':
                         return dbbuild(file.read())
                     if filename == 'campers.csv':
-                        log(importusers(file))
-                        return useradmin(userid)
+                        return(importusers(file))
+                    if filename == 'musiclibrary.csv':
+                        return(importmusic(file))
     
     except Exception as ex:
         log('Failed to display page to user %s %s with exception: %s.' % (thisuser.firstname, thisuser.lastname, ex))
@@ -1552,6 +1585,10 @@ def objecteditor(userid, input, objectid=None):
         table = 'period'
         type = 'Period'
         objects_query = session.query(period)
+    elif input == 'music':
+        table = 'music'
+        type = 'Music'
+        objects_query = session.query(music)
     else:
         session.close()
         return render_template('errorpage.html', \
@@ -1599,6 +1636,8 @@ def objecteditor(userid, input, objectid=None):
                             object = location()
                         elif table == 'period':
                             object = period()
+                        elif table == 'music':
+                            object = music()
                         session.add(object)
                     else:
                         log('Trying to find a %s object with id %s' % (table, o[table + 'id']))

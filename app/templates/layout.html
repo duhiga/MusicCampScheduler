@@ -254,6 +254,7 @@
         <a href="/user/{{ thisuser.userid }}/grouphistory/" class="w3-hover-black"><i class="fa fa-history"></i> Group History</a>
         {% if thisuser.isactive == 1 %}
         <a href="/user/{{ thisuser.userid }}/grouprequest/" class="w3-hover-black"><i class="fa fa-music"></i> Request a group</a>
+        <a href="/user/{{ thisuser.userid }}/musiclibrary/" class="w3-hover-black"><i class="fa fa-book"></i> Music Library</a>
         {% endif %}
         <a href="mailto:{{ supportemailaddress }}" class="w3-hover-black"><i class="fa fa-envelope"></i> Contact Support</a>
         {% if thisuser.isannouncer == 1 %}
@@ -272,6 +273,7 @@
             <a href="/user/{{ thisuser.userid }}/objecteditor/grouptemplate/" class="w3-hover-black">Group Templates</a>
             <a href="/user/{{ thisuser.userid }}/objecteditor/location/" class="w3-hover-black">Locations</a>
             <a href="/user/{{ thisuser.userid }}/objecteditor/period/" class="w3-hover-black">Periods</a>
+            <a href="/user/{{ thisuser.userid }}/objecteditor/music/" class="w3-hover-black">Music Library</a>
         </div>
         {% endif %}
     </nav>

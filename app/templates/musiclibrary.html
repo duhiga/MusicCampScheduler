@@ -1,0 +1,41 @@
+{% extends "layout.html" %}
+{% block title%}Music Library - {{ campname }}{% endblock %}
+{% block head %}
+<script>
+        $(document).ready(function () {
+
+            $(function () {
+                $(".tablesorter").tablesorter({
+                    sortList: [[0, 0]]
+                });
+            });
+        });
+</script>
+{% endblock %}
+{% block breadcrumbs %}
+<li class="w3-hide-small"><a href="#" class="w3-hover-white">Music Library</a></li>
+{% endblock %}
+{% block content %}
+<h3>Music Library</h3>
+<p>Click on a work name to make a request to play it!</p>
+<table style="width:100%" class="tablesorter">
+    <thead>
+        <tr>
+            <th>Composer</th>
+            <th>Name</th>
+            <th>Instrumentation</th>
+        </tr>
+    </thead>
+    <tbody class="zebra-table">
+        {% if musics != None %}
+            {% for m in musics %}
+            <tr>
+                <td>{{ m.composer }}</td>
+                <td><a href="/user/{{ thisuser.userid }}/grouprequest/music/{{ m.musicid }}" class="w3-hover-white">{{ m.musicname }}</a></td>
+                <td></td>
+            </tr>
+            {% endfor %}
+        {% endif %}
+    </tbody>
+</table>
+{% endblock %}

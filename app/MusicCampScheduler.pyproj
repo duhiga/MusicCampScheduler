@@ -54,6 +54,7 @@
     <Content Include="requirements.txt" />
     <Content Include="templates\edituser.html" />
     <Content Include="templates\errorpage.html" />
+    <Content Include="templates\musiclibrary.html" />
     <Content Include="templates\objecteditor.html" />
     <Content Include="templates\useradmin.html" />
     <Content Include="templates\home.html" />

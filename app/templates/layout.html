@@ -40,7 +40,12 @@
                         isClicked = false;
                     }
                     if (data.url != 'none') {
-                        window.location = data.url;
+                        if (data.url == 'refresh') {
+                            location.reload()
+                        }
+                        else {
+                            window.location = data.url;
+                        }
                     }
                     else {
                         $('.spin_icon').hide();

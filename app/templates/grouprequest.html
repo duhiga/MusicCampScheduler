@@ -18,6 +18,9 @@
         }
     }
 
+    inst = '{{instrumentlist}}';
+    var instrumentlist = inst.split(',');
+
     /* this script handles all thisuser interaction in the group request page. Upon page load, it downloads all players
     in the camp including the instruments they play, all templates as stated by the config.xml, and the instruments
     this thisuser plays. it uses all of this data to populate drop-down boxes, depending on what the thisuser selects. */
@@ -66,6 +69,10 @@
         var thisuserinstruments = {{ thisuserinstruments_serialized|tojson }};
         console.log("Instruments played by this user:");
         console.log(thisuserinstruments);
+
+        var musics = {{ musics_serialized|tojson }};
+        console.log("Music Database:");
+        console.log(musics);
 
         var instrumentlist_string = '{{ instrumentlist_string }}';
 
@@ -142,11 +149,34 @@
         });
 
         //run when a user changes the select template dropdown
-        $(document).on("change", '#groupname', function () {
-            //get the user selected template and format it so we can iterate over it later
-            var grep_template = $.grep(grouptemplates, function (elt) {
-                return elt.grouptemplatename === $(groupname).val();
-            });
+        $(document).on("change", '.group_template_dropdown', function (e) {
+            var ob = $(this)
+            console.log('Value of the dropdown: ' + ob.val())
+            //get the user selected template or music and format it so we can iterate over it later
+            if (ob.attr('id') == 'musicid') {
+                var grep_template = $.grep(musics, function (elt) {
+                    return String(elt.musicid) === String(ob.val());
+                });
+                if (e.originalEvent) {
+                    $('#groupname').val('').change()
+                }
+                if ($('#musicid').val() == '') {
+                    $('#hidemusic').removeClass('hide');
+                }
+                else {
+                    $('#musicwritein').val('').change();
+                    $('#hidemusic').addClass('hide');
+                }
+            }
+            else if (ob.attr('id') == 'groupname') {
+                var grep_template = $.grep(grouptemplates, function (elt) {
+                    return String(elt.grouptemplatename) === String(ob.val());
+                });
+                if (e.originalEvent) {
+                    $('#musicid').val('').change()
+                }
+            }
+            console.log(grep_template)
             selectedTemplate = grep_template[0];
             console.log('Selected template is:');
             console.log(selectedTemplate);
@@ -168,7 +198,7 @@
                 $.each(selectedTemplate, function(key,value){
                     if ((key == primaryinstrument) && (value > 0)) {
                         console.log('found that the users primary instrument is in this group. Key: ' + key);
-                        var foundprimary = true;
+                        foundprimary = true;
                         console.log('Changing the associated user instrument to ' + key);
                         $('.instrument_dropdown[data-mapping=0]').val(key).change();
                     }
@@ -198,16 +228,22 @@
                 if ((instrumentlist_string.split(',').indexOf(key) > -1) && value > 0) {
                     console.log(key + ": "+String(value));
                     //if the current instrument we're looking at is the same as the one that we selected for the user, decrement it because we already have one player
-                    if (key == $(".instrument_dropdown[data-mapping=0]").val()) { value = value - 1; }
+                    if (key == $("[data-mapping=0][data-key='instrumentname']").val()) {
+                        value = value - 1; 
+                    }
                     if (value > 0) {
                         for (var i = 0; i < value; i++) {
-                            //addRow();
                             $('.instrument_dropdown[data-mapping=' + String(rowId - 1) + ']').val(key).change();
                         }
                     }
                 }
             });
         });
+        requestedmusicid = {{requestedmusic.musicid}};
+        if (requestedmusicid != 'None') {
+            $('#musicid').val(requestedmusicid).change();
+        }
+        
     });
 </script>
 {% endblock %}
@@ -267,13 +303,22 @@
     <p>
         Optional: Select a group template to autofill the page
         <select class="form-attribute group_template_dropdown" id="groupname">
-            <option value="" selected="selected">No Template</option>
+            <option value="" selected="selected"></option>
             {% for g in grouptemplates %}
             <option value="{{ g.grouptemplatename }}">{{ g.grouptemplatename }}</option>
             {% endfor %}
         </select>
     </p>
-    <p>Optional: What music do you want to play? <input class="form-attribute" type="text" id="music"></p>
+    <p>Or...</p>
+    <p>Optional: Select music to book it out and fill in the instrumentation. For more information on the music available, visit the <a href="/user/{{ thisuser.userid }}/musiclibrary/"><i class="fa fa-book"></i> Music Library</a>.
+        <select class="form-attribute group_template_dropdown" id="musicid">
+            <option value="">Other (Write your own):</option>
+            {% for m in musics %}
+            <option value="{{m.musicid}}">{{m.composer}} {% if m.musicname|length > 25 %}{{ m.musicname[0:25] }}...{% else %}{{ m.musicname }}{% endif %}</option>
+            {% endfor %}
+        </select><br />
+    <div id="hidemusic">Music: <input type="text" id="musicwritein"></div>
+    </p>
     <table id="playersTable">
         <!--Table Headers-->
         <tr>

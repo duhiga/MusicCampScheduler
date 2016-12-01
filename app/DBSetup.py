@@ -356,15 +356,16 @@ def importmusic(file):
     headers = reader.next()
     print(headers)
     for row in reader:
-        print('NEW ROW')
         thismusic = music()
         for header in headers:
             if header in getconfig('Instruments').split(",") and row[headers.index(header)] == '':
-                print('%s Found empty instrument slot, filling with 0' % header)
                 setattr(thismusic,header,0)
             elif row[headers.index(header)] != '':
-                print('%s Found non-empty slot, filling with %s' % (header, row[headers.index(header)]))
                 setattr(thismusic,header,row[headers.index(header)])
+            matchingtemplate = session.query(grouptemplate).filter(*[getattr(thismusic,i) == getattr(grouptemplate,i) for i in instrumentlist]).first()
+            if matchingtemplate is not None:
+                print('Found a template matching this music: %s' % matchingtemplate.grouptemplatename)
+                thismusic.grouptemplateid = matchingtemplate.grouptemplateid
         session.add(thismusic)
     session.commit()
     session.close()

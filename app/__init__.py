@@ -673,17 +673,17 @@ def musiclibrary(userid):
     thisuser = session.query(user).filter(user.userid == userid).first()
     if thisuser is None:
         return ('Did not find user in database. You have entered an incorrect URL address.')
-    try:
-        musics = session.query(music).all()
-        grouptemplates = session.query(grouptemplate).filter(grouptemplate.size == 'S').all()
-        session.close()
-        return render_template('musiclibrary.html', \
-                                thisuser=thisuser, \
-                                musics=musics, \
-                                grouptemplates=grouptemplates, \
-                                campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
-                                )
-    except Exception as ex:
+    
+    musics = session.query(music).all()
+    grouptemplates = session.query(grouptemplate).filter(grouptemplate.size == 'S').all()
+    session.close()
+    return render_template('musiclibrary.html', \
+                            thisuser=thisuser, \
+                            musics=musics, \
+                            grouptemplates=grouptemplates, \
+                            campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
+                            )
+    """except Exception as ex:
         log('Failed to display page to user %s %s with exception: %s.' % (thisuser.firstname, thisuser.lastname, ex))
         session.rollback()
         session.close()
@@ -691,13 +691,13 @@ def musiclibrary(userid):
                             thisuser=thisuser, \
                             campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
                             errormessage = 'Failed to display page with exception: %s.' % ex
-                            )
+                            )"""
 
 #Handles the group request page. If a user visits the page, it gives them a form to create a new group request. Pressing submit 
 #sends a post containing configuration data. Their group request is queued until an adminsitrator approves it and assigns it to 
 #a period.
 @app.route('/user/<userid>/grouprequest/', methods=['GET', 'POST'])
-def grouprequest(userid,periodid=None):
+def grouprequest(userid,periodid=None,musicid=None):
     
     session = Session()
     #gets the data associated with this user
@@ -758,6 +758,29 @@ def grouprequest(userid,periodid=None):
         #The below runs when a user visits the grouprequest page
         if request.method == 'GET':
         
+            #if this is the conductorpage, the user will need a list of the locations that are not being used in the period selected
+            if conductorpage == True:
+                locations_used_query = session.query(location.locationid).join(group).join(period).filter(period.periodid == periodid)
+                locations = session.query(location).filter(~location.locationid.in_(locations_used_query)).all()
+                musics_used_query = session.query(music.musicid).join(group).join(period).filter(period.periodid == periodid)
+                musics = session.query(music).filter(~music.musicid.in_(musics_used_query)).all()
+            else: 
+                locations = None
+                
+                musics = session.query(music).filter(or_(*[(getattr(music,getattr(i,'instrumentname')) > 0) for i in session.query(instrument.instrumentname).filter(instrument.userid == thisuser.userid, instrument.isactive == 1)])).all()
+            musics_serialized = [i.serialize for i in musics]
+            #checks if the requested music exists and sets it up for the page
+            if musicid is not None:
+                requestedmusic = session.query(music).filter(music.musicid == musicid).first()
+                if requestedmusic is None:
+                    return render_template('errorpage.html', \
+                                    thisuser=thisuser, \
+                                    campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
+                                    errormessage = ("You have requested music that could not be found in the database. Talk to the administrator." % (thisuser.grouprequestcount, getconfig('DailyGroupRequestLimit'), (now - datetime.datetime.strptime(getconfig('StartTime'), '%Y-%m-%d %H:%M')).days))
+                                    )
+            else:
+               requestedmusic = None
+
             if conductorpage == True:
                 #Finds all players who aren't already playing in this period
                 playersPlayingInPeriod = session.query(user.userid).join(groupassignment).join(group).filter(group.periodid == periodid)
@@ -771,16 +794,6 @@ def grouprequest(userid,periodid=None):
             for p in playersdump:
                 playersdump_serialized.append({'userid': p.userid, 'firstname': p.firstname, 'lastname': p.lastname,
                                                 'instrumentname': p.instrumentname, 'grade': p.grade, 'isprimary': p.isprimary})
-
-            #if this is the conductorpage, the user will need a list of the locations that are not being used in the period selected
-            if conductorpage == True:
-                locations_used_query = session.query(location.locationid).join(group).join(period).filter(period.periodid == periodid)
-                locations = session.query(location).filter(~location.locationid.in_(locations_used_query)).all()
-                musics_used_query = session.query(music.musicid).join(group).join(period).filter(period.periodid == periodid)
-                musics = session.query(music).filter(~music.musicid.in_(musics_used_query)).all()
-            else: 
-                locations = None
-                musics = session.query(music).all()
 
             #find all group templates and serialize them to prepare to inject into the javascript
             allgrouptemplates = session.query(grouptemplate).filter(grouptemplate.size == 'S').all()
@@ -815,6 +828,8 @@ def grouprequest(userid,periodid=None):
                                 thisperiod=thisperiod, \
                                 locations=locations, \
                                 musics=musics, \
+                                musics_serialized=musics_serialized, \
+                                requestedmusic=requestedmusic, \
                                 )
 
         #The below runs when a user presses "Submit" on the grouprequest page. It creates a group object with the configuraiton selected by 
@@ -986,7 +1001,12 @@ def conductorgrouprequest(userid,periodid):
     if thisuser.isconductor != 1:
         return ('You are not a conductor and cannot visit this page.')
     session.close()
-    return grouprequest(userid,periodid)
+    return grouprequest(userid,periodid,None)
+
+@app.route('/user/<userid>/grouprequest/music/<musicid>/', methods=['GET', 'POST'])
+def musicgrouprequest(userid,musicid):
+    return grouprequest(userid,None,musicid)
+
 
 #This page is used by an "announcer" to edit the announcement that users see when they open their homes
 @app.route('/user/<userid>/announcement/', methods=['GET', 'POST'])
@@ -1271,10 +1291,14 @@ def edituser(userid, targetuserid):
                     setattr(targetuser,key,value)
             session.merge(targetuser)
             session.commit()
+            newinstrument = False
             #for each instrument object in the receiving packet
             for i in content['objects']:
                 if i['instrumentid'] == 'new' and thisuser.isadmin == 1:
                     thisinstrument = instrument(userid = targetuser.userid)
+                    session.add(thisinstrument)
+                    log('Added new instrument for user %s' % targetuser.firstname)
+                    newinstrument = True
                 elif i['instrumentid'] != 'new':
                     thisinstrument = session.query(instrument).filter(instrument.instrumentid == i['instrumentid']).first()
                     if thisinstrument is None:
@@ -1289,8 +1313,6 @@ def edituser(userid, targetuserid):
                     session.rollback()
                     session.close()
                     return jsonify(message = 'You have submitted illegal parameters for your instrument. No changes have been made to your instrument listings.', url = 'none')
-                    session.add(thisinstrument)
-                    log('Added new instrument for user %s' % targetuser.firstname)
                 for key,value in i.iteritems():
                     if thisuser.isadmin != 1 and key != isactive and key != isprimary:
                         session.rollback()
@@ -1309,7 +1331,10 @@ def edituser(userid, targetuserid):
                     url = ('/user/' + str(thisuser.userid) + '/edituser/' + str(targetuser.userid) + '/')
                     message = 'none'
                 else:
-                    url = 'none'
+                    if newinstrument == True:
+                        url = 'refresh'
+                    else:
+                        url = 'none'
                     message = 'none'
             else:
                 url = 'none'

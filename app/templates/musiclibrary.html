@@ -31,8 +31,24 @@
             {% for m in musics %}
             <tr>
                 <td>{{ m.composer }}</td>
-                <td><a href="/user/{{ thisuser.userid }}/grouprequest/music/{{ m.musicid }}" class="w3-hover-white">{{ m.musicname }}</a></td>
-                <td></td>
+                <td><a href="/user/{{ thisuser.userid }}/grouprequest/music/{{ m.musicid }}">
+                    <div class="w3-hide-medium w3-hide-large">{% if m.musicname|length > 25 %}{{ m.musicname[0:25] }}...{% else %}{{ m.musicname }}{% endif %}</div><div class="w3-hide-small">{{ m.musicname }}</div>
+                    </a></td>
+                <td>
+                    {% if m.grouptemplateid != None %}
+                        {% for t in grouptemplates %}
+                            {% if m.grouptemplateid == t.grouptemplateid %}
+                            {{t.grouptemplatename}}
+                            {% endif %}
+                        {% endfor %}
+                    {% else %}
+                        {% for i in instrumentlist %}
+                            {% if m[i] > 0 %}
+                                {{i[0:2]}}: {{m[i]}}
+                            {% endif %}
+                        {% endfor %}
+                    {% endif %}
+                </td>
             </tr>
             {% endfor %}
         {% endif %}

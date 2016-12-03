@@ -22,24 +22,49 @@
             console.log("Grouptemplates:");
             console.log(grouptemplates);
 
+            var musics = {{ musics_serialized|tojson }};
+            console.log("Music Database:");
+            console.log(musics);
+
+            var instrumentlist_string = '{{ instrumentlist_string }}'
+
             //run when a user changes the select template dropdown
-            $(document).on("change", '#group_template_dropdown', function () {
+            $(document).on("change", '.group_template_dropdown', function (e) {
                 //get the user selected template and format it so we can iterate over it later
-                var grep_template = $.grep(grouptemplates, function (elt) {
-                    return elt.grouptemplatename === $(group_template_dropdown).val();
-                });
+                var ob = $(this);
+                console.log('Value of the dropdown: ' + ob.val());
+                if (ob.attr('id') == 'musicid') {
+                    console.log('Selected objects id is ' + ob.attr('id'))
+                    var grep_template = $.grep(musics, function (elt) {
+                        return String(elt.musicid) === String(ob.val());
+                    });
+                    if ($('#musicid').val() == '') {
+                        $('#hidemusic').show();
+                        $('#musicwritein').addClass('form-validate');
+                    }
+                    else {
+                        $('#musicwritein').val('').change();
+                        $('#hidemusic').hide();
+                        $('#musicwritein').removeClass('form-validate');
+                    }
+                }
+                else if (ob.attr('id') == 'grouptemplatename') {
+                    var grep_template = $.grep(grouptemplates, function (elt) {
+                        return String(elt.grouptemplatename) === String(ob.val());
+                    });
+                    if (e.originalEvent) {
+                        $('#musicid').val('').change();
+                    }
+                }
+
                 selectedTemplate = grep_template[0];
                 console.log('Selected template is:');
                 console.log(selectedTemplate);
-                $("#groupname").val(selectedTemplate.grouptemplatename)
-                $("#minimumlevel").val(selectedTemplate.minimumlevel).change()
-                $("#maximumleveln").val(selectedTemplate.maximumlevel).change()
-                $("#locationid").val(selectedTemplate.defaultlocationid).change()
                 //for each instrument type in the group template
                 $.each(selectedTemplate, function(key,value){
-                    //make sure it's an instrument type and not other associated metadata
-                    if (key != 'grouptemplateid' && key != 'grouptemplatename' && key != 'size') {
-                        //if the current instrument we're looking at is the same as the one that we selected for the user, decrement it because we already have one player
+
+                    if (instrumentlist_string.split(',').indexOf(key) > -1) {
+                        console.log(key + ": "+String(value));
                         $('#' + key).val(0).change();
                         if (value > 0) {
                             $('#' + key).val(value).change();
@@ -64,7 +89,7 @@
     {% block content %}
     <p>
         Optional: Select a group template to autofill the page
-        <select id="group_template_dropdown">
+        <select class="group_template_dropdown" id="grouptemplatename">
             <option value=""></option>
             {% for g in grouptemplates %}
             <option value="{{ g.grouptemplatename }}">{{ g.grouptemplatename }}</option>
@@ -87,7 +112,18 @@
         </tr>
         <tr>
             <th>Music</th>
-            <td><input type="text" class="form-attribute form-validate" id="music"></td>
+            <td>
+                <select class="form-attribute group_template_dropdown" id="musicid">
+                    <option value="">Other (Write your own):</option>
+                    {% for m in musics %}
+                    <option value="{{m.musicid}}">{{m.composer}} {% if m.musicname|length > 25 %}{{ m.musicname[0:18] }}...{% else %}{{ m.musicname }}{% endif %}</option>
+                    {% endfor %}
+                </select>
+            </td>
+        </tr>
+        <tr id="hidemusic">
+            <th>Music</th>
+            <td><input type="text" class="form-attribute form-validate" id="musicwritein"></td>            
         </tr>
         <tr>
             <th>Location</th>

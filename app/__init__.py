@@ -696,6 +696,33 @@ def musiclibrary(userid):
                             errormessage = 'Failed to display page with exception: %s.' % ex
                             )"""
 
+@app.route('/user/<userid>/musiclibrary/<musicid>/')
+def musicdetails(userid,musicid):
+
+    session = Session()
+    #gets the data associated with this user
+    thisuser = session.query(user).filter(user.userid == userid).first()
+    if thisuser is None:
+        return ('Did not find user in database. You have entered an incorrect URL address.')
+    
+    thismusic = session.query(music).filter(music.musicid == musicid).first()
+    if thismusic is None:
+        session.close()
+        return render_template('errorpage.html', \
+                            thisuser=thisuser, \
+                            campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
+                            errormessage = 'The music you selected does not exist in the database.' % ex
+                            )
+
+    grouptemplates = session.query(grouptemplate).filter(grouptemplate.size == 'S').all()
+    session.close()
+    return render_template('musicdetails.html', \
+                            thisuser=thisuser, \
+                            thismusic=thismusic, \
+                            grouptemplates=grouptemplates, \
+                            campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
+                            )
+
 #Handles the group request page. If a user visits the page, it gives them a form to create a new group request. Pressing submit 
 #sends a post containing configuration data. Their group request is queued until an adminsitrator approves it and assigns it to 
 #a period.
@@ -769,8 +796,8 @@ def grouprequest(userid,periodid=None,musicid=None):
             musics = session.query(music).filter(~music.musicid.in_(musics_used_query)).all()
         else: 
             locations = None
-                
             musics = session.query(music).filter(or_(*[(getattr(music,getattr(i,'instrumentname')) > 0) for i in session.query(instrument.instrumentname).filter(instrument.userid == thisuser.userid, instrument.isactive == 1)])).all()
+        
         musics_serialized = [i.serialize for i in musics]
         #checks if the requested music exists and sets it up for the page
         if musicid is not None:
@@ -1457,6 +1484,10 @@ def instrumentation(userid,periodid):
                 #Get a list of the locations that are not being used in the period selected
                 locations_used_query = session.query(location.locationid).join(group).join(period).filter(period.periodid == periodid)
                 locations = session.query(location).filter(~location.locationid.in_(locations_used_query)).all()
+                #Get a list of the available music not being used in the period selected
+                musics_used_query = session.query(music.musicid).join(group).join(period).filter(period.periodid == periodid)
+                musics = session.query(music).filter(~music.musicid.in_(musics_used_query)).all()
+                musics_serialized = [i.serialize for i in musics]
                 #get a list of conductors to fill the dropdown on the page
                 everyone_playing_in_periodquery = session.query(user.userid).join(groupassignment).join(group).join(period).filter(period.periodid == thisperiod.periodid)
                 conductors = session.query(user).join(instrument, user.userid == instrument.userid).filter(instrument.instrumentname == 'Conductor', instrument.isactive == 1).filter(~user.userid.in_(everyone_playing_in_periodquery)).all()
@@ -1475,6 +1506,9 @@ def instrumentation(userid,periodid):
                                     thisperiod=thisperiod, \
                                     locations=locations, \
                                     maximumlevel=int(getconfig('MaximumLevel')), \
+                                    musics=musics, \
+                                    musics_serialized=musics_serialized, \
+                                    instrumentlist_string=getconfig('Instruments'), \
                                     )
     
             #The below runs when a user presses "Submit" on the instrumentation page. It creates a group object with the configuraiton selected by 

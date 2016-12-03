@@ -150,8 +150,8 @@
 
         //run when a user changes the select template dropdown
         $(document).on("change", '.group_template_dropdown', function (e) {
-            var ob = $(this)
-            console.log('Value of the dropdown: ' + ob.val())
+            var ob = $(this);
+            console.log('Value of the dropdown: ' + ob.val());
             //get the user selected template or music and format it so we can iterate over it later
             if (ob.attr('id') == 'musicid') {
                 var grep_template = $.grep(musics, function (elt) {
@@ -239,8 +239,8 @@
                 }
             });
         });
-        requestedmusicid = {{requestedmusic.musicid}};
-        if (requestedmusicid != 'None') {
+        requestedmusicid = '{{requestedmusic.musicid}}';
+        if (requestedmusicid != 'None' && requestedmusicid != '') {
             $('#musicid').val(requestedmusicid).change();
         }
         
@@ -317,13 +317,13 @@
             <option value="{{m.musicid}}">{{m.composer}} {% if m.musicname|length > 25 %}{{ m.musicname[0:25] }}...{% else %}{{ m.musicname }}{% endif %}</option>
             {% endfor %}
         </select><br />
-    <div id="hidemusic">Music: <input type="text" class="form-attribute" id="musicwritein"></div>
+    <div id="hidemusic">Music (optional): <input type="text" class="form-attribute" id="musicwritein"></div>
     </p>
     <table id="playersTable">
         <!--Table Headers-->
         <tr>
             <th>Instrument</th>
-            <th>Player Name</th>
+            <th>Player (Optional)</th>
         </tr>
         {% if not conductorpage %}
         <tr>

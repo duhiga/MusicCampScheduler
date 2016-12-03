@@ -431,6 +431,11 @@ def editgroup(userid,groupid,periodid=None):
                 playersdump_serialized.append({'userid': p.userid, 'firstname': p.firstname, 'lastname': p.lastname,
                     'instrumentname': p.instrumentname, 'grade': p.grade, 'isprimary': p.isprimary})
 
+            #Get a list of the available music not being used in the period selected
+            musics_used_query = session.query(music.musicid).join(group).join(period).filter(period.periodid == periodid)
+            musics = session.query(music).filter(~music.musicid.in_(musics_used_query)).all()
+            musics_serialized = [i.serialize for i in musics]
+            thismusic = session.query(music).filter(music.musicid == thisgroup.musicid).first()
             #find all periods from now until the end of time to display to the user
             periods = session.query(period).order_by(period.starttime).filter(period.starttime > datetime.datetime.now()).all()
             locations_used_query = session.query(location.locationid).join(group).join(period).filter(period.periodid == periodid)
@@ -458,6 +463,10 @@ def editgroup(userid,groupid,periodid=None):
                                 maximumlevel=int(getconfig('MaximumLevel')), \
                                 grouptemplates=grouptemplates, \
                                 grouptemplates_serialized=grouptemplates_serialized, \
+                                musics=musics, \
+                                musics_serialized=musics_serialized, \
+                                thismusic=thismusic, \
+                                instrumentlist_string=getconfig('Instruments'), \
                                 )
 
         if request.method == 'DELETE':

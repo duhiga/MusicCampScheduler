@@ -161,11 +161,11 @@
                     $('#groupname').val('').change()
                 }
                 if ($('#musicid').val() == '') {
-                    $('#hidemusic').removeClass('hide');
+                    $('#hidemusic').show();
                 }
                 else {
                     $('#musicwritein').val('').change();
-                    $('#hidemusic').addClass('hide');
+                    $('#hidemusic').hide();
                 }
             }
             else if (ob.attr('id') == 'groupname') {
@@ -317,7 +317,7 @@
             <option value="{{m.musicid}}">{{m.composer}} {% if m.musicname|length > 25 %}{{ m.musicname[0:25] }}...{% else %}{{ m.musicname }}{% endif %}</option>
             {% endfor %}
         </select><br />
-    <div id="hidemusic">Music: <input type="text" id="musicwritein"></div>
+    <div id="hidemusic">Music: <input type="text" class="form-attribute" id="musicwritein"></div>
     </p>
     <table id="playersTable">
         <!--Table Headers-->

@@ -1467,7 +1467,7 @@ A small rundown of how to use the web app:\n
 -You can click into group names to to see possible substitute players and get further details, or a time period to see the full group listing for that time. Clicking the home button in the top left of your screen will always bring you back to your schedule on the current day.
 -You can look at your schedule for future and past days drop down date picker, and the forward and back links on your home screen.
 -If you're going to be absent for a session or meal, plesae notify us at least one day before by navigating to a future date, clicking the tools tab on your homepage, then clicking the "Mark me as absent" button next to the corresponding time.
--You can request groups with the request group link on the left (on a mobile, click on the hamburger menu on the top left of the screen). Fill in your desired instrumentation, and any players that you'd like to play with and press submit. Leaving blanks for player names is fine, you'll be matched up with other players at the end of the day.\n
+-You can request groups in a few ways. You can create a custom group with the request group link on the left (on a mobile, click on the hamburger menu on the top left of the screen). Or, you can visit the music library with the link on the left, select music you'd like to play and click the request button there. When you're on the group requset page, fill in your desired information, and press submit. Leaving blanks for other player names is fine and encouraged, you'll be matched up with other players at the end of the day.\n
 If you have any questions, please reply to this email or contact us on %s.\n
 Thanks!\n
 %s %s
@@ -1498,105 +1498,108 @@ def instrumentation(userid,periodid):
     thisuser = session.query(user).filter(user.userid == userid).first()
     if thisuser is None:
         return ('Did not find user in database. You have entered an incorrect URL address.')
-    try:
-        #check if this user is a conductor, if they are not, deny them.
-        if thisuser.isconductor != 1:
-            return ('You are not allowed to view this page.')
-        else:
-            #gets the data associated with this period
-            thisperiod = session.query(period).filter(period.periodid == periodid).first()
-            if thisperiod is None:
-                return ('Could not find the period requested.')
+    #try:
+    #check if this user is a conductor, if they are not, deny them.
+    if thisuser.isconductor != 1:
+        return ('You are not allowed to view this page.')
+    else:
+        #gets the data associated with this period
+        thisperiod = session.query(period).filter(period.periodid == periodid).first()
+        if thisperiod is None:
+            return ('Could not find the period requested.')
 
-            #The below runs when a user visits the instrumentation page
-            if request.method == 'GET':
+        #The below runs when a user visits the instrumentation page
+        if request.method == 'GET':
 
-                #Get a list of the locations that are not being used in the period selected
-                locations_used_query = session.query(location.locationid).join(group).join(period).filter(period.periodid == periodid)
-                locations = session.query(location).filter(~location.locationid.in_(locations_used_query)).all()
-                #Get a list of the available music not being used in the period selected
-                musics_used_query = session.query(music.musicid).join(group).join(period).filter(period.periodid == periodid)
-                musics = session.query(music).filter(~music.musicid.in_(musics_used_query)).all()
-                musics_serialized = [i.serialize for i in musics]
-                #get a list of conductors to fill the dropdown on the page
-                everyone_playing_in_periodquery = session.query(user.userid).join(groupassignment).join(group).join(period).filter(period.periodid == thisperiod.periodid)
-                conductors = session.query(user).join(instrument, user.userid == instrument.userid).filter(instrument.instrumentname == 'Conductor', instrument.isactive == 1).filter(~user.userid.in_(everyone_playing_in_periodquery)).all()
-                #get the list of instruments from the config file
-                instrumentlist = getconfig('Instruments').split(",")
-                #find all large group templates and serialize them to prepare to inject into the javascript
-                grouptemplates = session.query(grouptemplate).filter(grouptemplate.size == 'L').all()
-                grouptemplates_serialized = [i.serialize for i in grouptemplates]
+            #Get a list of the locations that are not being used in the period selected
+            locations_used_query = session.query(location.locationid).join(group).join(period).filter(period.periodid == periodid)
+            locations = session.query(location).filter(~location.locationid.in_(locations_used_query)).all()
+            #Get a list of the available music not being used in the period selected
+            musics_used_query = session.query(music.musicid).join(group).join(period).filter(period.periodid == periodid)
+            musics = session.query(music).filter(~music.musicid.in_(musics_used_query)).all()
+            musics_serialized = [i.serialize for i in musics]
+            #get a list of conductors to fill the dropdown on the page
+            everyone_playing_in_periodquery = session.query(user.userid).join(groupassignment).join(group).join(period).filter(period.periodid == thisperiod.periodid)
+            conductors = session.query(user).join(instrument, user.userid == instrument.userid).filter(instrument.instrumentname == 'Conductor', instrument.isactive == 1).filter(~user.userid.in_(everyone_playing_in_periodquery)).all()
+            #get the list of instruments from the config file
+            instrumentlist = getconfig('Instruments').split(",")
+            #find all large group templates and serialize them to prepare to inject into the javascript
+            grouptemplates = session.query(grouptemplate).filter(grouptemplate.size == 'L').all()
+            grouptemplates_serialized = [i.serialize for i in grouptemplates]
+            session.close()
+            return render_template('instrumentation.html', \
+                                thisuser=thisuser, \
+                                grouptemplates = grouptemplates, \
+                                conductors=conductors, \
+                                grouptemplates_serialized=grouptemplates_serialized, \
+                                campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
+                                thisperiod=thisperiod, \
+                                locations=locations, \
+                                maximumlevel=int(getconfig('MaximumLevel')), \
+                                musics=musics, \
+                                musics_serialized=musics_serialized, \
+                                instrumentlist_string=getconfig('Instruments'), \
+                                )
+
+        #The below runs when a user presses "Submit" on the instrumentation page. It creates a group object with the configuraiton selected by 
+        #the user, and creates groupassignments if needed
+        if request.method == 'POST':
+            #format the packet received from the server as JSON
+            content = request.json
+            session = Session()
+            log('Grouprequest received. Whole content of JSON returned is: %s' % content)
+            #establish the 'grouprequest' group object. This will be built up from the JSON packet, and then added to the database
+            grouprequest = group(ismusical = 1, requesteduserid = userid, periodid = thisperiod.periodid, status = "Queued", requesttime = datetime.datetime.now())
+            #check if a group already exists for this period with the same name
+            namecheck = session.query(group).filter(group.groupname == content['groupname'], group.periodid == thisperiod.periodid).first()
+            if namecheck is not None:
+                url = 'none'
+                log('Instrumentation creation failed, duplicate name for this period')
                 session.close()
-                return render_template('instrumentation.html', \
-                                    thisuser=thisuser, \
-                                    grouptemplates = grouptemplates, \
-                                    conductors=conductors, \
-                                    grouptemplates_serialized=grouptemplates_serialized, \
-                                    campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
-                                    thisperiod=thisperiod, \
-                                    locations=locations, \
-                                    maximumlevel=int(getconfig('MaximumLevel')), \
-                                    musics=musics, \
-                                    musics_serialized=musics_serialized, \
-                                    instrumentlist_string=getconfig('Instruments'), \
-                                    )
-    
-            #The below runs when a user presses "Submit" on the instrumentation page. It creates a group object with the configuraiton selected by 
-            #the user, and creates groupassignments if needed
-            if request.method == 'POST':
-                #format the packet received from the server as JSON
-                content = request.json
-                session = Session()
-                log('Grouprequest received. Whole content of JSON returned is: %s' % content)
-                #establish the 'grouprequest' group object. This will be built up from the JSON packet, and then added to the database
-                grouprequest = group(ismusical = 1, requesteduserid = userid, periodid = thisperiod.periodid, status = "Queued", requesttime = datetime.datetime.now())
-                #check if a group already exists for this period with the same name
-                namecheck = session.query(group).filter(group.groupname == content['groupname'], group.periodid == thisperiod.periodid).first()
-                if namecheck is not None:
+                session.rollback()
+                return jsonify(message = 'Could not create instrumentation, there is already a group named %s in this period.' % namecheck.groupname, url = url)
+            #for each player object in the players array in the JSON packet
+            for key, value in content.items():
+                if (key == 'groupname' or key == 'maximumlevel' or key == 'mininumlevel') and value == '':
                     url = 'none'
-                    log('Instrumentation creation failed, duplicate name for this period')
+                    log('Instrumentation creation failed, misconfiguration')
                     session.close()
                     session.rollback()
-                    return jsonify(message = 'Could not create instrumentation, there is already a group named %s in this period.' % namecheck.groupname, url = url)
-                #for each player object in the players array in the JSON packet
-                for key, value in content.items():
-                    if (key == 'groupname' or key == 'music' or key == 'maximumlevel' or key == 'mininumlevel') and value == '':
-                        url = 'none'
-                        log('Instrumentation creation failed, misconfiguration')
-                        session.close()
-                        session.rollback()
-                        return jsonify(message = 'Could not create instrumentation, you must enter a groupname, music, maximumlevel and mininumlevel', url = url)
+                    return jsonify(message = 'Could not create instrumentation, you must enter a groupname, music, maximumlevel and mininumlevel', url = url)
+                if value != '' and value is not None and value != 'null' and value != 'None':
                     setattr(grouprequest, key, value)
-                #create the group and the groupassinments configured above in the database
-                session.add(grouprequest)
-                #if the user plays the "conductor" instrument (i.e. they are actually a conductor) assign them to this group
-                if content['conductoruserid'] is not None and content['conductoruserid'] != 'null' and content['conductoruserid'] != '':
-                    userconductor = session.query(user).join(instrument, user.userid == instrument.userid).filter(user.userid == content['conductoruserid'], instrument.instrumentname == "Conductor", instrument.isactive == 1, user.isactive == 1, user.arrival <= thisperiod.starttime, user.departure >= thisperiod.endtime).first()
-                    if userconductor is not None:
-                        userplayinginperiod = session.query(user.userid).join(groupassignment).join(group).join(period).filter(period.periodid == thisperiod.periodid, user.userid == content['conductoruserid']).first()
-                        if userplayinginperiod is None:
-                            conductorassignment = groupassignment(userid = content['conductoruserid'], groupid = grouprequest.groupid, instrumentname = 'Conductor')
-                            session.add(conductorassignment)
-                        else:
-                            url = 'none'
-                            log('Instrumentation creation failed, conductor is already assigned to a group')
-                            session.close()
-                            session.rollback()
-                            return jsonify(message = 'Could not create instrumentation, %s is already assigned to a group during this period.' % userconductor.firstname, url = url)
+                else:
+                    setattr(grouprequest, key, None)
+            #create the group and the groupassinments configured above in the database
+            session.add(grouprequest)
+            #if the user plays the "conductor" instrument (i.e. they are actually a conductor) assign them to this group
+            if content['conductoruserid'] is not None and content['conductoruserid'] != 'null' and content['conductoruserid'] != '':
+                userconductor = session.query(user).join(instrument, user.userid == instrument.userid).filter(user.userid == content['conductoruserid'], instrument.instrumentname == "Conductor", instrument.isactive == 1, user.isactive == 1, user.arrival <= thisperiod.starttime, user.departure >= thisperiod.endtime).first()
+                if userconductor is not None:
+                    userplayinginperiod = session.query(user.userid).join(groupassignment).join(group).join(period).filter(period.periodid == thisperiod.periodid, user.userid == content['conductoruserid']).first()
+                    if userplayinginperiod is None:
+                        conductorassignment = groupassignment(userid = content['conductoruserid'], groupid = grouprequest.groupid, instrumentname = 'Conductor')
+                        session.add(conductorassignment)
                     else:
                         url = 'none'
-                        log('Instrumentation creation failed, conductor user is not set up properly')
+                        log('Instrumentation creation failed, conductor is already assigned to a group')
                         session.close()
                         session.rollback()
-                        return jsonify(message = 'The user requested as the conductor is not set up to be a conductor in the database.', url = url)
-                session.commit()
-                #send the URL for the group that was just created to the user, and send them to that page
-                url = ('/user/' + str(thisuser.userid) + '/group/' + str(grouprequest.groupid) + '/')
-                log('Sending user to URL: %s' % url)
-                session.close()
-                return jsonify(message = 'none', url = url)
+                        return jsonify(message = 'Could not create instrumentation, %s is already assigned to a group during this period.' % userconductor.firstname, url = url)
+                else:
+                    url = 'none'
+                    log('Instrumentation creation failed, conductor user is not set up properly')
+                    session.close()
+                    session.rollback()
+                    return jsonify(message = 'The user requested as the conductor is not set up to be a conductor in the database.', url = url)
+            session.commit()
+            #send the URL for the group that was just created to the user, and send them to that page
+            url = ('/user/' + str(thisuser.userid) + '/group/' + str(grouprequest.groupid) + '/')
+            log('Sending user to URL: %s' % url)
+            session.close()
+            return jsonify(message = 'none', url = url)
 
-    except Exception as ex:
+    """except Exception as ex:
         log('Failed to display page to user %s %s with exception: %s.' % (thisuser.firstname, thisuser.lastname, ex))
         session.rollback()
         session.close()
@@ -1604,7 +1607,7 @@ def instrumentation(userid,periodid):
                             thisuser=thisuser, \
                             campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
                             errormessage = 'Failed to display page with exception: %s.' % ex
-                            )
+                            )"""
 
 #Application setup page. This needs to be run at the start, just after the app has been deployed. The user uploads config files and user lists to populate the database.
 @app.route('/user/<userid>/setup/', methods=["GET", "POST"])

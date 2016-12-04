@@ -46,6 +46,7 @@
                         $('#musicwritein').val('').change();
                         $('#hidemusic').hide();
                         $('#musicwritein').removeClass('form-validate');
+                        $('#grouptemplatename').val('').change();
                     }
                 }
                 else if (ob.attr('id') == 'grouptemplatename') {
@@ -69,6 +70,12 @@
                         if (value > 0) {
                             $('#' + key).val(value).change();
                         }
+                    }
+                    else if (key == 'grouptemplatename') {
+                        $('#groupname').val(value).change();
+                    }
+                    else if (key == 'defaultlocationid') {
+                        $('#locationid').val(value).change();
                     }
                 });
             });

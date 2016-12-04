@@ -114,6 +114,7 @@
                         }
                     }
                     if (key == 'defaultlocationid' && value != '' && value != 'None' && value != 'null') {
+                        console.log('Changing locaiton to ' + value)
                         $('#locationid').val(value).change();
                     }
                 });
@@ -343,7 +344,7 @@
             </td>
         </tr>
         <tr id="hidemusic">
-            <th>Music</th>
+            <th>Music Write-in</th>
             <td class="w3-hide-small">{% if thisgroup.musicwritein != None %}{{ thisgroup.musicwritein }}{% endif %}</td>
             <td><input type="text" class="form-attribute form-validate" id="musicwritein" value="{% if thisgroup.musicwritein != None %}{{ thisgroup.musicwritein }}{% endif %}"></td>
         </tr>

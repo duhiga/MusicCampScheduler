@@ -52,8 +52,10 @@
     <Content Include="js\jquery-3.1.1.min.js" />
     <Content Include="js\jquery.tablesorter.min.js" />
     <Content Include="requirements.txt" />
+    <Content Include="templates\musicdetails.html" />
     <Content Include="templates\edituser.html" />
     <Content Include="templates\errorpage.html" />
+    <Content Include="templates\musiclibrary.html" />
     <Content Include="templates\objecteditor.html" />
     <Content Include="templates\useradmin.html" />
     <Content Include="templates\home.html" />

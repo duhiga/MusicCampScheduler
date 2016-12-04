@@ -3,6 +3,7 @@
 {% block head %}
 <script>
     function validate(ob) {
+        /*
         var foundempty = false
         $('[data-mapping=' + ob.data('mapping') + ']').each(function () {
             if (!($(this).hasClass('form-validate'))) {
@@ -22,6 +23,8 @@
         else {
             return false;
         }
+    }*/
+        return true;
     }
 
     $(document).ready(function () {
@@ -43,7 +46,6 @@
 <h1>WARNING</h1>
 <p>Do <strong>NOT</strong> mess around in here without knowing what you're doing. There's very little form validation, and you can really screw things up if you make any mistakes. Use extreme caution.</p>
 <h2>Select a {{ type }} to Edit</h2>
-
     {% for key, value in object_dict.iteritems() %}
         {% if key == table + 'name' %}
             {% set name = key %}

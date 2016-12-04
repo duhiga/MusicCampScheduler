@@ -35,6 +35,12 @@
             var grouptemplates = {{ grouptemplates_serialized|tojson }};
             {% endif %}
 
+            var musics = {{ musics_serialized|tojson }};
+            console.log("Music Database:");
+            console.log(musics);
+
+            var instrumentlist_string = '{{ instrumentlist_string }}'
+            var musicwritein = '{% if thisgroup.musicwritein != None %}{{ thisgroup.musicwritein }}{% endif %}'
             var uid = 0
 
             //this function updates the table slot containing the total number of players in the group.
@@ -71,13 +77,21 @@
             console.log(grouptemplates)
             //run when a user changes the select template dropdown
             $(document).on("click", '.group_template_button', function () {
+                var ob = $(this);
                 var templateid = $(this).attr('id');
                 console.log('Template selected with id: ' + templateid)
 
-                //get the user selected template and format it so we can iterate over it later
-                var grep_template = $.grep(grouptemplates, function (elt) {
-                    return elt.grouptemplateid == templateid;
-                });
+                if (ob.attr('id') == 'apply_music') {
+                    var grep_template = $.grep(musics, function (elt) {
+                        return String(elt.musicid) === String($('#musicid').val());
+                    });
+                }
+                else {
+                    var grep_template = $.grep(grouptemplates, function (elt) {
+                        return String(elt.grouptemplateid) == String(templateid);
+                    });
+                }
+
                 selectedTemplate = grep_template[0];
                 console.log('Selected template is:');
                 console.log(selectedTemplate);
@@ -104,7 +118,6 @@
                     }
                 });
                 w3_close();
-                
             });
 
             //when user changes any instrument number drop down boxes
@@ -125,6 +138,26 @@
                 } 
             });
             
+            $(document).on("change", '#musicid', function () {
+                if ($(this).val() == '') {
+                    $('#hidemusic').show();
+                    $('#apply_music').hide();
+                    $('#musicwritein').val(musicwritein).change();
+                }
+                else {
+                    $('#musicwritein').val('').change();
+                    $('#hidemusic').hide();
+                    $('#apply_music').show();
+                }
+            });
+            if ($('#musicid').val() != '') {
+                $('#hidemusic').hide();
+                $('#apply_music').show();
+            }
+            else {
+                $('#apply_music').hide();
+            }
+
             //when user changes the period dropdown box, reload the page with data from the new period
             $(document).on("change", '#periodid', function () {
                 console.log('User selected period ' + $(this).val() + ', reloading page for that period');
@@ -294,8 +327,25 @@
         </tr>
         <tr>
             <th>Music</th>
-            <td class="w3-hide-small">{{ thisgroup.music }}</td>
-            <td><input type="text" id="music" class="form-attribute" value="{{ thisgroup.music }}"></td>
+            <td class="w3-hide-small">{% if thismusic != None %}{{ thismusic.composer }} {% if thismusic.musicname|length > 25 %}{{ thismusic.musicname[0:18] }}...{% else %}{{ thismusic.musicname }}{% endif %}{% endif %}</td>
+            <td>
+                <select class="form-attribute" id="musicid">
+                    <option value="">Other (Write your own):</option>
+                    {% for m in musics %}
+                    {% if m.musicid == thisgroup.musicid %}
+                    <option selected="selected" value="{{m.musicid}}">{{m.composer}} {% if m.musicname|length > 25 %}{{ m.musicname[0:18] }}...{% else %}{{ m.musicname }}{% endif %}</option>
+                    {% else %}}
+                    <option value="{{m.musicid}}">{{m.composer}} {% if m.musicname|length > 25 %}{{ m.musicname[0:18] }}...{% else %}{{ m.musicname }}{% endif %}</option>
+                    {% endif %}
+                    {% endfor %}
+                </select>
+                <button type="button" id="apply_music" class="group_template_button">Apply Instrumentation</button>
+            </td>
+        </tr>
+        <tr id="hidemusic">
+            <th>Music</th>
+            <td class="w3-hide-small">{% if thisgroup.musicwritein != None %}{{ thisgroup.musicwritein }}{% endif %}</td>
+            <td><input type="text" class="form-attribute form-validate" id="musicwritein" value="{% if thisgroup.musicwritein != None %}{{ thisgroup.musicwritein }}{% endif %}"></td>
         </tr>
         <tr>
             <th>Period</th>

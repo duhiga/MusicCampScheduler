@@ -1,0 +1,54 @@
+{% extends "layout.html" %}
+{% block title%}Music Library - {{ campname }}{% endblock %}
+{% block breadcrumbs %}
+<li class="w3-hide-small"><a href="/user/{{ thisuser.userid }}/musiclibrary/" class="w3-hover-white">Music Library</a></li>
+<li class="w3-hide-small"><a href="#" class="w3-hover-white">Music Details</a></li>
+{% endblock %}
+{% block content %}
+<h3>Music Details</h3>
+<table style="width:100%" class="tablesorter">
+    <tr>
+        <th>Composer</th>
+        <td>{{ thismusic.composer }}</td>
+    </tr>
+    <tr>
+        <th>Work</th>
+        <td>{{ thismusic.musicname }}</td>
+    </tr>
+    <tr>
+        <th>Source</th>
+        <td>{{ thismusic.source }}</td>
+    </tr>
+    <tr>
+        <th>Instrumentation</th>
+        <td>
+            {% if thismusic.grouptemplateid != None %}
+            {% for t in grouptemplates %}
+            {% if thismusic.grouptemplateid == t.grouptemplateid %}
+            {{t.grouptemplatename}}
+            {% endif %}
+            {% endfor %}
+            {% else %}
+            {% for i in instrumentlist %}
+            {% if thismusic[i] > 0 %}
+            {{i}}: {{thismusic[i]}}
+            {% endif %}
+            {% endfor %}
+            {% endif %}
+        </td>
+    </tr>
+    {% if thismusic.link != None %}
+    <tr>
+        <th>Sheet Music</th>
+        <td><a href="{{ thismusic.link }}">IMSLP</a></td>
+    </tr>
+    {% endif %}
+    {% if thismusic.notes != None %}
+    <tr>
+        <th>Notes</th>
+        <td>{{ thismusic.notes }}</td>
+    </tr>
+    {% endif %}
+</table>
+<h3><a href="/user/{{ thisuser.userid }}/grouprequest/music/{{ thismusic.musicid }}">Request to play this work</a></h3>
+{% endblock %}

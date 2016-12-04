@@ -105,6 +105,10 @@ div.panel.show {
     display: none;
 }
 
+.hide {
+    display: none;
+}
+
 .scrollable_table {
     overflow-x: auto;
 }

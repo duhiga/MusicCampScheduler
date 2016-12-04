@@ -52,8 +52,10 @@
                     <td>
                         {% if thisgroup.musicid != None %}
                         <a href="/user/{{ thisuser.userid }}/musiclibrary/{{ thisgroup.musicid }}/"><i class="fa fa-book"></i>{{ thismusic.composer }}: {{ thismusic.musicname }}</a>
-                        {% else %}
+                        {% elif thisgroup.musicwritein != None %}
                         {{ thisgroup.musicwritein }}
+                        {% else %}
+                        None Specified
                         {% endif %}
                     </td>
                 </tr>

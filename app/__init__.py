@@ -502,7 +502,10 @@ def editgroup(userid,groupid,periodid=None):
                 session.delete(a)
             #add the content in the packet to this group's attributes
             for key,value in content.iteritems():
-                if value is not None or value != 'null' or value != '' or key != 'primary_only':
+                if (value is None or value == 'null' or value == '') and key != 'primary_only':
+                    log('Setting %s to be NULL' % (key))
+                    setattr(thisgroup,key,None)
+                elif key != 'primary_only':
                     log('Setting %s to be %s' % (key, value))
                     setattr(thisgroup,key,value)
             thisgroup.requesteduserid = thisuser.userid

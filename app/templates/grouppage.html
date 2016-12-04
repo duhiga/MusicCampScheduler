@@ -25,17 +25,19 @@
 <li class="w3-hide-small"><a href="#" class="w3-hover-white">{{ thisgroup.groupname }}</a></li>
 {% endif %}
 {% endblock %}
-{% if thisuser.isadmin == 1 %}
 {% block navbar %}
+{% if thisuser.isadmin == 1 %}
 <li class="w3-opennav w3-right">
     <a href="/user/{{ thisuser.userid }}/group/{{ thisgroup.groupid }}/edit/" class="w3-hover-white w3-large w3-theme-l1"><i class="fa fa-edit"></i></a>
 </li>
+{% endif %}
 {% endblock %}
 {% block sidenav %}
+{% if thisuser.isadmin == 1 %}
     <h4><b>Tools</b></h4>
     <a href="/user/{{ thisuser.userid }}/group/{{ thisgroup.groupid }}/edit/" class="w3-hover-black "><i class="fa fa-edit"></i> Edit Group</a>
-{% endblock %}
 {% endif %}
+{% endblock %}
 {% block content %}
             <h2>Group Details</h2>
             <table>

@@ -417,6 +417,26 @@
             <th>Total Players:</th>
             <td id="total_players"></td>
         </tr>
+        <tr>
+            <th>Minimum Level:</th>
+            <td>
+                {% if thisgroup.minimumlevel == 0 %}
+                {{groupmin}} (Automatically Generated)
+                {% else %}
+                {{thisgroup.minimumlevel}}
+                {% endif %}
+            </td>
+        </tr>
+        <tr>
+            <th>Maximum Level:</th>
+            <td>
+                {% if thisgroup.maximumlevel == 0 %}
+                {{groupmax}} (Automatically Generated)
+                {% else %}
+                {{thisgroup.maximumlevel}}
+                {% endif %}
+            </td>
+        </tr>
     </table>
     <h2>Players</h2>
     <table class="sortable" id="table_players">

@@ -1444,61 +1444,50 @@ def send_home_link_email(userid):
     thisuser = session.query(user).filter(user.userid == userid).first()
     if thisuser is None:
         return ('Did not find user in database. You have entered an incorrect URL address.')
-    try:
-        if thisuser.isadmin != 1:
-            session.close()
-            return 'You do not have permission to view this page'
-        content = request.json
-        errors = ''
-        for u in content['objects']:
-            targetuser = session.query(user).filter(user.userid == u['userid']).first()
-            if targetuser is None:
-                errors = errors + ('Could not find user with id %s in database\n' % u['userid'])
-            elif targetuser.email is None or targetuser.email == '':
-                errors = errors + ('Could not find email for user %s %s\n' % (targetuser.firstname, targetuser.lastname))
-            else:
-                subject = ('Your link to the %s Scheduler' % getconfig('Name'))
-                body = """Hi %s, welcome to %s!\n
+    if thisuser.isadmin != 1:
+        session.close()
+        return 'You do not have permission to view this page'
+    content = request.json
+    errors = ''
+    for u in content['objects']:
+        targetuser = session.query(user).filter(user.userid == u['userid']).first()
+        if targetuser is None:
+            errors = errors + ('Could not find user with id %s in database\n' % u['userid'])
+        elif targetuser.email is None or targetuser.email == '':
+            errors = errors + ('Could not find email for user %s %s\n' % (targetuser.firstname, targetuser.lastname))
+        else:
+            subject = ('Your link to the %s Scheduler' % getconfig('Name'))
+            body = """Hi %s, welcome to %s!\n
 %s\n
 Your homepage, containing your daily schedule, is here:\n
 %s/user/%s/ \n
 WARNING: DO NOT GIVE THIS LINK TO ANYONE ELSE. It is yours, and yours alone and contains your connection credentials.\n
 A small rundown of how to use the web app:\n
-    -Visit this page each day to see your schedule, including times, locations, and the instrument you're playing. Don't forget to refresh it, your phone may not refresh the page if you minimise it and come back to it later.
-    -You can click into group names to to see possible substitute players and get further details, or a time period to see the full group listing for that time. Clicking the home button in the top left of your screen will always bring you back to your schedule on the current day.
-    -You can look at your schedule for future and past days drop down date picker, and the forward and back links on your home screen.
-    -If you're going to be absent for a session or meal, plesae notify us at least one day before by navigating to a future date, clicking the tools tab on your homepage, then clicking the "Mark me as absent" button next to the corresponding time.
-    -You can request groups with the request group link on the left (on a mobile, click on the hamburger menu on the top left of the screen). Fill in your desired instrumentation, and any players that you'd like to play with and press submit. Leaving blanks for player names is fine, you'll be matched up with other players at the end of the day.\n
+-Visit this page each day to see your schedule, including times, locations, and the instrument you're playing. Don't forget to refresh it, your phone may not refresh the page if you minimise it and come back to it later.
+-You can click into group names to to see possible substitute players and get further details, or a time period to see the full group listing for that time. Clicking the home button in the top left of your screen will always bring you back to your schedule on the current day.
+-You can look at your schedule for future and past days drop down date picker, and the forward and back links on your home screen.
+-If you're going to be absent for a session or meal, plesae notify us at least one day before by navigating to a future date, clicking the tools tab on your homepage, then clicking the "Mark me as absent" button next to the corresponding time.
+-You can request groups with the request group link on the left (on a mobile, click on the hamburger menu on the top left of the screen). Fill in your desired instrumentation, and any players that you'd like to play with and press submit. Leaving blanks for player names is fine, you'll be matched up with other players at the end of the day.\n
 If you have any questions, please reply to this email or contact us on %s.\n
 Thanks!\n
 %s %s
 %s""" % (targetuser.firstname, \
-                getconfig('Name'), \
-                getconfig('EmailIntroSentence'), \
-                getconfig('Website_URL'), \
-                targetuser.userid, \
-                getconfig('SupportEmailAddress'), \
-                thisuser.firstname, \
-                thisuser.lastname, \
-                getconfig('Name')\
-                )
-                message = send_email(targetuser.email, subject, body)
-                if message == 'Failed to send email to user':
-                    errors = errors + ('Failed to send email to %s %s\n' % (targetuser.firstname, targetuser.lastname))
-        session.close()
-        if errors != '':
-            message = 'Completed with errors:\n' + errors
-        return jsonify(message = message, url = 'none')
-
-    except Exception as ex:
-        log('Failed to display page to user %s %s with exception: %s.' % (thisuser.firstname, thisuser.lastname, ex))
-        session.rollback()
-        session.close()
-        return render_template('errorpage.html', \
-                            thisuser=thisuser, \
-                            campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
-                            errormessage = 'Failed to display page with exception: %s.' % ex
-                            )
+            getconfig('Name'), \
+            getconfig('EmailIntroSentence'), \
+            getconfig('Website_URL'), \
+            targetuser.userid, \
+            getconfig('SupportEmailAddress'), \
+            thisuser.firstname, \
+            thisuser.lastname, \
+            getconfig('Name')\
+            )
+            message = send_email(targetuser.email, subject, body)
+            if message == 'Failed to send email to user':
+                errors = errors + ('Failed to send email to %s %s\n' % (targetuser.firstname, targetuser.lastname))
+    session.close()
+    if errors != '':
+        message = 'Completed with errors:\n' + errors
+    return jsonify(message = message, url = 'none')
 
 #Handles the conductor instrumentation page.
 @app.route('/user/<userid>/instrumentation/<periodid>/', methods=['GET', 'POST'])

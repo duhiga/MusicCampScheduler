@@ -725,13 +725,22 @@ def musicdetails(userid,musicid):
                             campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
                             errormessage = 'The music you selected does not exist in the database.' % ex
                             )
-
+    thisuserinstruments = session.query(instrument).filter(instrument.userid == userid, instrument.isactive == 1).all()
+    canplay = False
+    for i in thisuserinstruments:
+        for j in getconfig('Instruments').split(","):
+            if i.instrumentname == j and getattr(thismusic,j) > 0:
+                canplay = True
+                break
+        if canplay == True:
+            break
     grouptemplates = session.query(grouptemplate).filter(grouptemplate.size == 'S').all()
     session.close()
     return render_template('musicdetails.html', \
                             thisuser=thisuser, \
                             thismusic=thismusic, \
                             grouptemplates=grouptemplates, \
+                            canplay=canplay, \
                             campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
                             )
 

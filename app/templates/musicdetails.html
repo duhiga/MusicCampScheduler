@@ -50,5 +50,7 @@
     </tr>
     {% endif %}
 </table>
+{% if canplay == True %}
 <h3><a href="/user/{{ thisuser.userid }}/grouprequest/music/{{ thismusic.musicid }}">Request to play this work</a></h3>
+{% endif %}
 {% endblock %}

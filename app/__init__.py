@@ -73,6 +73,13 @@ def getschedule(session,thisuser,date):
             schedule.append(p)
     return schedule
 
+def errorpage(thisuser,message):
+    return render_template('errorpage.html', \
+                                        thisuser=thisuser, \
+                                        campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
+                                        errormessage = message
+                                        )
+
 #from an input group, returns the highest and lowest instrument levels that should be assigned depending on its config
 def getgrouplevel(session,inputgroup,min_or_max):
     if min_or_max == 'min':
@@ -394,17 +401,19 @@ def editgroup(userid,groupid,periodid=None):
             periodid = None
         if groupid == 'new' or groupid is None:
             groupid = None
-            thisgroup = group(ismusical = 1)
+            thisgroup = group(ismusical = 1, requesteduserid = thisuser.userid)
+            requestor = thisuser
         else:
             thisgroup = session.query(group).filter(group.groupid == groupid).first()
+            requestor = session.query(user).filter(user.userid == thisgroup.requesteduserid).first()
         if request.method == 'GET':
             #Current period tracks the period that the group is already set to (none, if it's a new group)
             currentperiod = session.query(period).filter(period.periodid == thisgroup.periodid).first()
             if periodid is not None:
                 selectedperiod = session.query(period).filter(period.periodid == periodid).first()
             elif currentperiod is None:
-                now = datetime.datetime.combine(datetime.date.today(), datetime.time.min)
-                selectedperiod = session.query(period).filter(period.starttime >= now, period.meal != 1).first()
+                tomorrow = datetime.datetime.combine(datetime.date.today(), datetime.time.min) + datetime.timedelta(days=1)
+                selectedperiod = session.query(period).filter(period.starttime >= tomorrow, period.meal != 1).first()
             else:
                 selectedperiod = currentperiod
             thislocation = session.query(location).join(group).filter(group.groupid == groupid).first()
@@ -466,22 +475,9 @@ def editgroup(userid,groupid,periodid=None):
                                 instrumentlist_string=getconfig('Instruments'), \
                                 groupmin=groupmin, \
                                 groupmax=groupmax, \
+                                requestor=requestor, \
                                 )
-    except Exception as ex:
-        log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))
-        message = ('Failed to execute %s with exception: %s. Try refreshing the page and trying again or contact camp administration.' % (request.method, ex))
-        session.rollback()
-        session.close()
-        if request.method == 'GET':
-            return render_template('errorpage.html', \
-                                        thisuser=thisuser, \
-                                        campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
-                                        errormessage = 'Failed to display page with exception: %s.' % ex
-                                        )
-        else:
-            return jsonify(message = message, url = 'none')
 
-    try:
         if request.method == 'DELETE':
             if groupid is not None:
                 thisgroupassignments = session.query(groupassignment).filter(groupassignment.groupid == thisgroup.groupid).all()
@@ -505,8 +501,9 @@ def editgroup(userid,groupid,periodid=None):
                 session.rollback()
                 session.close()
                 return jsonify(message = 'You must give this group a name before saving or autofilling.', url = 'none')
-            thisperiod = session.query(period).filter(period.periodid == content['periodid']).first()
-            if thisperiod is None:
+            if content['periodid'] != '' and content['periodid'] != 'null' and content['periodid'] is not None:
+                thisperiod = session.query(period).filter(period.periodid == content['periodid']).first()
+            else:
                 session.rollback()
                 session.close()
                 return jsonify(message = 'Could not find a period with the selected id. Refresh the page and try again.', url = 'none')
@@ -647,17 +644,14 @@ def editgroup(userid,groupid,periodid=None):
                 message = 'none'
             session.close()
             return jsonify(message = message, url = url)
+    
     except Exception as ex:
         log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))
         message = ('Failed to execute %s with exception: %s. Try refreshing the page and trying again or contact camp administration.' % (request.method, ex))
         session.rollback()
         session.close()
         if request.method == 'GET':
-            return render_template('errorpage.html', \
-                                        thisuser=thisuser, \
-                                        campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
-                                        errormessage = 'Failed to display page with exception: %s.' % ex
-                                        )
+            return errorpage(thisuser,'Failed to display page with exception: %s.' % ex)
         else:
             return jsonify(message = message, url = 'none')
         
@@ -693,11 +687,7 @@ def grouphistory(userid):
         session.rollback()
         session.close()
         if request.method == 'GET':
-            return render_template('errorpage.html', \
-                                        thisuser=thisuser, \
-                                        campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
-                                        errormessage = 'Failed to display page with exception: %s.' % ex
-                                        )
+            return errorpage(thisuser,'Failed to display page with exception: %s.' % ex)
         else:
             return jsonify(message = message, url = 'none')
 
@@ -725,11 +715,7 @@ def musiclibrary(userid):
         session.rollback()
         session.close()
         if request.method == 'GET':
-            return render_template('errorpage.html', \
-                                        thisuser=thisuser, \
-                                        campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
-                                        errormessage = 'Failed to display page with exception: %s.' % ex
-                                        )
+            return errorpage(thisuser,'Failed to display page with exception: %s.' % ex)
         else:
             return jsonify(message = message, url = 'none')
 
@@ -745,11 +731,7 @@ def musicdetails(userid,musicid):
         thismusic = session.query(music).filter(music.musicid == musicid).first()
         if thismusic is None:
             session.close()
-            return render_template('errorpage.html', \
-                                thisuser=thisuser, \
-                                campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
-                                errormessage = 'The music you selected does not exist in the database.' % ex
-                                )
+            return errorpage(thisuser,'The music you selected does not exist in the database.')
         thisuserinstruments = session.query(instrument).filter(instrument.userid == userid, instrument.isactive == 1).all()
         canplay = False
         for i in thisuserinstruments:
@@ -774,11 +756,7 @@ def musicdetails(userid,musicid):
         session.rollback()
         session.close()
         if request.method == 'GET':
-            return render_template('errorpage.html', \
-                                        thisuser=thisuser, \
-                                        campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
-                                        errormessage = 'Failed to display page with exception: %s.' % ex
-                                        )
+            return errorpage(thisuser,'Failed to display page with exception: %s.' % ex)
         else:
             return jsonify(message = message, url = 'none')
 
@@ -800,11 +778,7 @@ def grouprequest(userid,periodid=None,musicid=None):
         #if this camper is inactive, has not arrived at camp yet, or is departing before the end of tomorrow
         if (thisuser.isactive != 1 or thisuser.arrival > now or thisuser.departure < intwodays) and periodid is None:
             session.close()
-            return render_template('errorpage.html', \
-                                thisuser=thisuser, \
-                                campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
-                                errormessage = 'Your user is currently set to inactive or are not attending camp at this time. Inactive users cannot request groups. Navigate to your settings and change them, or revisit this page at another time.'
-                                )
+            return errorpage(thisuser,'Your user is currently set to inactive or are not attending camp at this time. Inactive users cannot request groups. Navigate to your settings and change them, or revisit this page at another time.')
 
         #find the instruments this user plays
         thisuserinstruments = session.query(instrument).filter(instrument.userid == userid, instrument.isactive == 1).all()
@@ -818,11 +792,7 @@ def grouprequest(userid,periodid=None,musicid=None):
                 return ('Did not find period in database. Something has gone wrong.')
         elif thisuserinstruments is None:
             session.close()
-            return render_template('errorpage.html', \
-                                thisuser=thisuser, \
-                                campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
-                                errormessage = 'You do not play any instruments. You cannot make a group request.'
-                                )
+            return errorpage(thisuser,'Failed to display page with exception: %s.' % ex)
         else:
             conductorpage = False
             thisperiod = None
@@ -838,11 +808,7 @@ def grouprequest(userid,periodid=None,musicid=None):
             if thisuser.grouprequestcount >= (now - datetime.datetime.strptime(getconfig('StartTime'), '%Y-%m-%d %H:%M')).days * int(getconfig('DailyGroupRequestLimit')):
                 log('This user is denied access to request another group.')
                 session.close()
-                return render_template('errorpage.html', \
-                                    thisuser=thisuser, \
-                                    campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
-                                    errormessage = ("You have requested %s groups throughout the camp, and you're allowed %s per day. Unfortunately, the camp has been running %s days and you've reached the limit. Please come back tomorrow!" % (thisuser.grouprequestcount, getconfig('DailyGroupRequestLimit'), (now - datetime.datetime.strptime(getconfig('StartTime'), '%Y-%m-%d %H:%M')).days))
-                                    )
+                return errorpage(thisuser,"You have requested %s groups throughout the camp, and you're allowed %s per day. Unfortunately, the camp has been running %s days and you've reached the limit. Please come back tomorrow!" % (thisuser.grouprequestcount, getconfig('DailyGroupRequestLimit'), (now - datetime.datetime.strptime(getconfig('StartTime'), '%Y-%m-%d %H:%M')).days))
         
         #The below runs when a user visits the grouprequest page
         if request.method == 'GET':
@@ -862,11 +828,7 @@ def grouprequest(userid,periodid=None,musicid=None):
             if musicid is not None:
                 requestedmusic = session.query(music).filter(music.musicid == musicid).first()
                 if requestedmusic is None:
-                    return render_template('errorpage.html', \
-                                    thisuser=thisuser, \
-                                    campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
-                                    errormessage = ("You have requested music that could not be found in the database. Talk to the administrator." % (thisuser.grouprequestcount, getconfig('DailyGroupRequestLimit'), (now - datetime.datetime.strptime(getconfig('StartTime'), '%Y-%m-%d %H:%M')).days))
-                                    )
+                    return errorpage(thisuser,"You have requested music that could not be found in the database. Talk to the administrator." % (thisuser.grouprequestcount, getconfig('DailyGroupRequestLimit'), (now - datetime.datetime.strptime(getconfig('StartTime'), '%Y-%m-%d %H:%M')).days))
             else:
                 requestedmusic = None
 
@@ -954,7 +916,7 @@ def grouprequest(userid,periodid=None,musicid=None):
                     session.close()
                     return jsonify(message = 'You must select a location for this group', url = 'none')
                 grouprequest.locationid = content['locationid']
-                grouprequest.status = "Confirmed"
+                grouprequest.status = "Queued"
             #for each player object in the players array in the JSON packet
             for p in content['objects']:
                 #if it's not a blank dropdown
@@ -1096,11 +1058,7 @@ def grouprequest(userid,periodid=None,musicid=None):
         session.rollback()
         session.close()
         if request.method == 'GET':
-            return render_template('errorpage.html', \
-                                        thisuser=thisuser, \
-                                        campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
-                                        errormessage = 'Failed to display page with exception: %s.' % ex
-                                        )
+            return errorpage(thisuser,'Failed to display page with exception: %s.' % ex)
         else:
             return jsonify(message = message, url = 'none')
         
@@ -1166,11 +1124,7 @@ def announcementpage(userid):
         session.rollback()
         session.close()
         if request.method == 'GET':
-            return render_template('errorpage.html', \
-                                        thisuser=thisuser, \
-                                        campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
-                                        errormessage = 'Failed to display page with exception: %s.' % ex
-                                        )
+            return errorpage(thisuser,'Failed to display page with exception: %s.' % ex)
         else:
             return jsonify(message = message, url = 'none')
 
@@ -1203,11 +1157,7 @@ def groupqueue(userid):
         session.rollback()
         session.close()
         if request.method == 'GET':
-            return render_template('errorpage.html', \
-                                        thisuser=thisuser, \
-                                        campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
-                                        errormessage = 'Failed to display page with exception: %s.' % ex
-                                        )
+            return errorpage(thisuser,'Failed to display page with exception: %s.' % ex)
         else:
             return jsonify(message = message, url = 'none')
 
@@ -1223,7 +1173,7 @@ def publiceventpage(userid,periodid):
     try:
         if thisuser.isadmin != 1:
             session.close()
-            return 'You do not have permission to view this page'
+            return errorpage(thisuser,'You do not have permission to view this page')
         else:
         
             #if the user requested the public event page
@@ -1262,11 +1212,7 @@ def publiceventpage(userid,periodid):
         session.rollback()
         session.close()
         if request.method == 'GET':
-            return render_template('errorpage.html', \
-                                        thisuser=thisuser, \
-                                        campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
-                                        errormessage = 'Failed to display page with exception: %s.' % ex
-                                        )
+            return errorpage(thisuser,'Failed to display page with exception: %s.' % ex)
         else:
             return jsonify(message = message, url = 'none')
 
@@ -1309,11 +1255,7 @@ def periodpage(userid,periodid):
         session.rollback()
         session.close()
         if request.method == 'GET':
-            return render_template('errorpage.html', \
-                                        thisuser=thisuser, \
-                                        campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
-                                        errormessage = 'Failed to display page with exception: %s.' % ex
-                                        )
+            return errorpage(thisuser,'Failed to display page with exception: %s.' % ex)
         else:
             return jsonify(message = message, url = 'none')
 
@@ -1355,11 +1297,7 @@ def useradmin(userid):
         session.rollback()
         session.close()
         if request.method == 'GET':
-            return render_template('errorpage.html', \
-                                        thisuser=thisuser, \
-                                        campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
-                                        errormessage = 'Failed to display page with exception: %s.' % ex
-                                        )
+            return errorpage(thisuser,'Failed to display page with exception: %s.' % ex)
         else:
             return jsonify(message = message, url = 'none')
 
@@ -1372,13 +1310,17 @@ def edituser(userid, targetuserid):
     if thisuser is None:
         return ('Did not find user in database. You have entered an incorrect URL address.')
     try:
+        if thisuser.isadmin != 1 and targetuserid is None:
+            session.close()
+            return errorpage(thisuser,'You do not have permission to view this page.')
         if targetuserid is not None:
             targetuser = session.query(user).filter(user.userid == targetuserid).first()
             if targetuser is None:
-                    return 'Could not find requested user in database'
-            elif thisuser.isadmin != 1 and thisuser.userid != targetuser.userid:
+                    session.close()
+                    return errorpage(thisuser,'Could not find requested user in database.')
+            elif thisuser.isadmin != 1 and (thisuser.userid != targetuser.userid):
                 session.close()
-                return 'You do not have permission to view this page'
+                return errorpage(thisuser,'You do not have permission to view this page.')
         else:
             targetuser = user()
         targetuserinstruments = session.query(instrument).filter(instrument.userid == targetuser.userid).all()
@@ -1483,11 +1425,7 @@ def edituser(userid, targetuserid):
         session.rollback()
         session.close()
         if request.method == 'GET':
-            return render_template('errorpage.html', \
-                                        thisuser=thisuser, \
-                                        campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
-                                        errormessage = 'Failed to display page with exception: %s.' % ex
-                                        )
+            return errorpage(thisuser,'Failed to display page with exception: %s.' % ex)
         else:
             return jsonify(message = message, url = 'none')
 
@@ -1512,7 +1450,7 @@ def send_home_link_email(userid):
     try:
         if thisuser.isadmin != 1:
             session.close()
-            return 'You do not have permission to view this page'
+            return errorpage(thisuser,'You do not have permission to view this page')
         content = request.json
         errors = ''
         for u in content['objects']:
@@ -1561,11 +1499,7 @@ Thanks!\n
         session.rollback()
         session.close()
         if request.method == 'GET':
-            return render_template('errorpage.html', \
-                                        thisuser=thisuser, \
-                                        campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
-                                        errormessage = 'Failed to display page with exception: %s.' % ex
-                                        )
+            return errorpage(thisuser,'Failed to display page with exception: %s.' % ex)
         else:
             return jsonify(message = message, url = 'none')
 
@@ -1685,11 +1619,7 @@ def instrumentation(userid,periodid):
         session.rollback()
         session.close()
         if request.method == 'GET':
-            return render_template('errorpage.html', \
-                                        thisuser=thisuser, \
-                                        campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
-                                        errormessage = 'Failed to display page with exception: %s.' % ex
-                                        )
+            return errorpage(thisuser,'Failed to display page with exception: %s.' % ex)
         else:
             return jsonify(message = message, url = 'none')
 
@@ -1706,7 +1636,7 @@ def setup(userid):
     try:
         #check if this user is an admin or the Administrator superuser, if they are not, deny them.
         if thisuser.isadmin != 1 and thisuser.userid != getconfig('AdminUUID'):
-            return ('You are not allowed to view this page.')
+            return errorpage(thisuser,'You are not allowed to view this page.')
         else:
             if request.method == 'GET':
                 session.close()
@@ -1733,11 +1663,7 @@ def setup(userid):
         session.rollback()
         session.close()
         if request.method == 'GET':
-            return render_template('errorpage.html', \
-                                        thisuser=thisuser, \
-                                        campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
-                                        errormessage = 'Failed to display page with exception: %s.' % ex
-                                        )
+            return errorpage(thisuser,'Failed to display page with exception: %s.' % ex)
         else:
             return jsonify(message = message, url = 'none')
 
@@ -1856,11 +1782,7 @@ def objecteditor(userid, input, objectid=None):
         session.rollback()
         session.close()
         if request.method == 'GET':
-            return render_template('errorpage.html', \
-                                        thisuser=thisuser, \
-                                        campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
-                                        errormessage = 'Failed to display page with exception: %s.' % ex
-                                        )
+            return errorpage(thisuser,'Failed to display page with exception: %s.' % ex)
         else:
             return jsonify(message = message, url = 'none')
 

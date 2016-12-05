@@ -162,7 +162,7 @@
                 console.log('Did not find validate function on this page.');
             }
             
-            $(document).on("keyup keydown keypress blur change click", '.form-attribute, .form-object-master, .form-validate', function () {
+            $(document).on("keyup keydown change", '.form-attribute, .form-object-master, .form-validate', function () {
                 validate_all();
             });
 

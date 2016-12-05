@@ -3,13 +3,15 @@
 {% block head %}
     <script>
         
-        function validate() {
-            if ($('#groupname').val() != ''
-                ) {
-                return true
+        function validate(ob) {
+            if (ob.attr('id') == 'groupname' && ob.val() == '') {
+                return false
+            }
+            if (ob.attr('id') == 'periodid' && ob.val() == '') {
+                return false
             }
             else {
-                return false
+                return true
             }
         }
 
@@ -356,8 +358,7 @@
             </td>
             {% endif %}
             <td>
-                <select id="periodid" class="form-attribute">
-                    <option value="None"></option>
+                <select id="periodid" class="form-attribute form-validate">
                     {% for p in periods %}
                     {% if p.periodid == selectedperiod.periodid %}
                     <option value="{{ p.periodid }}" selected="selected">{{ p.starttime.strftime('%d %b') }}: {{ p.periodname }}</option>
@@ -402,21 +403,17 @@
                 </select>
             </td>
         </tr>
-        <tr class="w3-hide-small">
+        <tr>
             <th>Requested User</th>
-            <td colspan="2" class="w3-hide-small">{{ thisgroup.requesteduserid }}</td>
+            <td>{{ requestor.firstname }} {{ requestor.lastname }}</td>
         </tr>
-        <tr class="w3-hide-small">
+        <tr>
             <th>Request Time</th>
-            <td colspan="2" class="w3-hide-small">
+            <td>
                 {% if thisgroup.requesttime != None %}
                 {{ thisgroup.requesttime.strftime('%A, %Y-%m-%d') }}, {{ thisgroup.requesttime.strftime('%H:%M') }}
                 {% endif %}
             </td>
-        </tr>
-        <tr>
-            <th>Total Players:</th>
-            <td id="total_players"></td>
         </tr>
         <tr>
             <th>Minimum Level:</th>
@@ -437,6 +434,10 @@
                 {{thisgroup.maximumlevel}}
                 {% endif %}
             </td>
+        </tr>
+        <tr>
+            <th>Total Players:</th>
+            <td id="total_players"></td>
         </tr>
     </table>
     <h2>Players</h2>

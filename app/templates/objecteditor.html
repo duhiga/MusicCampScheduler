@@ -3,7 +3,7 @@
 {% block head %}
 <script>
     function validate(ob) {
-        /*
+
         var foundempty = false
         $('[data-mapping=' + ob.data('mapping') + ']').each(function () {
             if (!($(this).hasClass('form-validate'))) {
@@ -12,18 +12,7 @@
             if ($(this).hasClass('master') && !($(this).hasClass('form-object-master'))) {
                 $(this).addClass('form-object-master');
             }
-            if ($(this).data('key').substr($(this).data('key').length - 4) == 'name' && $(this).val() == '') {
-                foundempty = true;
-            }
         });
-
-        if (foundempty == false) {
-            return true;
-        }
-        else {
-            return false;
-        }
-    }*/
         return true;
     }
 

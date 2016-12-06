@@ -409,17 +409,27 @@ def editgroup(userid,groupid,periodid=None):
         if request.method == 'GET':
             #Current period tracks the period that the group is already set to (none, if it's a new group)
             currentperiod = session.query(period).filter(period.periodid == thisgroup.periodid).first()
+
+            #find all periods from now until the end of time to display to the user, then removes any periods that the people in this group cannot play in
+            thisgroupplayers_query = session.query(user.userid).join(groupassignment).join(group).filter(group.groupid == thisgroup.groupid).order_by(groupassignment.instrumentname)
+            periodlist = session.query(period).order_by(period.starttime).filter(period.starttime > datetime.datetime.now()).all()
+            periods = []
+            for p in periodlist:
+               if len(session.query(user.userid).join(groupassignment).join(group).filter(group.periodid == p.periodid).filter(user.userid.in_(thisgroupplayers_query)).all()) == 0:
+                   periods.append(p)
+
+            #if there was no selected period by the user, select the first period
             if periodid is not None:
                 selectedperiod = session.query(period).filter(period.periodid == periodid).first()
             elif currentperiod is None:
-                tomorrow = datetime.datetime.combine(datetime.date.today(), datetime.time.min) + datetime.timedelta(days=1)
-                selectedperiod = session.query(period).filter(period.starttime >= tomorrow, period.meal != 1).first()
+                selectedperiod = periods[0]
             else:
                 selectedperiod = currentperiod
+
             thislocation = session.query(location).join(group).filter(group.groupid == groupid).first()
             #gets the list of players playing in the given group
             thisgroupplayers = session.query(user.userid, user.firstname, user.lastname, groupassignment.instrumentname).join(groupassignment).join(group).\
-                                    filter(group.groupid == groupid).order_by(groupassignment.instrumentname).all()
+                                    filter(group.groupid == thisgroup.groupid).order_by(groupassignment.instrumentname).all()
             thisgroupplayers_serialized = []
             for p in thisgroupplayers:
                     thisgroupplayers_serialized.append({'userid': p.userid, 'firstname': p.firstname, 'lastname': p.lastname,
@@ -439,8 +449,11 @@ def editgroup(userid,groupid,periodid=None):
             musics = session.query(music).filter(~music.musicid.in_(musics_used_query)).all()
             musics_serialized = [i.serialize for i in musics]
             thismusic = session.query(music).filter(music.musicid == thisgroup.musicid).first()
-            #find all periods from now until the end of time to display to the user
-            periods = session.query(period).order_by(period.starttime).filter(period.starttime > datetime.datetime.now()).all()
+
+            
+
+
+
             locations_used_query = session.query(location.locationid).join(group).join(period).filter(period.periodid == periodid, group.groupid != thisgroup.groupid)
             locations = session.query(location).filter(~location.locationid.in_(locations_used_query)).all()
             log('This groups status is %s' % thisgroup.status)
@@ -953,13 +966,18 @@ def grouprequest(userid,periodid=None,musicid=None):
         
             #--------MATCHMAKING SECTION-----------
             #try to find an existing group request with the same music and instrumentation configuration as the request
+            musicstatus = None
             instrumentlist = getconfig('Instruments').split(",")
             if (content['musicid'] != '' and content['musicid'] != 'null' and content['musicid'] != None):
                 log('Found that user has requested the music to be %s' % content['musicid'])
                 matchinggroups = session.query(group).filter(or_(group.musicid == content['musicid'], group.musicwritein == content['musicwritein']), group.iseveryone == None, group.ismusical == 1, group.periodid == None, *[getattr(grouprequest,i) == getattr(group,i) for i in instrumentlist]).order_by(group.requesttime).all()
+                musicstatus = 'musicid'
+                musicvalue = content['musicid']
             elif (content['musicwritein'] != '' and content['musicwritein'] != 'null' and content['musicwritein'] != None):
                 log('Found that user has written in %s for their music' % content['musicwritein'])
                 matchinggroups = session.query(group).filter(group.musicwritein == content['musicwritein'], group.iseveryone == None, group.ismusical == 1, group.periodid == None, *[getattr(grouprequest,i) == getattr(group,i) for i in instrumentlist]).order_by(group.requesttime).all()
+                musicstatus = 'musicwritein'
+                musicvalue = content['musicwritein']
             else:
                 log('User did not specify any music in their request')
                 matchinggroups = session.query(group).filter(group.iseveryone == None, group.ismusical == 1, group.periodid == None, *[getattr(grouprequest,i) == getattr(group,i) for i in instrumentlist]).order_by(group.requesttime).all()
@@ -1005,14 +1023,10 @@ def grouprequest(userid,periodid=None,musicid=None):
                         log('Match found. Adding the players in this request to the already formed group.')
                         grouprequest = m
                         #if the original group doesn't have music already assigned, we can assign it music from the user request
-                        if (grouprequest.musicid is None or grouprequest.musicid == '' or grouprequest.musicid == 'null') and \
-                            (grouprequest.musicwritein is None or grouprequest.musicwritein == '' or grouprequest.musicwritein == 'null') and \
-                            (content['musicid'] != ''):
-                            grouprequest.music = content['music']
+                        if musicstatus is not None:
+                            setattr(grouprequest,musicstatus,musicvalue)
                         match = True
                         break
-                    else:
-                        log('Music doesnt match the found group. Requested group music: %s. Database group music: %s' % (content['music'], m.music))
             #if we didn't get a match, we need to create the grouprequest, we won't be using an old one
             if Match == False:
                 log('No group already exists with the correct instrumentation slots. Creating a new group.')

@@ -150,110 +150,110 @@
 
         //run when a user changes the select template dropdown
         $(document).on("change", '.group_template_dropdown', function (e) {
-            if (e.originalEvent) {
-                e.preventDefault();
-                var ob = $(this);
-                console.log('Value of the dropdown: ' + ob.val());
-                //get the user selected template or music and format it so we can iterate over it later
-                if (ob.attr('id') == 'musicid') {
-                    var grep_template = $.grep(musics, function (elt) {
-                        return String(elt.musicid) === String(ob.val());
-                    });
-                    $('#groupname').val('').change()
-                    if ($('#musicid').val() == '') {
-                        $('#hidemusic').show();
-                        $('.instrument_dropdown .first_instrument_dropdown').each(function() {
-                            $(this).prop("disabled", false);
-                        });
-                    }
-                    else {
-                        $('#musicwritein').val('').change();
-                        $('#hidemusic').hide();
-                        $('.instrument_dropdown .first_instrument_dropdown').each(function() {
-                            console.log('Disabling ' + $(this).html())
-                            $(this).prop("disabled", true);
-                        });
-                    }
-                }
-                else if (ob.attr('id') == 'groupname') {
-                    var grep_template = $.grep(grouptemplates, function (elt) {
-                        return String(elt.grouptemplatename) === String(ob.val());
-                    });
-                    if (e.originalEvent) {
-                        $('#musicid').val('').change()
-                    }
-                }
-                console.log(grep_template)
-                selectedTemplate = grep_template[0];
-                console.log('Selected template is:');
-                console.log(selectedTemplate);
-
-                if (conductorpage == "True") {
-                    //remove all rows in the table except the header and first instrument slot
-                    $("#playersTable").find("tr:gt(0)").remove();
-                    addRow();
-                }
-
-                //if this is not the conductor group request, handle which instrument the user plays
-                if (conductorpage == "False") {                    
-                    //remove all rows in the table excapt for the header and row containing the user, and add a new row for later
-                    $("#playersTable").find("tr:gt(1)").remove();
-                    addRow();
-                    var foundprimary = false
-                
-                    //check if the user's primary instrument is in this group. if it is, set it.
-                    $.each(selectedTemplate, function(key,value){
-                        if ((key == primaryinstrument) && (value > 0)) {
-                            console.log('found that the users primary instrument is in this group. Key: ' + key);
-                            foundprimary = true;
-                            console.log('Changing the associated user instrument to ' + key);
-                            $('.first_instrument_dropdown').val(key).change();
-                        }
-                    });
-                
-                    //if the user's primary instrument is not in the group, find an instrument that is, and set it.
-                    if (foundprimary == false) {
-                        console.log('Found the users primary instrument is not in the requested group. Iterating through the users instruments to see which one matches this group');
-                        $.each(selectedTemplate, function(key,value){
-                            for (var x = 1; x <= value; x++) {
-                                //get the first instrument that this user plays that matches this instrument
-                                matchinginstrument = thisuserinstruments.filter(function(obj){return obj.instrumentname == key;})[0]
-                                if (matchinginstrument) {
-                                    console.log('found this user plays intsrument ' + matchinginstrument.instrumentname + ' which matches instrument in group ' + key);
-                                    console.log('setting this user instrument to ' + key)
-                                    $('.first_instrument_dropdown').val(key).change();
-                                    break;
-                                }
-                            }
-                        });
-                    }
-                }
-
-                //for each instrument type in the group template
-                $.each(selectedTemplate, function(key,value){
-                    //make sure it's an instrument type and not other associated metadata
-                    if ((instrumentlist_string.split(',').indexOf(key) > -1) && value > 0) {
-                        console.log(key + ": "+String(value));
-                        //if the current instrument we're looking at is the same as the one that we selected for the user, decrement it because we already have one player
-                        if (key == $("[data-mapping=0][data-key='instrumentname']").val()) {
-                            value = value - 1; 
-                        }
-                        if (value > 0) {
-                            for (var i = 0; i < value; i++) {
-                                $('.instrument_dropdown[data-mapping=' + String(rowId - 1) + ']').val(key).change();
-                            }
-                        }
-                    }
+            e.preventDefault();
+            var ob = $(this);
+            console.log('Value of the dropdown: ' + ob.val());
+            //get the user selected template or music and format it so we can iterate over it later
+            if (ob.attr('id') == 'musicid') {
+                var grep_template = $.grep(musics, function (elt) {
+                    return String(elt.musicid) === String(ob.val());
                 });
-
+                if (e.originalEvent) {
+                    $('#groupname').val('').change()
+                }
                 if ($('#musicid').val() == '') {
-                    $('.instrument_dropdown').prop("disabled", false);
-                    $('.first_instrument_dropdown').prop("disabled", false);
+                    $('#hidemusic').show();
+                    $('.instrument_dropdown .first_instrument_dropdown').each(function() {
+                        $(this).prop("disabled", false);
+                    });
                 }
                 else {
-                    $('.instrument_dropdown').prop("disabled", true);
-                    $('.first_instrument_dropdown').prop("disabled", true);
+                    $('#musicwritein').val('').change();
+                    $('#hidemusic').hide();
+                    $('.instrument_dropdown .first_instrument_dropdown').each(function() {
+                        console.log('Disabling ' + $(this).html())
+                        $(this).prop("disabled", true);
+                    });
                 }
+            }
+            else if (ob.attr('id') == 'groupname') {
+                var grep_template = $.grep(grouptemplates, function (elt) {
+                    return String(elt.grouptemplatename) === String(ob.val());
+                });
+                if (e.originalEvent) {
+                    $('#musicid').val('').change()
+                }
+            }
+            console.log(grep_template)
+            selectedTemplate = grep_template[0];
+            console.log('Selected template is:');
+            console.log(selectedTemplate);
+
+            if (conductorpage == "True") {
+                //remove all rows in the table except the header and first instrument slot
+                $("#playersTable").find("tr:gt(0)").remove();
+                addRow();
+            }
+
+            //if this is not the conductor group request, handle which instrument the user plays
+            if (conductorpage == "False") {                    
+                //remove all rows in the table excapt for the header and row containing the user, and add a new row for later
+                $("#playersTable").find("tr:gt(1)").remove();
+                addRow();
+                var foundprimary = false
+                
+                //check if the user's primary instrument is in this group. if it is, set it.
+                $.each(selectedTemplate, function(key,value){
+                    if ((key == primaryinstrument) && (value > 0)) {
+                        console.log('found that the users primary instrument is in this group. Key: ' + key);
+                        foundprimary = true;
+                        console.log('Changing the associated user instrument to ' + key);
+                        $('.first_instrument_dropdown').val(key).change();
+                    }
+                });
+                
+                //if the user's primary instrument is not in the group, find an instrument that is, and set it.
+                if (foundprimary == false) {
+                    console.log('Found the users primary instrument is not in the requested group. Iterating through the users instruments to see which one matches this group');
+                    $.each(selectedTemplate, function(key,value){
+                        for (var x = 1; x <= value; x++) {
+                            //get the first instrument that this user plays that matches this instrument
+                            matchinginstrument = thisuserinstruments.filter(function(obj){return obj.instrumentname == key;})[0]
+                            if (matchinginstrument) {
+                                console.log('found this user plays intsrument ' + matchinginstrument.instrumentname + ' which matches instrument in group ' + key);
+                                console.log('setting this user instrument to ' + key)
+                                $('.first_instrument_dropdown').val(key).change();
+                                break;
+                            }
+                        }
+                    });
+                }
+            }
+
+            //for each instrument type in the group template
+            $.each(selectedTemplate, function(key,value){
+                //make sure it's an instrument type and not other associated metadata
+                if ((instrumentlist_string.split(',').indexOf(key) > -1) && value > 0) {
+                    console.log(key + ": "+String(value));
+                    //if the current instrument we're looking at is the same as the one that we selected for the user, decrement it because we already have one player
+                    if (key == $("[data-mapping=0][data-key='instrumentname']").val()) {
+                        value = value - 1; 
+                    }
+                    if (value > 0) {
+                        for (var i = 0; i < value; i++) {
+                            $('.instrument_dropdown[data-mapping=' + String(rowId - 1) + ']').val(key).change();
+                        }
+                    }
+                }
+            });
+
+            if ($('#musicid').val() == '') {
+                $('.instrument_dropdown').prop("disabled", false);
+                $('.first_instrument_dropdown').prop("disabled", false);
+            }
+            else {
+                $('.instrument_dropdown').prop("disabled", true);
+                $('.first_instrument_dropdown').prop("disabled", true);
             }
         });
         requestedmusicid = '{{requestedmusic.musicid}}';
@@ -317,23 +317,27 @@
     </p>
     {% endif %}
     <p>
-        Optional: Select a group template to autofill the page
-        <select class="form-attribute group_template_dropdown" id="groupname">
-            <option value="" selected="selected"></option>
-            {% for g in grouptemplates %}
-            <option value="{{ g.grouptemplatename }}">{{ g.grouptemplatename }}</option>
-            {% endfor %}
-        </select>
-    </p>
-    <p>Optional: Select music to book it out and fill in the instrumentation. For more information on the music available, visit the <a href="/user/{{ thisuser.userid }}/musiclibrary/"><i class="fa fa-book"></i> Music Library</a>.
+        Select music to book it out and fill in the instrumentation. For more information on the music available, visit the <a href="/user/{{ thisuser.userid }}/musiclibrary/"><i class="fa fa-book"></i> Music Library</a>.
         <select class="form-attribute group_template_dropdown" id="musicid">
             <option value="">Other (Write your own):</option>
             {% for m in musics %}
             <option value="{{m.musicid}}">{{m.composer}} {% if m.musicname|length > 25 %}{{ m.musicname[0:25] }}...{% else %}{{ m.musicname }}{% endif %}</option>
             {% endfor %}
-        </select><br />
-    <div id="hidemusic">Music (optional): <input type="text" class="form-attribute" id="musicwritein"></div>
+        </select>
     </p>
+    <div id="hidemusic">
+        <p>Optional: Music <input type="text" class="form-attribute" id="musicwritein"></p>
+        <p>
+            Optional: Select a group template to autofill the page
+            <select class="form-attribute group_template_dropdown" id="groupname">
+                <option value="" selected="selected"></option>
+                {% for g in grouptemplates %}
+                <option value="{{ g.grouptemplatename }}">{{ g.grouptemplatename }}</option>
+                {% endfor %}
+            </select>
+        </p>
+    </div>
+    
     <table id="playersTable">
         <!--Table Headers-->
         <tr>

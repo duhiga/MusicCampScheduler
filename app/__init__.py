@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, jsonify, make_response, json, request, url_for, send_from_directory
+from flask import Flask, render_template, request, redirect, jsonify, make_response, json, request, url_for, send_from_directory, flash
 from collections import namedtuple
 from werkzeug import secure_filename
 import sys
@@ -23,6 +23,7 @@ app = Flask(__name__)
 wsgi_app = app.wsgi_app
 # These are the extension that we are accepting to be uploaded
 app.config['ALLOWED_EXTENSIONS'] = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'xml', 'csv'])
+app.secret_key = '8da6a5bd-5331-4a0c-9bc2-2f77f1eb3894'
 
 Session = sessionmaker(bind=engine)
 
@@ -503,6 +504,7 @@ def editgroup(userid,groupid,periodid=None):
                 session.rollback()
             url = ('/user/' + str(thisuser.userid) + '/')
             message = 'none'
+            flash(u'Group Deleted','message')
             log('Sending user to URL: %s' % url)
             session.close()
             return jsonify(message = message, url = url)
@@ -637,6 +639,7 @@ def editgroup(userid,groupid,periodid=None):
                             session.commit()
                         except Exception as ex:
                             log('failed to commit changes to database after a groupedit on group %s with error: %s' % (thisgroup.groupid,ex))
+                        flash(u'Changes Partially Saved','message')
                         return jsonify(message = 'Your group is not confirmed because there are empty instrument slots. Your other changes have been saved.', url = '/user/' + str(thisuser.userid) + '/group/' + str(thisgroup.groupid) + '/edit/')
             try:
                 session.merge(thisgroup)
@@ -646,6 +649,7 @@ def editgroup(userid,groupid,periodid=None):
             if content['submittype'] == 'autofill':
                 url = '/user/' + str(thisuser.userid) + '/group/' + str(thisgroup.groupid) + '/edit/'
                 message = 'none'
+                flash(u'Autofill Completed','message')
             elif content['submittype'] == 'save':
                 if groupid == None:
                     url = '/user/' + str(thisuser.userid) + '/group/' + str(thisgroup.groupid) + '/edit/'
@@ -655,6 +659,10 @@ def editgroup(userid,groupid,periodid=None):
             else:
                 url = '/user/' + str(thisuser.userid) + '/group/' + str(thisgroup.groupid) + '/'
                 message = 'none'
+                if thisgroup.status == 'Confirmed':
+                    flash(u'Group Confirmed and Scheduled','message')
+                else:
+                    flash(u'Changes Saved','success')
             session.close()
             return jsonify(message = message, url = url)
     
@@ -1064,6 +1072,7 @@ def grouprequest(userid,periodid=None,musicid=None):
             url = ('/user/' + str(thisuser.userid) + '/group/' + str(grouprequest.groupid) + '/')
             log('Sending user to URL: %s' % url)
             session.close()
+            flash(u'Request Successful', 'success')
             return jsonify(message = 'none', url = url)
 
     except Exception as ex:
@@ -1130,6 +1139,7 @@ def announcementpage(userid):
                 url = ('/user/' + str(thisuser.userid) + '/')
                 session.close()
                 #send the user back to their home
+                flash(u'Changes Saved', 'success')
                 return jsonify(message = 'none', url = url)
 
     except Exception as ex:
@@ -1218,6 +1228,7 @@ def publiceventpage(userid,periodid):
                 session.commit()
                 url = ('/user/' + str(thisuser.userid) + '/group/' + str(event.groupid) + '/')
                 session.close()
+                flash(u'Event Created', 'success')
                 return jsonify(message = 'none', url = url)
 
     except Exception as ex:
@@ -1417,13 +1428,16 @@ def edituser(userid, targetuserid):
             if content['submittype'] == 'submit':
                 url = '/user/' + str(thisuser.userid) + '/'
                 message = 'none'
+                flash(u'Changes Saved', 'success')
             elif content['submittype'] == 'save':
                 if targetuserid is None:
                     url = ('/user/' + str(thisuser.userid) + '/edituser/' + str(targetuser.userid) + '/')
                     message = 'none'
+                    flash(u'New User Successfully Created', 'success')
                 else:
                     if newinstrument == True:
                         url = 'refresh'
+                        flash(u'New Instrument Successfully Added', 'success')
                     else:
                         url = 'none'
                     message = 'none'
@@ -1625,6 +1639,7 @@ def instrumentation(userid,periodid):
                 url = ('/user/' + str(thisuser.userid) + '/group/' + str(grouprequest.groupid) + '/')
                 log('Sending user to URL: %s' % url)
                 session.close()
+                flash(u'Instrumentation Accepted', 'success')
                 return jsonify(message = 'none', url = url)
 
     except Exception as ex:

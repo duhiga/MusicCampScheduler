@@ -825,8 +825,8 @@ def grouprequest(userid,periodid=None,musicid=None):
                 alreadyrequestedratio = 0
             log('User has requested %s groups since the start of camp. Maximum allowance is %s per day, and there have been %s days of camp so far.' \
                 % (thisuser.grouprequestcount, getconfig('DailyGroupRequestLimit'), \
-                (now - datetime.datetime.strptime(getconfig('StartTime'), '%Y-%m-%d %H:%M')).days))
-            if thisuser.grouprequestcount >= (now - datetime.datetime.strptime(getconfig('StartTime'), '%Y-%m-%d %H:%M')).days * int(getconfig('DailyGroupRequestLimit')):
+                (now - datetime.datetime.strptime(getconfig('StartTime'), '%Y-%m-%d %H:%M')).days + 1))
+            if thisuser.grouprequestcount >= ((now - datetime.datetime.strptime(getconfig('StartTime'), '%Y-%m-%d %H:%M')).days + 1) * int(getconfig('DailyGroupRequestLimit')):
                 log('This user is denied access to request another group.')
                 session.close()
                 return errorpage(thisuser,"You have requested %s groups throughout the camp, and you're allowed %s per day. Unfortunately, the camp has been running %s days and you've reached the limit. Please come back tomorrow!" % (thisuser.grouprequestcount, getconfig('DailyGroupRequestLimit'), (now - datetime.datetime.strptime(getconfig('StartTime'), '%Y-%m-%d %H:%M')).days))

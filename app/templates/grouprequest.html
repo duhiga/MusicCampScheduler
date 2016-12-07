@@ -162,14 +162,14 @@
                     $('#groupname').val('').change()
                 }
                 if ($('#musicid').val() == '') {
-                    $('#hidemusic').show();
+                    $('.hidemusic').show();
                     $('.instrument_dropdown .first_instrument_dropdown').each(function() {
                         $(this).prop("disabled", false);
                     });
                 }
                 else {
                     $('#musicwritein').val('').change();
-                    $('#hidemusic').hide();
+                    $('.hidemusic').hide();
                     $('.instrument_dropdown .first_instrument_dropdown').each(function() {
                         console.log('Disabling ' + $(this).html())
                         $(this).prop("disabled", true);
@@ -280,6 +280,7 @@
 </div>
 {% endblock %}
 {% block content %}
+    <h1>Group Request</h1>
     {% if conductorpage %}
     <table id="configTable">
     <tr>
@@ -306,18 +307,13 @@
     </p>
     {% endif %}
     {% if not conductorpage %}
+    <h3>Step 1: Select Music</h3>
     <p>
-        Use this page to request a group. You can request a group of up to {{ playerlimit }} people. Only the
-        instrumentation is required, all other fields are optional and will be autofilled if left blank.
-    </p>
-    <p>
-        For example, if you want to play in a wind quintet, but don't care who you play with, just select the instrumentation
-        for a wind quintet (or use the template), ensure you're playing the instrument you want to play, then click "Submit",
-        leaving all other player names empty. You'll be matched up with other players automatically!
+        This step is optional, but if you submit or write in music, it's more likely you'll be matched up with like-minded campers!
     </p>
     {% endif %}
     <p>
-        Select music to book it out and fill in the instrumentation. For more information on the music available, visit the <a href="/user/{{ thisuser.userid }}/musiclibrary/"><i class="fa fa-book"></i> Music Library</a>.
+        Select music to book it out. For more information on the music available, visit the <a href="/user/{{ thisuser.userid }}/musiclibrary/"><i class="fa fa-book"></i> Music Library</a>.
         <select class="form-attribute group_template_dropdown" id="musicid">
             <option value="">Other (Write your own):</option>
             {% for m in musics %}
@@ -325,10 +321,13 @@
             {% endfor %}
         </select>
     </p>
-    <div id="hidemusic">
-        <p>Optional: Music <input type="text" class="form-attribute" id="musicwritein"></p>
+    <div class="hidemusic">
+        <p>Custom Music: <input type="text" class="form-attribute" id="musicwritein"></p>
+    </div>
+    <h3>Step 2: Select Instrumentation and (optionally) Players</h3>
+    <div class="hidemusic">
         <p>
-            Optional: Select a group template to autofill the page
+            Choose a group template to more easily fill out the page.
             <select class="form-attribute group_template_dropdown" id="groupname">
                 <option value="" selected="selected"></option>
                 {% for g in grouptemplates %}
@@ -337,7 +336,7 @@
             </select>
         </p>
     </div>
-    
+    <p>You do not need to fill in players if you don't want to. Any blank players will be filled in automatically when your group is scheduled.</p>
     <table id="playersTable">
         <!--Table Headers-->
         <tr>

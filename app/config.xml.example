@@ -9,6 +9,7 @@
             according to the lowest level already contained in the group, plus and minus these limits. -->
   <CampDetails
     Name="Music Camp (Appears on all dashboards)"
+    Timezone="UTC"
     SMTP_Server="smtp.gmail.com"
     SMTP_User="username@gmail.com"
     SMTP_Password="SMTP Password"

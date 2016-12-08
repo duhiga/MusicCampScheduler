@@ -24,7 +24,6 @@ wsgi_app = app.wsgi_app
 # These are the extension that we are accepting to be uploaded
 app.config['ALLOWED_EXTENSIONS'] = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'xml', 'csv'])
 app.secret_key = '8da6a5bd-5331-4a0c-9bc2-2f77f1eb3894'
-
 Session = sessionmaker(bind=engine)
 
 #sets up debugging
@@ -39,8 +38,7 @@ def allowed_file(filename):
 
 #Looks up the amount of times a user has participated in an "ismusical" group during the camp
 def playcount(session,userid):
-    playcount = session.query(groupassignment.userid).join(group).join(user).outerjoin(period).\
-        filter(user.userid == userid, group.ismusical == 1, period.endtime <= datetime.datetime.now()).count()
+    playcount = session.query(group.groupid).join(groupassignment).join(user).outerjoin(period).filter(user.userid == userid, group.ismusical == 1, period.endtime <= datetime.datetime.now()).count()
     return playcount
 
 #get the information needed to fill in the user's schedule table
@@ -122,38 +120,50 @@ def getgrouplevel(session,inputgroup,min_or_max):
     log('Found %s grade of group %s to be %s' % (min_or_max,inputgroup.groupid,level))
     return int(level)
     
-#gets a list of periods corresponding to the requested userid and date, formatting it in a nice way for the user home
-def useridanddatetoperiods(session,userid,date):
-    nextday = date + datetime.timedelta(days=1)
-    
-def getgroupname(g):
+#NOT USED gets a list of periods corresponding to the requested userid and date, formatting it in a nice way for the user home
+"""def useridanddatetoperiods(session,userid,date):
+    nextday = date + datetime.timedelta(days=1)"""
+
+def getgroupname(session,thisgroup):
     instrumentlist = getconfig('Instruments').split(",")
-    count = 0
-    for i in instrumentlist:
-        value = getattr(g, i)
-        log('Instrument %s is value %s' % (i, value))
-        if value is not None:
-            count = count + int(getattr(g, i))
-    log('Found %s instruments in group.' % value)
-    if count == 1:
-        name = 'Solo'
-    elif count == 2:
-        name = 'Duet'
-    elif count == 3:
-        name = 'Trio'
-    elif count == 4:
-        name = 'Quartet'
-    elif count == 5:
-        name = 'Quintet'
-    elif count == 6:
-        name = 'Sextet'
-    elif count == 7:
-        name = 'Septet'
-    elif count == 8:
-        name = 'Octet'
+
+    #if this group's instrumentation matches a grouptempplate, then give it the name of that template
+    templatematch = session.query(grouptemplate).filter(*[getattr(grouptemplate,i) == getattr(thisgroup,i) for i in instrumentlist]).first()
+    if templatematch is not None:
+        return templatematch.grouptemplatename
+
+    #if we don't get a match, then we find how many players there are in this group, and give it a more generic name
     else:
-        name = 'Custom Group'
-    return name
+        count = 0
+        for i in instrumentlist:
+            value = getattr(thisgroup, i)
+            log('Instrument %s is value %s' % (i, value))
+            if value is not None:
+                count = count + int(getattr(thisgroup, i))
+        log('Found %s instruments in group.' % value)
+        if count == 1:
+            name = 'Solo'
+        elif count == 2:
+            name = 'Duet'
+        elif count == 3:
+            name = 'Trio'
+        elif count == 4:
+            name = 'Quartet'
+        elif count == 5:
+            name = 'Quintet'
+        elif count == 6:
+            name = 'Sextet'
+        elif count == 7:
+            name = 'Septet'
+        elif count == 8:
+            name = 'Octet'
+        elif count == 9:
+            name = 'Nonet'
+        elif count == 10:
+            name = 'Dectet'
+        else:
+            name = 'Custom Group'
+        return name
 
 #the root page isn't meant to be navigable.  It shows the user an error and
 #tells them how to get to their user home.
@@ -184,6 +194,7 @@ def home(userid,inputdate='n'):
             announcementcontent = ''
         #get impontant datetimes
         today = datetime.datetime.combine(datetime.date.today(), datetime.time.min) #get today's date
+        log('Today is %s' % today.strftime('%Y-%m-%d %H:%M'))
         campstarttime = datetime.datetime.strptime(getconfig('StartTime'), '%Y-%m-%d %H:%M')
         campendtime = datetime.datetime.strptime(getconfig('EndTime'), '%Y-%m-%d %H:%M')
         #if the suer has submitted a date, convert it to a datetime and use it as the display date
@@ -195,7 +206,7 @@ def home(userid,inputdate='n'):
         #if today is after the start of camp, use today as the display date
         else:
             displaydate = today
-    
+        
         previousday = displaydate + datetime.timedelta(days=-1)
         nextday = displaydate + datetime.timedelta(days=1)
 
@@ -763,6 +774,7 @@ def musicdetails(userid,musicid):
             if canplay == True:
                 break
         grouptemplates = session.query(grouptemplate).filter(grouptemplate.size == 'S').all()
+        playcount = session.query(group).filter(group.musicid == thismusic.musicid).count()
         session.close()
         return render_template('musicdetails.html', \
                                 thisuser=thisuser, \
@@ -770,6 +782,7 @@ def musicdetails(userid,musicid):
                                 grouptemplates=grouptemplates, \
                                 canplay=canplay, \
                                 campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
+                                playcount=playcount, \
                                 )
     except Exception as ex:
         log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))
@@ -912,7 +925,7 @@ def grouprequest(userid,periodid=None,musicid=None):
             session = Session()
             log('Grouprequest received. Whole content of JSON returned is: %s' % content)
             #if we received too many players, send the user an error
-            if len(content['objects']) > int(getconfig('GroupRequestPlayerLimit')) and conductorpage == False:
+            if (content['musicid'] == '' or content['musicid'] is None or content['musicid'] == 'null') and (len(content['objects']) > int(getconfig('GroupRequestPlayerLimit'))) and conductorpage == False:
                 session.rollback()
                 session.close()
                 return jsonify(message = 'You have entered too many players. You may only submit grouprequests of players %s or less.' % getconfig('GroupRequestPlayerLimit'), url = 'none')
@@ -967,7 +980,7 @@ def grouprequest(userid,periodid=None,musicid=None):
                 grouprequest.groupname = content['groupname']
             else:
                 #run the getgroupname function, which logically names the group
-                grouprequest.groupname = getgroupname(grouprequest)
+                grouprequest.groupname = getgroupname(session,grouprequest)
             #if we are on the conductorpage, instantly confirm this group (assign it to the period the user submitted)
             if conductorpage == True:
                 grouprequest.periodid = thisperiod.periodid     

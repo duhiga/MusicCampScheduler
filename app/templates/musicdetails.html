@@ -31,7 +31,7 @@
             {% else %}
             {% for i in instrumentlist %}
             {% if thismusic[i] > 0 %}
-            {{i}}: {{thismusic[i]}}
+            {{i}}:{{thismusic[i]}}
             {% endif %}
             {% endfor %}
             {% endif %}
@@ -49,6 +49,10 @@
         <td>{{ thismusic.notes }}</td>
     </tr>
     {% endif %}
+    <tr>
+        <th>Times Played this Camp</th>
+        <td>{{ playcount }}</td>
+    </tr>
 </table>
 {% if canplay == True %}
 <h3><a href="/user/{{ thisuser.userid }}/grouprequest/music/{{ thismusic.musicid }}"><i class="fa fa-music"></i> Request to play this work</a></h3>

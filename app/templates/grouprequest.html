@@ -296,18 +296,9 @@
         This is a conductor group creation page. This is intended to be for allocation of mentored groups.
         You cannot leave any blank fields for player names on this page.
     </p>
-    <p>
-        Where will this group be held?
-        <select class="form-attribute form-validate" id="locationid">
-            <option value=""></option>
-            {% for l in locations %}
-            <option value="{{ l.locationid }}">{{ l.locationname }}</option>
-            {% endfor %}
-        </select>
-    </p>
     {% endif %}
+    <h3>Step 1: Select Music{% if conductorpage %} and Location{% endif %}</h3>
     {% if not conductorpage %}
-    <h3>Step 1: Select Music</h3>
     <p>
         This step is optional, but if you submit or write in music, it's more likely you'll be matched up with like-minded campers!
     </p>
@@ -324,6 +315,17 @@
     <div class="hidemusic">
         <p>Custom Music: <input type="text" class="form-attribute" id="musicwritein"></p>
     </div>
+    {% if conductorpage %}
+    <p>
+        Where will this group be held?
+        <select class="form-attribute form-validate" id="locationid">
+            <option value=""></option>
+            {% for l in locations %}
+            <option value="{{ l.locationid }}">{{ l.locationname }}</option>
+            {% endfor %}
+        </select>
+    </p>
+    {% endif %}
     <h3>Step 2: Select Instrumentation and (optionally) Players</h3>
     <div class="hidemusic">
         <p>
@@ -377,4 +379,8 @@
             </td>
         </tr>
     </table>
+    <div class="submit_hide">
+        <h3>Step 3: Submit!</h3>
+        <p>Once you're done with your instrumentation, press the submit button at the bottom of your screen. Your group will be scheduled when it next fits in.</p>
+    </div>
 {% endblock %}

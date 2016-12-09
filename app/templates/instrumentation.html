@@ -1,86 +1,86 @@
 {% extends "layout.html" %}
 {% block title %}Instrumentation - {{ campname }}{% endblock %}
 {% block head %}
-    <script>
+<script>
 
-        function validate(ob) {
-            if (ob.val() != '') {
-                return true
-            }
-            else {
-                return false
-            }
+    function validate(ob) {
+        if (ob.val() != '') {
+            return true
         }
+        else {
+            return false
+        }
+    }
 
-        /* this script handles all user interaction in the group request page. Upon page load, it downloads all players
-        in the camp including the instruments they play, all templates as stated by the config.xml, and the instruments
-        this user plays. it uses all of this data to populate drop-down boxes, depending on what the user selects. */
-        
-        $(document).ready(function () {
+    /* this script handles all user interaction in the group request page. Upon page load, it downloads all players
+    in the camp including the instruments they play, all templates as stated by the config.xml, and the instruments
+    this user plays. it uses all of this data to populate drop-down boxes, depending on what the user selects. */
 
-            var grouptemplates = {{ grouptemplates_serialized|tojson }};
-            console.log("Grouptemplates:");
-            console.log(grouptemplates);
+    $(document).ready(function () {
 
-            var musics = {{ musics_serialized|tojson }};
-            console.log("Music Database:");
-            console.log(musics);
+        var grouptemplates = {{ grouptemplates_serialized|tojson }};
+        console.log("Grouptemplates:");
+        console.log(grouptemplates);
 
-            var instrumentlist_string = '{{ instrumentlist_string }}'
+        var musics = {{ musics_serialized|tojson }};
+        console.log("Music Database:");
+        console.log(musics);
 
-            //run when a user changes the select template dropdown
-            $(document).on("change", '.group_template_dropdown', function (e) {
-                //get the user selected template and format it so we can iterate over it later
-                var ob = $(this);
-                console.log('Value of the dropdown: ' + ob.val());
-                if (ob.attr('id') == 'musicid') {
-                    console.log('Selected objects id is ' + ob.attr('id'))
-                    var grep_template = $.grep(musics, function (elt) {
-                        return String(elt.musicid) === String(ob.val());
-                    });
-                    if ($('#musicid').val() == '') {
-                        $('#hidemusic').show();
-                        $('#musicwritein').addClass('form-validate');
-                    }
-                    else {
-                        $('#musicwritein').val('').change();
-                        $('#hidemusic').hide();
-                        $('#musicwritein').removeClass('form-validate');
-                        $('#grouptemplatename').val('').change();
-                    }
-                }
-                else if (ob.attr('id') == 'grouptemplatename') {
-                    var grep_template = $.grep(grouptemplates, function (elt) {
-                        return String(elt.grouptemplatename) === String(ob.val());
-                    });
-                    if (e.originalEvent) {
-                        $('#musicid').val('').change();
-                    }
-                }
+        var instrumentlist_string = '{{ instrumentlist_string }}'
 
-                selectedTemplate = grep_template[0];
-                console.log('Selected template is:');
-                console.log(selectedTemplate);
-                //for each instrument type in the group template
-                $.each(selectedTemplate, function(key,value){
-
-                    if (instrumentlist_string.split(',').indexOf(key) > -1) {
-                        console.log(key + ": "+String(value));
-                        $('#' + key).val(0).change();
-                        if (value > 0) {
-                            $('#' + key).val(value).change();
-                        }
-                    }
-                    else if (key == 'grouptemplatename') {
-                        $('#groupname').val(value).change();
-                    }
-                    else if (key == 'defaultlocationid') {
-                        $('#locationid').val(value).change();
-                    }
+        //run when a user changes the select template dropdown
+        $(document).on("change", '.group_template_dropdown', function (e) {
+            //get the user selected template and format it so we can iterate over it later
+            var ob = $(this);
+            console.log('Value of the dropdown: ' + ob.val());
+            if (ob.attr('id') == 'musicid') {
+                console.log('Selected objects id is ' + ob.attr('id'))
+                var grep_template = $.grep(musics, function (elt) {
+                    return String(elt.musicid) === String(ob.val());
                 });
+                if ($('#musicid').val() == '') {
+                    $('#hidemusic').show();
+                    $('#musicwritein').addClass('form-validate');
+                }
+                else {
+                    $('#musicwritein').val('').change();
+                    $('#hidemusic').hide();
+                    $('#musicwritein').removeClass('form-validate');
+                    $('#grouptemplatename').val('').change();
+                }
+            }
+            else if (ob.attr('id') == 'grouptemplatename') {
+                var grep_template = $.grep(grouptemplates, function (elt) {
+                    return String(elt.grouptemplatename) === String(ob.val());
+                });
+                if (e.originalEvent) {
+                    $('#musicid').val('').change();
+                }
+            }
+
+            selectedTemplate = grep_template[0];
+            console.log('Selected template is:');
+            console.log(selectedTemplate);
+            //for each instrument type in the group template
+            $.each(selectedTemplate, function(key,value){
+
+                if (instrumentlist_string.split(',').indexOf(key) > -1) {
+                    console.log(key + ": "+String(value));
+                    $('#' + key).val(0).change();
+                    if (value > 0) {
+                        $('#' + key).val(value).change();
+                    }
+                }
+                else if (key == 'grouptemplatename') {
+                    $('#groupname').val(value).change();
+                }
+                else if (key == 'defaultlocationid') {
+                    $('#locationid').val(value).change();
+                }
             });
         });
-    </script>
+    });
+</script>
 {% endblock %}
 {% block breadcrumbs %}
 <li class="w3-hide-small"><a href="/user/{{ thisuser.userid }}/date/{{thisperiod.starttime.strftime('%Y-%m-%d')}}/" class="w3-hover-white">{{ thisperiod.starttime.strftime('%d %b') }}</a></li>
@@ -93,117 +93,121 @@
     <a href="#" class="w3-hover-black submit_button" data-submittype="submit" data-method="POST"><i class="fa fa-check save_icon"></i><i class="fa fa-circle-o-notch fa-spin spin_icon"></i> Submit</a>
 </div>
 {% endblock %}
-    {% block content %}
-    <p>
-        Optional: Select a group template to autofill the page
-        <select class="group_template_dropdown" id="grouptemplatename">
-            <option value=""></option>
-            {% for g in grouptemplates %}
-            <option value="{{ g.grouptemplatename }}">{{ g.grouptemplatename }}</option>
+{% block content %}
+<div class="w3-row">
+    <div class="w3-container">
+        <p>
+            Optional: Select a group template to autofill the page
+            <select class="group_template_dropdown" id="grouptemplatename">
+                <option value=""></option>
+                {% for g in grouptemplates %}
+                <option value="{{ g.grouptemplatename }}">{{ g.grouptemplatename }}</option>
+                {% endfor %}
+            </select>
+        </p>
+        <h2>Group Configuration</h2>
+        <table id="configTable">
+            <tr>
+                <th>Period Name</th>
+                <td>{{ thisperiod.periodname }}</td>
+            </tr>
+            <tr>
+                <th>Date</th>
+                <td>{{ thisperiod.starttime.strftime('%A, %Y-%m-%d') }}</td>
+            </tr>
+            <tr>
+                <th>Group Name</th>
+                <td><input type="text" class="form-attribute form-validate" id="groupname"></td>
+            </tr>
+            <tr>
+                <th>Music</th>
+                <td>
+                    <select class="form-attribute group_template_dropdown" id="musicid">
+                        <option value="">Other (Write your own):</option>
+                        {% for m in musics %}
+                        <option value="{{m.musicid}}">{{m.composer}} {% if m.musicname|length > 25 %}{{ m.musicname[0:18] }}...{% else %}{{ m.musicname }}{% endif %}</option>
+                        {% endfor %}
+                    </select>
+                </td>
+            </tr>
+            <tr id="hidemusic">
+                <th>Music</th>
+                <td><input type="text" class="form-attribute form-validate" id="musicwritein"></td>
+            </tr>
+            <tr>
+                <th>Location</th>
+                <td>
+                    <select class="form-attribute form-validate" id="locationid">
+                        <option value=""></option>
+                        {% for l in locations %}
+                        <option value="{{ l.locationid }}">{{ l.locationname }}</option>
+                        {% endfor %}
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <th>Minimum Level</th>
+                <td>
+                    <select class="form-attribute" id="minimumlevel">
+                        {% for n in range(maximumlevel + 1) %}
+                        {% if n  == 0 %}
+                        <option value="{{ n }}">Auto</option>
+                        {%else%}
+                        <option value="{{ n }}">{{ n }}</option>
+                        {%endif%}
+                        {% endfor %}
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <th>Maximum Level</th>
+                <td>
+                    <select class="form-attribute" id="maximumlevel">
+                        {% for n in range(maximumlevel + 1) %}
+                        {% if n  == 0 %}
+                        <option value="{{ n }}">Auto</option>
+                        {%else%}
+                        <option value="{{ n }}">{{ n }}</option>
+                        {%endif%}
+                        {% endfor %}
+                    </select>
+                </td>
+            </tr>
+        </table>
+        <p>
+            Conductor Name:
+            <select class="form-attribute" id="conductoruserid">
+                <option value=""></option>
+                {% for c in conductors %}
+                {% if c.userid == thisuser.userid %}
+                <option value="{{ c.userid }}" selected="selected">{{ c.firstname }} {{ c.lastname }}</option>
+                {% else %}
+                <option value="{{ c.userid }}">{{ c.firstname }} {{ c.lastname }}</option>
+                {% endif %}
+                {% endfor %}
+            </select>
+        </p>
+        <h2>Group Instrumentation</h2>
+        <table id="playersTable">
+            <!--Table Headers-->
+            <tr>
+                <th>Instrument</th>
+                <th>Number</th>
+            </tr>
+            {% for i in instrumentlist %}
+            <tr>
+                <td>{{ i }}</td>
+                <td>
+                    <select class="instrumentnumber_dropdown form-attribute form-validate" id="{{ i }}">
+                        {% set n = 21 %}
+                        {% for n in range(n) %}
+                        <option value="{{ n }}">{{ n }}</option>
+                        {% endfor %}
+                    </select>
+                </td>
+            </tr>
             {% endfor %}
-        </select>
-    </p>
-    <h2>Group Configuration</h2>
-    <table id="configTable">
-        <tr>
-            <th>Period Name</th>
-            <td>{{ thisperiod.periodname }}</td>
-        </tr>
-        <tr>
-            <th>Date</th>
-            <td>{{ thisperiod.starttime.strftime('%A, %Y-%m-%d') }}</td>
-        </tr>
-        <tr>
-            <th>Group Name</th>
-            <td><input type="text" class="form-attribute form-validate" id="groupname"></td>
-        </tr>
-        <tr>
-            <th>Music</th>
-            <td>
-                <select class="form-attribute group_template_dropdown" id="musicid">
-                    <option value="">Other (Write your own):</option>
-                    {% for m in musics %}
-                    <option value="{{m.musicid}}">{{m.composer}} {% if m.musicname|length > 25 %}{{ m.musicname[0:18] }}...{% else %}{{ m.musicname }}{% endif %}</option>
-                    {% endfor %}
-                </select>
-            </td>
-        </tr>
-        <tr id="hidemusic">
-            <th>Music</th>
-            <td><input type="text" class="form-attribute form-validate" id="musicwritein"></td>            
-        </tr>
-        <tr>
-            <th>Location</th>
-            <td>
-                <select class="form-attribute form-validate" id="locationid">
-                    <option value=""></option>
-                    {% for l in locations %}
-                    <option value="{{ l.locationid }}">{{ l.locationname }}</option>
-                    {% endfor %}
-                </select>
-            </td>
-        </tr>
-        <tr>
-            <th>Minimum Level</th>
-            <td>
-                <select class="form-attribute" id="minimumlevel">
-                    {% for n in range(maximumlevel + 1) %}
-                    {% if n  == 0 %}
-                    <option value="{{ n }}">Auto</option>
-                    {%else%}
-                    <option value="{{ n }}">{{ n }}</option>
-                    {%endif%}
-                    {% endfor %}
-                </select>
-            </td>
-        </tr>
-        <tr>
-            <th>Maximum Level</th>
-            <td>
-                <select class="form-attribute" id="maximumlevel">
-                    {% for n in range(maximumlevel + 1) %}
-                    {% if n  == 0 %}
-                    <option value="{{ n }}">Auto</option>
-                    {%else%}
-                    <option value="{{ n }}">{{ n }}</option>
-                    {%endif%}
-                    {% endfor %}
-                </select>
-            </td>
-        </tr>
-    </table>
-    <p>
-        Conductor Name:
-        <select class="form-attribute" id="conductoruserid">
-            <option value=""></option>
-            {% for c in conductors %}
-            {% if c.userid == thisuser.userid %}
-            <option value="{{ c.userid }}" selected="selected">{{ c.firstname }} {{ c.lastname }}</option>
-            {% else %}
-            <option value="{{ c.userid }}">{{ c.firstname }} {{ c.lastname }}</option>
-            {% endif %}
-            {% endfor %}
-        </select>
-    </p>
-    <h2>Group Instrumentation</h2>
-    <table id="playersTable">
-        <!--Table Headers-->
-        <tr>
-            <th>Instrument</th>
-            <th>Number</th>
-        </tr>
-        {% for i in instrumentlist %}
-        <tr>
-            <td>{{ i }}</td>
-            <td>
-                <select class="instrumentnumber_dropdown form-attribute form-validate" id="{{ i }}">
-                    {% set n = 21 %}
-                    {% for n in range(n) %}
-                    <option value="{{ n }}">{{ n }}</option>
-                    {% endfor %}
-                </select>
-            </td>
-        </tr>
-        {% endfor %}
-    </table>
-    {% endblock %}
+        </table>
+    </div>
+</div>
+{% endblock %}

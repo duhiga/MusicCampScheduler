@@ -1,157 +1,212 @@
 {% extends "layout.html" %}
 {% block title%}Home - {{ campname }}{% endblock %}
 {% block head %}
-    <script>
+<script>
 
-        function openTab(evt, tabName) {
-            // Declare all variables
-            var i, tabcontent, tablinks;
+    function openTab(evt, tabName) {
+        // Declare all variables
+        var i, tabcontent, tablinks;
 
-            // Get all elements with class="tabcontent" and hide them
-            tabcontent = document.getElementsByClassName("tabcontent");
-            for (i = 0; i < tabcontent.length; i++) {
-                tabcontent[i].style.display = "none";
-            }
-
-            // Get all elements with class="tablinks" and remove the class "active"
-            tablinks = document.getElementsByClassName("tablinks");
-            for (i = 0; i < tablinks.length; i++) {
-                tablinks[i].className = tablinks[i].className.replace(" active", "");
-            }
-
-            // Show the current tab, and add an "active" class to the link that opened the tab
-            document.getElementById(tabName).style.display = "block";
-            evt.currentTarget.className += " active";
+        // Get all elements with class="tabcontent" and hide them
+        tabcontent = document.getElementsByClassName("tabcontent");
+        for (i = 0; i < tabcontent.length; i++) {
+            tabcontent[i].style.display = "none";
         }
 
-        $(document).ready(function () {
+        // Get all elements with class="tablinks" and remove the class "active"
+        tablinks = document.getElementsByClassName("tablinks");
+        for (i = 0; i < tablinks.length; i++) {
+            tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
 
-            // Get the element with id="defaultOpen" and click on it
-            document.getElementById("defaultOpen").click();
+        // Show the current tab, and add an "active" class to the link that opened the tab
+        document.getElementById(tabName).style.display = "block";
+        evt.currentTarget.className += " active";
+    }
 
-            //handler for thisuser clicking the button requesting an absence
-            $(".absent_request_button").click(function () {
-                $(this).prop('disabled', true).addClass('disabled');
-                console.log("User requested absence");
-                var post_absent = $.ajax({
-                    type: 'POST',
-                    url: '/user/{{ thisuser.userid }}/period/' + this.id + '/absent/confirm/'
-                });
+    $(document).ready(function () {
 
-                // handle response
-                post_absent.done(function (response) {
-                    console.log(response);
-                    location.reload();
-                });
+        // Get the element with id="defaultOpen" and click on it
+        document.getElementById("defaultOpen").click();
+
+        //handler for thisuser clicking the button requesting an absence
+        $(".absent_request_button").click(function () {
+            $(this).prop('disabled', true).addClass('disabled');
+            console.log("User requested absence");
+            var post_absent = $.ajax({
+                type: 'POST',
+                url: '/user/{{ thisuser.userid }}/period/' + this.id + '/absent/confirm/'
             });
 
-            //handler for thisuser clicking the button requesting to cancel an absence
-            $(".absent_cancel_button").click(function () {
-                $(this).prop('disabled', true).addClass('disabled');
-                console.log("User Removed their Absence");
-                var post_absent = $.ajax({
-                    type: 'POST',
-                    url: '/user/{{ thisuser.userid }}/period/' + this.id + '/absent/cancel/'
-                });
-
-                // handle response
-                post_absent.done(function (response) {
-                    console.log(response);
-                    location.reload();
-                });
-            });
-
-            //handler for the user changing the dropdown date picker
-            $(document).on("change", '.date_select', function () {
-                window.location.replace("/user/{{ thisuser.userid }}/date/" + $(this).val() + "/")
-                /*
-                request = {};
-                request.date = $(this).val();
-                response = sendtoserver(request, 'POST', "/user/{{ thisuser.userid }}/requestschedule/");
+            // handle response
+            post_absent.done(function (response) {
                 console.log(response);
-                */
-            });
-            //handler for the user clicking the next day button
-            $(document).on("click", '.next', function () {
-                window.location.replace("/user/{{ thisuser.userid }}/date/{{ nextday.strftime('%Y-%m-%d') }}/")
-            });
-            //handler for the user clicking the previous day button
-            $(document).on("click", '.previous', function () {
-                window.location.replace("/user/{{ thisuser.userid }}/date/{{ previousday.strftime('%Y-%m-%d') }}/")
+                location.reload();
             });
         });
-    </script>
+
+        //handler for thisuser clicking the button requesting to cancel an absence
+        $(".absent_cancel_button").click(function () {
+            $(this).prop('disabled', true).addClass('disabled');
+            console.log("User Removed their Absence");
+            var post_absent = $.ajax({
+                type: 'POST',
+                url: '/user/{{ thisuser.userid }}/period/' + this.id + '/absent/cancel/'
+            });
+
+            // handle response
+            post_absent.done(function (response) {
+                console.log(response);
+                location.reload();
+            });
+        });
+
+        //handler for the user changing the dropdown date picker
+        $(document).on("change", '.date_select', function () {
+            window.location.replace("/user/{{ thisuser.userid }}/date/" + $(this).val() + "/")
+            /*
+            request = {};
+            request.date = $(this).val();
+            response = sendtoserver(request, 'POST', "/user/{{ thisuser.userid }}/requestschedule/");
+            console.log(response);
+            */
+        });
+        //handler for the user clicking the next day button
+        $(document).on("click", '.next', function () {
+            window.location.replace("/user/{{ thisuser.userid }}/date/{{ nextday.strftime('%Y-%m-%d') }}/")
+        });
+        //handler for the user clicking the previous day button
+        $(document).on("click", '.previous', function () {
+            window.location.replace("/user/{{ thisuser.userid }}/date/{{ previousday.strftime('%Y-%m-%d') }}/")
+        });
+    });
+</script>
 {% endblock %}
 {% block breadcrumbs %}
 <li class="w3-hide-small"><a href="#" class="w3-hover-white">{{ date.strftime('%d %b') }}</a></li>
 {% endblock %}
 {% block content %}
-    {% if thisuser.isactive == 0 %}
+<div class="w3-row">
+    <div class="w3-container">
+        {% if thisuser.isactive == 0 %}
         <h2>You are currently set to inactive. You will not be allocated to any groups.</h2>
-    {% endif %}
-    {% if currentannouncement != '' and currentannouncement != None %}
-    <h3>Announcements</h3>
-    <p>{{ currentannouncement|safe }}</p>
-    {% endif %}
-    <p style="text-align: center;">
-        <button type="button" class="previous"><i class="fa fa-arrow-left"></i></button>
-        <select class="date_select" id="date_dropdown" style="font-size: 18px;">
-            {% for d in dates %}
-                {% if d.strftime('%Y-%m-%d') == date.strftime('%Y-%m-%d') %}
-                    {% if d.strftime('%Y-%m-%d') == today.strftime('%Y-%m-%d') %}
-                        <option value="{{d.strftime('%Y-%m-%d')}}" selected="selected">Today</option>
-                    {% else %}
-                        <option value="{{d.strftime('%Y-%m-%d')}}" selected="selected">{{ d.strftime('%a, %d %b') }}</option>
-                    {% endif %}
-                {% else %}
-                    {% if d.strftime('%Y-%m-%d') == today.strftime('%Y-%m-%d') %}
-                        <option value="{{d.strftime('%Y-%m-%d')}}">Today</option>
-                    {% else %}
-                        <option value="{{d.strftime('%Y-%m-%d')}}">{{ d.strftime('%a, %d %b') }}</option>
-                    {% endif %}
-                {% endif %}
-            {% endfor %}
-        </select>
-        <button type="button" class="next"><i class="fa fa-arrow-right"></i></button>
-</p>
-    <ul class="tab">
-        <li><a href="javascript:void(0)" class="tablinks" onclick="openTab(event, 'Schedule')" id="defaultOpen">Schedule</a></li>
-        {% if date > today %}
-        <li><a href="javascript:void(0)" class="tablinks" onclick="openTab(event, 'Tools')">Tools</a></li>
         {% endif %}
-        {% if thisuser.isconductor == 1 and date > today %}
-        <li><a href="javascript:void(0)" class="tablinks" onclick="openTab(event, 'Conductor')">Conductor</a></li>
+        {% if currentannouncement != '' and currentannouncement != None %}
+        <h3>Announcements</h3>
+        <p>{{ currentannouncement|safe }}</p>
         {% endif %}
-        {% if thisuser.isadmin == 1 %}
-        <li><a href="javascript:void(0)" class="tablinks" onclick="openTab(event, 'Admin')">Admin</a></li>
-        {% endif %}
-    </ul>
-    <div id="Schedule" class="tabcontent">
-        <table style="width:100%">
-            <thead>
+        <p>
+            <div class="w3-center">
+                <button class="w3-btn w3-white w3-border previous">&#10094; Previous</button>
+                <div class="w3-dropdown-hover">
+                    <button class="w3-btn w3-white w3-border">
+                        {% if date.strftime('%Y-%m-%d') == today.strftime('%Y-%m-%d') %}
+                        Today
+                        {% else %}
+                        {{ date.strftime('%a, %d %b') }}
+                        {% endif %}
+                    </button>
+                    <div class="w3-dropdown-content w3-border">
+                        {% for d in dates %}
+                        {% if d.strftime('%Y-%m-%d') == today.strftime('%Y-%m-%d') %}
+                        <a href="/user/{{ thisuser.userid }}/date/{{d.strftime('%Y-%m-%d')}}/">Today</a>
+                        {% else %}
+                        <a href="/user/{{ thisuser.userid }}/date/{{d.strftime('%Y-%m-%d')}}/">{{ d.strftime('%a, %d %b') }}</a>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+                <button class="w3-btn w3-white w3-border next">Next &#10095;</button>
+            </div>
+        </p>
+        <ul class="tab">
+            <li><a href="javascript:void(0)" class="tablinks" onclick="openTab(event, 'Schedule')" id="defaultOpen">Schedule</a></li>
+            {% if date > today %}
+            <li><a href="javascript:void(0)" class="tablinks" onclick="openTab(event, 'Tools')">Tools</a></li>
+            {% endif %}
+            {% if thisuser.isconductor == 1 and date > today %}
+            <li><a href="javascript:void(0)" class="tablinks" onclick="openTab(event, 'Conductor')">Conductor</a></li>
+            {% endif %}
+            {% if thisuser.isadmin == 1 %}
+            <li><a href="javascript:void(0)" class="tablinks" onclick="openTab(event, 'Admin')">Admin</a></li>
+            {% endif %}
+        </ul>
+        <div id="Schedule" class="tabcontent">
+            <table style="width:100%">
+                <thead>
+                    <!--Start of the table for group allocations for this day-->
+                    <tr>
+                        <th>Time</th>
+                        <th>Name</th>
+                        <th><div class="w3-hide-small">Instrument</div><div class="w3-hide-medium w3-hide-large">Inst.</div></th>
+                        <th><div class="w3-hide-small">Location</div><div class="w3-hide-medium w3-hide-large">Loc.</div></th>
+                    </tr>
+                </thead>
+                <tbody class="zebra-table">
+                    {% for p in schedule %}
+                    <tr>
+                        <!--Time Column-->
+                        <td>
+                            <a href="/user/{{ thisuser.userid }}/period/{{ p.periodid }}/">{{ p.starttime.strftime('%H:%M') }} - {{ p.endtime.strftime('%H:%M') }}</a>
+                        </td>
+                        <!--Group Name Column-->
+                        <td>
+                            {% if not p.groupname and p.starttime >= thisuser.arrival and p.endtime <= thisuser.departure %}
+                            {{ p.periodname }}
+
+                            {% else %}{% if p.ismusical == 1 %}
+                            <a href="/user/{{ thisuser.userid }}/group/{{ p.groupid }}/">{{ p.groupname }}</a>
+                            {% else %}{% if p.groupname == "absent" or p.starttime < thisuser.arrival or p.endtime > thisuser.departure %}
+                            ABSENT
+                            {% else %}
+                            {{ p.groupname }}
+                            {% endif %}
+                            {% endif %}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if p.groupname == "absent" or p.starttime < thisuser.arrival or p.endtime > thisuser.departure %}
+                            ABSENT
+                            {% else %}
+                            {{ p.instrumentname }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if p.groupname == "absent" or p.starttime < thisuser.arrival or p.endtime > thisuser.departure %}
+                            ABSENT
+                            {% else %}
+                            {{ p.locationname }}
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div id="Tools" class="tabcontent">
+            <table style="width:100%" class="zebra-table">
                 <!--Start of the table for group allocations for this day-->
                 <tr>
                     <th>Time</th>
                     <th>Name</th>
-                    <th><div class="w3-hide-small">Instrument</div><div class="w3-hide-medium w3-hide-large">Inst.</div></th>
-                    <th><div class="w3-hide-small">Location</div><div class="w3-hide-medium w3-hide-large">Loc.</div></th>
+                    {% if date > today %}
+                    <th>Mark yourself absent</th>
+                    {% endif %}
                 </tr>
-            </thead>
-            <tbody class="zebra-table">
                 {% for p in schedule %}
                 <tr>
                     <!--Time Column-->
                     <td>
                         <a href="/user/{{ thisuser.userid }}/period/{{ p.periodid }}/">{{ p.starttime.strftime('%H:%M') }} - {{ p.endtime.strftime('%H:%M') }}</a>
                     </td>
-                    <!--Group Name Column-->
+                    <!--Group/Period Name Column, depending on context-->
                     <td>
-                        {% if not p.groupname and p.starttime >= thisuser.arrival and p.endtime <= thisuser.departure %}
+                        {% if not p.groupname %}
                         {{ p.periodname }}
 
                         {% else %}{% if p.ismusical == 1 %}
                         <a href="/user/{{ thisuser.userid }}/group/{{ p.groupid }}/">{{ p.groupname }}</a>
-                        {% else %}{% if p.groupname == "absent" or p.starttime < thisuser.arrival or p.endtime > thisuser.departure %}
+                        {% else %}{% if p.groupname == "absent" %}
                         ABSENT
                         {% else %}
                         {{ p.groupname }}
@@ -159,135 +214,87 @@
                         {% endif %}
                         {% endif %}
                     </td>
+                    <!--Options Column - only appears if looking at a future date-->
+                    {% if date > today %}
                     <td>
-                        {% if p.groupname == "absent" or p.starttime < thisuser.arrival or p.endtime > thisuser.departure %}
-                        ABSENT
+                        {% if not p.groupname or p.iseveryone %}
+                        <button id={{ p.periodid }} data-periodname="{{ p.periodname }}" class="absent_request_button">Mark me as absent</button>
                         {% else %}
-                        {{ p.instrumentname }}
+                        {% if p.groupname == "absent" %}
+                        <button id={{ p.periodid }} data-periodname="{{ p.periodname }}" class="absent_cancel_button">Mark me as present</button>
+                        {% else %}
+                        Already allocated
+                        {% endif %}
                         {% endif %}
                     </td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+        {% if thisuser.isconductor == 1 %}
+        <div id="Conductor" class="tabcontent">
+            <table style="width:100%" class="zebra-table">
+                <!--Start of the table for group allocations for this day-->
+                <tr>
+                    <th>Time</th>
+                    <th>Name</th>
+                    <th>Create Group</th>
+                    <th>Instrumentation</th>
+                </tr>
+                {% for p in schedule %}
+                <tr>
+                    <!--Time Column-->
                     <td>
-                        {% if p.groupname == "absent" or p.starttime < thisuser.arrival or p.endtime > thisuser.departure %}
-                        ABSENT
-                        {% else %}
-                        {{ p.locationname }}
+                        <a href="/user/{{ thisuser.userid }}/period/{{ p.periodid }}/">{{ p.starttime.strftime('%H:%M') }} - {{ p.endtime.strftime('%H:%M') }}</a>
+                    </td>
+                    <!--Period Name Column-->
+                    <td>{{ p.periodname }}</td>
+                    <!--Conductor Columns - only appears if the thisuser is a conductor-->
+                    {% if thisuser.isconductor == 1 %}
+                    <td><a href="/user/{{ thisuser.userid }}/grouprequest/conductor/{{ p.periodid }}/">Create</a></td>
+                    <td><a href="/user/{{ thisuser.userid }}/instrumentation/{{ p.periodid }}/">Create</a></td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+        {% endif %}
+        {% if thisuser.isadmin == 1 %}
+        <div id="Admin" class="tabcontent">
+            <table style="width:100%" class="zebra-table">
+                <!--Start of the table for group allocations for this day-->
+                <tr>
+                    <th>Time</th>
+                    <th>Name</th>
+                    <th>Create Group</th>
+                    <th>Public Event</th>
+                </tr>
+                {% for p in schedule %}
+                <tr>
+                    <!--Time Column-->
+                    <td>
+                        <a href="/user/{{ thisuser.userid }}/period/{{ p.periodid }}/">{{ p.starttime.strftime('%H:%M') }} - {{ p.endtime.strftime('%H:%M') }}</a>
+                    </td>
+                    <!--Period Name Column-->
+                    <td>{{ p.periodname }}</td>
+                    <!--Admin Group Creation Column-->
+                    <td>
+                        {% if p.starttime > now %}
+                        <a href="/user/{{ thisuser.userid }}/group/new/period/{{ p.periodid }}/edit/">Create</a>
+                        {% endif %}
+                    </td><!--Pubilc Event Column-->
+                    <td>
+                        {% if p.starttime > now %}
+                        <a href="/user/{{ thisuser.userid }}/publicevent/{{ p.periodid }}/">Create</a>
                         {% endif %}
                     </td>
                 </tr>
                 {% endfor %}
-            </tbody>
-        </table>
+            </table>
+        </div>
+        {% endif %}
+        <p>Last updated: {{ now.strftime('%Y-%m-%d %H:%M:%S') }}</p>
     </div>
-    <div id="Tools" class="tabcontent">
-        <table style="width:100%" class="zebra-table">
-            <!--Start of the table for group allocations for this day-->
-            <tr>
-                <th>Time</th>
-                <th>Name</th>
-                {% if date > today %}
-                <th>Mark yourself absent</th>
-                {% endif %}
-            </tr>
-            {% for p in schedule %}
-            <tr>
-                <!--Time Column-->
-                <td>
-                    <a href="/user/{{ thisuser.userid }}/period/{{ p.periodid }}/">{{ p.starttime.strftime('%H:%M') }} - {{ p.endtime.strftime('%H:%M') }}</a>
-                </td>
-                <!--Group/Period Name Column, depending on context-->
-                <td>
-                    {% if not p.groupname %}
-                    {{ p.periodname }}
-
-                    {% else %}{% if p.ismusical == 1 %}
-                    <a href="/user/{{ thisuser.userid }}/group/{{ p.groupid }}/">{{ p.groupname }}</a>
-                    {% else %}{% if p.groupname == "absent" %}
-                    ABSENT
-                    {% else %}
-                    {{ p.groupname }}
-                    {% endif %}
-                    {% endif %}
-                    {% endif %}
-                </td>
-                <!--Options Column - only appears if looking at a future date-->
-                {% if date > today %}
-                <td>
-                    {% if not p.groupname or p.iseveryone %}
-                    <button id={{ p.periodid }} data-periodname="{{ p.periodname }}" class="absent_request_button">Mark me as absent</button>
-                    {% else %}
-                    {% if p.groupname == "absent" %}
-                    <button id={{ p.periodid }} data-periodname="{{ p.periodname }}" class="absent_cancel_button">Mark me as present</button>
-                    {% else %}
-                    Already allocated
-                    {% endif %}
-                    {% endif %}
-                </td>
-                {% endif %}
-            </tr>
-            {% endfor %}
-        </table>
-    </div>
-    {% if thisuser.isconductor == 1 %}
-    <div id="Conductor" class="tabcontent">
-        <table style="width:100%" class="zebra-table">
-            <!--Start of the table for group allocations for this day-->
-            <tr>
-                <th>Time</th>
-                <th>Name</th>
-                <th>Create Group</th>
-                <th>Instrumentation</th>
-            </tr>
-            {% for p in schedule %}
-            <tr>
-                <!--Time Column-->
-                <td>
-                    <a href="/user/{{ thisuser.userid }}/period/{{ p.periodid }}/">{{ p.starttime.strftime('%H:%M') }} - {{ p.endtime.strftime('%H:%M') }}</a>
-                </td>
-                <!--Period Name Column-->
-                <td>{{ p.periodname }}</td>
-                <!--Conductor Columns - only appears if the thisuser is a conductor-->
-                {% if thisuser.isconductor == 1 %}
-                <td><a href="/user/{{ thisuser.userid }}/grouprequest/conductor/{{ p.periodid }}/">Create</a></td>
-                <td><a href="/user/{{ thisuser.userid }}/instrumentation/{{ p.periodid }}/">Create</a></td>
-                {% endif %}
-            </tr>
-            {% endfor %}
-        </table>
-    </div>
-    {% endif %}
-    {% if thisuser.isadmin == 1 %}
-    <div id="Admin" class="tabcontent">
-        <table style="width:100%" class="zebra-table">
-            <!--Start of the table for group allocations for this day-->
-            <tr>
-                <th>Time</th>
-                <th>Name</th>
-                <th>Create Group</th>
-                <th>Public Event</th>
-            </tr>
-            {% for p in schedule %}
-            <tr>
-                <!--Time Column-->
-                <td>
-                    <a href="/user/{{ thisuser.userid }}/period/{{ p.periodid }}/">{{ p.starttime.strftime('%H:%M') }} - {{ p.endtime.strftime('%H:%M') }}</a>
-                </td>
-                <!--Period Name Column-->
-                <td>{{ p.periodname }}</td>
-                <!--Admin Group Creation Column-->
-                <td>
-                    {% if p.starttime > now %}
-                    <a href="/user/{{ thisuser.userid }}/group/new/period/{{ p.periodid }}/edit/">Create</a>
-                    {% endif %}
-                </td><!--Pubilc Event Column-->
-                <td>
-                    {% if p.starttime > now %}
-                    <a href="/user/{{ thisuser.userid }}/publicevent/{{ p.periodid }}/">Create</a>
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        </table>
-    </div>
-    {% endif %}
-<p>Last updated: {{ now.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+</div>
 {% endblock %}

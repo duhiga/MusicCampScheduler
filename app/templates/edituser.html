@@ -104,267 +104,270 @@
 {% block breadcrumbs %}
 {% if targetuser.userid is not none %}
     {% if thisuser.isadmin == 1 %}
-    <li class="w3-hide-small"><a href="#" class="w3-hover-white">Editing User &#34;{{ targetuser.firstname }} {{ targetuser.lastname }}&#34;</a></li>
+<li class="w3-hide-small"><a href="#" class="w3-hover-white">Editing User &#34;{{ targetuser.firstname }} {{ targetuser.lastname }}&#34;</a></li>
     {% else %}
-    <li class="w3-hide-small"><a href="#" class="w3-hover-white">My Settings</a></li>
+<li class="w3-hide-small"><a href="#" class="w3-hover-white">My Settings</a></li>
     {% endif %}
 {% else %}
-    <li class="w3-hide-small"><a href="#" class="w3-hover-white">New User</a></li>
+<li class="w3-hide-small"><a href="#" class="w3-hover-white">New User</a></li>
 {% endif %}
 {% endblock %}
 {% block sidenav %}
-    <div class="submit_hide">
+<div class="submit_hide">
     {% if thisuser.isadmin == 1 %}
-        <h4><b>Tools</b></h4>
-        <a href="#" class="w3-hover-black" id="send_email" data-method="POST"><i class="fa fa-envelope-o"></i> Send Invite Email</a>
+    <h4><b>Tools</b></h4>
+    <a href="#" class="w3-hover-black" id="send_email" data-method="POST"><i class="fa fa-envelope-o"></i> Send Invite Email</a>
     {% endif %}
     <h4><b>Save</b></h4>
-        <a href="#" class="w3-hover-black submit_button" data-submittype="save" data-method="POST"><i class="fa fa-save save_icon"></i><i class="fa fa-circle-o-notch fa-spin spin_icon"></i> Save Changes</a>
-        <a href="#" class="w3-hover-black submit_button" data-submittype="submit" data-method="POST"><i class="fa fa-check save_icon"></i><i class="fa fa-circle-o-notch fa-spin spin_icon"></i> Submit</a>
-    </div>
+    <a href="#" class="w3-hover-black submit_button" data-submittype="save" data-method="POST"><i class="fa fa-save save_icon"></i><i class="fa fa-circle-o-notch fa-spin spin_icon"></i> Save Changes</a>
+    <a href="#" class="w3-hover-black submit_button" data-submittype="submit" data-method="POST"><i class="fa fa-check save_icon"></i><i class="fa fa-circle-o-notch fa-spin spin_icon"></i> Submit</a>
+</div>
 {% endblock %}
 {% block content %}
-{% if targetuser.userid is not none %}
-    {% if thisuser.isadmin == 1 %}
-    <h1>Editing User &#34;{{ targetuser.firstname }} {{ targetuser.lastname }}&#34;</h1>
-    {% endif %}
-{% else %}
-    <h1>New User</h1>
-{% endif %}
-<h2>{% if thisuser.isadmin == 1 %}User{% else %}My{% endif %} Settings</h2>
-<p>Note: You will only be assigned a group if you are set to Active, and the group plays between your arrival and departure times.</p>
-<table>
-    <tbody>
-        <tr>
-            <td>First Name</td>
-            <td>
-                {% if targetuser.userid is not none and thisuser.isadmin == 1 %}
-                <input type="text" id="firstname" class="form-attribute form-validate" value="{{ targetuser.firstname }}">
-                {% elif thisuser.isadmin != 1 %}
-                {{ targetuser.firstname }}
-                {% else %}
-                <input type="text" id="firstname" class="form-attribute form-validate" value="">
-                {% endif %}
-            </td>
-        </tr>
-        <tr>
-            <td>Last Name</td>
-            <td>
-                {% if targetuser.userid is not none and thisuser.isadmin == 1 %}
-                <input type="text" id="lastname" class="form-attribute form-validate" value="{{ targetuser.lastname }}">
-                {% elif thisuser.isadmin != 1 %}
-                {{ targetuser.lastname }}
-                {% else %}
-                <input type="text" id="lastname" class="form-attribute form-validate" value="">
-                {% endif %}
-            </td>
-        </tr>
+<div class="w3-row">
+    <div class="w3-container">
+        {% if targetuser.userid is not none %}
         {% if thisuser.isadmin == 1 %}
-        <tr>
-            <td>Email</td>
-            <td>
-                <input id="email" type="email" class="form-attribute" value="<HIDDEN>">
-            </td>
-        </tr>
+        <h1>Editing User &#34;{{ targetuser.firstname }} {{ targetuser.lastname }}&#34;</h1>
         {% endif %}
-        <tr>
-            <td>Arrival</td>
-            <td>
-                <select id="arrival" class="form-attribute">
-                    {% for p in periods %}
-                    {% if targetuser.userid != None and p.starttime == targetuser.arrival %}
-                    <option value="{{ p.starttime }}" selected="selected">{{ p.starttime.strftime('%d %b') }}: {{ p.periodname }}</option>
-                    {% elif targetuser.userid == None and p.starttime == periods[0].starttime %}
-                    <option value="{{ p.starttime }}" selected="selected">{{ p.starttime.strftime('%d %b') }}: {{ p.periodname }}</option>
-                    {% else %}
-                    <option value="{{ p.starttime }}">{{ p.starttime.strftime('%d %b') }}: {{ p.periodname }}</option>
-                    {% endif %}
-                    {% endfor %}
-                </select>
-            </td>
-        </tr>
-        <tr>
-            <td>Departure</td>
-            <td>
-                <select id="departure" class="form-attribute">
-                    {% for p in periods %}
-                    {% if targetuser.userid != None and p.starttime == targetuser.departure %}
-                    <option value="{{ p.starttime }}" selected="selected">{{ p.starttime.strftime('%d %b') }}: {{ p.periodname }}</option>
-                    {% elif targetuser.userid == None and p.starttime == periods[periods|length - 1].starttime %}
-                    <option value="{{ p.starttime }}" selected="selected">{{ p.starttime.strftime('%d %b') }}: {{ p.periodname }}</option>
-                    {% else %}
-                    <option value="{{ p.starttime }}">{{ p.starttime.strftime('%d %b') }}: {{ p.periodname }}</option>
-                    {% endif %}
-                    {% endfor %}
-                </select>
-            </td>
-        </tr>
-        <tr>
-            <td>Active</td>
-            <td>
-                <select id="isactive" class="form-attribute">
-                    {% if targetuser.isactive == 0 %}
-                    <option value="0" selected="selected">Inactive</option>
-                    <option value="1">Active</option>
-                    {% else %}
-                    <option value="0">Inactive</option>
-                    <option value="1" selected="selected">Active</option>
-                    {% endif %}
-                </select>
-            </td>
-        </tr>
-        {% if thisuser.isadmin == 1 %}
-        <tr>
-            <td>Announcer</td>
-            <td>
-                <select id="isannouncer" class="form-attribute">
-                    {% if targetuser.isannouncer == 1 %}
-                    <option value="0">No</option>
-                    <option value="1" selected="selected">Yes</option>
-                    {% else %}
-                    <option value="0" selected="selected">No</option>
-                    <option value="1">Yes</option>
-                    {% endif %}
-                </select>
-            </td>
-        </tr>
-        <tr>
-            <td>Conductor</td>
-            <td>
-                <select id="isconductor" class="form-attribute">
-                    {% if targetuser.isconductor == 1 %}
-                    <option value="0">No</option>
-                    <option value="1" selected="selected">Yes</option>
-                    {% else %}
-                    <option value="0" selected="selected">No</option>
-                    <option value="1">Yes</option>
-                    {% endif %}
-                </select>
-            </td>
-        </tr>
-        <tr>
-            <td>Admin</td>
-            <td>
-                <select id="isadmin" class="form-attribute">
-                    {% if targetuser.isadmin == 1 %}
-                    <option value="0">No</option>
-                    <option value="1" selected="selected">Yes</option>
-                    {% else %}
-                    <option value="0" selected="selected">No</option>
-                    <option value="1">Yes</option>
-                    {% endif %}
-                </select>
-            </td>
-        </tr>
+        {% else %}
+        <h1>New User</h1>
         {% endif %}
-    </tbody>
-</table>
-<h2>{% if thisuser.isadmin == 1 %}User{% else %}My{% endif %} Instruments</h2>
-<p>Note: You won't be assigned to play an instrument if it's set to inactive. Your primary instrument is significantly more likely to be allocated to groups than non-primary instruments.{% if thisuser.isadmin != 1 %} If you wish to add any more instruments, <a href="mailto:{{ supportemailaddress }}">contact camp administration</a>.{% endif %}</p>
-<table>
-    <thead>
-        <tr>
-            <th>Instrument</th>
-            {% if thisuser.isadmin == 1 %}
-            <th>Grade</th>
-            {% endif %}
-            <th>Primary</th>
-            <th>Active</th>
-        </tr>
-    <thead>
-    <tbody>
-        {% for t in targetuserinstruments %}
-            <tr>
-                <td>
-                    <input type="hidden" data-key="instrumentid" data-mapping="{{t.instrumentid}}" value="{{t.instrumentid}}">
-                    {% if thisuser.isadmin == 1 %}
-                    <select class="form-object-master" data-key="instrumentname" data-mapping="{{t.instrumentid}}">
-                        {% for i in instrumentlist %}
-                        {% if t.instrumentname == i %}
-                        <option value="{{i}}" selected="selected">{{i}}</option>
+        <h2>{% if thisuser.isadmin == 1 %}User{% else %}My{% endif %} Settings</h2>
+        <p>Note: You will only be assigned a group if you are set to Active, and the group plays between your arrival and departure times.</p>
+        <table>
+            <tbody>
+                <tr>
+                    <td>First Name</td>
+                    <td>
+                        {% if targetuser.userid is not none and thisuser.isadmin == 1 %}
+                        <input type="text" id="firstname" class="form-attribute form-validate" value="{{ targetuser.firstname }}">
+                        {% elif thisuser.isadmin != 1 %}
+                        {{ targetuser.firstname }}
                         {% else %}
-                        <option value="{{i}}">{{i}}</option>
+                        <input type="text" id="firstname" class="form-attribute form-validate" value="">
                         {% endif %}
-                        {% endfor %}
-                    </select>
-                    {% else %}
-                    {{ t.instrumentname }}
-                    {% endif %}
-                </td>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Last Name</td>
+                    <td>
+                        {% if targetuser.userid is not none and thisuser.isadmin == 1 %}
+                        <input type="text" id="lastname" class="form-attribute form-validate" value="{{ targetuser.lastname }}">
+                        {% elif thisuser.isadmin != 1 %}
+                        {{ targetuser.lastname }}
+                        {% else %}
+                        <input type="text" id="lastname" class="form-attribute form-validate" value="">
+                        {% endif %}
+                    </td>
+                </tr>
                 {% if thisuser.isadmin == 1 %}
-                <td>
-                    <select data-key="grade" data-mapping="{{t.instrumentid}}">
-                        {% for n in range(maximumlevel + 1) %}
-                        {% if n == t.grade %}
-                        <option value="{{ n }}" selected="selected">{{ n }}</option>
-                        {% else %}
-                        <option value="{{ n }}">{{ n }}</option>
-                        {% endif %}
-                        {% endfor %}
-                    </select>
-                </td>
+                <tr>
+                    <td>Email</td>
+                    <td>
+                        <input id="email" type="email" class="form-attribute" value="<HIDDEN>">
+                    </td>
+                </tr>
                 {% endif %}
-                <td>
-                    <select data-key="isprimary" data-mapping="{{t.instrumentid}}">
-                        {% if t.isprimary == 1 %}
-                        <option value="0">No</option>
-                        <option value="1" selected="selected">Yes</option>
+                <tr>
+                    <td>Arrival</td>
+                    <td>
+                        <select id="arrival" class="form-attribute">
+                            {% for p in periods %}
+                            {% if targetuser.userid != None and p.starttime == targetuser.arrival %}
+                            <option value="{{ p.starttime }}" selected="selected">{{ p.starttime.strftime('%d %b') }}: {{ p.periodname }}</option>
+                            {% elif targetuser.userid == None and p.starttime == periods[0].starttime %}
+                            <option value="{{ p.starttime }}" selected="selected">{{ p.starttime.strftime('%d %b') }}: {{ p.periodname }}</option>
+                            {% else %}
+                            <option value="{{ p.starttime }}">{{ p.starttime.strftime('%d %b') }}: {{ p.periodname }}</option>
+                            {% endif %}
+                            {% endfor %}
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Departure</td>
+                    <td>
+                        <select id="departure" class="form-attribute">
+                            {% for p in periods %}
+                            {% if targetuser.userid != None and p.starttime == targetuser.departure %}
+                            <option value="{{ p.starttime }}" selected="selected">{{ p.starttime.strftime('%d %b') }}: {{ p.periodname }}</option>
+                            {% elif targetuser.userid == None and p.starttime == periods[periods|length - 1].starttime %}
+                            <option value="{{ p.starttime }}" selected="selected">{{ p.starttime.strftime('%d %b') }}: {{ p.periodname }}</option>
+                            {% else %}
+                            <option value="{{ p.starttime }}">{{ p.starttime.strftime('%d %b') }}: {{ p.periodname }}</option>
+                            {% endif %}
+                            {% endfor %}
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Active</td>
+                    <td>
+                        <select id="isactive" class="form-attribute">
+                            {% if targetuser.isactive == 0 %}
+                            <option value="0" selected="selected">Inactive</option>
+                            <option value="1">Active</option>
+                            {% else %}
+                            <option value="0">Inactive</option>
+                            <option value="1" selected="selected">Active</option>
+                            {% endif %}
+                        </select>
+                    </td>
+                </tr>
+                {% if thisuser.isadmin == 1 %}
+                <tr>
+                    <td>Announcer</td>
+                    <td>
+                        <select id="isannouncer" class="form-attribute">
+                            {% if targetuser.isannouncer == 1 %}
+                            <option value="0">No</option>
+                            <option value="1" selected="selected">Yes</option>
+                            {% else %}
+                            <option value="0" selected="selected">No</option>
+                            <option value="1">Yes</option>
+                            {% endif %}
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Conductor</td>
+                    <td>
+                        <select id="isconductor" class="form-attribute">
+                            {% if targetuser.isconductor == 1 %}
+                            <option value="0">No</option>
+                            <option value="1" selected="selected">Yes</option>
+                            {% else %}
+                            <option value="0" selected="selected">No</option>
+                            <option value="1">Yes</option>
+                            {% endif %}
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Admin</td>
+                    <td>
+                        <select id="isadmin" class="form-attribute">
+                            {% if targetuser.isadmin == 1 %}
+                            <option value="0">No</option>
+                            <option value="1" selected="selected">Yes</option>
+                            {% else %}
+                            <option value="0" selected="selected">No</option>
+                            <option value="1">Yes</option>
+                            {% endif %}
+                        </select>
+                    </td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+        <h2>{% if thisuser.isadmin == 1 %}User{% else %}My{% endif %} Instruments</h2>
+        <p>Note: You won't be assigned to play an instrument if it's set to inactive. Your primary instrument is significantly more likely to be allocated to groups than non-primary instruments.{% if thisuser.isadmin != 1 %} If you wish to add any more instruments, <a href="mailto:{{ supportemailaddress }}">contact camp administration</a>.{% endif %}</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Instrument</th>
+                    {% if thisuser.isadmin == 1 %}
+                    <th>Grade</th>
+                    {% endif %}
+                    <th>Primary</th>
+                    <th>Active</th>
+                </tr>
+            <thead>
+            <tbody>
+                {% for t in targetuserinstruments %}
+                <tr>
+                    <td>
+                        <input type="hidden" data-key="instrumentid" data-mapping="{{t.instrumentid}}" value="{{t.instrumentid}}">
+                        {% if thisuser.isadmin == 1 %}
+                        <select class="form-object-master" data-key="instrumentname" data-mapping="{{t.instrumentid}}">
+                            {% for i in instrumentlist %}
+                            {% if t.instrumentname == i %}
+                            <option value="{{i}}" selected="selected">{{i}}</option>
+                            {% else %}
+                            <option value="{{i}}">{{i}}</option>
+                            {% endif %}
+                            {% endfor %}
+                        </select>
                         {% else %}
-                        <option value="0" selected="selected">No</option>
-                        <option value="1">Yes</option>
+                        {{ t.instrumentname }}
                         {% endif %}
-                    </select>
-                </td>
-                <td>
-                    <select data-key="isactive" data-mapping="{{t.instrumentid}}">
-                        {% if t.isactive == 1 %}
-                        <option value="0">Inactive</option>
-                        <option value="1" selected="selected">Active</option>
-                        {% else %}
-                        <option value="0" selected="selected">Inactive</option>
-                        <option value="1">Active</option>
-                        {% endif %}
-                    </select>
-                </td>
-            </tr>
-        {% endfor %}
-        {% if thisuser.isadmin == 1 %}
-        <tr>
-            <td>
-                <input type="hidden" data-key="instrumentid" data-mapping="new" value="new">
-                <select class="form-object-master" data-key="instrumentname" data-mapping="new">
-                    <option value=""></option>
-                    {% for i in instrumentlist %}
-                    <option value="{{i}}">{{i}}</option>
-                    {% endfor %}
-                </select>
-            </td>
-            <td>
-                <select data-key="grade" data-mapping="new">
-                    <option value=""></option>
-                    {% for n in range(maximumlevel + 1) %}
-                    <option value="{{ n }}">{{ n }}</option>
-                    {% endfor %}
-                </select>
-            </td>
-            <td>
-                <select data-key="isprimary" data-mapping="new">
-                    <option value=""></option>
-                    <option value="0">No</option>
-                    <option value="1">Yes</option>
-                </select>
-            </td>
-            <td>
-                <select data-key="isactive" data-mapping="new">
-                    <option value=""></option>
-                    <option value="0">Inactive</option>
-                    <option value="1">Active</option>
-                </select>
-            </td>
-        </tr>
-        {% endif %}
-    </tbody>
-</table>
+                    </td>
+                    {% if thisuser.isadmin == 1 %}
+                    <td>
+                        <select data-key="grade" data-mapping="{{t.instrumentid}}">
+                            {% for n in range(maximumlevel + 1) %}
+                            {% if n == t.grade %}
+                            <option value="{{ n }}" selected="selected">{{ n }}</option>
+                            {% else %}
+                            <option value="{{ n }}">{{ n }}</option>
+                            {% endif %}
+                            {% endfor %}
+                        </select>
+                    </td>
+                    {% endif %}
+                    <td>
+                        <select data-key="isprimary" data-mapping="{{t.instrumentid}}">
+                            {% if t.isprimary == 1 %}
+                            <option value="0">No</option>
+                            <option value="1" selected="selected">Yes</option>
+                            {% else %}
+                            <option value="0" selected="selected">No</option>
+                            <option value="1">Yes</option>
+                            {% endif %}
+                        </select>
+                    </td>
+                    <td>
+                        <select data-key="isactive" data-mapping="{{t.instrumentid}}">
+                            {% if t.isactive == 1 %}
+                            <option value="0">Inactive</option>
+                            <option value="1" selected="selected">Active</option>
+                            {% else %}
+                            <option value="0" selected="selected">Inactive</option>
+                            <option value="1">Active</option>
+                            {% endif %}
+                        </select>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% if thisuser.isadmin == 1 %}
+                <tr>
+                    <td>
+                        <input type="hidden" data-key="instrumentid" data-mapping="new" value="new">
+                        <select class="form-object-master" data-key="instrumentname" data-mapping="new">
+                            <option value=""></option>
+                            {% for i in instrumentlist %}
+                            <option value="{{i}}">{{i}}</option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                    <td>
+                        <select data-key="grade" data-mapping="new">
+                            <option value=""></option>
+                            {% for n in range(maximumlevel + 1) %}
+                            <option value="{{ n }}">{{ n }}</option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                    <td>
+                        <select data-key="isprimary" data-mapping="new">
+                            <option value=""></option>
+                            <option value="0">No</option>
+                            <option value="1">Yes</option>
+                        </select>
+                    </td>
+                    <td>
+                        <select data-key="isactive" data-mapping="new">
+                            <option value=""></option>
+                            <option value="0">Inactive</option>
+                            <option value="1">Active</option>
+                        </select>
+                    </td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
 
-
-{% endblock %}
+        {% endblock %}

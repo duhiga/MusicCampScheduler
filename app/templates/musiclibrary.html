@@ -2,72 +2,78 @@
 {% block title%}Music Library - {{ campname }}{% endblock %}
 {% block head %}
 <script>
-        $(document).ready(function () {
+    $(document).ready(function () {
 
-            $(function () {
-                $(".tablesorter").tablesorter({
-                    sortList: [[0, 0]]
-                });
-            });
-            
-            $(document).on("keyup keydown keypress", '#search', function () {
-                $('.searchable').each(function () {
-                    var words = $('#search').val().toUpperCase().split(" ");
-                    for (var i = 0; i < words.length; i++) {
-                        if ($(this).data('search').toUpperCase().indexOf(words[i].toUpperCase()) != -1) {
-                            $(this).show();
-                        }
-                        else {
-                            $(this).hide();
-                            break;
-                        }
-                    }
-                });
+        $(function () {
+            $(".tablesorter").tablesorter({
+                sortList: [[0, 0]]
             });
         });
+
+        $(document).on("keyup keydown keypress", '#search', function () {
+            $('.searchable').each(function () {
+                var words = $('#search').val().toUpperCase().split(" ");
+                for (var i = 0; i < words.length; i++) {
+                    if ($(this).data('search').toUpperCase().indexOf(words[i].toUpperCase()) != -1) {
+                        $(this).show();
+                    }
+                    else {
+                        $(this).hide();
+                        break;
+                    }
+                }
+            });
+        });
+    });
 </script>
 {% endblock %}
 {% block breadcrumbs %}
 <li class="w3-hide-small"><a href="#" class="w3-hover-white">Music Library</a></li>
 {% endblock %}
 {% block content %}
-<h3>Music Library</h3>
-<p>Click on a work name for more details and to make a request to play it! You can search for composers, work names or instrumentation, or click on the column headers to sort.</p>
-<p>Search: <input type="text" id="search" value=""></p>
-<table style="width:100%" class="tablesorter">
-    <thead>
-        <tr>
-            <th>Composer</th>
-            <th>Name</th>
-            <th><div class="w3-hide-small">Instrumentation</div><div class="w3-hide-medium w3-hide-large">Inst.</div></th>
-        </tr>
-    </thead>
-    <tbody class="zebra-table">
-        {% if musics != None %}
-            {% for m in musics %}
-            <tr class="searchable" data-search="{{m.composer}} {{m.musicname}} {% for i in instrumentlist %}{% if m[i] > 0 %}{{i}} {% endif %}{% endfor %} {% for t in grouptemplates %}{% if m.grouptemplateid == t.grouptemplateid %}{{t.grouptemplatename}}{% endif %}{% endfor %}">
-                <td>{{ m.composer }}</td>
-                <td><a href="/user/{{ thisuser.userid }}/musiclibrary/{{ m.musicid }}">
-                    <div class="w3-hide-medium w3-hide-large">{% if m.musicname|length > 25 %}{{ m.musicname[0:25] }}...{% else %}{{ m.musicname }}{% endif %}</div><div class="w3-hide-small">{{ m.musicname }}</div>
-                    </a></td>
-                <td>
-                    {% if m.grouptemplateid != None %}
+<div class="w3-row">
+    <div class="w3-container">
+        <h3>Music Library</h3>
+        <p>Click on a work name for more details and to make a request to play it! You can search for composers, work names or instrumentation, or click on the column headers to sort.</p>
+        <p>Search: <input type="text" id="search" value=""></p>
+        <table style="width:100%" class="tablesorter">
+            <thead>
+                <tr>
+                    <th>Composer</th>
+                    <th>Name</th>
+                    <th><div class="w3-hide-small">Instrumentation</div><div class="w3-hide-medium w3-hide-large">Inst.</div></th>
+                </tr>
+            </thead>
+            <tbody class="zebra-table">
+                {% if musics != None %}
+                {% for m in musics %}
+                <tr class="searchable" data-search="{{m.composer}} {{m.musicname}} {% for i in instrumentlist %}{% if m[i] > 0 %}{{i}} {% endif %}{% endfor %} {% for t in grouptemplates %}{% if m.grouptemplateid == t.grouptemplateid %}{{t.grouptemplatename}}{% endif %}{% endfor %}">
+                    <td>{{ m.composer }}</td>
+                    <td>
+                        <a href="/user/{{ thisuser.userid }}/musiclibrary/{{ m.musicid }}">
+                            <div class="w3-hide-medium w3-hide-large">{% if m.musicname|length > 25 %}{{ m.musicname[0:25] }}...{% else %}{{ m.musicname }}{% endif %}</div><div class="w3-hide-small">{{ m.musicname }}</div>
+                        </a>
+                    </td>
+                    <td>
+                        {% if m.grouptemplateid != None %}
                         {% for t in grouptemplates %}
-                            {% if m.grouptemplateid == t.grouptemplateid %}
-                            {{t.grouptemplatename}}
-                            {% endif %}
+                        {% if m.grouptemplateid == t.grouptemplateid %}
+                        {{t.grouptemplatename}}
+                        {% endif %}
                         {% endfor %}
-                    {% else %}
+                        {% else %}
                         {% for i in instrumentlist %}
-                            {% if m[i] > 0 %}
-                                {{i[0:2]}}: {{m[i]}}
-                            {% endif %}
+                        {% if m[i] > 0 %}
+                        {{i[0:2]}}: {{m[i]}}
+                        {% endif %}
                         {% endfor %}
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        {% endif %}
-    </tbody>
-</table>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
 {% endblock %}

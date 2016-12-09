@@ -2,61 +2,66 @@
 {% block title %}Group History - {{ campname }}{% endblock %}
 {% block head %}
 <script>
-        $(document).ready(function () {
+    $(document).ready(function () {
 
-            $(function () {
-                $(".tablesorter").tablesorter({
-                });
+        $(function () {
+            $(".tablesorter").tablesorter({
             });
         });
+    });
 </script>
 {% endblock %}
 {% block breadcrumbs %}
 <li class="w3-hide-small"><a href="#" class="w3-hover-white">Group History</a></li>
 {% endblock %}
 {% block content %}
-    <p>Number of times played so far this camp: {{ playcount }}</p>
-    <table style="width:100%" class="tablesorter">
-        <thead>
-            <tr>
-                <th>Date</th>
-                <th>Time</th>
-                <th>Name</th>
-                <th class="w3-hide-small">Instrument</th>
-                <th class="w3-hide-small">Location</th>
-                <th>Status</th>
-            </tr>
-        </thead>
-        <tbody class="zebra-table">
-            {% for g in groups %}
-            <tr>
-                <td>
-                    {% if g.periodid != None %}
-                    <a href="/user/{{ thisuser.userid }}/date/{{ g.starttime.strftime('%Y-%m-%d') }}/">{{ g.starttime.strftime('%d %b') }}</a></td>
+<div class="w3-row">
+    <div class="w3-container">
+        <p>Number of times played so far this camp: {{ playcount }}</p>
+        <table style="width:100%" class="tablesorter">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Time</th>
+                    <th>Name</th>
+                    <th class="w3-hide-small">Instrument</th>
+                    <th class="w3-hide-small">Location</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody class="zebra-table">
+                {% for g in groups %}
+                <tr>
+                    <td>
+                        {% if g.periodid != None %}
+                        <a href="/user/{{ thisuser.userid }}/date/{{ g.starttime.strftime('%Y-%m-%d') }}/">{{ g.starttime.strftime('%d %b') }}</a>
+                    </td>
                     {% else %}
                     Queued
                     {% endif %}
-                <td>
-                    {% if g.periodid != None %}
-                    <a href="/user/{{ thisuser.userid }}/period/{{ g.periodid }}/">{{ g.starttime.strftime('%H:%M') }}</a>
-                    {% else %}
-                    Queued
-                    {% endif %}
-                </td>
-                <td><a href="/user/{{ thisuser.userid }}/group/{{ g.groupid }}/">{{ g.groupname }}</a></td>
-                <td class="w3-hide-small">{{ g.instrumentname }}</td>
-                <td class="w3-hide-small">{{ g.locationname }}</td>
-                <td>
-                    {% if g.status == 'Confirmed' and now > g.endtime %}
-                    Complete
-                    {% elif g.status == 'Confirmed' and now > g.starttime %}
-                    In Progress
-                    {% else %}
-                    {{ g.status }}
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-{% endblock %}
+                    <td>
+                        {% if g.periodid != None %}
+                        <a href="/user/{{ thisuser.userid }}/period/{{ g.periodid }}/">{{ g.starttime.strftime('%H:%M') }}</a>
+                        {% else %}
+                        Queued
+                        {% endif %}
+                    </td>
+                    <td><a href="/user/{{ thisuser.userid }}/group/{{ g.groupid }}/">{{ g.groupname }}</a></td>
+                    <td class="w3-hide-small">{{ g.instrumentname }}</td>
+                    <td class="w3-hide-small">{{ g.locationname }}</td>
+                    <td>
+                        {% if g.status == 'Confirmed' and now > g.endtime %}
+                        Complete
+                        {% elif g.status == 'Confirmed' and now > g.starttime %}
+                        In Progress
+                        {% else %}
+                        {{ g.status }}
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+        {% endblock %}

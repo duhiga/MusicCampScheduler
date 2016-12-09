@@ -4,8 +4,8 @@
 <script>
 
     function validate(ob) {
-            return true
-        }
+        return true
+    }
 
 </script>
 {% endblock %}
@@ -19,8 +19,11 @@
 </div>
 {% endblock %}
 {% block content %}
-<p>
-    This page is used to edit the announcement that shows up on all user dashboards.
-</p>
-<p><textarea class="form-attribute form-validate" id="content" cols="40" rows="5">{{ currentannouncement.content }}</textarea></p>
-{% endblock %}
+<div class="w3-row">
+    <div class="w3-container">
+        <p>
+            This page is used to edit the announcement that shows up on all user dashboards.
+        </p>
+        <p><textarea class="form-attribute form-validate" id="content" cols="40" rows="5">{{ currentannouncement.content }}</textarea></p>
+        </div></div>
+        {% endblock %}

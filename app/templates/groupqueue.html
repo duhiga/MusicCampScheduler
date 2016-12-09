@@ -2,51 +2,55 @@
 {% block title%}Queued Groups - {{ campname }}{% endblock %}
 {% block head %}
 <script>
-        $(document).ready(function () {
+    $(document).ready(function () {
 
-            $(function () {
-                $(".tablesorter").tablesorter({
-                    sortList: [[0, 0]]
-                });
+        $(function () {
+            $(".tablesorter").tablesorter({
+                sortList: [[0, 0]]
             });
         });
+    });
 </script>
 {% endblock %}
 {% block breadcrumbs %}
 <li class="w3-hide-small"><a href="#" class="w3-hover-white">Queued Groups</a></li>
 {% endblock %}
 {% block content %}
-<h3>Queued Groups</h3>
-<table style="width:100%" class="tablesorter">
-    <thead>
-        <tr>
-            <th><div class="w3-hide-small">Request Time</div><div class="w3-hide-medium w3-hide-large">R.Time</div></th>
-            <th><div class="w3-hide-small">Requestor</div><div class="w3-hide-medium w3-hide-large">User</div></th>
-            <th><div class="w3-hide-small">Group Name</div><div class="w3-hide-medium w3-hide-large">Name</div></th>
-            <th>Period</th>
-            <th>Status</th>
-        </tr>
-    </thead>
-    <tbody class="zebra-table">
-        {% if queuedgroups != None %}
-            {% for q in queuedgroups %}
-            <tr>
-                <td>
-                    {% if q.requesttime != None %}
-                    {{ q.requesttime.strftime('%Y-%m-%d %H:%M')}}
-                    {% endif %}
-                </td>
-                <td>{{ q.firstname }} {{ q.lastname }}</td>
-                <td><a href="/user/{{ thisuser.userid }}/group/{{ q.groupid }}/edit/">{{ q.groupname }}</a></td>
-                <td>
-                    {% if q.starttime != None and q.endtime != None %}
-                    {{ q.starttime.strftime('%d %b') }} {{ q.periodname }}
-                    {% endif %}
-                </td>
-                <td>{{ q.status }}</td>
-            </tr>
-            {% endfor %}
-        {% endif %}
-    </tbody>
-</table>
-{% endblock %}
+<div class="w3-row">
+    <div class="w3-container">
+        <h3>Queued Groups</h3>
+        <table style="width:100%" class="tablesorter">
+            <thead>
+                <tr>
+                    <th><div class="w3-hide-small">Request Time</div><div class="w3-hide-medium w3-hide-large">R.Time</div></th>
+                    <th><div class="w3-hide-small">Requestor</div><div class="w3-hide-medium w3-hide-large">User</div></th>
+                    <th><div class="w3-hide-small">Group Name</div><div class="w3-hide-medium w3-hide-large">Name</div></th>
+                    <th>Period</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody class="zebra-table">
+                {% if queuedgroups != None %}
+                {% for q in queuedgroups %}
+                <tr>
+                    <td>
+                        {% if q.requesttime != None %}
+                        {{ q.requesttime.strftime('%Y-%m-%d %H:%M')}}
+                        {% endif %}
+                    </td>
+                    <td>{{ q.firstname }} {{ q.lastname }}</td>
+                    <td><a href="/user/{{ thisuser.userid }}/group/{{ q.groupid }}/edit/">{{ q.groupname }}</a></td>
+                    <td>
+                        {% if q.starttime != None and q.endtime != None %}
+                        {{ q.starttime.strftime('%d %b') }} {{ q.periodname }}
+                        {% endif %}
+                    </td>
+                    <td>{{ q.status }}</td>
+                </tr>
+                {% endfor %}
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+        {% endblock %}

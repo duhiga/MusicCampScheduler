@@ -22,39 +22,43 @@
 <li class="w3-hide-small"><a href="#" class="w3-hover-white">{{ thisperiod.periodname }}</a></li>
 {% endblock %}
 {% block content %}
-    <h1>{{ thisperiod.periodname }}: {{ thisperiod.starttime.strftime('%A %d %b') }}, {{ thisperiod.starttime.strftime('%H:%M') }}-{{ thisperiod.endtime.strftime('%H:%M') }}</h1>
-    {% if publicevents[0] != None %}
-    {% for e in publicevents %}
-    <h2>Public Event At This Time: <a href="/user/{{ thisuser.userid }}/group/{{ e.groupid }}">{{ e.groupname }}</a></h2>
-    {% endfor %}
-    {% endif %}
-    <p>Total number of attendees: {{ players|length + nonplayers|length }}</p>
-    <table style="width:100%" class="tablesorter">
-        <thead>
-            <tr class="dark-row">
-                <th>Name</th>
-                <th><div class="w3-hide-small">Instrument</div><div class="w3-hide-medium w3-hide-large">Inst.</div></th>
-                <th>Group</th>
-                <th><div class="w3-hide-small">Location</div><div class="w3-hide-medium w3-hide-large">Loc.</div></th>
-            </tr>
-        </thead>
-        <tbody class="zebra-table">
-            {% for p in players %}
-            <tr>
-                <td>{{ p.firstname }} {{ p.lastname }}</td>
-                <td>{{ p.instrumentname }}</td>
-                <td><a href="/user/{{ thisuser.userid }}/group/{{ p.groupid }}/">{{ p.groupname }}</a></td>
-                <td>{{ p.locationname }}</td>
-            </tr>
-            {% endfor %}
-            {% for p in nonplayers %}
-            <tr>
-                <td>{{ p.firstname }} {{ p.lastname }}</td>
-                <td>{{ p.instrumentname }}</td>
-                <td>{{ p.groupname }}</td>
-                <td>{{ p.locationname }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<div class="w3-row">
+    <div class="w3-container">
+        <h1>{{ thisperiod.periodname }}: {{ thisperiod.starttime.strftime('%A %d %b') }}, {{ thisperiod.starttime.strftime('%H:%M') }}-{{ thisperiod.endtime.strftime('%H:%M') }}</h1>
+        {% if publicevents[0] != None %}
+        {% for e in publicevents %}
+        <h2>Public Event At This Time: <a href="/user/{{ thisuser.userid }}/group/{{ e.groupid }}">{{ e.groupname }}</a></h2>
+        {% endfor %}
+        {% endif %}
+        <p>Total number of attendees: {{ players|length + nonplayers|length }}</p>
+        <table style="width:100%" class="tablesorter">
+            <thead>
+                <tr class="dark-row">
+                    <th>Name</th>
+                    <th><div class="w3-hide-small">Instrument</div><div class="w3-hide-medium w3-hide-large">Inst.</div></th>
+                    <th>Group</th>
+                    <th><div class="w3-hide-small">Location</div><div class="w3-hide-medium w3-hide-large">Loc.</div></th>
+                </tr>
+            </thead>
+            <tbody class="zebra-table">
+                {% for p in players %}
+                <tr>
+                    <td>{{ p.firstname }} {{ p.lastname }}</td>
+                    <td>{{ p.instrumentname }}</td>
+                    <td><a href="/user/{{ thisuser.userid }}/group/{{ p.groupid }}/">{{ p.groupname }}</a></td>
+                    <td>{{ p.locationname }}</td>
+                </tr>
+                {% endfor %}
+                {% for p in nonplayers %}
+                <tr>
+                    <td>{{ p.firstname }} {{ p.lastname }}</td>
+                    <td>{{ p.instrumentname }}</td>
+                    <td>{{ p.groupname }}</td>
+                    <td>{{ p.locationname }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 {% endblock %}

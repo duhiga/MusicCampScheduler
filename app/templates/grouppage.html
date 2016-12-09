@@ -40,81 +40,94 @@
 {% endblock %}
 {% block content %}
 <div class="w3-row">
-    <div class="w3-container">
-        <h2>Group Details</h2>
-        <table>
-            <tr>
-                <th>Name </th>
-                <td>{{ thisgroup.groupname }}</td>
-            </tr>
-            <tr>
-                <th>Status</th>
-                <td>{{ thisgroup.status }}</td>
-            </tr>
-            <tr>
-                <th>Music</th>
-                <td>
-                    {% if thisgroup.musicid != None %}
-                    <a href="/user/{{ thisuser.userid }}/musiclibrary/{{ thisgroup.musicid }}/"><i class="fa fa-book"></i>{{ thismusic.composer }}: {{ thismusic.musicname }}</a>
-                    {% elif thisgroup.musicwritein != None %}
-                    {{ thisgroup.musicwritein }}
-                    {% else %}
-                    None Specified
-                    {% endif %}
-                </td>
-            </tr>
-            <tr>
-                <th>Date</th>
-                <td>
-                    {% if thisperiod == None %}
-                    Not yet allocated
-                    {% else %}
-                    {{ thisperiod.starttime.strftime('%A, %Y-%m-%d') }}
-                    {% endif %}
-                </td>
-            </tr>
-            <tr>
-                <th>Time</th>
-                <td>
-                    {% if thisperiod == None %}
-                    Not yet allocated
-                    {% else %}
-                    <a href="/user/{{ thisuser.userid }}/period/{{ thisperiod.periodid }}/">{{ thisperiod.starttime.strftime('%H:%M') }} - {{ thisperiod.endtime.strftime('%H:%M') }}</a>
-                    {% endif %}
-                </td>
-            </tr>
-            <tr>
-                <th>Location</th>
-                <td>
-                    {% if thislocation == None %}
-                    Not yet allocated
-                    {% else %}
-                    {{ thislocation.locationname }}
-                    {% endif %}
-                </td>
-            </tr>
-        </table>
-        {% if thisgroup.iseveryone != 1 %}
-        <h2>Players</h2>
-        <table style="width:100%" class="player_table tablesorter">
-            <thead>
+    {% if substitutes %}
+        <div class="w3-container w3-half">
+    {% else %}
+        <div class="w3-container">
+            {% endif %}
+            <h2>Group Details</h2>
+            {% if thisgroup.status != 'Confirmed' %}
+            {% for p in players %}
+            {% if p.userid == thisuser.userid %}
+            <p>This group is queued in the system, but not yet confirmed. Once filled up and allocated a venue, it will appear on your home page.</p>
+            {% endif %}
+            {% endfor %}
+            {% endif %}
+            <table>
                 <tr>
-                    <th>First Name</th>
-                    <th>Last Name</th>
-                    <th>Instrument</th>
+                    <th>Name </th>
+                    <td>{{ thisgroup.groupname }}</td>
                 </tr>
-            </thead>
-            <tbody class="zebra-table">
-                {% for p in players %}
                 <tr>
-                    <td>{{ p.firstname }}</td>
-                    <td>{{ p.lastname }}</td>
-                    <td>{{ p.instrumentname }}</td>
+                    <th>Status</th>
+                    <td>{{ thisgroup.status }}</td>
                 </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% if substitutes %}
+                <tr>
+                    <th>Music</th>
+                    <td>
+                        {% if thisgroup.musicid != None %}
+                        <a href="/user/{{ thisuser.userid }}/musiclibrary/{{ thisgroup.musicid }}/"><i class="fa fa-book"></i>{{ thismusic.composer }}: {{ thismusic.musicname }}</a>
+                        {% elif thisgroup.musicwritein != None %}
+                        {{ thisgroup.musicwritein }}
+                        {% else %}
+                        None Specified
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <th>Date</th>
+                    <td>
+                        {% if thisperiod == None %}
+                        Not yet allocated
+                        {% else %}
+                        {{ thisperiod.starttime.strftime('%A, %Y-%m-%d') }}
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <th>Time</th>
+                    <td>
+                        {% if thisperiod == None %}
+                        Not yet allocated
+                        {% else %}
+                        <a href="/user/{{ thisuser.userid }}/period/{{ thisperiod.periodid }}/">{{ thisperiod.starttime.strftime('%H:%M') }} - {{ thisperiod.endtime.strftime('%H:%M') }}</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <th>Location</th>
+                    <td>
+                        {% if thislocation == None %}
+                        Not yet allocated
+                        {% else %}
+                        {{ thislocation.locationname }}
+                        {% endif %}
+                    </td>
+                </tr>
+            </table>
+            {% if thisgroup.iseveryone != 1 %}
+            <h2>Players</h2>
+            <table style="width:100%" class="player_table tablesorter">
+                <thead>
+                    <tr>
+                        <th>First Name</th>
+                        <th>Last Name</th>
+                        <th>Instrument</th>
+                    </tr>
+                </thead>
+                <tbody class="zebra-table">
+                    {% for p in players %}
+                    <tr>
+                        <td>{{ p.firstname }}</td>
+                        <td>{{ p.lastname }}</td>
+                        <td>{{ p.instrumentname }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% if substitutes %}
+    <div class="w3-container w3-half">
         <p>
             If you can not make this group, it is your responsibility to find a substitute and notify them.
             The following people are not playing in a group at this time and may be able to substitute.
@@ -138,8 +151,8 @@
                 {% endfor %}
             </tbody>
         </table>
-        </div>
     </div>
-        {% endif %}
-        {% endif %}
-        {% endblock %}
+    {% endif %}
+    {% endif %}
+</div>
+{% endblock %}

@@ -156,15 +156,22 @@
             </header>
             <div class="w3-accordion-content panel">
                 <div class="w3-container">
+                    {% if p.groupname == "absent" %}
+                    <div class="w3-panel w3-red">
+                        <p>You are marked absent for this period. You will not be allocated to any groups.</p>
+                    </div> 
+                    {% endif %}
                         <table class="w3-table">
                             <tr>
                                 <th>Time</th>
                                 <td>{{ p.starttime.strftime('%H:%M') }} - {{ p.endtime.strftime('%H:%M') }}</td>
                             </tr>
+                            {% if (p.ismusical == 1 or p.iseveryone == 1 or p.meal == 1) and p.groupname != 'absent' %}
                             <tr>
                                 <th>Location</th>
                                 <td>{{p.locationname}}</td>
                             </tr>
+                            {% endif %}
                             {% if p.groupname and p.ismusical == 1 %}
                             <tr>
                                 <th>Instrument</th>
@@ -172,12 +179,20 @@
                             </tr>
                             {% endif %}
                         </table>
-                    <br />
-                    {% if p.groupname and p.ismusical == 1 %}
-                    <a class="w3-btn w3-white w3-border" href="/user/{{ thisuser.userid }}/group/{{ p.groupid }}/">Group Details</a>
-                    {% endif %}
-                    <a class="w3-btn w3-white w3-border" href="/user/{{ thisuser.userid }}/period/{{ p.periodid }}/">Full Listing for this Period</a>
-                    <br />
+                    <p>
+                        {% if p.groupname and p.ismusical == 1 %}
+                        <a class="w3-btn-block w3-white w3-border" href="/user/{{ thisuser.userid }}/group/{{ p.groupid }}/">Group Details</a>
+                        {% endif %}
+                        <a class="w3-btn-block w3-white w3-border" href="/user/{{ thisuser.userid }}/period/{{ p.periodid }}/">Full Listing for this Period</a>
+                        {% if date > today %}
+                        {% if not p.groupname or p.iseveryone %}
+                        <button id={{ p.periodid }} data-periodname="{{ p.periodname }}" class="absent_request_button w3-btn-block w3-white w3-border">Mark Me as Absent</button>
+                        {% elif p.groupname == "absent" %}
+                        <button id={{ p.periodid }} data-periodname="{{ p.periodname }}" class="absent_cancel_button w3-btn-block w3-white w3-border">Mark Me as Present</button>
+                        {% endif %}
+                        {% endif %}
+                    </p>
+                    
                 </div>
             </div>
         </div>

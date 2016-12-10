@@ -87,7 +87,7 @@
 {% endblock %}
 {% block content %}
 <div class="w3-row">
-    <div class="w3-container">
+    <div class="w3-container w3-half">
         {% if thisuser.isactive == 0 %}
         <h2>You are currently set to inactive. You will not be allocated to any groups.</h2>
         {% endif %}
@@ -119,6 +119,71 @@
                 <button class="w3-btn w3-white w3-border next">Next &#10095;</button>
             </div>
         </p>
+
+        {% for p in schedule %}
+        <div class="w3-card-4">
+
+            <header class="accordion w3-panel 
+
+                    {% if p.groupname == 'absent' %}
+                    w3-dark-gray
+                    {% elif p.groupname and p.ismusical == 1 %}
+                    w3-orange
+                    {% elif p.iseveryone == 1 and p.meal == 1 %}
+                    w3-blue
+                    {% elif p.iseveryone == 1 %}
+                    w3-yellow
+                    {% else %}
+                    w3-green
+                    {% endif %}
+
+                    ">
+                <h5>{{p.starttime.strftime('%H:%M')}}: 
+
+                    {% if p.groupname == 'absent' %}
+                    Absent
+                    {% elif p.groupname and p.ismusical == 1 %}
+                    {{p.groupname}}
+                    {% elif p.iseveryone == 1 and p.meal == 1 %}
+                    {{p.periodname}}
+                    {% elif p.iseveryone == 1 %}
+                    {{p.groupname}}
+                    {% else %}
+                    Free Period
+                    {% endif %}
+
+                    <i class="fa fa-caret-down w3-right"></i></h5>
+            </header>
+            <div class="w3-accordion-content panel">
+                <div class="w3-container">
+                        <table class="w3-table">
+                            <tr>
+                                <th>Time</th>
+                                <td>{{ p.starttime.strftime('%H:%M') }} - {{ p.endtime.strftime('%H:%M') }}</td>
+                            </tr>
+                            <tr>
+                                <th>Location</th>
+                                <td>{{p.locationname}}</td>
+                            </tr>
+                            {% if p.groupname and p.ismusical == 1 %}
+                            <tr>
+                                <th>Instrument</th>
+                                <td>{{p.instrumentname}}</td>
+                            </tr>
+                            {% endif %}
+                        </table>
+                    <br />
+                    {% if p.groupname and p.ismusical == 1 %}
+                    <a class="w3-btn w3-white w3-border" href="/user/{{ thisuser.userid }}/group/{{ p.groupid }}/">Group Details</a>
+                    {% endif %}
+                    <a class="w3-btn w3-white w3-border" href="/user/{{ thisuser.userid }}/period/{{ p.periodid }}/">Full Listing for this Period</a>
+                    <br />
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    <div class="w3-container w3-half">
         <ul class="tab">
             <li><a href="javascript:void(0)" class="tablinks" onclick="openTab(event, 'Schedule')" id="defaultOpen">Schedule</a></li>
             {% if date > today %}
@@ -142,7 +207,7 @@
                         <th><div class="w3-hide-small">Location</div><div class="w3-hide-medium w3-hide-large">Loc.</div></th>
                     </tr>
                 </thead>
-                <tbody class="zebra-table">
+                <tbody class="zebra-table border-table">
                     {% for p in schedule %}
                     <tr>
                         <!--Time Column-->
@@ -184,113 +249,125 @@
             </table>
         </div>
         <div id="Tools" class="tabcontent">
-            <table style="width:100%" class="zebra-table">
+            <table style="width:100%">
                 <!--Start of the table for group allocations for this day-->
-                <tr>
-                    <th>Time</th>
-                    <th>Name</th>
-                    {% if date > today %}
-                    <th>Mark yourself absent</th>
-                    {% endif %}
-                </tr>
-                {% for p in schedule %}
-                <tr>
-                    <!--Time Column-->
-                    <td>
-                        <a href="/user/{{ thisuser.userid }}/period/{{ p.periodid }}/">{{ p.starttime.strftime('%H:%M') }} - {{ p.endtime.strftime('%H:%M') }}</a>
-                    </td>
-                    <!--Group/Period Name Column, depending on context-->
-                    <td>
-                        {% if not p.groupname %}
-                        {{ p.periodname }}
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Name</th>
+                        {% if date > today %}
+                        <th>Mark yourself absent</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody class="zebra-table border-table">
+                    {% for p in schedule %}
+                    <tr>
+                        <!--Time Column-->
+                        <td>
+                            <a href="/user/{{ thisuser.userid }}/period/{{ p.periodid }}/">{{ p.starttime.strftime('%H:%M') }} - {{ p.endtime.strftime('%H:%M') }}</a>
+                        </td>
+                        <!--Group/Period Name Column, depending on context-->
+                        <td>
+                            {% if not p.groupname %}
+                            {{ p.periodname }}
 
-                        {% else %}{% if p.ismusical == 1 %}
-                        <a href="/user/{{ thisuser.userid }}/group/{{ p.groupid }}/">{{ p.groupname }}</a>
-                        {% else %}{% if p.groupname == "absent" %}
-                        ABSENT
-                        {% else %}
-                        {{ p.groupname }}
+                            {% else %}{% if p.ismusical == 1 %}
+                            <a href="/user/{{ thisuser.userid }}/group/{{ p.groupid }}/">{{ p.groupname }}</a>
+                            {% else %}{% if p.groupname == "absent" %}
+                            ABSENT
+                            {% else %}
+                            {{ p.groupname }}
+                            {% endif %}
+                            {% endif %}
+                            {% endif %}
+                        </td>
+                        <!--Options Column - only appears if looking at a future date-->
+                        {% if date > today %}
+                        <td>
+                            {% if not p.groupname or p.iseveryone %}
+                            <button id={{ p.periodid }} data-periodname="{{ p.periodname }}" class="absent_request_button">Mark me as absent</button>
+                            {% else %}
+                            {% if p.groupname == "absent" %}
+                            <button id={{ p.periodid }} data-periodname="{{ p.periodname }}" class="absent_cancel_button">Mark me as present</button>
+                            {% else %}
+                            Already allocated
+                            {% endif %}
+                            {% endif %}
+                        </td>
                         {% endif %}
-                        {% endif %}
-                        {% endif %}
-                    </td>
-                    <!--Options Column - only appears if looking at a future date-->
-                    {% if date > today %}
-                    <td>
-                        {% if not p.groupname or p.iseveryone %}
-                        <button id={{ p.periodid }} data-periodname="{{ p.periodname }}" class="absent_request_button">Mark me as absent</button>
-                        {% else %}
-                        {% if p.groupname == "absent" %}
-                        <button id={{ p.periodid }} data-periodname="{{ p.periodname }}" class="absent_cancel_button">Mark me as present</button>
-                        {% else %}
-                        Already allocated
-                        {% endif %}
-                        {% endif %}
-                    </td>
-                    {% endif %}
-                </tr>
-                {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
             </table>
         </div>
         {% if thisuser.isconductor == 1 %}
         <div id="Conductor" class="tabcontent">
-            <table style="width:100%" class="zebra-table">
+            <table style="width:100%">
                 <!--Start of the table for group allocations for this day-->
-                <tr>
-                    <th>Time</th>
-                    <th>Name</th>
-                    <th>Create Group</th>
-                    <th>Instrumentation</th>
-                </tr>
-                {% for p in schedule %}
-                <tr>
-                    <!--Time Column-->
-                    <td>
-                        <a href="/user/{{ thisuser.userid }}/period/{{ p.periodid }}/">{{ p.starttime.strftime('%H:%M') }} - {{ p.endtime.strftime('%H:%M') }}</a>
-                    </td>
-                    <!--Period Name Column-->
-                    <td>{{ p.periodname }}</td>
-                    <!--Conductor Columns - only appears if the thisuser is a conductor-->
-                    {% if thisuser.isconductor == 1 %}
-                    <td><a href="/user/{{ thisuser.userid }}/grouprequest/conductor/{{ p.periodid }}/">Create</a></td>
-                    <td><a href="/user/{{ thisuser.userid }}/instrumentation/{{ p.periodid }}/">Create</a></td>
-                    {% endif %}
-                </tr>
-                {% endfor %}
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Name</th>
+                        <th>Create Group</th>
+                        <th>Instrumentation</th>
+                    </tr>
+                </thead>
+                <tbody class="zebra-table border-table">
+                    {% for p in schedule %}
+                    <tr>
+                        <!--Time Column-->
+                        <td>
+                            <a href="/user/{{ thisuser.userid }}/period/{{ p.periodid }}/">{{ p.starttime.strftime('%H:%M') }} - {{ p.endtime.strftime('%H:%M') }}</a>
+                        </td>
+                        <!--Period Name Column-->
+                        <td>{{ p.periodname }}</td>
+                        <!--Conductor Columns - only appears if the thisuser is a conductor-->
+                        {% if thisuser.isconductor == 1 %}
+                        <td><a href="/user/{{ thisuser.userid }}/grouprequest/conductor/{{ p.periodid }}/">Create</a></td>
+                        <td><a href="/user/{{ thisuser.userid }}/instrumentation/{{ p.periodid }}/">Create</a></td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
             </table>
         </div>
         {% endif %}
         {% if thisuser.isadmin == 1 %}
         <div id="Admin" class="tabcontent">
-            <table style="width:100%" class="zebra-table">
+            <table style="width:100%">
                 <!--Start of the table for group allocations for this day-->
-                <tr>
-                    <th>Time</th>
-                    <th>Name</th>
-                    <th>Create Group</th>
-                    <th>Public Event</th>
-                </tr>
-                {% for p in schedule %}
-                <tr>
-                    <!--Time Column-->
-                    <td>
-                        <a href="/user/{{ thisuser.userid }}/period/{{ p.periodid }}/">{{ p.starttime.strftime('%H:%M') }} - {{ p.endtime.strftime('%H:%M') }}</a>
-                    </td>
-                    <!--Period Name Column-->
-                    <td>{{ p.periodname }}</td>
-                    <!--Admin Group Creation Column-->
-                    <td>
-                        {% if p.starttime > now %}
-                        <a href="/user/{{ thisuser.userid }}/group/new/period/{{ p.periodid }}/edit/">Create</a>
-                        {% endif %}
-                    </td><!--Pubilc Event Column-->
-                    <td>
-                        {% if p.starttime > now %}
-                        <a href="/user/{{ thisuser.userid }}/publicevent/{{ p.periodid }}/">Create</a>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Name</th>
+                        <th>Create Group</th>
+                        <th>Public Event</th>
+                    </tr>
+                </thead>
+                <tbody class="zebra-table border-table">
+                    {% for p in schedule %}
+                    <tr>
+                        <!--Time Column-->
+                        <td>
+                            <a href="/user/{{ thisuser.userid }}/period/{{ p.periodid }}/">{{ p.starttime.strftime('%H:%M') }} - {{ p.endtime.strftime('%H:%M') }}</a>
+                        </td>
+                        <!--Period Name Column-->
+                        <td>{{ p.periodname }}</td>
+                        <!--Admin Group Creation Column-->
+                        <td>
+                            {% if p.starttime > now %}
+                            <a href="/user/{{ thisuser.userid }}/group/new/period/{{ p.periodid }}/edit/">Create</a>
+                            {% endif %}
+                        </td><!--Pubilc Event Column-->
+                        <td>
+                            {% if p.starttime > now %}
+                            <a href="/user/{{ thisuser.userid }}/publicevent/{{ p.periodid }}/">Create</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
             </table>
         </div>
         {% endif %}

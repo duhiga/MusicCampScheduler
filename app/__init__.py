@@ -51,7 +51,7 @@ def getschedule(session,thisuser,date):
     for p in session.query(period).filter(period.starttime > date, period.endtime < nextday).all():
         #try to find a group assignment for the user
         g = session.query(group.groupname, period.starttime, period.endtime, location.locationname, group.groupid, group.ismusical, \
-                            group.iseveryone, period.periodid, period.periodname, groupassignment.instrumentname).\
+                            group.iseveryone, period.periodid, period.periodname, groupassignment.instrumentname, period.meal).\
                             join(period).join(groupassignment).join(user).join(instrument).outerjoin(location).\
                             filter(user.userid == thisuser.userid, group.periodid == p.periodid, group.status == 'Confirmed').first()
         if g is not None:
@@ -61,7 +61,7 @@ def getschedule(session,thisuser,date):
         if g is None:
             #try to find an iseveryone group at the time of this period
             e = session.query(group.groupname, period.starttime, period.endtime, location.locationname, group.groupid, group.ismusical, \
-                            group.iseveryone, period.periodid, period.periodname).\
+                            group.iseveryone, period.periodid, period.periodname, period.meal).\
                             join(period).join(location).\
                             filter(group.iseveryone == 1, group.periodid == p.periodid).first()
         if e is not None:
@@ -1401,7 +1401,7 @@ def edituser(userid, targetuserid):
                     session.rollback()
                     session.close()
                     return jsonify(message = 'Users are not allowed to edit this attribute. The page should not have given you this option.', url = 'none')
-                elif not isinstance(value, list) and value is not None and value != 'null' and value != '' and value != 'None' and value != '<HIDDEN>':
+                elif not isinstance(value, list) and value is not None and value != 'null' and value != '' and value != 'None' and value != 'HIDDEN':
                     log('Setting %s to be %s' % (key, value))
                     setattr(targetuser,key,value)
             session.merge(targetuser)

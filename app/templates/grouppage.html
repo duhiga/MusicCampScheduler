@@ -53,7 +53,7 @@
             {% endif %}
             {% endfor %}
             {% endif %}
-            <table>
+            <table class="border-table">
                 <tr>
                     <th>Name </th>
                     <td>{{ thisgroup.groupname }}</td>
@@ -107,7 +107,7 @@
             </table>
             {% if thisgroup.iseveryone != 1 %}
             <h2>Players</h2>
-            <table style="width:100%" class="player_table tablesorter">
+            <table style="width:100%" class="player_table border-table tablesorter">
                 <thead>
                     <tr>
                         <th>First Name</th>
@@ -133,7 +133,7 @@
             The following people are not playing in a group at this time and may be able to substitute.
         </p>
         <h2>Possible Substitutes</h2>
-        <table style="width:100%" class="player_table tablesorter">
+        <table style="width:100%" class="player_table border-table tablesorter">
             <thead>
                 <tr>
                     <th>First Name</th>

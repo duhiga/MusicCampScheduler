@@ -7,58 +7,65 @@
 {% block content %}
 <div class="w3-row">
     <div class="w3-container">
-        <h3>Music Details</h3>
-        <table style="width:100%" class="tablesorter">
-            <tr>
-                <th>Composer</th>
-                <td>{{ thismusic.composer }}</td>
-            </tr>
-            <tr>
-                <th>Work</th>
-                <td>{{ thismusic.musicname }}</td>
-            </tr>
-            <tr>
-                <th>Source</th>
-                <td>{{ thismusic.source }}</td>
-            </tr>
-            <tr>
-                <th>Instrumentation</th>
-                <td>
-                    {% if thismusic.grouptemplateid != None %}
-                    {% for t in grouptemplates %}
-                    {% if thismusic.grouptemplateid == t.grouptemplateid %}
-                    {{t.grouptemplatename}}
-                    {% endif %}
-                    {% endfor %}
-                    {% else %}
-                    {% for i in instrumentlist %}
-                    {% if thismusic[i] > 0 %}
-                    {{i}}:{{thismusic[i]}}
-                    {% endif %}
-                    {% endfor %}
-                    {% endif %}
-                </td>
-            </tr>
-            {% if thismusic.link != None %}
-            <tr>
-                <th>Sheet Music</th>
-                <td><a href="{{ thismusic.link }}">IMSLP</a></td>
-            </tr>
-            {% endif %}
-            {% if thismusic.notes != None %}
-            <tr>
-                <th>Notes</th>
-                <td>{{ thismusic.notes }}</td>
-            </tr>
-            {% endif %}
-            <tr>
-                <th>Times Played this Camp</th>
-                <td>{{ playcount }}</td>
-            </tr>
-        </table>
+
+        <h2>Music Details</h2>
+
+        <p>
+            <table class="w3-table">
+                <tr>
+                    <th>Composer</th>
+                    <td>{{ thismusic.composer }}</td>
+                </tr>
+                <tr>
+                    <th>Work</th>
+                    <td>{{ thismusic.musicname }}</td>
+                </tr>
+                <tr>
+                    <th>Source</th>
+                    <td>{{ thismusic.source }}</td>
+                </tr>
+                <tr>
+                    <th>Instrumentation</th>
+                    <td>
+                        {% if thismusic.grouptemplateid != None %}
+                        {% for t in grouptemplates %}
+                        {% if thismusic.grouptemplateid == t.grouptemplateid %}
+                        {{t.grouptemplatename}}
+                        {% endif %}
+                        {% endfor %}
+                        {% else %}
+                        {% for i in instrumentlist %}
+                        {% if thismusic[i] > 0 %}
+                        {{i}}:{{thismusic[i]}}
+                        {% endif %}
+                        {% endfor %}
+                        {% endif %}
+                    </td>
+                </tr>
+                {% if thismusic.link != None %}
+                <tr>
+                    <th>Sheet Music</th>
+                    <td><a href="{{ thismusic.link }}">IMSLP</a></td>
+                </tr>
+                {% endif %}
+                {% if thismusic.notes != None %}
+                <tr>
+                    <th>Notes</th>
+                    <td>{{ thismusic.notes }}</td>
+                </tr>
+                {% endif %}
+                <tr>
+                    <th>Times Played this Camp</th>
+                    <td>{{ playcount }}</td>
+                </tr>
+            </table>
+        </p>
         {% if canplay == True %}
-        <h3><a href="/user/{{ thisuser.userid }}/grouprequest/music/{{ thismusic.musicid }}"><i class="fa fa-music"></i> Request to play this work</a></h3>
+        <a class="w3-btn-block w3-white w3-border w3-round" href="/user/{{ thisuser.userid }}/grouprequest/music/{{ thismusic.musicid }}"><i class="fa fa-music"></i> Request to play this work</a>
         {% endif %}
-    </div>
-</div>
+            </div>
+    
+        </div>
+        
+
 {% endblock %}

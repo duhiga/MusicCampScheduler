@@ -29,10 +29,10 @@
         var instrumentlist_string = '{{ instrumentlist_string }}'
 
         //run when a user changes the select template dropdown
-        $(document).on("change", '.group_template_dropdown', function (e) {
+        $(document).on("click change", '.template', function (e) {
             //get the user selected template and format it so we can iterate over it later
             var ob = $(this);
-            console.log('Value of the dropdown: ' + ob.val());
+            console.log('User is attempting to apply ' + ob.attr('id'))
             if (ob.attr('id') == 'musicid') {
                 console.log('Selected objects id is ' + ob.attr('id'))
                 var grep_template = $.grep(musics, function (elt) {
@@ -46,16 +46,15 @@
                     $('#musicwritein').val('').change();
                     $('#hidemusic').hide();
                     $('#musicwritein').removeClass('form-validate');
-                    $('#grouptemplatename').val('').change();
                 }
             }
-            else if (ob.attr('id') == 'grouptemplatename') {
+            else {
                 var grep_template = $.grep(grouptemplates, function (elt) {
-                    return String(elt.grouptemplatename) === String(ob.val());
+                    return String(elt.grouptemplateid) === String(ob.attr('id'));
                 });
-                if (e.originalEvent) {
-                    $('#musicid').val('').change();
-                }
+                $('#musicid').val('').change();
+                w3_close();
+                toast('Applied ' + ob.html(),'message')
             }
 
             selectedTemplate = grep_template[0];
@@ -77,6 +76,12 @@
                 else if (key == 'defaultlocationid') {
                     $('#locationid').val(value).change();
                 }
+                else if (key == 'minimumlevel') {
+                    $('#minimumlevel').val(value).change();
+                }
+                else if (key == 'maximumlevel') {
+                    $('#maximumlevel').val(value).change();
+                }
             });
         });
     });
@@ -88,6 +93,15 @@
 <li class="w3-hide-small w3-hide-medium"><a href="#" class="w3-hover-white">New Instrumentation</a></li>
 {% endblock %}
 {% block sidenav %}
+<h4><b>Tools</b></h4>
+<a class="accordion" href="#">
+    Apply a Template <i class="fa fa-caret-down w3-right"></i>
+</a>
+<div id="templates" class="w3-accordion-content w3-card-4 panel">
+    {% for g in grouptemplates %}
+    <a href="#" class="w3-hover-black template" id="{{ g.grouptemplateid }}">{{ g.grouptemplatename }}</a>
+    {% endfor %}
+</div>
 <div class="submit_hide">
     <h4><b>Save</b></h4>
     <a href="#" class="w3-hover-black submit_button" data-submittype="submit" data-method="POST"><i class="fa fa-check save_icon"></i><i class="fa fa-circle-o-notch fa-spin spin_icon"></i> Submit</a>
@@ -95,18 +109,14 @@
 {% endblock %}
 {% block content %}
 <div class="w3-row">
-    <div class="w3-container">
-        <p>
-            Optional: Select a group template to autofill the page
-            <select class="group_template_dropdown" id="grouptemplatename">
-                <option value=""></option>
-                {% for g in grouptemplates %}
-                <option value="{{ g.grouptemplatename }}">{{ g.grouptemplatename }}</option>
-                {% endfor %}
-            </select>
-        </p>
+    <div class="w3-container w3-half">
+        <div class="w3-panel w3-blue">
+            <span onclick="this.parentElement.style.display='none'" class="w3-closebtn">&times;</span>
+            <h3>Pro tip!</h3>
+            <p>You can fill this page much easier with a template. Templates are found by clicking the hamburger menu in the top left.</p>
+        </div> 
         <h2>Group Configuration</h2>
-        <table id="configTable">
+        <table id="configTable" class="border-table">
             <tr>
                 <th>Period Name</th>
                 <td>{{ thisperiod.periodname }}</td>
@@ -117,12 +127,12 @@
             </tr>
             <tr>
                 <th>Group Name</th>
-                <td><input type="text" class="form-attribute form-validate" id="groupname"></td>
+                <td><input type="text" class="form-attribute form-validate w3-input w3-border" id="groupname"></td>
             </tr>
             <tr>
                 <th>Music</th>
                 <td>
-                    <select class="form-attribute group_template_dropdown" id="musicid">
+                    <select class="form-attribute template w3-select w3-border" id="musicid">
                         <option value="">Other (Write your own):</option>
                         {% for m in musics %}
                         <option value="{{m.musicid}}">{{m.composer}} {% if m.musicname|length > 25 %}{{ m.musicname[0:18] }}...{% else %}{{ m.musicname }}{% endif %}</option>
@@ -131,13 +141,13 @@
                 </td>
             </tr>
             <tr id="hidemusic">
-                <th>Music</th>
-                <td><input type="text" class="form-attribute form-validate" id="musicwritein"></td>
+                <th>Custom Music</th>
+                <td><input type="text" class="form-attribute form-validate w3-input w3-border" id="musicwritein"></td>
             </tr>
             <tr>
                 <th>Location</th>
                 <td>
-                    <select class="form-attribute form-validate" id="locationid">
+                    <select class="form-attribute form-validate w3-select w3-border" id="locationid">
                         <option value=""></option>
                         {% for l in locations %}
                         <option value="{{ l.locationid }}">{{ l.locationname }}</option>
@@ -148,7 +158,7 @@
             <tr>
                 <th>Minimum Level</th>
                 <td>
-                    <select class="form-attribute" id="minimumlevel">
+                    <select class="form-attribute w3-select w3-border" id="minimumlevel">
                         {% for n in range(maximumlevel + 1) %}
                         {% if n  == 0 %}
                         <option value="{{ n }}">Auto</option>
@@ -162,7 +172,7 @@
             <tr>
                 <th>Maximum Level</th>
                 <td>
-                    <select class="form-attribute" id="maximumlevel">
+                    <select class="form-attribute w3-select w3-border" id="maximumlevel">
                         {% for n in range(maximumlevel + 1) %}
                         {% if n  == 0 %}
                         <option value="{{ n }}">Auto</option>
@@ -175,8 +185,8 @@
             </tr>
         </table>
         <p>
-            Conductor Name:
-            <select class="form-attribute" id="conductoruserid">
+            <label>Conductor Name</label>
+            <select class="form-attribute w3-select w3-border" id="conductoruserid">
                 <option value=""></option>
                 {% for c in conductors %}
                 {% if c.userid == thisuser.userid %}
@@ -187,8 +197,10 @@
                 {% endfor %}
             </select>
         </p>
+    </div>
+    <div class="w3-container w3-half">
         <h2>Group Instrumentation</h2>
-        <table id="playersTable">
+        <table id="playersTable" class="w3-table border-table">
             <!--Table Headers-->
             <tr>
                 <th>Instrument</th>
@@ -198,7 +210,7 @@
             <tr>
                 <td>{{ i }}</td>
                 <td>
-                    <select class="instrumentnumber_dropdown form-attribute form-validate" id="{{ i }}">
+                    <select class="instrumentnumber_dropdown form-attribute form-validate w3-select w3-border" id="{{ i }}">
                         {% set n = 21 %}
                         {% for n in range(n) %}
                         <option value="{{ n }}">{{ n }}</option>

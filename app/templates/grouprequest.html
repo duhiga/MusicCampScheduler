@@ -91,13 +91,13 @@
             $('#playersTable tr:last').after('\
                     <tr>\
                         <td>\
-                            <select class="form-object-master instrument_dropdown form-validate" data-key="instrumentname" data-mapping="' + rowId + '">\
+                            <select class="form-object-master instrument_dropdown form-validate w3-select w3-border" data-key="instrumentname" data-mapping="' + rowId + '">\
                                 <option value=""></option>\
                                 {% for i in instrumentlist %}<option value="{{ i }}">{{ i }}</option>{% endfor %}\
                             </select>\
                         </td>\
                         <td>\
-                            <select class="player_dropdown form-validate" data-key="userid" data-mapping="' + rowId + '">\
+                            <select class="player_dropdown form-validate w3-select w3-border" data-key="userid" data-mapping="' + rowId + '">\
                                 <option value=""></option>\
                             </select>\
                         </td>\
@@ -105,6 +105,17 @@
             rowId = rowId + 1;
             validate_all();
         }
+
+        $('input[type="radio"]').change(function(){
+            console.log('User clicked radio button')
+            if($(this).attr("value")=="Yes"){
+                $("#musicyesno_hide").show();
+            }
+            if($(this).attr("value")=="No"){
+                $('#musicid').val('').change();
+                $("#musicyesno_hide").hide();
+            }
+        });
 
         //run when user (or javascript) changes the content of an instrument dropdown. Populates the corresponding
         //player dropdown with people that play that instrument that are not the current user.
@@ -249,11 +260,16 @@
 
             if ($('#musicid').val() == '') {
                 $('.instrument_dropdown').prop("disabled", false);
+                $('.instrument_dropdown').removeClass("w3-text-gray")
                 $('.first_instrument_dropdown').prop("disabled", false);
+                $('.first_instrument_dropdown').removeClass("w3-text-gray")
             }
             else {
                 $('.instrument_dropdown').prop("disabled", true);
+                $('.instrument_dropdown').addClass("w3-text-gray")
                 $('.first_instrument_dropdown').prop("disabled", true);
+                $('.first_instrument_dropdown').addClass("w3-text-gray")
+                $('#playersTable tr:last').remove();
             }
         });
         requestedmusicid = '{{requestedmusic.musicid}}';
@@ -282,109 +298,158 @@
 {% block content %}
 <div class="w3-row">
     <div class="w3-container">
+        {% if conductorpage %}
+
+        <div class="w3-card-4">
+
+            <header class="w3-container w3-blue">
+                <h2>Conductor Request</h2>
+            </header>
+
+            <div class="w3-container">
+                <p>
+                    This is a conductor group creation page. This is intended to be for allocation of mentored groups.
+                </p>
+                <p>
+                    <table id="configTable" class="w3-table">
+                        <tr>
+                            <th>Period Name</th>
+                            <td>{{ thisperiod.periodname }}</td>
+                        </tr>
+                        <tr>
+                            <th>Date</th>
+                            <td>{{ thisperiod.starttime.strftime('%A, %Y-%m-%d') }}</td>
+                        </tr>
+                    </table>
+                </p>
+            </div>
+        </div>
+        <br />
+        {% else %}
         <h1>Group Request</h1>
-        {% if conductorpage %}
-        <table id="configTable">
-            <tr>
-                <th>Period Name</th>
-                <td>{{ thisperiod.periodname }}</td>
-            </tr>
-            <tr>
-                <th>Date</th>
-                <td>{{ thisperiod.starttime.strftime('%A, %Y-%m-%d') }}</td>
-            </tr>
-        </table>
-        <p>
-            This is a conductor group creation page. This is intended to be for allocation of mentored groups.
-            You cannot leave any blank fields for player names on this page.
-        </p>
-        {% endif %}
-        <h3>Step 1: Select Music{% if conductorpage %} and Location{% endif %}</h3>
-        {% if not conductorpage %}
-        <p>
-            This step is optional, but if you submit or write in music, it's more likely you'll be matched up with like-minded campers!
-        </p>
-        {% endif %}
-        <p>
-            Select music to book it out. For more information on the music available, visit the <a href="/user/{{ thisuser.userid }}/musiclibrary/"><i class="fa fa-book"></i> Music Library</a>.
-            <select class="form-attribute group_template_dropdown" id="musicid">
-                <option value="">Other (Write your own):</option>
-                {% for m in musics %}
-                <option value="{{m.musicid}}">{{m.composer}} {% if m.musicname|length > 25 %}{{ m.musicname[0:25] }}...{% else %}{{ m.musicname }}{% endif %}</option>
-                {% endfor %}
-            </select>
-        </p>
-        <div class="hidemusic">
-            <p>Custom Music: <input type="text" class="form-attribute" id="musicwritein"></p>
-        </div>
-        {% if conductorpage %}
-        <p>
-            Where will this group be held?
-            <select class="form-attribute form-validate" id="locationid">
-                <option value=""></option>
-                {% for l in locations %}
-                <option value="{{ l.locationid }}">{{ l.locationname }}</option>
-                {% endfor %}
-            </select>
-        </p>
-        {% endif %}
-        <h3>Step 2: Select Instrumentation and (optionally) Players</h3>
-        <div class="hidemusic">
-            <p>
-                Choose a group template to more easily fill out the page.
-                <select class="form-attribute group_template_dropdown" id="groupname">
-                    <option value="" selected="selected"></option>
-                    {% for g in grouptemplates %}
-                    <option value="{{ g.grouptemplatename }}">{{ g.grouptemplatename }}</option>
-                    {% endfor %}
-                </select>
-            </p>
-        </div>
-        <p>You do not need to fill in players if you don't want to. Any blank players will be filled in automatically when your group is scheduled.</p>
-        <table id="playersTable">
-            <!--Table Headers-->
-            <tr>
-                <th>Instrument</th>
-                <th>Player (Optional)</th>
-            </tr>
-            {% if not conductorpage %}
-            <tr>
-                <!--Row 1 (only appears for the non-conductor group page and is locked to the player name)-->
-                <td>
-                    <select class="form-object-master form-validate first_instrument_dropdown" data-key="instrumentname" data-mapping="0">
-                        {% for i in thisuserinstruments %}
-                        <option value="{{ i.instrumentname }}">{{ i.instrumentname }}</option>
-                        {% endfor %}
-                    </select>
-                </td>
-                <td>
-                    <select data-mapping="0" data-key="userid" disabled="disabled" id="this_user" class="form-validate">
-                        <option value="{{ thisuser.userid }}">{{ thisuser.firstname }} {{ thisuser.lastname }}</option>
-                    </select>
-                </td>
-            </tr>
             {% endif %}
-            <tr>
-                <!--Row 2 (drop down menu containing instrument, player names are autofilled by the JS upon selection)-->
-                <td>
-                    <select class="form-object-master instrument_dropdown form-validate" data-key="instrumentname" data-mapping="1">
-                        <option value=""></option>
-                        {% for i in instrumentlist %}
-                        <option value="{{ i }}">{{ i }}</option>
-                        {% endfor %}
-                    </select>
-                </td>
-                <td>
-                    <select class="player_dropdown form-validate" data-key="userid" data-mapping="1">
-                        <option value=""></option>
-                    </select>
-                </td>
-            </tr>
-        </table>
-        <div class="submit_hide">
-            <h3>Step 3: Submit!</h3>
-            <p>Once you're done with your instrumentation, press the submit button at the bottom of your screen. Your group will be scheduled when it next fits in.</p>
+            <div class="w3-card-4">
+                <header class="w3-container w3-dark-gray">
+                    <h3>Step 1: Music{% if conductorpage %} and Location{% endif %}</h3>
+                </header>
+                <div class="w3-container">
+                    <p>
+                        Do you want to play a specific work?<br />
+                        <input class="w3-radio" type="radio" name="musicyesno" id="musicno" value="No" {% if not requestedmusic %}checked{% endif %} {% if requestedmusic %}disabled{% endif %}>
+                        <label class="w3-validate">No</label>
+
+                        <input class="w3-radio" type="radio" name="musicyesno" id="musicyes" value="Yes" {% if requestedmusic %}checked disabled{% endif %}>
+                        <label class="w3-validate">Yes</label>
+                    </p>
+                    <div id="musicyesno_hide" {% if not requestedmusic %}hidden="hidden" {% endif %}>
+                        <p>
+                            Select music to book it out. For more information on the music available, visit the <a href="/user/{{ thisuser.userid }}/musiclibrary/"><i class="fa fa-book"></i> Music Library</a>.
+                            <select class="form-attribute group_template_dropdown w3-select w3-border" id="musicid">
+                                <option value="">Custom (Write in your own):</option>
+                                {% for m in musics %}
+                                <option value="{{m.musicid}}">{{m.composer}} {% if m.musicname|length > 25 %}{{ m.musicname[0:25] }}...{% else %}{{ m.musicname }}{% endif %}</option>
+                                {% endfor %}
+                            </select>
+                        </p>
+                        <div class="hidemusic">
+                            <p>
+                                <label>I have my own music (optional):</label>
+                                <input type="text" class="form-attribute w3-input w3-border" id="musicwritein">
+                            </p>
+                        </div>
+                    </div>
+                    {% if conductorpage %}
+                    <p>
+                        Where will this group be held?
+                        <select class="form-attribute form-validate w3-select w3-border" id="locationid">
+                            <option value=""></option>
+                            {% for l in locations %}
+                            <option value="{{ l.locationid }}">{{ l.locationname }}</option>
+                            {% endfor %}
+                        </select>
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+            <br />
         </div>
+    <div class="w3-container">
+        <div class="w3-card-4">
+            <header class="w3-container w3-dark-gray">
+                <h3>Step 2: Instrumentation & Players</h3>
+            </header>
+            <div class="w3-container">
+                <div class="hidemusic">
+                    <p>
+                        <label>(Optional) Choose a group template</label>
+                        <select class="form-attribute group_template_dropdown w3-select w3-border" id="groupname">
+                            <option value="" selected="selected"></option>
+                            {% for g in grouptemplates %}
+                            <option value="{{ g.grouptemplatename }}">{{ g.grouptemplatename }}</option>
+                            {% endfor %}
+                        </select>
+                    </p>
+                </div>
+                <p>You do not need to fill in players if you don't want to. Any blank players will be filled in automatically when your group is scheduled.</p>
+                <p>
+                    <table id="playersTable" class="w3-table w3-card-4">
+                        <!--Table Headers-->
+                        <tr class="w3-light-gray">
+                            <th>Instrument</th>
+                            <th>Player (Optional)</th>
+                        </tr>
+                        {% if not conductorpage %}
+                        <tr>
+                            <!--Row 1 (only appears for the non-conductor group page and is locked to the player name)-->
+                            <td>
+                                <select class="form-object-master form-validate first_instrument_dropdown w3-select w3-border" data-key="instrumentname" data-mapping="0">
+                                    {% for i in thisuserinstruments %}
+                                    <option value="{{ i.instrumentname }}">{{ i.instrumentname }}</option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                            <td>
+                                <select data-mapping="0" data-key="userid" disabled="disabled" id="this_user" class="form-validate w3-select w3-border w3-text-gray">
+                                    <option value="{{ thisuser.userid }}">{{ thisuser.firstname }} {{ thisuser.lastname }}</option>
+                                </select>
+                            </td>
+                        </tr>
+                        {% endif %}
+                        <tr>
+                            <!--Row 2 (drop down menu containing instrument, player names are autofilled by the JS upon selection)-->
+                            <td>
+                                <select class="form-object-master instrument_dropdown form-validate w3-select w3-border" data-key="instrumentname" data-mapping="1">
+                                    <option value=""></option>
+                                    {% for i in instrumentlist %}
+                                    <option value="{{ i }}">{{ i }}</option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                            <td>
+                                <select class="player_dropdown form-validate w3-select w3-border" data-key="userid" data-mapping="1">
+                                    <option value=""></option>
+                                </select>
+                            </td>
+                        </tr>
+                    </table>
+                </p>
+                
+                </div>
+            </div>
+        </div>
+    <div class="submit-hide">
+        <br />
+        <div class="w3-container">
+            <div class="w3-card-4">
+                <header class="w3-container w3-dark-gray">
+                    <h3>Step 3: Submit!</h3>
+                </header>
+                <div class="w3-container">
+                    <p>Once you're done with your instrumentation, press the submit button at the bottom of your screen. Your group will be scheduled when it next fits in.</p>
+                </div>
+            </div>
+        </div>
+
     </div>
-</div>
-        {% endblock %}
+    </div>
+            {% endblock %}

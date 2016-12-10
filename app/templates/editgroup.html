@@ -304,7 +304,7 @@
 <div class="w3-row">
     <div class="w3-container">
         <h2>Group Configuration</h2>
-        <table style="width:100%">
+        <table class="w3-table border-table">
             <tr>
                 <th>Attribute</th>
                 <th class="w3-hide-small">Current</th>
@@ -319,7 +319,7 @@
                 <th>Status</th>
                 <td class="w3-hide-small">{{ thisgroup.status }}</td>
                 <td>
-                    <select id="status" class="form-attribute">
+                    <select id="status" class="form-attribute w3-select w3-border">
                         {% if thisgroup.status == "Confirmed" %}
                         <option value="Queued">Queued</option>
                         <option value="Confirmed" selected="selected">Confirmed</option>
@@ -334,7 +334,7 @@
                 <th>Music</th>
                 <td class="w3-hide-small">{% if thismusic != None %}{{ thismusic.composer }} {% if thismusic.musicname|length > 18 %}{{ thismusic.musicname[0:18] }}...{% else %}{{ thismusic.musicname }}{% endif %}{% endif %}</td>
                 <td>
-                    <select class="form-attribute" id="musicid">
+                    <select id="musicid" class="form-attribute w3-select w3-border">
                         <option value="">Other (Write your own):</option>
                         {% for m in musics %}
                         {% if m.musicid == thisgroup.musicid %}
@@ -360,7 +360,7 @@
                 </td>
                 {% endif %}
                 <td>
-                    <select id="periodid" class="form-attribute form-validate">
+                    <select id="periodid" class="form-attribute form-validate w3-select w3-border">
                         {% for p in periods %}
                         {% if p.periodid == selectedperiod.periodid %}
                         <option value="{{ p.periodid }}" selected="selected">{{ p.starttime.strftime('%d %b') }}: {{ p.periodname }}</option>
@@ -375,7 +375,7 @@
                 <th>Location</th>
                 <td class="w3-hide-small">{{ thislocation.locationname }}</td>
                 <td>
-                    <select id="locationid" class="form-attribute">
+                    <select id="locationid" class="form-attribute w3-select w3-border">
                         {% for l in locations %}
                         {% if l.locationid == thislocation.locationid %}
                         <option value="{{ l.locationid }}" selected="selected">{{ l.locationname }} - Cap: {{ l.capacity }}</option>
@@ -394,7 +394,7 @@
                     {% endif %}
                 </td>
                 <td>
-                    <select id="ismusical" class="form-attribute">
+                    <select id="ismusical" class="form-attribute w3-select w3-border">
                         {% if thisgroup.ismusical == 0 %}
                         <option value="1">Yes</option>
                         <option value="0" selected="selected">No</option>
@@ -443,7 +443,7 @@
             </tr>
         </table>
         <h2>Players</h2>
-        <table class="sortable" id="table_players">
+        <table class="border-table" id="table_players">
             <tr>
                 <th>Instrument</th>
                 <th>Number</th>

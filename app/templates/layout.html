@@ -144,13 +144,11 @@
             $('.form-validate').each(function () {
                 //if the object is good, clear the red border
                 if (validate($(this))) {
-                    $(this).css("border-color", "");
-                    $(this).css("border-style", "");
+                    $(this).removeClass("w3-border-red");
                 }
                     //if the object is bad, give it a red border
                 else {
-                    $(this).css("border-color", "red");
-                    $(this).css("border-style", "solid");
+                    $(this).addClass("w3-border-red");
                     valid = false;
                 }
             });

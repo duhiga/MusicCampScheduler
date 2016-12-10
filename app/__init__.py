@@ -208,6 +208,7 @@ def home(userid,inputdate='n'):
             displaydate = today
         
         previousday = displaydate + datetime.timedelta(days=-1)
+        midday = displaydate + datetime.timedelta(hours=12)
         nextday = displaydate + datetime.timedelta(days=1)
 
         #get an array containing the dates that the camp is running
@@ -231,6 +232,7 @@ def home(userid,inputdate='n'):
                             campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
                             currentannouncement=announcementcontent, \
                             now = datetime.datetime.now(), \
+                            midday=midday, \
                             )
 
     except Exception as ex:

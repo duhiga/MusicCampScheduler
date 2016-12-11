@@ -26,9 +26,6 @@
 
     $(document).ready(function () {
 
-        // Get the element with id="defaultOpen" and click on it
-        document.getElementById("defaultOpen").click();
-
         //handler for thisuser clicking the button requesting an absence
         $(".absent_request_button").click(function () {
             $(this).prop('disabled', true).addClass('disabled');
@@ -71,14 +68,6 @@
             console.log(response);
             */
         });
-        //handler for the user clicking the next day button
-        $(document).on("click", '.next', function () {
-            window.location.replace("/user/{{ thisuser.userid }}/date/{{ nextday.strftime('%Y-%m-%d') }}/")
-        });
-        //handler for the user clicking the previous day button
-        $(document).on("click", '.previous', function () {
-            window.location.replace("/user/{{ thisuser.userid }}/date/{{ previousday.strftime('%Y-%m-%d') }}/")
-        });
     });
 </script>
 {% endblock %}
@@ -86,8 +75,6 @@
 <li class="w3-hide-small"><a href="#" class="w3-hover-white">{{ date.strftime('%d %b') }}</a></li>
 {% endblock %}
 {% block content %}
-<div class="w3-row">
-    <div class="w3-container">
         {% if thisuser.isactive == 0 %}
         <h2>You are currently set to inactive. You will not be allocated to any groups.</h2>
         {% endif %}
@@ -97,7 +84,7 @@
         {% endif %}
         <p>
             <div class="w3-center">
-                <button class="w3-btn w3-white w3-border previous">&#10094; Previous</button>
+                <a class="w3-btn w3-white w3-border" href="/user/{{ thisuser.userid }}/date/{{ previousday.strftime('%Y-%m-%d') }}/">&#10094; Previous</a>
                 <div class="w3-dropdown-hover">
                     <button class="w3-btn w3-white w3-border">
                         {% if date.strftime('%Y-%m-%d') == today.strftime('%Y-%m-%d') %}
@@ -116,18 +103,16 @@
                         {% endfor %}
                     </div>
                 </div>
-                <button class="w3-btn w3-white w3-border next">Next &#10095;</button>
+                <a class="w3-btn w3-white w3-border" href="/user/{{ thisuser.userid }}/date/{{ nextday.strftime('%Y-%m-%d') }}/">Next &#10095;</a>
             </div>
         </p>
-    </div>
-</div>
 <div class="w3-row">
     <div class="w3-container w3-half">
         <h2>Morning</h2>
         {% set afternoon = 0 %}
         {% for p in schedule %}
         
-        {% if p.starttime >= midday and afternoon == 0 %}
+        {% if p.starttime > midday and afternoon == 0 %}
         </div>
     <div class="w3-container w3-half">
         <h2>Afternoon</h2>
@@ -139,11 +124,11 @@
                     {% if p.groupname == 'absent' %}
                     w3-dark-gray
                     {% elif p.groupname and p.ismusical == 1 %}
-                    w3-orange
+                    w3-pink
                     {% elif p.iseveryone == 1 and p.meal == 1 %}
                     w3-blue
                     {% elif p.iseveryone == 1 %}
-                    w3-yellow
+                    w3-indigo
                     {% else %}
                     w3-green
                     {% endif %}
@@ -212,15 +197,15 @@
                         <button id={{ p.periodid }} data-periodname="{{ p.periodname }}" class="absent_cancel_button w3-btn-block w3-white w3-border">Mark Me as Present</button>
                         {% endif %}
                         {% endif %}
-
+                        <!-- Is this user is an conductor, they can request small groups or create instrumentation -->
                         {% if thisuser.isconductor == 1 and date > today %}
                         <a class="w3-btn-block w3-white w3-border" href="/user/{{ thisuser.userid }}/grouprequest/conductor/{{ p.periodid }}/">Create a Small Group Here</a>
                         <a class="w3-btn-block w3-white w3-border" href="/user/{{ thisuser.userid }}/instrumentation/{{ p.periodid }}/">Create Instrumentation Here</a>
                         {% endif %}
-
+                        <!-- If this user is an admin, they can use the super editor, and create public events-->
                         {% if thisuser.isadmin == 1 %}
                         <a class="w3-btn-block w3-white w3-border" href="/user/{{ thisuser.userid }}/group/new/period/{{ p.periodid }}/edit/">Edit a New Group Here</a>
-                        <a class="w3-btn-block w3-white w3-border" href="/user/{{ thisuser.userid }}/publicevent/{{ p.periodid }}/">Create Pubilc Event Here</a>
+                        <a class="w3-btn-block w3-white w3-border" href="/user/{{ thisuser.userid }}/publicevent/{{ p.periodid }}/">Create Public Event Here</a>
                         {% endif %}
                     </p>
 

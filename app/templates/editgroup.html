@@ -82,7 +82,7 @@
             var ob = $(this);
             var templateid = $(this).attr('id');
             console.log('Template selected with id: ' + templateid)
-
+            toast('Applied ' + ob.html(),'message');
             if (ob.attr('id') == 'apply_music') {
                 var grep_template = $.grep(musics, function (elt) {
                     return String(elt.musicid) === String($('#musicid').val());

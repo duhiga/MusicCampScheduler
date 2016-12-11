@@ -1267,7 +1267,7 @@ def periodpage(userid,periodid):
     try:
         thisperiod = session.query(period).filter(period.periodid == periodid).first()
         #find any public events on during this period
-        publicevents = session.query(group.groupname,group.groupid).filter(group.iseveryone == 1).filter(group.periodid == periodid).all()
+        publicevents = session.query(group.groupname,group.groupid,location.locationname).join(location).filter(group.iseveryone == 1).filter(group.periodid == periodid).all()
         #start with the players that are playing in groups in the period
         players = session.query(user.userid, user.firstname, user.lastname, period.starttime, period.endtime, group.groupname,\
             groupassignment.instrumentname, location.locationname, groupassignment.groupid).\

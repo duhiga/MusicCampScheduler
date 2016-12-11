@@ -77,6 +77,7 @@ class group(Base):
 
     groupid = Column(Integer, primary_key=True, unique=True)
     groupname = Column(String)
+    groupdescription = Column(String)
     locationid = Column(Integer, ForeignKey('locations.locationid'))
     requesttime = Column(DateTime)
     requesteduserid = Column(UUID, ForeignKey('users.userid'))
@@ -222,8 +223,6 @@ def dbbuild(configfile):
     for x in range(0,len(conf.root.CampDetails.Location)):
         createlocation(session,conf.root.CampDetails.Location[x]['Name'], conf.root.CampDetails.Location[x]['Capacity'])
     session.commit()
-    meallocation = session.query(location).filter(location.locationname == conf.root.CampDetails['MealLocation']).first()
-    print('Found meal location to be %s' % meallocation.locationname)
     #For each day covered by the camp start and end time
     while loop == 'start':
         print('Creating initial groups for %s' % ThisDay)
@@ -242,14 +241,22 @@ def dbbuild(configfile):
                     find_period = period(periodname = ThisPeriodName,starttime = ThisStartTime,endtime = ThisEndTime,meal=ThisPeriodMeal)
                     session.add(find_period)
                     print('Created period: %s at %s with meal switch set to %s' % (find_period.periodname, find_period.starttime, find_period.meal))
-                find_mealgroup = session.query(group).filter(group.groupname == find_period.periodname,group.periodid == find_period.periodid,group.iseveryone == 1,group.ismusical == 0).first()
-                #if no mealgroup exists in the database, create it
-                if find_mealgroup is None and (find_period.meal == 1 or find_period.meal == '1'):
-                    find_mealgroup = group(groupname = find_period.periodname,periodid = find_period.periodid,iseveryone = 1,ismusical = 0,locationid = meallocation.locationid,status="Confirmed",requesttime=datetime.datetime.now())
-                    session.add(find_mealgroup)
-                    print('Created group: %s at %s' % (find_mealgroup.groupname, find_period.starttime))
-                find_absent_group = session.query(group).filter(group.groupname == 'absent',group.periodid == find_period.periodid).first()
+                #check if this period has public events that need to be created
+                for x in range(0,len(conf.root.CampDetails.PublicEvent)):
+                    find_event = session.query(group).filter(group.groupname == conf.root.CampDetails.PublicEvent[x]['Name'],group.periodid == find_period.periodid,group.iseveryone == 1,group.ismusical == 0).first()
+                    if find_event is None and find_period.periodname == conf.root.CampDetails.PublicEvent[x]['Period']:
+                        print('right before locationname search')
+                        find_location = session.query(location).filter(location.locationname == conf.root.CampDetails.PublicEvent[x]['Location']).first()
+                        if find_location is None:
+                            print('User input a location that does not exist when configuring event %s' % conf.root.CampDetails.PublicEvent[x]['Name'])
+                        else:
+                            find_event = group(groupname = conf.root.CampDetails.PublicEvent[x]['Name'],periodid = find_period.periodid,iseveryone = 1,ismusical = 0,locationid = find_location.locationid,status="Confirmed",requesttime=datetime.datetime.now())
+                            if conf.root.CampDetails.PublicEvent[x]['Description'] is not None:
+                                find_event.groupdescription = conf.root.CampDetails.PublicEvent[x]['Description']
+                            session.add(find_event)
+                            print('Created public event: %s during period %s at %s' % (find_event.groupname, find_period.periodname, find_period.starttime))
                 #if no absentgroup exists in the database, create it
+                find_absent_group = session.query(group).filter(group.groupname == 'absent',group.periodid == find_period.periodid).first()
                 if find_absent_group is None:
                     find_absent_group = group(groupname = 'absent',periodid = find_period.periodid,ismusical=0,status="Confirmed",requesttime=datetime.datetime.now(),minimumlevel=0,maximumlevel=0)
                     session.add(find_absent_group)

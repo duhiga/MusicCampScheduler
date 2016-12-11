@@ -24,28 +24,43 @@
 {% block content %}
 <div class="w3-row">
     <div class="w3-container">
-        <h1>{{ thisperiod.periodname }}: {{ thisperiod.starttime.strftime('%A %d %b') }}, {{ thisperiod.starttime.strftime('%H:%M') }}-{{ thisperiod.endtime.strftime('%H:%M') }}</h1>
+        <h2>{{ thisperiod.periodname }}</h2>
+        <table class="w3-table">
+            <tr>
+                <th>Date</th>
+                <td>{{thisperiod.starttime.strftime('%A %d %b')}}</td>
+            </tr>
+            <tr>
+                <th>Time</th>
+                <td>{{ thisperiod.starttime.strftime('%H:%M') }}-{{ thisperiod.endtime.strftime('%H:%M') }}</td>
+            </tr>
+        </table>
+        <br />
         {% if publicevents[0] != None %}
         {% for e in publicevents %}
-        <div class="w3-panel w3-blue">
-            <h3><a href="/user/{{ thisuser.userid }}/group/{{ e.groupid }}">{{ e.groupname }}</a></h3>
-            <p>There is a public event at this time.
-            <table class="w3-table">
-                <tr>
-                    <th w3-line-white>Event Name</th>
-                    <td>{{e.groupname}}</td>
-                </tr>
-                <tr>
-                    <th>Location</th>
-                    <td>{{e.locationname}}</td>
-                </tr>
-                <tr>
-                    <th>Attendees</th>
-                    <td>{{ players|length + nonplayers|length }}</td>
-                </tr>
-            </table>
+        <div class="w3-container w3-indigo">
+            <h3>Public Event</h3>
+            <p>
+                <table class="w3-table">
+                    <tr>
+                        <th>Event Name</th>
+                        <td><a href="/user/{{ thisuser.userid }}/group/{{ e.groupid }}">{{ e.groupname }}</a></td>
+                    </tr>
+                    <tr>
+                        <th>Location</th>
+                        <td>{{e.locationname}}</td>
+                    </tr>
+                    <tr>
+                        <th>Attendees</th>
+                        <td>{{ players|length + nonplayers|length }}</td>
+                    </tr>
+                </table>
+                {% if e.groupdescription != None %}
+                <br />{{ e.groupdescription }}
+                {% endif %}
             </p>
         </div> 
+        <br />
         {% endfor %}
         {% endif %}
         <table style="width:100%" class="tablesorter border-table">

@@ -260,16 +260,17 @@
 
             if ($('#musicid').val() == '') {
                 $('.instrument_dropdown').prop("disabled", false);
-                $('.instrument_dropdown').removeClass("w3-text-gray")
+                $('.instrument_dropdown').removeClass("w3-text-gray");
                 $('.first_instrument_dropdown').prop("disabled", false);
-                $('.first_instrument_dropdown').removeClass("w3-text-gray")
+                $('.first_instrument_dropdown').removeClass("w3-text-gray");
             }
             else {
                 $('.instrument_dropdown').prop("disabled", true);
-                $('.instrument_dropdown').addClass("w3-text-gray")
+                $('.instrument_dropdown').addClass("w3-text-gray");
                 $('.first_instrument_dropdown').prop("disabled", true);
-                $('.first_instrument_dropdown').addClass("w3-text-gray")
+                $('.first_instrument_dropdown').addClass("w3-text-gray");
                 $('#playersTable tr:last').remove();
+                $('#protip_musiclibrary').hide();
             }
         });
         requestedmusicid = '{{requestedmusic.musicid}}';
@@ -329,12 +330,19 @@
         <h1>Group Request</h1>
             {% endif %}
             <div class="w3-card-4">
-                <header class="w3-container w3-dark-gray">
+                <header class="w3-container w3-pink">
                     <h3>Step 1: Music{% if conductorpage %} and Location{% endif %}</h3>
                 </header>
                 <div class="w3-container">
+                    {% if requestedmusic != None %}
+                    <div class="w3-panel w3-blue">
+                        <span onclick="this.parentElement.style.display='none'" class="w3-closebtn">&times;</span>
+                        <h3>Pro tip!</h3>
+                        <p>Looks like you came here straight from the music library. Awesome! Go right on to Step 2 unless you selected the wrong work and want to fix your mistake.</p>
+                    </div> 
+                    {% endif %}
                     <p>
-                        Do you want to play a specific work?<br />
+                        Do you have a specific piece of music in mind?<br />
                         <input class="w3-radio" type="radio" name="musicyesno" id="musicno" value="No" {% if not requestedmusic %}checked{% endif %} {% if requestedmusic %}disabled{% endif %}>
                         <label class="w3-validate">No</label>
 
@@ -342,8 +350,14 @@
                         <label class="w3-validate">Yes</label>
                     </p>
                     <div id="musicyesno_hide" {% if not requestedmusic %}hidden="hidden" {% endif %}>
+                        <div id="protip_musiclibrary" class="w3-panel w3-blue">
+                            <span onclick="this.parentElement.style.display='none'" class="w3-closebtn">&times;</span>
+                            <h3>Pro tip!</h3>
+                            <p class="w3-hide-large">The easiest way to see all the music available and make a group request is to visit the <a href="/user/{{ thisuser.userid }}/musiclibrary/"><i class="fa fa-book"></i>Music Library</a>. You can find it by clicking the <i class="fa fa-bars"></i> menu button on the top left of your screen.</p>
+                            <p class="w3-hide-medium w3-hide-small">The easiest way to see all the music available and make a group request is to visit the <a href="/user/{{ thisuser.userid }}/musiclibrary/"><i class="fa fa-book"></i>Music Library</a>. You can find it by clicking the link on the left of your screen.</p>
+                        </div> 
                         <p>
-                            Select music to book it out. For more information on the music available, visit the <a href="/user/{{ thisuser.userid }}/musiclibrary/"><i class="fa fa-book"></i> Music Library</a>.
+                            <label>Select Music:</label>
                             <select class="form-attribute group_template_dropdown w3-select w3-border" id="musicid">
                                 <option value="">Custom (Write in your own):</option>
                                 {% for m in musics %}
@@ -375,10 +389,15 @@
         </div>
     <div class="w3-container">
         <div class="w3-card-4">
-            <header class="w3-container w3-dark-gray">
+            <header class="w3-container w3-pink">
                 <h3>Step 2: Instrumentation & Players</h3>
             </header>
             <div class="w3-container">
+                <div class="w3-panel w3-blue">
+                    <span onclick="this.parentElement.style.display='none'" class="w3-closebtn">&times;</span>
+                    <h3>Pro tip!</h3>
+                    <p>You need to fill in your instrumentation, but don't need to fill in all the names. Only fill in the names you specifically want to play with. Any blank players will be filled in automatically when your group is scheduled.</p>
+                </div> 
                 <div class="hidemusic">
                     <p>
                         <label>(Optional) Choose a group template</label>
@@ -390,7 +409,6 @@
                         </select>
                     </p>
                 </div>
-                <p>You do not need to fill in players if you don't want to. Any blank players will be filled in automatically when your group is scheduled.</p>
                 <p>
                     <table id="playersTable" class="w3-table w3-card-4">
                         <!--Table Headers-->
@@ -441,7 +459,7 @@
         <br />
         <div class="w3-container">
             <div class="w3-card-4">
-                <header class="w3-container w3-dark-gray">
+                <header class="w3-container w3-pink">
                     <h3>Step 3: Submit!</h3>
                 </header>
                 <div class="w3-container">

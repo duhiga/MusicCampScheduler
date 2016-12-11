@@ -23,7 +23,16 @@
 {% block content %}
 <div class="w3-row">
     <div class="w3-container">
-        <table id="configTable">
+        <h2>New Public Event</h2>
+        <div class="w3-panel w3-blue">
+            <span onclick="this.parentElement.style.display='none'" class="w3-closebtn">&times;</span>
+            <h3>Pro tip!</h3>
+            <p>
+                This page is used to create a public event, such as a Quiz night, Drinks, Dance, etc. It appears on everyone's dashboards
+                unless they are assigned to another group. Any specific group assignment overwrites this public invitation.
+            </p>
+        </div> 
+        <table id="configTable" class="w3-table">
             <tr>
                 <th>Period Name</th>
                 <td>{{ thisperiod.periodname }}</td>
@@ -38,18 +47,18 @@
             </tr>
         </table>
         <p>
-            This page is used to create a public event, such as a Quiz night, Drinks, Dance, etc. It appears on everyone's dashboards
-            unless they are assigned to another group. Any specific group assignment overwrites this public invitation.
+            <label>Event Name</label>
+            <input type="text" class="form-attribute form-validate w3-input w3-border" id="groupname">
         </p>
-        <p>What is the name of the event? This will appear on all user's dashboards. <input type="text" class="form-attribute form-validate" id="groupname"></p>
         <p>
-            Where will this event be held?
-            <select class="form-attribute form-validate" id="locationid">
+            <label>Event Location</label>
+            <select class="form-attribute form-validate w3-select w3-border" id="locationid">
                 <option value=""></option>
                 {% for l in locations %}
                 <option value="{{ l.locationid }}">{{ l.locationname }}</option>
                 {% endfor %}
             </select>
+        </p>
     </div>
 </div>
 {% endblock %}

@@ -282,9 +282,9 @@
                 {% for t in targetuserinstruments %}
                 <tr>
                     <td>
-                        <input type="hidden" data-key="instrumentid" data-mapping="{{t.instrumentid}}" value="{{t.instrumentid}}">
+                        <input type="hidden" data-key="instrumentid" data-mapping="{{t.instrumentid}}" value="{{t.instrumentid}}" class="form-object-master">
                         {% if thisuser.isadmin == 1 %}
-                        <select class="form-object-master w3-select w3-border" data-key="instrumentname" data-mapping="{{t.instrumentid}}">
+                        <select class="w3-select w3-border" data-key="instrumentname" data-mapping="{{t.instrumentid}}">
                             {% for i in instrumentlist %}
                             {% if t.instrumentname == i %}
                             <option value="{{i}}" selected="selected">{{i}}</option>

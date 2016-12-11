@@ -50,9 +50,9 @@ def getschedule(session,thisuser,date):
     #for each period in the requested day
     for p in session.query(period).filter(period.starttime > date, period.endtime < nextday).all():
         #try to find a group assignment for the user
-        g = session.query(group.groupname, period.starttime, period.endtime, location.locationname, group.groupid, group.ismusical, \
-                            group.iseveryone, period.periodid, period.periodname, groupassignment.instrumentname, period.meal).\
-                            join(period).join(groupassignment).join(user).join(instrument).outerjoin(location).\
+        g = session.query(group.groupname, period.starttime, period.endtime, location.locationname, group.groupid, group.ismusical, group.iseveryone, \
+                            period.periodid, period.periodname, groupassignment.instrumentname, period.meal, group.groupdescription, music.composer, music.musicname, group.musicwritein).\
+                            join(period).join(groupassignment).join(user).join(instrument).outerjoin(location).outerjoin(music).\
                             filter(user.userid == thisuser.userid, group.periodid == p.periodid, group.status == 'Confirmed').first()
         if g is not None:
             schedule.append(g)
@@ -61,7 +61,7 @@ def getschedule(session,thisuser,date):
         if g is None:
             #try to find an iseveryone group at the time of this period
             e = session.query(group.groupname, period.starttime, period.endtime, location.locationname, group.groupid, group.ismusical, \
-                            group.iseveryone, period.periodid, period.periodname, period.meal).\
+                            group.iseveryone, period.periodid, period.periodname, period.meal, group.groupdescription).\
                             join(period).join(location).\
                             filter(group.iseveryone == 1, group.periodid == p.periodid).first()
         if e is not None:
@@ -1267,7 +1267,7 @@ def periodpage(userid,periodid):
     try:
         thisperiod = session.query(period).filter(period.periodid == periodid).first()
         #find any public events on during this period
-        publicevents = session.query(group.groupname,group.groupid,location.locationname).join(location).filter(group.iseveryone == 1).filter(group.periodid == periodid).all()
+        publicevents = session.query(group.groupname,group.groupid,location.locationname,group.groupdescription).join(location).filter(group.iseveryone == 1).filter(group.periodid == periodid).all()
         #start with the players that are playing in groups in the period
         players = session.query(user.userid, user.firstname, user.lastname, period.starttime, period.endtime, group.groupname,\
             groupassignment.instrumentname, location.locationname, groupassignment.groupid).\
@@ -1349,120 +1349,121 @@ def edituser(userid, targetuserid):
     thisuser = session.query(user).filter(user.userid == userid).first()
     if thisuser is None:
         return ('Did not find user in database. You have entered an incorrect URL address.')
-    try:
-        if thisuser.isadmin != 1 and targetuserid is None:
+    #try:
+    if thisuser.isadmin != 1 and targetuserid is None:
+        session.close()
+        return errorpage(thisuser,'You do not have permission to view this page.')
+    if targetuserid is not None:
+        targetuser = session.query(user).filter(user.userid == targetuserid).first()
+        if targetuser is None:
+                session.close()
+                return errorpage(thisuser,'Could not find requested user in database.')
+        elif thisuser.isadmin != 1 and (thisuser.userid != targetuser.userid):
             session.close()
             return errorpage(thisuser,'You do not have permission to view this page.')
-        if targetuserid is not None:
-            targetuser = session.query(user).filter(user.userid == targetuserid).first()
-            if targetuser is None:
-                    session.close()
-                    return errorpage(thisuser,'Could not find requested user in database.')
-            elif thisuser.isadmin != 1 and (thisuser.userid != targetuser.userid):
-                session.close()
-                return errorpage(thisuser,'You do not have permission to view this page.')
-        else:
-            targetuser = user()
-        targetuserinstruments = session.query(instrument).filter(instrument.userid == targetuser.userid).all()
-        periods = session.query(period).all()
-        #if this is a user requesting the page
-        if request.method == 'GET':
-            session.close()
-            return render_template('edituser.html', \
-                                    thisuser=thisuser, \
-                                    targetuser=targetuser, \
-                                    targetuserinstruments=targetuserinstruments, \
-                                    campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
-                                    periods=periods, \
-                                    maximumlevel=int(getconfig('MaximumLevel')), \
-                                    )
+    else:
+        targetuser = user()
+    targetuserinstruments = session.query(instrument).filter(instrument.userid == targetuser.userid).all()
+    periods = session.query(period).all()
+    #if this is a user requesting the page
+    if request.method == 'GET':
+        session.close()
+        return render_template('edituser.html', \
+                                thisuser=thisuser, \
+                                targetuser=targetuser, \
+                                targetuserinstruments=targetuserinstruments, \
+                                campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
+                                periods=periods, \
+                                maximumlevel=int(getconfig('MaximumLevel')), \
+                                )
         
-        #if this is a user that just pressed submit
-        if request.method == 'POST':
-            #format the packet received from the server as JSON
-            content = request.json
-            if content['arrival'] >= content['departure']:
-                        session.rollback()
-                        session.close()
-                        return jsonify(message = 'Your departure time must be after your arrival time.', url = 'none')
-            if thisuser.isadmin == 1:
-                if content['firstname'] == '' or content['firstname'] == 'null' or content['firstname'] == 'None' or \
-                            content['lastname'] == '' or content['lastname'] == 'null' or content['lastname'] == 'None':
+    #if this is a user that just pressed submit
+    if request.method == 'POST':
+        #format the packet received from the server as JSON
+        content = request.json
+        if content['arrival'] >= content['departure']:
                     session.rollback()
                     session.close()
-                    return jsonify(message = 'You cannot save a user without a firstname and lastname.', url = 'none')
-                #is this user doesn't have an ID yet, they are new and we must set them up
-                if targetuser.userid is None:
-                    #assign them a userid from a randomly generated uuid
-                    targetuser.userid = str(uuid.uuid4())
-                    session.add(targetuser)
+                    return jsonify(message = 'Your departure time must be after your arrival time.', url = 'none')
+        if thisuser.isadmin == 1:
+            if content['firstname'] == '' or content['firstname'] == 'null' or content['firstname'] == 'None' or \
+                        content['lastname'] == '' or content['lastname'] == 'null' or content['lastname'] == 'None':
+                session.rollback()
+                session.close()
+                return jsonify(message = 'You cannot save a user without a firstname and lastname.', url = 'none')
+            #is this user doesn't have an ID yet, they are new and we must set them up
+            if targetuser.userid is None:
+                #assign them a userid from a randomly generated uuid
+                targetuser.userid = str(uuid.uuid4())
+                session.add(targetuser)
 
-            #add the content in the packet to this group's attributes
-            for key,value in content.iteritems():
-                if (thisuser.isadmin != 1 and thisuser.isadmin != '1') and key != 'arrival' and key != 'departure' and key != 'isactive' and key != 'submittype' and key != 'objects':
+        #add the content in the packet to this group's attributes
+        for key,value in content.iteritems():
+            if (thisuser.isadmin != 1 and thisuser.isadmin != '1') and key != 'arrival' and key != 'departure' and key != 'isactive' and key != 'submittype' and key != 'objects':
+                session.rollback()
+                session.close()
+                return jsonify(message = 'Users are not allowed to edit this attribute. The page should not have given you this option.', url = 'none')
+            elif not isinstance(value, list) and value is not None and value != 'null' and value != '' and value != 'None' and value != 'HIDDEN':
+                log('Setting %s to be %s' % (key, value))
+                setattr(targetuser,key,value)
+        session.merge(targetuser)
+        session.commit()
+        newinstrument = False
+        #for each instrument object in the receiving packet
+        for i in content['objects']:
+            if i['instrumentid'] == 'new' and thisuser.isadmin == 1:
+                thisinstrument = instrument(userid = targetuser.userid)
+                session.add(thisinstrument)
+                log('Added new instrument for user %s' % targetuser.firstname)
+                newinstrument = True
+            elif i['instrumentid'] != 'new':
+                thisinstrument = session.query(instrument).filter(instrument.instrumentid == i['instrumentid']).first()
+                if thisinstrument is None:
                     session.rollback()
                     session.close()
-                    return jsonify(message = 'Users are not allowed to edit this attribute. The page should not have given you this option.', url = 'none')
-                elif not isinstance(value, list) and value is not None and value != 'null' and value != '' and value != 'None' and value != 'HIDDEN':
-                    log('Setting %s to be %s' % (key, value))
-                    setattr(targetuser,key,value)
-            session.merge(targetuser)
-            session.commit()
-            newinstrument = False
-            #for each instrument object in the receiving packet
-            for i in content['objects']:
-                if i['instrumentid'] == 'new' and thisuser.isadmin == 1:
-                    thisinstrument = instrument(userid = targetuser.userid)
-                    session.add(thisinstrument)
-                    log('Added new instrument for user %s' % targetuser.firstname)
-                    newinstrument = True
-                elif i['instrumentid'] != 'new':
-                    thisinstrument = session.query(instrument).filter(instrument.instrumentid == i['instrumentid']).first()
-                    if thisinstrument is None:
-                        session.rollback()
-                        session.close()
-                        return jsonify(message = 'Instrument listing not found, could not modify the listing.', url = 'none')
-                    if thisuser.isadmin != 1 and thisinstrument.userid != thisuser.userid:
-                        session.rollback()
-                        session.close()
-                        return jsonify(message = 'You cannot change an instrument listing for another user.', url = 'none')
-                else:
+                    return jsonify(message = 'Instrument listing not found, could not modify the listing.', url = 'none')
+                if thisuser.isadmin != 1 and thisinstrument.userid != thisuser.userid:
                     session.rollback()
                     session.close()
-                    return jsonify(message = 'You have submitted illegal parameters for your instrument. No changes have been made to your instrument listings.', url = 'none')
-                for key,value in i.iteritems():
-                    if thisuser.isadmin != 1 and key != isactive and key != isprimary:
+                    return jsonify(message = 'You cannot change an instrument listing for another user.', url = 'none')
+            else:
+                session.rollback()
+                session.close()
+                return jsonify(message = 'You have submitted illegal parameters for your instrument. No changes have been made to your instrument listings.', url = 'none')
+            for key,value in i.iteritems():
+                if key != 'instrumentid':
+                    if thisuser.isadmin != 1 and key != 'isactive' and key != 'isprimary':
                         session.rollback()
                         session.close()
                         return jsonify(message = 'You have submitted illegal parameters for your instrument. No changes have been made to your instrument listings.', url = 'none')
-                    elif key != 'instrumentid' and value != 'None':
+                    elif value != 'None':
                         setattr(thisinstrument,key,value)
-                session.merge(thisinstrument)
-            session.commit()
+            session.merge(thisinstrument)
+        session.commit()
 
-            if content['submittype'] == 'submit':
-                url = '/user/' + str(thisuser.userid) + '/'
+        if content['submittype'] == 'submit':
+            url = '/user/' + str(thisuser.userid) + '/'
+            message = 'none'
+            flash(u'Changes Saved', 'success')
+        elif content['submittype'] == 'save':
+            if targetuserid is None:
+                url = ('/user/' + str(thisuser.userid) + '/edituser/' + str(targetuser.userid) + '/')
                 message = 'none'
-                flash(u'Changes Saved', 'success')
-            elif content['submittype'] == 'save':
-                if targetuserid is None:
-                    url = ('/user/' + str(thisuser.userid) + '/edituser/' + str(targetuser.userid) + '/')
-                    message = 'none'
-                    flash(u'New User Successfully Created', 'success')
-                else:
-                    if newinstrument == True:
-                        url = 'refresh'
-                        flash(u'New Instrument Successfully Added', 'success')
-                    else:
-                        url = 'none'
-                    message = 'none'
+                flash(u'New User Successfully Created', 'success')
             else:
-                url = 'none'
-                message = 'Incomplete request. Request failed.'
-            session.close()
-            #send the user back to their home
-            return jsonify(message = message, url = url)
-    except Exception as ex:
+                if newinstrument == True:
+                    url = 'refresh'
+                    flash(u'New Instrument Successfully Added', 'success')
+                else:
+                    url = 'none'
+                message = 'none'
+        else:
+            url = 'none'
+            message = 'Incomplete request. Request failed.'
+        session.close()
+        #send the user back to their home
+        return jsonify(message = message, url = url)
+    """except Exception as ex:
         log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))
         message = ('Failed to execute %s with exception: %s. Try refreshing the page and trying again or contact camp administration.' % (request.method, ex))
         session.rollback()
@@ -1470,7 +1471,7 @@ def edituser(userid, targetuserid):
         if request.method == 'GET':
             return errorpage(thisuser,'Failed to display page with exception: %s.' % ex)
         else:
-            return jsonify(message = message, url = 'none')
+            return jsonify(message = message, url = 'none')"""
 
 @app.route('/user/<userid>/newuser/', methods=['GET', 'POST'])
 def newuser(userid):
@@ -1510,11 +1511,9 @@ Your homepage, containing your daily schedule, is here:\n
 %s/user/%s/ \n
 WARNING: DO NOT GIVE THIS LINK TO ANYONE ELSE. It is yours, and yours alone and contains your connection credentials.\n
 A small rundown of how to use the web app:\n
--Visit this page each day to see your schedule, including times, locations, and the instrument you're playing. Don't forget to refresh it, your phone may not refresh the page if you minimise it and come back to it later.
--You can click into group names to to see possible substitute players and get further details, or a time period to see the full group listing for that time. Clicking the home button in the top left of your screen will always bring you back to your schedule on the current day.
--You can look at your schedule for future and past days drop down date picker, and the forward and back links on your home screen.
--If you're going to be absent for a session or meal, plesae notify us at least one day before by navigating to a future date, clicking the tools tab on your homepage, then clicking the "Mark me as absent" button next to the corresponding time.
--You can request groups in a few ways. You can create a custom group with the request group link on the left (on a mobile, click on the hamburger menu on the top left of the screen). Or, you can visit the music library with the link on the left, select music you'd like to play and click the request button there. When you're on the group requset page, fill in your desired information, and press submit. Leaving blanks for other player names is fine and encouraged, you'll be matched up with other players at the end of the day.\n
+-Visit this page each day to see your schedule. Click or tap each item to see times, locations, and the instrument you're playing. Don't forget to refresh the page each day, your phone may not refresh the page if you minimise it and come back to it later.
+-If you're going to be absent for a session or meal, plesae notify us at least one day before by navigating to a future date with the "Next" button, selecting your desired period, then selecting "Mark Me as Absent".
+-You can request groups in a few ways. You can create a custom group with the request group link on the left (on a mobile, click on the settings menu on the top left of the screen). Or, you can visit the music library in the same menu, select music you'd like to play, and click the request button there. When you're on the group requset page, fill in your desired information, and press submit. Leaving blanks for other player names is fine and encouraged, you'll be matched up with other players at the end of the day.\n
 If you have any questions, please reply to this email or contact us on %s.\n
 Thanks!\n
 %s %s

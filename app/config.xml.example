@@ -21,7 +21,6 @@
     EndTime="2017-01-05 07:45"
     DailyGroupRequestLimit="1"
     GroupRequestPlayerLimit="8"
-    MealLocation="Dining Room"
     AutoAssignLimitHigh="1"
     AutoAssignLimitLow="1"
     MaximumLevel="5"
@@ -63,5 +62,11 @@
     <GroupTemplate Name="Wind Quintet" Size="S" Flute="1" Oboe="1" Clarinet="1" Bassoon="1" Horn="1"></GroupTemplate>
     <GroupTemplate Name="Brass Quintet" Size="S" Trumpet="2" Trombone="1" Tuba="1" Horn="1"></GroupTemplate>
     <GroupTemplate Name="Brass Quintet (Doubled)" Size="S" Trumpet="4" Trombone="2" Tuba="2" Horn="2"></GroupTemplate>
+    <!-- Public events occur every day at the specified time. They appear on all user's home pages at that time unless they are in a specific group.-->
+    <PublicEvent Name="Surgery" Period="Surgery" Location="Eclipse"></PublicEvent>
+    <PublicEvent Name="Noisy Scrubs" Period="Noisy Scrubs" Location="Rec Room"></PublicEvent>
+    <PublicEvent Name="Breakfast" Period="Breakfast" Location="Dining Room"></PublicEvent>
+    <PublicEvent Name="Lunch" Period="Lunch" Location="Dining Room"></PublicEvent>
+    <PublicEvent Name="Dinner" Period="Dinner" Location="Dining Room"></PublicEvent>
   </CampDetails>
 </root>

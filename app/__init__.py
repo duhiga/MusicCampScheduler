@@ -1239,6 +1239,8 @@ def publiceventpage(userid,periodid):
                     return jsonify(message = 'Submission failed. You must submit both an event name and location.', url = url)
                 event = group(periodid = periodid, iseveryone = 1, groupname =  request.json['groupname'], requesteduserid = thisuser.userid,\
                     ismusical = 0, locationid = request.json['locationid'], status = "Confirmed", requesttime = datetime.datetime.now())
+                if request.json['groupdescription'] and request.json['groupdescription'] != '':
+                    event.groupdescription = request.json['groupdescription']
                 session.add(event)
                 session.commit()
                 url = ('/user/' + str(thisuser.userid) + '/group/' + str(event.groupid) + '/')

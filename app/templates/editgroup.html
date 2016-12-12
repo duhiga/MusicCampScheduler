@@ -313,7 +313,12 @@
             <tr>
                 <th>Name</th>
                 <td class="w3-hide-small">{{ thisgroup.groupname }}</td>
-                <td><input type="text" id="groupname" class="form-attribute form-validate" value="{% if thisgroup.groupname != None %}{{ thisgroup.groupname }}{% endif %}"></td>
+                <td><input type="text" id="groupname" class="form-attribute form-validate w3-input w3-border" value="{% if thisgroup.groupname != None %}{{ thisgroup.groupname }}{% endif %}"></td>
+            </tr>
+            <tr>
+                <th>Description</th>
+                <td class="w3-hide-small">{{ thisgroup.groupdescription }}</td>
+                <td><input type="text" id="groupdescription" class="form-attribute w3-input w3-border" value="{% if thisgroup.groupdescription != None %}{{ thisgroup.groupdescription }}{% endif %}"></td>
             </tr>
             <tr>
                 <th>Status</th>
@@ -350,7 +355,7 @@
             <tr id="hidemusic">
                 <th>Music Write-in</th>
                 <td class="w3-hide-small">{% if thisgroup.musicwritein != None %}{{ thisgroup.musicwritein }}{% endif %}</td>
-                <td><input type="text" class="form-attribute form-validate" id="musicwritein" value="{% if thisgroup.musicwritein != None %}{{ thisgroup.musicwritein }}{% endif %}"></td>
+                <td><input type="text" class="form-attribute form-validate w3-input w3-border" id="musicwritein" value="{% if thisgroup.musicwritein != None %}{{ thisgroup.musicwritein }}{% endif %}"></td>
             </tr>
             <tr>
                 <th>Period</th>

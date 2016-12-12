@@ -104,6 +104,14 @@
                         {% endif %}
                     </td>
                 </tr>
+                {% if thisgroup.groupdescription and thisgroup.groupdescription|length > 0 %}
+                <tr>
+                    <th>Description</th>
+                    <td>
+                        {{ thisgroup.groupdescription }}
+                    </td>
+                </tr>
+                {% endif %}
             </table>
             {% if thisgroup.iseveryone != 1 %}
             <h2>Players</h2>

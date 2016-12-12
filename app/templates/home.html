@@ -68,6 +68,7 @@
             console.log(response);
             */
         });
+
     });
 </script>
 {% endblock %}
@@ -75,70 +76,79 @@
 <li class="w3-hide-small"><a href="#" class="w3-hover-white">{{ date.strftime('%d %b') }}</a></li>
 {% endblock %}
 {% block content %}
-    {% if thisuser.isactive == 0 %}
     <div class="w3-row">
         <div class="w3-container">
-            <div class="w3-panel w3-red">
-                <h3>Not Active</h3>
-                <p class="w3-hide-large">Your account is set to inactive and will not be assigned to any groups. You can rectify this by going to your settings. Select the <i class="fa fa-bars"></i>Menu in the top left of your screen, select <i class="fa fa-cogs"></i>Settings, set yourself to active and save.</p>
-                <p class="w3-hide-small w3-hide-medium">Your account is set to inactive and will not be assigned to any groups. You can rectify this by going to your settings. Select the <i class="fa fa-cogs"></i>Settings link on the left of your screen, set yourself to active and save.</p>
-            </div> 
-        </div>
-    </div>
-    {% endif %}
-    {% if currentannouncement != '' and currentannouncement != None %}
-    <div class="w3-row">
-        <div class="w3-container">
-            <div class="w3-panel w3-light-gray">
-                <h3>Announcements</h3>
-                <p>{{ currentannouncement|safe }}</p>
+            <div id="home_protip_welcome" class="w3-panel w3-blue protip" hidden="hidden">
+                <span class="w3-closebtn protip_close">&times;</span>
+                <h3>Welcome</h3>
+                <p class="w3-hide-large">Welcome to {{campname}}! This page always shows today's schedule. To navigate around, tap the <i class="fa fa-bars"></i>Menu in the top left of your screen, then use the links. You can check out the music library, or request to play in groups. You'll see more tips like this around the place, just click the &times; in the top right to make them go away for good.</p>
+                <p class="w3-hide-small w3-hide-medium">Welcome to {{campname}}! This page always shows today's schedule. To navigate around, use the links on the left of your screen. You can check out the music library, or request to play in groups. You'll see more tips like this around the place, just click the &times; in the top right to make them go away for good.</p>
             </div>
         </div>
     </div>
-{% endif %}
-    <p>
-        <div class="w3-center">
-            <a class="w3-btn w3-white w3-border" href="/user/{{ thisuser.userid }}/date/{{ previousday.strftime('%Y-%m-%d') }}/">&#10094; Previous</a>
-            <div class="w3-dropdown-hover">
-                <button class="w3-btn w3-white w3-border">
-                    {% if date.strftime('%Y-%m-%d') == today.strftime('%Y-%m-%d') %}
-                    Today
-                    {% else %}
-                    {{ date.strftime('%a, %d %b') }}
-                    {% endif %}
-                </button>
-                <div class="w3-dropdown-content w3-border">
-                    {% for d in dates %}
-                    {% if d.strftime('%Y-%m-%d') == today.strftime('%Y-%m-%d') %}
-                    <a href="/user/{{ thisuser.userid }}/date/{{d.strftime('%Y-%m-%d')}}/">Today</a>
-                    {% else %}
-                    <a href="/user/{{ thisuser.userid }}/date/{{d.strftime('%Y-%m-%d')}}/">{{ d.strftime('%a, %d %b') }}</a>
-                    {% endif %}
-                    {% endfor %}
+        {% if thisuser.isactive == 0 %}
+        <div class="w3-row">
+            <div class="w3-container">
+                <div class="w3-panel w3-red">
+                    <h3>Not Active</h3>
+                    <p class="w3-hide-large">Your account is set to inactive and will not be assigned to any groups. You can rectify this by going to your settings. Select the <i class="fa fa-bars"></i>Menu in the top left of your screen, select <i class="fa fa-cogs"></i>Settings, set yourself to active and save.</p>
+                    <p class="w3-hide-small w3-hide-medium">Your account is set to inactive and will not be assigned to any groups. You can rectify this by going to your settings. Select the <i class="fa fa-cogs"></i>Settings link on the left of your screen, set yourself to active and save.</p>
                 </div>
             </div>
-            <a class="w3-btn w3-white w3-border" href="/user/{{ thisuser.userid }}/date/{{ nextday.strftime('%Y-%m-%d') }}/">Next &#10095;</a>
         </div>
-    </p>
-<div class="w3-row">
-    <div class="w3-container w3-half">
-        <h2>Morning</h2>
-        {% set afternoon = 0 %}
-        {% for p in schedule %}
-        
-        {% if p.starttime > midday and afternoon == 0 %}
-        </div>
-    <div class="w3-container w3-half">
-        <h2>Afternoon</h2>
-        {% set afternoon = 1 %}
         {% endif %}
-        <div class="w3-card-4">
-            <header class="accordion w3-panel
+        {% if currentannouncement != '' and currentannouncement != None %}
+        <div class="w3-row">
+            <div class="w3-container">
+                <div class="w3-panel w3-light-gray">
+                    <h3>Announcements</h3>
+                    <p>{{ currentannouncement|safe }}</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        <p>
+            <div class="w3-center">
+                <a class="w3-btn w3-white w3-border" href="/user/{{ thisuser.userid }}/date/{{ previousday.strftime('%Y-%m-%d') }}/">&#10094; Previous</a>
+                <div class="w3-dropdown-hover">
+                    <button class="w3-btn w3-white w3-border">
+                        {% if date.strftime('%Y-%m-%d') == today.strftime('%Y-%m-%d') %}
+                        Today
+                        {% else %}
+                        {{ date.strftime('%a, %d %b') }}
+                        {% endif %}
+                    </button>
+                    <div class="w3-dropdown-content w3-border">
+                        {% for d in dates %}
+                        {% if d.strftime('%Y-%m-%d') == today.strftime('%Y-%m-%d') %}
+                        <a href="/user/{{ thisuser.userid }}/date/{{d.strftime('%Y-%m-%d')}}/">Today</a>
+                        {% else %}
+                        <a href="/user/{{ thisuser.userid }}/date/{{d.strftime('%Y-%m-%d')}}/">{{ d.strftime('%a, %d %b') }}</a>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+                <a class="w3-btn w3-white w3-border" href="/user/{{ thisuser.userid }}/date/{{ nextday.strftime('%Y-%m-%d') }}/">Next &#10095;</a>
+            </div>
+        </p>
+        <div class="w3-row">
+            <div class="w3-container w3-half">
+                <h2>Morning</h2>
+                {% set afternoon = 0 %}
+                {% for p in schedule %}
 
-                    {% if p.groupname == 'absent' or p.starttime < thisuser.arrival or p.starttime > thisuser.departure %}
+                {% if p.starttime > midday and afternoon == 0 %}
+            </div>
+            <div class="w3-container w3-half">
+                <h2>Afternoon</h2>
+                {% set afternoon = 1 %}
+                {% endif %}
+                <div class="w3-card-4">
+                    <header class="accordion w3-panel
+                            {% if p.groupname =='absent' or p.starttime < thisuser.arrival or p.starttime > thisuser.departure %}
                     w3-dark-gray
                     {% elif p.groupname and p.ismusical == 1 %}
-                    w3-pink
+                    w3-purple
                     {% elif p.iseveryone == 1 and p.meal == 1 %}
                     w3-blue
                     {% elif p.iseveryone == 1 %}
@@ -164,96 +174,115 @@
                     <i class="fa fa-caret-down w3-right"></i>
                 </h5>
             </header>
-            <div class="w3-accordion-content panel">
+                    <div class="w3-accordion-content panel">
+                        <div class="w3-container">
+                            {% if p.starttime < thisuser.arrival or p.starttime > thisuser.departure %}
+                            <div class="w3-container w3-red">
+                                <p class="w3-hide-large">This period is not within your account's configured dates. Go to your settings by selecting the <i class="fa fa-bars"></i>Menu in the top left of your screen, select <i class="fa fa-cogs"></i>Settings and ensure that the details there are correct.</p>
+                                <p class="w3-hide-small w3-hide-medium">This period is not within your account's configured dates. Go to your settings by using the <i class="fa fa-cogs"></i>Settings link on the left of your screen and ensure that the details there are correct.</p>
+                            </div>
+                            {% else %}
+                            <!-- If the user is absent, warn them that they won't be assigned to groups -->
+                            {% if p.groupname == "absent" %}
+                            <div class="w3-container w3-red">
+                                <h4>{{p.periodname}}</h4>
+                                {% if p.meal == 1 %}
+                                <p>You are marked absent for this period, meaning you will not be present for this meal.</p>
+                                {% else %}
+                                <p>You are marked absent for this period. You will not be allocated to any groups.</p>
+                                {% endif %}
+                            </div>
+                            <br />
+                            {% endif %}
+                            {% if p.groupdescription and p.groupdescription|length > 0 %}
+                            {{ p.groupdescription }}<br /><br />
+                            {% endif %}
+                            <table class="w3-table">
+                                <tr>
+                                    <th>Time</th>
+                                    <td>{{ p.starttime.strftime('%H:%M') }} - {{ p.endtime.strftime('%H:%M') }}</td>
+                                </tr>
+                                {% if (p.ismusical == 1 or p.iseveryone == 1) and p.groupname != 'absent' %}
+                                <tr>
+                                    <th>Location</th>
+                                    <td>{{p.locationname}}</td>
+                                </tr>
+                                {% endif %}
+                                {% if p.groupname and p.ismusical == 1 %}
+                                <tr>
+                                    <th>Instrument</th>
+                                    <td>{{p.instrumentname}}</td>
+                                </tr>
+                                {% if p.musicname != None %}
+                                <tr>
+                                    <th>Music</th>
+                                    <td>{{p.composer}} - {{p.musicname}}</td>
+                                </tr>
+                                {% elif p.musicwritein != '' and p.musicwritein != None %}
+                                <tr>
+                                    <th>Music</th>
+                                    <td>{{p.musicwritein}}</td>
+                                </tr>
+                                {% endif %}
+                                {% endif %}
+                            </table>
+                            {% endif %}
+                            <div class="w3-panel">
+                                <!-- Give the user a link to the whole period details -->
+                                <div class="w3-half">
+                                    <a class="w3-btn-block w3-white w3-border w3-round-large" href="/user/{{ thisuser.userid }}/period/{{ p.periodid }}/">List for this Period</a>
+                                </div>
+                                <!-- If this is an assigned group, show a link to the group details -->
+                                {% if p.groupname and p.ismusical == 1 %}
+                                <div class="w3-half">
+                                    <a class="w3-btn-block w3-white w3-border w3-round-large" href="/user/{{ thisuser.userid }}/group/{{ p.groupid }}/">Group Details</a>
+                                </div>
+                                {% endif %}
+
+                                <!-- If this is a future date, show the user the absent buttons -->
+                                {% if date > today %}
+                                <!-- If if the user is currently not assigned to a group, show them a button where they can mark themselves as absent -->
+                                {% if not p.groupname or p.iseveryone %}
+                                <div class="w3-half">
+                                    <button id={{ p.periodid }} data-periodname="{{ p.periodname }}" class="absent_request_button w3-btn-block w3-white w3-border w3-round-large">Mark Me as Absent</button>
+                                </div>
+                                <!-- If they are currently absent, show the a button to mark themselves as present -->
+                                {% elif p.groupname == "absent" %}
+                                <div class="w3-half">
+                                    <button id={{ p.periodid }} data-periodname="{{ p.periodname }}" class="absent_cancel_button w3-btn-block w3-white w3-border w3-round-large">Mark Me as Present</button>
+                                </div>
+                                {% endif %}
+                                {% endif %}
+                                <!-- Is this user is an conductor, they can request small groups or create instrumentation -->
+                                {% if thisuser.isconductor == 1 and date > today %}
+                                <div class="w3-half">
+                                    <a class="w3-btn-block w3-white w3-border w3-round-large" href="/user/{{ thisuser.userid }}/grouprequest/conductor/{{ p.periodid }}/">Create Small Group</a>
+                                </div>
+                                <div class="w3-half">
+                                    <a class="w3-btn-block w3-white w3-border w3-round-large" href="/user/{{ thisuser.userid }}/instrumentation/{{ p.periodid }}/">Create Instrumentation</a>
+                                </div>
+                                {% endif %}
+                                <!-- If this user is an admin, they can use the super editor, and create public events-->
+                                {% if thisuser.isadmin == 1 %}
+                                <div class="w3-half">
+                                    <a class="w3-btn-block w3-white w3-border w3-round-large" href="/user/{{ thisuser.userid }}/group/new/period/{{ p.periodid }}/edit/">Edit a New Group</a>
+                                </div>
+                                <div class="w3-half">
+                                    <a class="w3-btn-block w3-white w3-border w3-round-large" href="/user/{{ thisuser.userid }}/publicevent/{{ p.periodid }}/">Create Public Event</a>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="w3-row">
                 <div class="w3-container">
-                    {% if p.starttime < thisuser.arrival or p.starttime > thisuser.departure %}
-                    <div class="w3-container w3-red">
-                        <p class="w3-hide-large">This period is not within your account's configured dates. Go to your settings by selecting the <i class="fa fa-bars"></i>Menu in the top left of your screen, select <i class="fa fa-cogs"></i>Settings and ensure that the details there are correct.</p>
-                        <p class="w3-hide-small w3-hide-medium">This period is not within your account's configured dates. Go to your settings by using the <i class="fa fa-cogs"></i>Settings link on the left of your screen and ensure that the details there are correct.</p>
+                    <div class="w3-panel">
+                        <p>Last updated: {{ now.strftime('%Y-%m-%d %H:%M:%S') }}</p>
                     </div>
-                    {% else %}
-                    <!-- If the user is absent, warn them that they won't be assigned to groups -->
-                    {% if p.groupname == "absent" %}
-                    <div class="w3-container w3-red">
-                        <p>You are marked absent for this period. You will not be allocated to any groups.</p>
-                    </div>
-                    <br />
-                    {% endif %}
-                    {% if p.groupdescription and p.groupdescription|length > 0 %}
-                    {{ p.groupdescription }}<br /><br />
-                    {% endif %}
-                    <table class="w3-table">
-                        <tr>
-                            <th>Time</th>
-                            <td>{{ p.starttime.strftime('%H:%M') }} - {{ p.endtime.strftime('%H:%M') }}</td>
-                        </tr>
-                        {% if (p.ismusical == 1 or p.iseveryone == 1) and p.groupname != 'absent' %}
-                        <tr>
-                            <th>Location</th>
-                            <td>{{p.locationname}}</td>
-                        </tr>
-                        {% endif %}
-                        {% if p.groupname and p.ismusical == 1 %}
-                        <tr>
-                            <th>Instrument</th>
-                            <td>{{p.instrumentname}}</td>
-                        </tr>
-                        {% if p.musicname != None %}
-                        <tr>
-                            <th>Music</th>
-                            <td>{{p.composer}} - {{p.musicname}}</td>
-                        </tr>
-                        {% elif p.musicwritein != '' and p.musicwritein != None %}
-                        <tr>
-                            <th>Music</th>
-                            <td>{{p.musicwritein}}</td>
-                        </tr>
-                        {% endif %}
-                        {% endif %}
-                    </table>
-                    {% endif %}
-                    <p>
-                        <!-- Give the user a link to the whole period details -->
-                        <a class="w3-btn-block w3-white w3-border" href="/user/{{ thisuser.userid }}/period/{{ p.periodid }}/">Full Listing for this Period</a>
-
-                        <!-- If this is an assigned group, show a link to the group details -->
-                        {% if p.groupname and p.ismusical == 1 %}
-                        <a class="w3-btn-block w3-white w3-border" href="/user/{{ thisuser.userid }}/group/{{ p.groupid }}/">Group Details</a>
-                        {% endif %}
-
-                        <!-- If this is a future date, show the user the absent buttons -->
-                        {% if date > today %}
-                        <!-- If if the user is currently not assigned to a group, show them a button where they can mark themselves as absent -->
-                        {% if not p.groupname or p.iseveryone %}
-                        <button id={{ p.periodid }} data-periodname="{{ p.periodname }}" class="absent_request_button w3-btn-block w3-white w3-border">Mark Me as Absent</button>
-                        <!-- If they are currently absent, show the a button to mark themselves as present -->
-                        {% elif p.groupname == "absent" %}
-                        <button id={{ p.periodid }} data-periodname="{{ p.periodname }}" class="absent_cancel_button w3-btn-block w3-white w3-border">Mark Me as Present</button>
-                        {% endif %}
-                        {% endif %}
-                        <!-- Is this user is an conductor, they can request small groups or create instrumentation -->
-                        {% if thisuser.isconductor == 1 and date > today %}
-                        <a class="w3-btn-block w3-white w3-border" href="/user/{{ thisuser.userid }}/grouprequest/conductor/{{ p.periodid }}/">Create a Small Group Here</a>
-                        <a class="w3-btn-block w3-white w3-border" href="/user/{{ thisuser.userid }}/instrumentation/{{ p.periodid }}/">Create Instrumentation Here</a>
-                        {% endif %}
-                        <!-- If this user is an admin, they can use the super editor, and create public events-->
-                        {% if thisuser.isadmin == 1 and date > now %}
-                        <a class="w3-btn-block w3-white w3-border" href="/user/{{ thisuser.userid }}/group/new/period/{{ p.periodid }}/edit/">Edit a New Group Here</a>
-                        <a class="w3-btn-block w3-white w3-border" href="/user/{{ thisuser.userid }}/publicevent/{{ p.periodid }}/">Create Public Event Here</a>
-                        {% endif %}
-                    </p>
-
                 </div>
             </div>
         </div>
-        {% endfor %}
-    </div>
-    <div class="w3-row">
-        <div class="w3-container">
-            <div class="w3-panel">
-                <p>Last updated: {{ now.strftime('%Y-%m-%d %H:%M:%S') }}</p>
-            </div>
-        </div>
-    </div>
-</div>
-{% endblock %}
+        {% endblock %}

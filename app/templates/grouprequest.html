@@ -270,12 +270,23 @@
                 $('.first_instrument_dropdown').prop("disabled", true);
                 $('.first_instrument_dropdown').addClass("w3-text-gray");
                 $('#playersTable tr:last').remove();
-                $('#protip_musiclibrary').hide();
+                $('#grouprequest_protip_musiclibrary').hide();
             }
         });
         requestedmusicid = '{{requestedmusic.musicid}}';
         if (requestedmusicid != 'None' && requestedmusicid != '') {
             $('#musicid').val(requestedmusicid).change();
+        }
+
+        var requestmusic = {% if requestedmusic %}true{%else%}false{% endif %};
+        if ((!getCookie('grouprequest_protip_musiclibrary') || getCookie('grouprequest_protip_musiclibrary') != 'clicked') && !requestmusic) {
+            $('#grouprequest_protip_musiclibrary').show();
+        }
+        if ((!getCookie('grouprequest_protip_frommusiclibrary') || getCookie('grouprequest_protip_frommusiclibrary') != 'clicked') && requestmusic) {
+            $('#grouprequest_protip_frommusiclibrary').show();
+        }
+        if (!getCookie('grouprequest_protip_instrumentation') || getCookie('grouprequest_protip_instrumentation') != 'clicked') {
+            $('#grouprequest_protip_instrumentation').show();
         }
 
     });
@@ -330,17 +341,15 @@
         <h1>Group Request</h1>
             {% endif %}
             <div class="w3-card-4">
-                <header class="w3-container w3-pink">
+                <header class="w3-container w3-purple">
                     <h3>Step 1: Music{% if conductorpage %} and Location{% endif %}</h3>
                 </header>
                 <div class="w3-container">
-                    {% if requestedmusic != None %}
-                    <div class="w3-panel w3-blue">
-                        <span onclick="this.parentElement.style.display='none'" class="w3-closebtn">&times;</span>
+                    <div class="w3-panel w3-blue" id="grouprequest_protip_frommusiclibrary" hidden="hidden">
+                        <span onclick="this.parentElement.style.display='none';setCookie('grouprequest_protip_frommusiclibrary','clicked',365);" class="w3-closebtn">&times;</span>
                         <h3>Pro tip!</h3>
                         <p>Looks like you came here straight from the music library. Awesome! Go right on to Step 2 unless you selected the wrong work and want to fix your mistake.</p>
                     </div> 
-                    {% endif %}
                     <p>
                         Do you have a specific piece of music in mind?<br />
                         <input class="w3-radio" type="radio" name="musicyesno" id="musicno" value="No" {% if not requestedmusic %}checked{% endif %} {% if requestedmusic %}disabled{% endif %}>
@@ -349,9 +358,9 @@
                         <input class="w3-radio" type="radio" name="musicyesno" id="musicyes" value="Yes" {% if requestedmusic %}checked disabled{% endif %}>
                         <label class="w3-validate">Yes</label>
                     </p>
-                    <div id="musicyesno_hide" {% if not requestedmusic %}hidden="hidden" {% endif %}>
-                        <div id="protip_musiclibrary" class="w3-panel w3-blue">
-                            <span onclick="this.parentElement.style.display='none'" class="w3-closebtn">&times;</span>
+                    <div id="musicyesno_hide" {% if not requestedmusic %}hidden="hidden"{%endif%}>
+                        <div id="grouprequest_protip_musiclibrary" class="w3-panel w3-blue" hidden="hidden">
+                            <span onclick="this.parentElement.style.display='none';setCookie('grouprequest_protip_musiclibrary','clicked',365);" class="w3-closebtn">&times;</span>
                             <h3>Pro tip!</h3>
                             <p class="w3-hide-large">The easiest way to see all the music available and make a group request is to visit the <a href="/user/{{ thisuser.userid }}/musiclibrary/"><i class="fa fa-book"></i>Music Library</a>. You can find it by clicking the <i class="fa fa-bars"></i> menu button on the top left of your screen.</p>
                             <p class="w3-hide-medium w3-hide-small">The easiest way to see all the music available and make a group request is to visit the <a href="/user/{{ thisuser.userid }}/musiclibrary/"><i class="fa fa-book"></i>Music Library</a>. You can find it by clicking the link on the left of your screen.</p>
@@ -389,12 +398,12 @@
         </div>
     <div class="w3-container">
         <div class="w3-card-4">
-            <header class="w3-container w3-pink">
+            <header class="w3-container w3-purple">
                 <h3>Step 2: Instrumentation & Players</h3>
             </header>
             <div class="w3-container">
-                <div class="w3-panel w3-blue">
-                    <span onclick="this.parentElement.style.display='none'" class="w3-closebtn">&times;</span>
+                <div class="w3-panel w3-blue" hidden="hidden" id="grouprequest_protip_instrumentation">
+                    <span onclick="this.parentElement.style.display='none';setCookie('grouprequest_protip_instrumentation','clicked',365);" class="w3-closebtn">&times;</span>
                     <h3>Pro tip!</h3>
                     <p>You need to fill in your instrumentation, but don't need to fill in all the names. Only fill in the names you specifically want to play with. Any blank players will be filled in automatically when your group is scheduled.</p>
                 </div> 
@@ -459,7 +468,7 @@
         <br />
         <div class="w3-container">
             <div class="w3-card-4">
-                <header class="w3-container w3-pink">
+                <header class="w3-container w3-purple">
                     <h3>Step 3: Submit!</h3>
                 </header>
                 <div class="w3-container">

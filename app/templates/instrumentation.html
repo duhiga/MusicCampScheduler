@@ -32,7 +32,7 @@
         $(document).on("click change", '.template', function (e) {
             //get the user selected template and format it so we can iterate over it later
             var ob = $(this);
-            $('#protip').hide();
+            $('#instrumentation_protip_templates').hide();
             console.log('User is attempting to apply ' + ob.attr('id'));
             if (ob.attr('id') == 'musicid') {
                 console.log('Selected objects id is ' + ob.attr('id'));
@@ -85,6 +85,11 @@
                 }
             });
         });
+
+        if (!getCookie('instrumentation_protip_templates') || getCookie('instrumentation_protip_templates') != 'clicked') {
+            $('#instrumentation_protip_templates').show();
+        }
+
     });
 </script>
 {% endblock %}
@@ -111,8 +116,8 @@
 {% block content %}
 <div class="w3-row">
     <div class="w3-container w3-half">
-        <div id="protip" class="w3-panel w3-blue">
-            <span onclick="this.parentElement.style.display='none'" class="w3-closebtn">&times;</span>
+        <div id="instrumentation_protip_templates" class="w3-panel w3-blue" hidden="hidden">
+            <span onclick="this.parentElement.style.display='none';setCookie('instrumentation_protip_templates','clicked',365);" class="w3-closebtn">&times;</span>
             <h3>Pro tip!</h3>
             <p>You can fill this page much easier with a template. Templates are found by clicking the hamburger menu in the top left.</p>
         </div> 

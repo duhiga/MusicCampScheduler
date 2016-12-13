@@ -144,8 +144,8 @@
                 {% set afternoon = 1 %}
                 {% endif %}
                 <div class="w3-card-4">
-                    <header class="accordion w3-panel
-                            {% if p.groupname =='absent' or p.starttime < thisuser.arrival or p.starttime > thisuser.departure %}
+                    <header class="accordion w3-container
+                    {% if p.groupname =='absent' or p.starttime < thisuser.arrival or p.starttime > thisuser.departure %}
                     w3-dark-gray
                     {% elif p.groupname and p.ismusical == 1 %}
                     w3-purple
@@ -175,6 +175,7 @@
                 </h5>
             </header>
                     <div class="w3-accordion-content panel">
+                        <br />
                         <div class="w3-container">
                             {% if p.starttime < thisuser.arrival or p.starttime > thisuser.departure %}
                             <div class="w3-container w3-red">

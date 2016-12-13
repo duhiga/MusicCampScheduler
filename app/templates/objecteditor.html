@@ -33,10 +33,15 @@
 {% endblock %}
 {% block content %}
 <div class="w3-row">
+    <div class="w3-row">
+        <div class="w3-container">
+            <div class="w3-panel w3-red">
+                <h3>WARNING</h3>
+                <p>Do <strong>NOT</strong> mess around in here without knowing what you're doing. There's very little form validation, and you can really screw things up if you make any mistakes. Use extreme caution.</p>
+            </div>
+        </div>
+    </div>
     <div class="w3-container">
-        <h1>WARNING</h1>
-        <p>Do <strong>NOT</strong> mess around in here without knowing what you're doing. There's very little form validation, and you can really screw things up if you make any mistakes. Use extreme caution.</p>
-        <h2>Select a {{ type }} to Edit</h2>
         {% for key, value in object_dict.iteritems() %}
         {% if key == table + 'name' %}
         {% set name = key %}

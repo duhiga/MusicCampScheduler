@@ -32,7 +32,10 @@
         $(document).on("click change", '.template', function (e) {
             //get the user selected template and format it so we can iterate over it later
             var ob = $(this);
-            $('#instrumentation_protip_templates').hide();
+            if (!getCookie('instrumentation_protip_templates')) {
+                setCookie('instrumentation_protip_templates','clicked',365);
+            }
+            $('#instrumentation_protip_templates').slideUp();
             console.log('User is attempting to apply ' + ob.attr('id'));
             if (ob.attr('id') == 'musicid') {
                 console.log('Selected objects id is ' + ob.attr('id'));

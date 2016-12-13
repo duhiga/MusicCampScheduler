@@ -21,6 +21,8 @@
     <!-- Scripts that apply to all pages -->
     <script>
         
+
+        //functions dealing with setting and getting cookies
         function setCookie(cname, cvalue, exdays) {
             var d = new Date();
             d.setTime(d.getTime() + (exdays * 24 * 60 * 60 * 1000));
@@ -43,6 +45,7 @@
             return false;
         }
 
+        //this function 'toasts' the user with a message on the bottom of the screen
         function toast(message,category) {
             console.log('Toasting with ' + message)
             $('#toast').html(message).change();
@@ -270,7 +273,7 @@
             });
 
             $(".protip_close").click(function () {
-                $(this).parent().hide();
+                $(this).parent().slideUp();
                 setCookie($(this).parent().attr('id'), 'clicked', 365);
             });
             
@@ -389,7 +392,7 @@
         for (i = 0; i < acc.length; i++) {
             acc[i].onclick = function () {
                 this.classList.toggle("active");
-                this.nextElementSibling.classList.toggle("show");
+                $(this).next().slideToggle('fast');
             }
         }
 

@@ -109,11 +109,11 @@
         $('input[type="radio"]').change(function(){
             console.log('User clicked radio button')
             if($(this).attr("value")=="Yes"){
-                $("#musicyesno_hide").show();
+                $("#musicyesno_hide").slideDown();
             }
             if($(this).attr("value")=="No"){
                 $('#musicid').val('').change();
-                $("#musicyesno_hide").hide();
+                $("#musicyesno_hide").slideUp();
             }
         });
 
@@ -173,14 +173,14 @@
                     $('#groupname').val('').change()
                 }
                 if ($('#musicid').val() == '') {
-                    $('.hidemusic').show();
+                    $('.hidemusic').slideDown();
                     $('.instrument_dropdown .first_instrument_dropdown').each(function() {
                         $(this).prop("disabled", false);
                     });
                 }
                 else {
                     $('#musicwritein').val('').change();
-                    $('.hidemusic').hide();
+                    $('.hidemusic').slideUp();
                     $('.instrument_dropdown .first_instrument_dropdown').each(function() {
                         console.log('Disabling ' + $(this).html())
                         $(this).prop("disabled", true);
@@ -270,7 +270,7 @@
                 $('.first_instrument_dropdown').prop("disabled", true);
                 $('.first_instrument_dropdown').addClass("w3-text-gray");
                 $('#playersTable tr:last').remove();
-                $('#grouprequest_protip_musiclibrary').hide();
+                $('#grouprequest_protip_musiclibrary').slideUp();
             }
         });
         requestedmusicid = '{{requestedmusic.musicid}}';
@@ -346,7 +346,7 @@
                 </header>
                 <div class="w3-container">
                     <div class="w3-panel w3-blue" id="grouprequest_protip_frommusiclibrary" hidden="hidden">
-                        <span onclick="this.parentElement.style.display='none';setCookie('grouprequest_protip_frommusiclibrary','clicked',365);" class="w3-closebtn">&times;</span>
+                        <span onclick="$(this).parent().slideUp();setCookie($(this).parent().attr('id'), 'clicked', 365);" class="w3-closebtn">&times;</span>
                         <h3>Pro tip!</h3>
                         <p>Looks like you came here straight from the music library. Awesome! Go right on to Step 2 unless you selected the wrong work and want to fix your mistake.</p>
                     </div> 
@@ -359,13 +359,12 @@
                         <label class="w3-validate">Yes</label>
                     </p>
                     <div id="musicyesno_hide" {% if not requestedmusic %}hidden="hidden"{%endif%}>
-                        <div id="grouprequest_protip_musiclibrary" class="w3-panel w3-blue" hidden="hidden">
-                            <span onclick="this.parentElement.style.display='none';setCookie('grouprequest_protip_musiclibrary','clicked',365);" class="w3-closebtn">&times;</span>
+                        <div id="grouprequest_protip_musiclibrary" class="w3-container w3-blue" hidden="hidden">
+                            <span onclick="$(this).parent().slideUp();setCookie($(this).parent().attr('id'), 'clicked', 365);" class="w3-closebtn">&times;</span>
                             <h3>Pro tip!</h3>
                             <p class="w3-hide-large">The easiest way to see all the music available and make a group request is to visit the <a href="/user/{{ thisuser.userid }}/musiclibrary/"><i class="fa fa-book"></i>Music Library</a>. You can find it by clicking the <i class="fa fa-bars"></i> menu button on the top left of your screen.</p>
                             <p class="w3-hide-medium w3-hide-small">The easiest way to see all the music available and make a group request is to visit the <a href="/user/{{ thisuser.userid }}/musiclibrary/"><i class="fa fa-book"></i>Music Library</a>. You can find it by clicking the link on the left of your screen.</p>
                         </div> 
-                        <p>
                             <label>Select Music:</label>
                             <select class="form-attribute group_template_dropdown w3-select w3-border" id="musicid">
                                 <option value="">Custom (Write in your own):</option>
@@ -373,12 +372,11 @@
                                 <option value="{{m.musicid}}">{{m.composer}} {% if m.musicname|length > 25 %}{{ m.musicname[0:25] }}...{% else %}{{ m.musicname }}{% endif %}</option>
                                 {% endfor %}
                             </select>
-                        </p>
+                        <br /><br />
                         <div class="hidemusic">
-                            <p>
                                 <label>I have my own music (optional):</label>
                                 <input type="text" class="form-attribute w3-input w3-border" id="musicwritein">
-                            </p>
+                            <br />
                         </div>
                     </div>
                     {% if conductorpage %}
@@ -403,7 +401,7 @@
             </header>
             <div class="w3-container">
                 <div class="w3-panel w3-blue" hidden="hidden" id="grouprequest_protip_instrumentation">
-                    <span onclick="this.parentElement.style.display='none';setCookie('grouprequest_protip_instrumentation','clicked',365);" class="w3-closebtn">&times;</span>
+                    <span onclick="$(this).parent().slideUp();setCookie($(this).parent().attr('id'), 'clicked', 365);" class="w3-closebtn">&times;</span>
                     <h3>Pro tip!</h3>
                     <p>You need to fill in your instrumentation, but don't need to fill in all the names. Only fill in the names you specifically want to play with. Any blank players will be filled in automatically when your group is scheduled.</p>
                 </div> 

@@ -309,14 +309,10 @@
 {% endblock %}
 {% block content %}
 <div class="w3-row">
-    <div class="w3-container">
+    <div class="w3-container">       
         {% if conductorpage %}
-
+        <h2>Conductor Request</h2>
         <div class="w3-card-4">
-
-            <header class="w3-container w3-blue">
-                <h2>Conductor Request</h2>
-            </header>
 
             <div class="w3-container">
                 <p>
@@ -338,7 +334,7 @@
         </div>
         <br />
         {% else %}
-        <h1>Group Request</h1>
+            <h2>Group Request</h2>
             {% endif %}
             <div class="w3-card-4">
                 <header class="w3-container w3-purple">
@@ -364,7 +360,7 @@
                             <h3>Pro tip!</h3>
                             <p class="w3-hide-large">The easiest way to see all the music available and make a group request is to visit the <a href="/user/{{ thisuser.userid }}/musiclibrary/"><i class="fa fa-book"></i>Music Library</a>. You can find it by clicking the <i class="fa fa-bars"></i> menu button on the top left of your screen.</p>
                             <p class="w3-hide-medium w3-hide-small">The easiest way to see all the music available and make a group request is to visit the <a href="/user/{{ thisuser.userid }}/musiclibrary/"><i class="fa fa-book"></i>Music Library</a>. You can find it by clicking the link on the left of your screen.</p>
-                        </div> 
+                        </div><br />
                             <label>Select Music:</label>
                             <select class="form-attribute group_template_dropdown w3-select w3-border" id="musicid">
                                 <option value="">Custom (Write in your own):</option>
@@ -380,7 +376,6 @@
                         </div>
                     </div>
                     {% if conductorpage %}
-                    <p>
                         Where will this group be held?
                         <select class="form-attribute form-validate w3-select w3-border" id="locationid">
                             <option value=""></option>
@@ -388,8 +383,8 @@
                             <option value="{{ l.locationid }}">{{ l.locationname }}</option>
                             {% endfor %}
                         </select>
-                    </p>
                     {% endif %}
+                    <br /><br />
                 </div>
             </div>
             <br />

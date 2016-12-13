@@ -296,9 +296,11 @@
     <div class="w3-top no-print">
         <ul class="w3-navbar w3-theme w3-top w3-left-align w3-large" style="display:inline-block; white-space:nowrap;">
             <li class="w3-opennav w3-left w3-hide-large">
-                <a class="w3-hover-white w3-large w3-theme-l1" href="javascript:void(0)" onclick="w3_open()"><i class="fa fa-bars"></i></a>
+                <a class="w3-hover-white w3-large w3-theme-l1" href="javascript:void(0)" onclick="w3_open()" style="padding:12px 12px !important;"><i class="fa fa-bars"></i></a>
             </li>
-            <li class="w3-opennav w3-left"><a href="/user/{{ thisuser.userid }}/" class="w3-hover-white w3-large w3-theme-l1"><i class="fa fa-home"></i></a></li>
+            <li class="w3-opennav w3-left"><a href="/user/{{ thisuser.userid }}/" class="w3-hover-white w3-large w3-theme-l1" style="padding:12px 6px !important;"><i class="fa fa-home"></i></a></li>
+            <li class="w3-opennav w3-left"><a href="/user/{{ thisuser.userid }}/grouprequest/" class="w3-hover-white w3-large w3-theme-l1" style="padding:12px 6px !important;"><i class="fa fa-music"></i></a></li>
+            <li class="w3-opennav w3-left"><a href="/user/{{ thisuser.userid }}/musiclibrary/" class="w3-hover-white w3-large w3-theme-l1" style="padding:12px 6px !important;"><i class="fa fa-book"></i></a></li>
             {% block navbar%}{% endblock %}
             <li><a href="#" class="w3-theme-l1">&nbsp;{{ thisuser.firstname }} {{ thisuser.lastname }}</a></li>
             <!-- Specific page breadcrumbs/title pages go here -->

@@ -23,7 +23,7 @@ app = Flask(__name__)
 wsgi_app = app.wsgi_app
 # These are the extension that we are accepting to be uploaded
 app.config['ALLOWED_EXTENSIONS'] = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'xml', 'csv'])
-app.secret_key = '8da6a5bd-5331-4a0c-9bc2-2f77f1eb3894'
+app.secret_key = getconfig('SecretKey')
 Session = sessionmaker(bind=engine)
 
 #sets up debugging

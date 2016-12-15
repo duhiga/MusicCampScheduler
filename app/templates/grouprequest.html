@@ -416,7 +416,7 @@
                         <!--Table Headers-->
                         <tr class="w3-light-gray">
                             <th>Instrument</th>
-                            <th>Player (Optional)</th>
+                            <th>Player{% if not conductorpage %} (Optional){% endif %}</th>
                         </tr>
                         {% if not conductorpage %}
                         <tr>

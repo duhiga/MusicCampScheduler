@@ -44,6 +44,8 @@
 
     $(document).ready(function () {
 
+        $('.spin_icon_email').hide();
+
         //run when user changes the content of a isprimary dropdown to "yes". Sets all others to no.
         $(document).on("change", '[data-key=isprimary]', function (e) {
             //only run the code if it's the original event to prevent recursion (this function would go infinite otherwise)
@@ -58,36 +60,51 @@
         });
 
         $(document).on("click", '#send_email', function (e) {
-            $(this).prop('disabled', true).addClass('disabled');
-            var request = {}
-            request.users = []
-            var user = {}
-            user.userid = '{{ targetuser.userid }}'
-            request.users.push(user);
-            $.ajax({
-                type: 'POST',
-                url: '/user/{{thisuser.userid}}/email/',
-                contentType: 'application/json;charset=UTF-8',
-                data: JSON.stringify(request, null),
-                success: function (data, textStatus) {
-                    //upon success, the server will return a message and a URL. give the user the message and send them to the URL.
-                    console.log(data);
-                    if (data.message != 'none') {
-                        alert(data.message);
+            if (isClicked == false) {
+                isClicked = true;
+                $('.send_icon_email').hide();
+                $('.spin_icon_email').show();
+                var request = {}
+                request.objects = []
+                var user = {}
+                user.userid = '{{ targetuser.userid }}'
+                request.objects.push(user);
+                console.log('Posting to server with:')
+                console.log(request)
+                $.ajax({
+                    type: 'POST',
+                    url: '/user/{{thisuser.userid}}/email/',
+                    contentType: 'application/json;charset=UTF-8',
+                    data: JSON.stringify(request, null),
+                    success: function (data, textStatus) {
+                        //upon success, the server will return a message and a URL. give the user the message and send them to the URL.
+                        console.log(data);
+                        $('.spin_icon_email').hide();
+                        $('.send_icon_email').show();
+                        if (data.message != 'none' && data.success == 'true') {
+                            toast(data.message, 'success');
+                            isClicked = false;
+                        }
+                        else if (data.message != 'none' && data.success == 'false') {
+                            alert(data.message);
+                            isClicked = false;
+                        }
+                        else if (data.url != 'none') {
+                            window.location = data.url;
+                            isClicked = false;
+                        }
+                        else {
+                            isClicked = false;
+                        }
+                    },
+                    error: function (xhr, textStatus, errorThrown) {
+                        $('.spin_icon_email').hide();
+                        $('.send_icon_email').show();
+                        alert('Submission failed with error: ' + errorThrown);
                         isClicked = false;
-                    }
-                    if (data.url != 'none') {
-                        window.location = data.url;
-                    }
-                    else {
-                        isClicked = false;
-                    }
-                },
-                error: function (xhr, textStatus, errorThrown) {
-                    alert('Submission failed with error: ' + errorThrown);
-                    isClicked = false;
-                },
-            });
+                    },
+                });
+            }
         });
     });
 </script>
@@ -116,7 +133,7 @@
 <div class="submit_hide">
     {% if thisuser.isadmin == 1 %}
     <h4><b>Tools</b></h4>
-    <a href="#" class="w3-hover-black" id="send_email" data-method="POST"><i class="fa fa-envelope-o"></i> Send Invite Email</a>
+    <a href="#" class="w3-hover-black" id="send_email" data-method="POST"><i class="fa fa-envelope-o send_icon_email"></i><i class="fa fa-circle-o-notch fa-spin spin_icon_email"></i> Send Invite Email</a>
     {% endif %}
     <h4><b>Save</b></h4>
     <a href="#" class="w3-hover-black submit_button" data-submittype="save" data-method="POST"><i class="fa fa-save save_icon"></i><i class="fa fa-circle-o-notch fa-spin spin_icon"></i> Save Changes</a>

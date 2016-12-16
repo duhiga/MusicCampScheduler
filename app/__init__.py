@@ -433,7 +433,7 @@ def editgroup(userid,groupid,periodid=None):
 
             #find all periods from now until the end of time to display to the user, then removes any periods that the people in this group cannot play in
             thisgroupplayers_query = session.query(user.userid).join(groupassignment).join(group).filter(group.groupid == thisgroup.groupid).order_by(groupassignment.instrumentname)
-            periodlist = session.query(period).order_by(period.starttime).filter(period.starttime > datetime.datetime.now()).all()
+            periodlist = session.query(period).order_by(period.starttime).all()
             periods = []
             for p in periodlist:
                 if (currentperiod and p.periodid == currentperiod.periodid) or len(session.query(user.userid).join(groupassignment).join(group).filter(group.periodid == p.periodid).filter(user.userid.in_(thisgroupplayers_query)).all()) == 0:
@@ -1500,23 +1500,23 @@ def send_home_link_email(userid):
     if thisuser is None:
         return ('Did not find user in database. You have entered an incorrect URL address.')
 
-    #try:
-    if thisuser.isadmin != 1:
-        session.close()
-        return errorpage(thisuser,'You do not have permission to view this page')
-    content = request.json
-    log('Content received: %s' % content)
-    errors = ''
-    success = 'true'
-    for u in content['objects']:
-        targetuser = session.query(user).filter(user.userid == u['userid']).first()
-        if targetuser is None:
-            errors = errors + ('Could not find user with id %s in database\n' % u['userid'])
-        elif targetuser.email is None or targetuser.email == '':
-            errors = errors + ('Could not find email for user %s %s\n' % (targetuser.firstname, targetuser.lastname))
-        else:
-            subject = ('Your link to the %s Scheduler' % getconfig('Name'))
-            body = """Hi %s, welcome to %s!\n
+    try:
+        if thisuser.isadmin != 1:
+            session.close()
+            return errorpage(thisuser,'You do not have permission to view this page')
+        content = request.json
+        log('Content received: %s' % content)
+        errors = ''
+        success = 'true'
+        for u in content['objects']:
+            targetuser = session.query(user).filter(user.userid == u['userid']).first()
+            if targetuser is None:
+                errors = errors + ('Could not find user with id %s in database\n' % u['userid'])
+            elif targetuser.email is None or targetuser.email == '':
+                errors = errors + ('Could not find email for user %s %s\n' % (targetuser.firstname, targetuser.lastname))
+            else:
+                subject = ('Your link to the %s Scheduler' % getconfig('Name'))
+                body = """Hi %s, welcome to %s!\n
 %s\n
 Your homepage, containing your daily schedule, is here:\n
 %s/user/%s/ \n
@@ -1529,25 +1529,25 @@ If you have any questions, please reply to this email or contact us on %s.\n
 Thanks!\n
 %s %s
 %s""" % (targetuser.firstname, \
-            getconfig('Name'), \
-            getconfig('EmailIntroSentence'), \
-            getconfig('Website_URL'), \
-            targetuser.userid, \
-            getconfig('SupportEmailAddress'), \
-            thisuser.firstname, \
-            thisuser.lastname, \
-            getconfig('Name')\
-            )
-            message = send_email(targetuser.email, subject, body)
-            if message == 'Failed to Send Email':
-                errors = errors + ('Failed to send email to %s %s\n' % (targetuser.firstname, targetuser.lastname))
-    session.close()
-    if errors != '':
-        message = 'Completed with errors:\n' + errors
-        success = 'false'
-    return jsonify(message = message, url = 'none', success = success)
+                getconfig('Name'), \
+                getconfig('EmailIntroSentence'), \
+                getconfig('Website_URL'), \
+                targetuser.userid, \
+                getconfig('SupportEmailAddress'), \
+                thisuser.firstname, \
+                thisuser.lastname, \
+                getconfig('Name')\
+                )
+                message = send_email(targetuser.email, subject, body)
+                if message == 'Failed to Send Email':
+                    errors = errors + ('Failed to send email to %s %s\n' % (targetuser.firstname, targetuser.lastname))
+        session.close()
+        if errors != '':
+            message = 'Completed with errors:\n' + errors
+            success = 'false'
+        return jsonify(message = message, url = 'none', success = success)
 
-    """except Exception as ex:
+    except Exception as ex:
         log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))
         message = ('Failed to execute %s with exception: %s. Try refreshing the page and trying again or contact camp administration.' % (request.method, ex))
         session.rollback()
@@ -1555,7 +1555,7 @@ Thanks!\n
         if request.method == 'GET':
             return errorpage(thisuser,'Failed to display page with exception: %s.' % ex)
         else:
-            return jsonify(message = message, url = 'none')"""
+            return jsonify(message = message, url = 'none')
 
 #Handles the conductor instrumentation page.
 @app.route('/user/<userid>/instrumentation/<periodid>/', methods=['GET', 'POST'])

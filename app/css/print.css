@@ -1,10 +1,24 @@
-﻿.no-print, .no-print * { display: none !important; }
-.no-print-margin { margin-left:0px !important; }
+﻿/* style sheet for "A4" printing */
+ @media print and (width: 21cm) and (height: 29.7cm) {
+    @page {
+       margin: 3cm;
+    }
+ }
+.no-print, .no-print * { display: none !important; }
 body {
-      color: #000 !important;
-      background: #fff !important;
+    color: #000 !important;
+    background: #fff !important;
+    font-family: "Roboto", sans-serif;
+    line-height: 1.3;
+    text-align: left;
+
    }
-body
-{
-  margin: 25mm 25mm 25mm 25mm !important;
+header nav, footer {
+display: none;
+}
+table {
+    border-collapse: collapse;
+}
+table, th, td {
+    border: 1px solid black;
 }

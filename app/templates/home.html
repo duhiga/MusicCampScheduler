@@ -307,12 +307,12 @@
                 </div>
                 {% endfor %}
             </div>
-            <div class="w3-row">
-                <div class="w3-container">
-                    <div class="w3-panel">
-                        <p>Last updated: {{ now.strftime('%Y-%m-%d %H:%M:%S') }}</p>
-                    </div>
-                </div>
-            </div>
         </div>
         {% endblock %}
+{% block footer %}
+<div class="w3-bottom">
+    <ul class="w3-navbar w3-theme w3-animate-bottom w3-left-align">
+        <li>Last updated: {{ now.strftime('%Y-%m-%d %H:%M:%S') }}</li>
+    </ul>
+</div>
+{% endblock %}

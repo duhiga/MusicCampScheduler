@@ -209,3 +209,9 @@ However, delay the fade out process for 2.5 seconds */
 .noPadding {
     padding:0px 0px !important;
 }
+
+@media (min-width:993px) {
+    #main-content {
+        margin-left:250px;
+    }
+}

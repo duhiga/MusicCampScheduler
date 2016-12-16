@@ -2,12 +2,12 @@
 <html height="100%">
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="/css/w3.css">
-    <link rel="stylesheet" href="/css/w3-theme-black.css">
+    <link rel="stylesheet" href="/css/w3.css" media="screen">
+    <link rel="stylesheet" href="/css/w3-theme-black.css" media="screen">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css">
-    <link rel="stylesheet" href="/css/style.css">
-    <link rel="stylesheet" type="text/css" href="/css/print.css" media="print" />
+    <link rel="stylesheet" href="/css/style.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="/css/print.css" media="print">
     <link rel="apple-touch-icon" sizes="180x180" href="{{ favicon }}/apple-touch-icon.png">
     <link rel="icon" type="image/png" href="{{ favicon }}/favicon-32x32.png" sizes="32x32">
     <link rel="icon" type="image/png" href="{{ favicon }}/favicon-16x16.png" sizes="16x16">
@@ -351,14 +351,8 @@
     <div class="w3-overlay w3-hide-large" onclick="w3_close()" style="cursor:pointer" title="close side menu" id="myOverlay"></div>
 
     <!-- Main content: shift it to the right by 250 pixels when the sidenav is visible -->
-    <div class="w3-main" style="margin-left:250px;">
+    <div id="main-content">
             {% block content %}{% endblock %}
-        <div class="w3-row">
-            <div class="w3-container w3-half">
-                
-            </div>
-
-        </div>
         {% block footer %}
         <!-- Footer -->
         <div class="w3-bottom">

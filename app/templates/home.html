@@ -26,6 +26,20 @@
 
     $(document).ready(function () {
 
+        //every second, check if the page hasn't been opened since midnight. If it hasn't, then refresh.
+        //this is to prevent users from looking at old dashboards without refreshing and missing their allocations.
+        var now
+        var today
+        var refreshTime
+        setInterval(function () {
+            now = new Date();
+            today = Date.parse(now.getFullYear(), now.getMonth(), now.getDate());
+            refreshTime = Date.parse("{{ now.strftime('%Y-%m-%dT%H:%M:%S') }}");
+            if (refreshTime < today) {
+                location.reload();
+            }
+        }, 1 * 1000); // 1 * 1000 milsec
+
         //handler for thisuser clicking the button requesting an absence
         $(".absent_request_button").click(function () {
             $(this).prop('disabled', true).addClass('disabled');

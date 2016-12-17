@@ -1328,14 +1328,14 @@ def useradmin(userid):
             players_query = session.query(instrument.userid).filter(instrument.isactive == 1)
             #get the players that have not played yet in this camp, add a 0 playcount to them and append them to the list
             already_played_query = session.query(user.userid).join(groupassignment).join(group).filter(group.ismusical == 1, group.status == 'Confirmed', user.userid.in_(players_query))
-            users = session.query(user.userid, user.isactive, user.firstname, user.lastname, sqlalchemy.sql.expression.literal_column("0").label("playcount")).\
+            users = session.query(user.userid, user.isactive, user.firstname, user.lastname, user.isadmin, user.isconductor, user.isannouncer, sqlalchemy.sql.expression.literal_column("0").label("playcount")).\
                             filter(~user.userid.in_(already_played_query)).filter(user.userid.in_(players_query)).all()
             #append the players that have already played.
-            for p in (session.query(user.userid, user.isactive, user.firstname, user.lastname, func.count(groupassignment.userid).label("playcount")).group_by(user.userid).outerjoin(groupassignment).outerjoin(group).\
+            for p in (session.query(user.userid, user.isactive, user.firstname, user.lastname, user.isadmin, user.isconductor, user.isannouncer, func.count(groupassignment.userid).label("playcount")).group_by(user.userid).outerjoin(groupassignment).outerjoin(group).\
                         filter(group.ismusical == 1, group.status == 'Confirmed', user.userid.in_(players_query)).order_by(func.count(groupassignment.userid)).all()):
                 users.append(p)
             #get the inverse of that - the non-players and add it to the list
-            for p in (session.query(user.userid, user.firstname, user.lastname, sqlalchemy.sql.expression.literal_column("'Non Player'").label("playcount")).filter(~user.userid.in_(players_query)).all()):
+            for p in (session.query(user.userid, user.firstname, user.lastname, user.isadmin, user.isconductor, user.isannouncer, sqlalchemy.sql.expression.literal_column("'Non Player'").label("playcount")).filter(~user.userid.in_(players_query)).all()):
                 users.append(p)
             return render_template('useradmin.html', \
                                 thisuser=thisuser, \

@@ -44,7 +44,7 @@
                     <th><div class="w3-hide-small">Instrumentation</div><div class="w3-hide-medium w3-hide-large">Inst.</div></th>
                 </tr>
             </thead>
-            <tbody class="zebra-table">
+            <tbody>
                 {% if musics != None %}
                 {% for m in musics %}
                 <tr class="searchable" data-search="{{m.composer}} {{m.musicname}} {% for i in instrumentlist %}{% if m[i] > 0 %}{{i}} {% endif %}{% endfor %} {% for t in grouptemplates %}{% if m.grouptemplateid == t.grouptemplateid %}{{t.grouptemplatename}}{% endif %}{% endfor %}">

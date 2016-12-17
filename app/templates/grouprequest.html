@@ -4,10 +4,10 @@
 <script>
 
     function validate(ob) {
-        if (ob.val() == '' && ob.closest("tr").is(":nth-child(2)")) {
+        if (ob.val() == '' && ob.closest("tr").is(":nth-child(1)")) {
             return false;
         }
-        else if (ob.val() != '' || ob.closest("tr").is(":last-child")) {
+        else if (ob.val() != '' || (ob.closest("tr").is(":last-child") && $('#musicid').val() == '')) {
             return true;
         }
         else if ('{{ conductorpage }}' == 'False') {
@@ -136,7 +136,7 @@
             });
             addRow();
             // add values to list
-            var listItems = "<option value=''></option>";
+            var listItems = "<option value=''>(No Preference)</option>";
             for (var i = 0; i < players.length; i++) {
                 if (players[i].instrumentname == selectedinstrument) {
                     listItems += "<option value='" + players[i].userid + "'>" + {% if conductorpage %}'Level ' + players[i].grade + ' - ' +{% endif %} players[i].firstname + " " + players[i].lastname + "</option>";
@@ -226,7 +226,7 @@
                                 console.log('found that the users primary instrument is in this group. Key: ' + key);
                                 foundPrimary = true;
                                 console.log('Changing the associated user instrument to ' + key);
-                                toast($('#first_instrument_dropdown').val() + ' is not in this work');
+                                toast($('#first_instrument_dropdown').val() + ' is not in this instrumentation');
                                 $('#first_instrument_dropdown').val(key).change();
                             }
                         });
@@ -242,7 +242,7 @@
                                 if (matchinginstrument) {
                                     console.log('found this user plays intsrument ' + matchinginstrument.instrumentname + ' which matches instrument in group ' + key);
                                     console.log('setting this user instrument to ' + key)
-                                    toast($('#first_instrument_dropdown').val() + ' is not in this work');
+                                    toast($('#first_instrument_dropdown').val() + ' is not in this instrumentation');
                                     $('#first_instrument_dropdown').val(key).change();
                                     break;
                                 }
@@ -392,8 +392,7 @@
                         <div id="grouprequest_protip_musiclibrary" class="w3-container w3-blue" hidden="hidden">
                             <span onclick="$(this).parent().slideUp();setCookie($(this).parent().attr('id'), 'clicked', 365);" class="w3-closebtn">&times;</span>
                             <h3>Pro tip!</h3>
-                            <p class="w3-hide-large">The easiest way to see all the music available and make a group request is to visit the <a href="/user/{{ thisuser.userid }}/musiclibrary/"><i class="fa fa-book"></i>Music Library</a>. You can find it by clicking the <i class="fa fa-bars"></i> menu button on the top left of your screen.</p>
-                            <p class="w3-hide-medium w3-hide-small">The easiest way to see all the music available and make a group request is to visit the <a href="/user/{{ thisuser.userid }}/musiclibrary/"><i class="fa fa-book"></i>Music Library</a>. You can find it by clicking the link on the left of your screen.</p>
+                            <p>The easiest way to see all the music available and make a group request is to visit the <a href="/user/{{ thisuser.userid }}/musiclibrary/"><i class="fa fa-book"></i>Music Library</a>. You can find it by clicking the <i class="fa fa-book"></i> book icon at the top of your screen.</p>
                         </div><br />
                             <label>Select Music:</label>
                             <select class="form-attribute music_dropdown w3-select w3-border" id="musicid">
@@ -404,8 +403,7 @@
                             </select>
                         <br /><br />
                         <div class="hidemusic">
-                                <label>I have my own music (optional):</label>
-                                <input type="text" class="form-attribute w3-input w3-border" id="musicwritein">
+                                <input type="text" class="form-attribute w3-input w3-border" id="musicwritein" placeholder="I have my own music (optional)">
                             <br />
                         </div>
                     </div>
@@ -436,7 +434,6 @@
                 </div> 
                 <div class="hidemusic">
                     <br />
-
                     <div class="w3-dropdown-hover">
                         <button class="w3-btn-block w3-white w3-border">Apply a Group Template</button>
                         <div class="w3-dropdown-content w3-border">

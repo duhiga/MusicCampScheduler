@@ -123,7 +123,7 @@
     {% if thisuser.isadmin == 1 %}
 <li class="w3-hide-small"><a href="#" class="w3-hover-white">Editing User &#34;{{ targetuser.firstname }} {{ targetuser.lastname }}&#34;</a></li>
     {% else %}
-<li class="w3-hide-small"><a href="#" class="w3-hover-white">My Settings</a></li>
+<li class="w3-hide-small"><a href="#" class="w3-hover-white">Your Settings</a></li>
     {% endif %}
 {% else %}
 <li class="w3-hide-small"><a href="#" class="w3-hover-white">New User</a></li>
@@ -161,7 +161,7 @@
     <div class="w3-panel w3-half">
         <div class="w3-card-4">
             <header class="w3-container w3-dark-gray">
-                <h2>{% if thisuser.isadmin == 1 %}User{% else %}My{% endif %} Settings</h2>
+                <h2>{% if thisuser.isadmin == 1 %}User{% else %}Your{% endif %} Settings</h2>
             </header>
             <div class="w3-container">
                 <p>Note: You will only be assigned a group if you are set to Active, and the group plays between your arrival and departure times.</p>
@@ -298,7 +298,7 @@
     <div class="w3-panel w3-half">
         <div class="w3-card-4">
             <header class="w3-container w3-dark-gray">
-                <h2>{% if thisuser.isadmin == 1 %}User{% else %}My{% endif %} Instruments</h2>
+                <h2>{% if thisuser.isadmin == 1 %}User{% else %}Your{% endif %} Instruments</h2>
             </header>
             <div class="w3-container">
                 <p>Note: You won't be assigned to play an instrument if it's set to inactive. Your primary instrument is significantly more likely to be allocated to groups than non-primary instruments.{% if thisuser.isadmin != 1 %} If you wish to add any more instruments, <a href="mailto:{{ supportemailaddress }}">contact camp administration</a>.{% endif %}</p>

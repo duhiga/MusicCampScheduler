@@ -12,7 +12,25 @@
         }
     }
 
+    $(document).on("keyup keydown keypress", '#search', function () {
+        $('.searchable').each(function () {
+            var words = $('#search').val().toUpperCase().split(" ");
+            for (var i = 0; i < words.length; i++) {
+                if ($(this).data('search').toUpperCase().indexOf(words[i].toUpperCase()) != -1) {
+                    $(this).show();
+                }
+                else {
+                    $(this).hide();
+                    break;
+                }
+            }
+            $('#number').val($('tr:visible').length - 1).change();
+        });
+    });
+
     $(document).ready(function () {
+
+        $('#number').val($('tr:visible').length - 1).change();
 
         $(function () {
             $(".tablesorter").tablesorter({
@@ -51,7 +69,9 @@
 {% block content %}
 <div class="w3-row">
     <div class="w3-container">
-        <p>Total number of users: {{ users|length }}</p>
+        <p>Number of users found: <input type="text" disabled="disabled" id="number"/></p>
+        <p>Search prefixes: 'Firstname:', 'Lastname:', 'Admin:', 'Accouncer:', 'Conductor:', 'Playcount:'.</p>
+        <p><input type="text" placeholder="Type to search..." class="w3-input w3-border" id="search" value=""></p>
         <table style="width:100%" class="tablesorter border-table">
             <thead>
                 <tr>
@@ -63,10 +83,16 @@
                     <th>Home</th>
                 </tr>
             </thead>
-            <tbody class="zebra-table">
+            <tbody>
                 {% if users != None %}
                 {% for u in users %}
-                <tr>
+                <tr class="searchable" data-search="firstname:{{ u.firstname }} 
+                                                    lastname:{{ u.lastname }} 
+                                                    {% if u.isadmin == 1 %}Admin{% endif %}
+                                                    {% if u.isannouncer == 1 %}Announcer{% endif %}
+                                                    {% if u.isconductor == 1 %}Conductor{% endif %}
+                                                    Playcount:{% if u.playcount != 'Non Player' %}{{ u.playcount }}{% else %}NonPlayer{% endif %}
+                                                    ">
                     <td><input type="checkbox" value="{{ u.userid }}" data-key="userid" data-mapping="{{ u.userid }}" class="checkbox form-object-master form-validate"></td>
                     <td><a href="/user/{{ thisuser.userid }}/edituser/{{ u.userid }}/">{{ u.firstname }}</a></td>
                     <td><a href="/user/{{ thisuser.userid }}/edituser/{{ u.userid }}/">{{ u.lastname }}</a></td>

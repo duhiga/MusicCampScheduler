@@ -102,15 +102,6 @@
 <li class="w3-hide-small w3-hide-medium"><a href="#" class="w3-hover-white">New Instrumentation</a></li>
 {% endblock %}
 {% block sidenav %}
-<h4><b>Tools</b></h4>
-<a class="accordion" href="#">
-    Apply a Template <i class="fa fa-caret-down w3-right"></i>
-</a>
-<div id="templates" class="w3-accordion-content w3-card-4 panel">
-    {% for g in grouptemplates %}
-    <a href="#" class="w3-hover-black template" id="{{ g.grouptemplateid }}">{{ g.grouptemplatename }}</a>
-    {% endfor %}
-</div>
 <div class="submit_hide">
     <h4><b>Save</b></h4>
     <a href="#" class="w3-hover-black submit_button" data-submittype="submit" data-method="POST"><i class="fa fa-check save_icon"></i><i class="fa fa-circle-o-notch fa-spin spin_icon"></i> Submit</a>
@@ -119,11 +110,14 @@
 {% block content %}
 <div class="w3-row">
     <div class="w3-container w3-half">
-        <div id="instrumentation_protip_templates" class="w3-panel w3-blue" hidden="hidden">
-            <span onclick="this.parentElement.style.display='none';setCookie('instrumentation_protip_templates','clicked',365);" class="w3-closebtn">&times;</span>
-            <h3>Pro tip!</h3>
-            <p>You can fill this page much easier with a template. Templates are found by clicking the hamburger menu in the top left.</p>
-        </div> 
+        <div class="w3-dropdown-hover">
+            <button class="w3-btn-block w3-white w3-border">Apply a Group Template</button>
+            <div class="w3-dropdown-content w3-border">
+                {% for g in grouptemplates %}
+                <a href="#" id="{{ g.grouptemplateid }}" class="template">{{ g.grouptemplatename }}</a>
+                {% endfor %}
+            </div>
+        </div>
         <h2>Group Configuration</h2>
         <table id="configTable" class="border-table">
             <tr>

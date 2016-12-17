@@ -82,13 +82,14 @@
             var ob = $(this);
             var templateid = $(this).attr('id');
             console.log('Template selected with id: ' + templateid)
-            toast('Applied ' + ob.html(),'message');
             if (ob.attr('id') == 'apply_music') {
+                toast('Applied Instrumentation');
                 var grep_template = $.grep(musics, function (elt) {
                     return String(elt.musicid) === String($('#musicid').val());
                 });
             }
             else {
+                toast('Applied ' + ob.html(),'message');
                 var grep_template = $.grep(grouptemplates, function (elt) {
                     return String(elt.grouptemplateid) == String(templateid);
                 });
@@ -97,7 +98,6 @@
             selectedTemplate = grep_template[0];
             console.log('Selected template is:');
             console.log(selectedTemplate);
-            $('#groupname').val(selectedTemplate.grouptemplatename).change();
             //for each instrument type in the group template
             $.each(selectedTemplate, function(key,value) {
                 //make sure it's an instrument type and not other associated metadata
@@ -118,6 +118,10 @@
                 if (key == 'defaultlocationid' && value != '' && value != 'None' && value != 'null') {
                     console.log('Changing locaiton to ' + value)
                     $('#locationid').val(value).change();
+                }
+                if (key == 'grouptemplatename' && value != '' && value != 'None' && value != 'null') {
+                    console.log('Changing name to ' + value)
+                    $('#groupname').val(selectedTemplate.grouptemplatename).change();
                 }
             });
             w3_close();

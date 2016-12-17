@@ -163,7 +163,12 @@ def getgroupname(session,thisgroup):
             name = 'Dectet'
         else:
             name = 'Custom Group'
-        return name
+
+    if thisgroup.musicid is not None:
+        composer = session.query(music).filter(music.musicid == thisgroup.musicid).first().composer
+        name = composer + ' ' + name
+
+    return name
 
 #the root page isn't meant to be navigable.  It shows the user an error and
 #tells them how to get to their user home.
@@ -436,7 +441,7 @@ def editgroup(userid,groupid,periodid=None):
             periodlist = session.query(period).order_by(period.starttime).all()
             periods = []
             for p in periodlist:
-                if (currentperiod and p.periodid == currentperiod.periodid) or len(session.query(user.userid).join(groupassignment).join(group).filter(group.periodid == p.periodid).filter(user.userid.in_(thisgroupplayers_query)).all()) == 0:
+                if (currentperiod and p.periodid == currentperiod.periodid) or len(session.query(user.userid).join(groupassignment).join(group).filter(group.periodid == p.periodid, or_(user.userid.in_(thisgroupplayers_query), group.musicid == thisgroup.musicid)).all()) == 0:
                     periods.append(p)
 
             #if there was no selected period by the user, select the first period
@@ -471,10 +476,7 @@ def editgroup(userid,groupid,periodid=None):
             musics_serialized = [i.serialize for i in musics]
             thismusic = session.query(music).filter(music.musicid == thisgroup.musicid).first()
 
-            
-
-
-
+            #get a list of the locations not being used in this period
             locations_used_query = session.query(location.locationid).join(group).join(period).filter(period.periodid == periodid, group.groupid != thisgroup.groupid)
             locations = session.query(location).filter(~location.locationid.in_(locations_used_query)).all()
             log('This groups status is %s' % thisgroup.status)

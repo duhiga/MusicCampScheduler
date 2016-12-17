@@ -12,7 +12,7 @@
         }
     }
 
-    $(document).on("keyup keydown keypress", '#search', function () {
+    $(document).on("keyup", '#search', function () {
         $('.searchable').each(function () {
             var words = $('#search').val().toUpperCase().split(" ");
             for (var i = 0; i < words.length; i++) {
@@ -70,7 +70,7 @@
 <div class="w3-row">
     <div class="w3-container">
         <p>Number of users found: <input type="text" disabled="disabled" id="number"/></p>
-        <p>Search prefixes: 'Firstname:', 'Lastname:', 'Admin:', 'Accouncer:', 'Conductor:', 'Playcount:'.</p>
+        <p>Search prefixes: 'Firstname:*', 'Lastname:*', 'Playcount:*', 'Admin', 'Accouncer', 'Conductor'.</p>
         <p><input type="text" placeholder="Type to search..." class="w3-input w3-border" id="search" value=""></p>
         <table style="width:100%" class="tablesorter border-table">
             <thead>

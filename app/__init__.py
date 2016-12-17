@@ -1000,11 +1000,8 @@ def grouprequest(userid,periodid=None,musicid=None):
                     setattr(grouprequest, p['instrumentname'], 1)
                 else:
                     setattr(grouprequest, p['instrumentname'], (currentinstrumentcount + 1))
-            if content['groupname'] != '':
-                grouprequest.groupname = content['groupname']
-            else:
-                #run the getgroupname function, which logically names the group
-                grouprequest.groupname = getgroupname(session,grouprequest)
+            #run the getgroupname function, which logically names the group
+            grouprequest.groupname = getgroupname(session,grouprequest)
             #if we are on the conductorpage, instantly confirm this group (assign it to the period the user submitted)
             if conductorpage == True:
                 grouprequest.periodid = thisperiod.periodid     

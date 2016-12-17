@@ -716,6 +716,17 @@ def grouphistory(userid):
                     join(groupassignment).outerjoin(period).outerjoin(location).filter(groupassignment.userid == thisuser.userid, group.groupname != 'absent').order_by(period.starttime).all()
         log(groups)
         count = playcount(session, thisuser.userid)
+
+        thisuserprimary = session.query(instrument.instrumentname).filter(instrument.userid == thisuser.userid, instrument.isprimary == 1).first().instrumentname
+        total = 0
+        number = 0
+        for p in session.query(instrument.userid).filter(instrument.isactive == 1, instrument.isprimary == 1, instrument.instrumentname == thisuserprimary).group_by(instrument.userid).all():
+            total = total + playcount(session, p.userid)
+            number = number + 1
+        average = "%.2f" % (float(total) / float(number))
+        log('Found total number of %s players to be %s and plays by all of them totalling %s giving an average of %s' % (thisuserprimary, number, total, average))
+
+
         session.close()
         return render_template('grouphistory.html', \
                                 thisuser=thisuser, \
@@ -723,6 +734,8 @@ def grouphistory(userid):
                                 campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
                                 now=now, \
                                 playcount=count, \
+                                average=average, \
+                                thisuserprimary=thisuserprimary, \
                                 )
     except Exception as ex:
         log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))

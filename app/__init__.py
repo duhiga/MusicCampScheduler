@@ -125,22 +125,25 @@ def getgrouplevel(session,inputgroup,min_or_max):
     nextday = date + datetime.timedelta(days=1)"""
 
 def getgroupname(session,thisgroup):
+
+    log('GETGROUPNAME: Generating a name for requested group')
     instrumentlist = getconfig('Instruments').split(",")
 
     #if this group's instrumentation matches a grouptempplate, then give it the name of that template
     templatematch = session.query(grouptemplate).filter(*[getattr(grouptemplate,i) == getattr(thisgroup,i) for i in instrumentlist]).first()
     if templatematch is not None:
-        return templatematch.grouptemplatename
+        log('GETGROUPNAME: Found that this group instrumentation matches the template %s' % templatematch.grouptemplatename)
+        name = templatematch.grouptemplatename
 
     #if we don't get a match, then we find how many players there are in this group, and give it a more generic name
     else:
         count = 0
         for i in instrumentlist:
             value = getattr(thisgroup, i)
-            log('Instrument %s is value %s' % (i, value))
+            log('GETGROUPNAME: Instrument %s is value %s' % (i, value))
             if value is not None:
                 count = count + int(getattr(thisgroup, i))
-        log('Found %s instruments in group.' % value)
+        log('GETGROUPNAME: Found %s instruments in group.' % value)
         if count == 1:
             name = 'Solo'
         elif count == 2:
@@ -165,9 +168,12 @@ def getgroupname(session,thisgroup):
             name = 'Custom Group'
 
     if thisgroup.musicid is not None:
+        log('GETGROUPNAME: Found that this groups musicid is %s' % thisgroup.musicid)
         composer = session.query(music).filter(music.musicid == thisgroup.musicid).first().composer
+        log('GETGROUPNAME: Found composer matching this music to be %s' % composer)
         name = composer + ' ' + name
-
+        
+    log('GETGROUPNAME: Full name of group returned is %s' % name)
     return name
 
 #the root page isn't meant to be navigable.  It shows the user an error and
@@ -433,6 +439,7 @@ def editgroup(userid,groupid,periodid=None):
             thisgroup = session.query(group).filter(group.groupid == groupid).first()
             requestor = session.query(user).filter(user.userid == thisgroup.requesteduserid).first()
         if request.method == 'GET':
+
             #Current period tracks the period that the group is already set to (none, if it's a new group)
             currentperiod = session.query(period).filter(period.periodid == thisgroup.periodid).first()
 
@@ -448,7 +455,11 @@ def editgroup(userid,groupid,periodid=None):
             if periodid is not None:
                 selectedperiod = session.query(period).filter(period.periodid == periodid).first()
             elif currentperiod is None:
-                selectedperiod = periods[0]
+                tomorrow = datetime.datetime.combine(datetime.date.today(), datetime.time.min) + datetime.timedelta(days=1)
+                for p in periods:
+                    if p.starttime > tomorrow and session.query(period.periodid).join(group).filter(period.periodid == p.periodid, group.iseveryone == 1).first() is None:
+                        selectedperiod = p
+                        break
             else:
                 selectedperiod = currentperiod
 
@@ -555,7 +566,6 @@ def editgroup(userid,groupid,periodid=None):
                 elif key != 'primary_only':
                     log('Setting %s to be %s' % (key, value))
                     setattr(thisgroup,key,value)
-            thisgroup.requesteduserid = thisuser.userid
             if groupid == None:
                 session.add(thisgroup)
                 thisgroup.requesttime = datetime.datetime.now()
@@ -944,6 +954,7 @@ def grouprequest(userid,periodid=None,musicid=None):
         #The below runs when a user presses "Submit" on the grouprequest page. It creates a group object with the configuraiton selected by 
         #the user, and creates groupassignments for all players they selected (and the user themselves)
         if request.method == 'POST':
+            instrumentlist = getconfig('Instruments').split(",")
             #format the packet received from the server as JSON
             content = request.json
             session = Session()
@@ -975,41 +986,46 @@ def grouprequest(userid,periodid=None,musicid=None):
                     return jsonify(message = 'You must select a location for this group', url = 'none')
                 grouprequest.locationid = content['locationid']
                 grouprequest.status = "Queued"
-            #for each player object in the players array in the JSON packet
-            for p in content['objects']:
-                #if it's not a blank dropdown
-                if p['userid'] != 'null' and p['userid'] != '':
-                    #try to find a user that matches this id
-                    puser = session.query(user).filter(user.userid == p['userid']).first()
-                    #if we don't find one, this grouprequset is a failiure
-                    if puser is None:
-                        log('Input error. user %s does not exist in the database.' % p['userid'])
-                        session.rollback()
-                        session.close()
-                        return jsonify(message = 'Input error. One of the sent users does not exist in the database.', url = 'none')
-                    #if we find an inactive user, it's also a failure
-                    elif puser.isactive != 1:
-                        log('User %s %s is inactive. Cannot accept this group request.' % (puser.firstname, puser.lastname))
-                        session.rollback()
-                        session.close()
-                        return jsonify(message = 'A selected user is inactive. Cannot accept this group request.', url = 'none')
-                log('Incrementing group counter for instrument %s' % p['instrumentname'])
-                #increment the instrument counter in the grouprequest object corresponding with this instrument name
-                currentinstrumentcount = getattr(grouprequest, p['instrumentname'])
-                if currentinstrumentcount is None:
-                    setattr(grouprequest, p['instrumentname'], 1)
-                else:
-                    setattr(grouprequest, p['instrumentname'], (currentinstrumentcount + 1))
+
+            #for each instrument
+            for i in instrumentlist:
+                #set a default value of 0
+                setattr(grouprequest,i,0)
+                #iterate over the objects in the request corresponding with that instrument, and increment the counter for each
+                for p in content['objects']:
+                    if p['instrumentname'] == i:
+
+                        #if it has a corresponding user, check that that user exists
+                        if p['userid'] != 'null' and p['userid'] != '':
+                            #try to find a user that matches this id
+                            puser = session.query(user).filter(user.userid == p['userid']).first()
+                            #if we don't find one, this grouprequset is a failiure
+                            if puser is None:
+                                log('Input error. user %s does not exist in the database.' % p['userid'])
+                                session.rollback()
+                                session.close()
+                                return jsonify(message = 'Input error. One of the sent users does not exist in the database.', url = 'none')
+                            #if we find an inactive user, it's also a failure
+                            elif puser.isactive != 1:
+                                log('User %s %s is inactive. Cannot accept this group request.' % (puser.firstname, puser.lastname))
+                                session.rollback()
+                                session.close()
+                                return jsonify(message = 'A selected user is inactive. Cannot accept this group request.', url = 'none')
+
+                        #increment the instrument counter
+                        setattr(grouprequest,i,getattr(grouprequest,i) + 1)
+                log('Instrument %s is value %s' % (i, getattr(grouprequest,i)))
+                    
             #run the getgroupname function, which logically names the group
             grouprequest.groupname = getgroupname(session,grouprequest)
-            #if we are on the conductorpage, instantly confirm this group (assign it to the period the user submitted)
+
+            #if we are on the conductorpage, assign it to the period the user submitted
             if conductorpage == True:
                 grouprequest.periodid = thisperiod.periodid     
         
             #--------MATCHMAKING SECTION-----------
             #try to find an existing group request with the same music and instrumentation configuration as the request
             musicstatus = None
-            instrumentlist = getconfig('Instruments').split(",")
             if (content['musicid'] != '' and content['musicid'] != 'null' and content['musicid'] != None):
                 log('Found that user has requested the music to be %s' % content['musicid'])
                 matchinggroups = session.query(group).filter(or_(group.musicid == content['musicid'], group.musicwritein == content['musicwritein']), group.iseveryone == None, group.ismusical == 1, group.periodid == None, *[getattr(grouprequest,i) == getattr(group,i) for i in instrumentlist]).order_by(group.requesttime).all()

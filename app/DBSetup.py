@@ -112,9 +112,9 @@ class grouptemplate(Base):
 instrumentlist = getconfig('Instruments').split(",")
 print('Setting up columns for instruments in database: %s' % getconfig('Instruments'))
 for i in instrumentlist:
-    setattr(group, i, Column(Integer))
-    setattr(grouptemplate, i, Column(Integer))
-    setattr(music, i, Column(Integer))
+    setattr(group, i, Column(Integer, default='0'))
+    setattr(grouptemplate, i, Column(Integer, default='0'))
+    setattr(music, i, Column(Integer, default='0'))
 
 class instrument(Base):
     __tablename__ = 'instruments'

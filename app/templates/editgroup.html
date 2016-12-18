@@ -368,7 +368,7 @@
                     {{ currentperiod.periodname }}, {{ currentperiod.starttime.strftime('%a, %d %b') }}, {{ currentperiod.starttime.strftime('%H:%M') }}-{{ currentperiod.endtime.strftime('%H:%M') }}
                 </td>
                 {% endif %}
-                <td>
+                <td>SELECTEDPERIOD: {{ selectedperiod.periodid }}
                     <select id="periodid" class="form-attribute form-validate w3-select w3-border">
                         {% for p in periods %}
                         {% if p.periodid == selectedperiod.periodid %}

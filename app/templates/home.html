@@ -223,7 +223,7 @@
                             </div>
                             <br />
                             {% endif %}
-                            {% if unscheduled %}
+                            {% if unscheduled and p.iseveryone != 1 %}
                             <div class="w3-container w3-red">
                                 <h4>Scheduling in Progress</h4>
                                 <p>Scheduling for this day is unfinished and this allocation may change.</p>

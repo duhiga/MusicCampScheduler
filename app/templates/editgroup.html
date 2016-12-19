@@ -230,7 +230,7 @@
 {% block navbar %}
 <div class="submit_hide">
     <li class="w3-opennav w3-right w3-animate-right">
-        <a href="#" class="w3-hover-white w3-large w3-theme-l1 submit_button" data-submittype="save" data-method="POST">
+        <a href="javascript:void(0)" class="w3-hover-white w3-large w3-theme-l1 submit_button" data-submittype="save" data-method="POST">
             <i class="fa fa-save save_icon"></i><i class="fa fa-circle-o-notch fa-spin spin_icon"></i>
         </a>
     </li>
@@ -239,31 +239,31 @@
 {% block breadcrumbs %}
 <li class="w3-hide-small"><a href="/user/{{ thisuser.userid }}/date/{{ selectedperiod.starttime.strftime('%Y-%m-%d') }}/" class="w3-hover-white">{{ selectedperiod.starttime.strftime('%d %b') }}</a></li>
 <li class="w3-hide-small"><a href="/user/{{ thisuser.userid }}/period/{{ selectedperiod.periodid }}/" class="w3-hover-white">{{ selectedperiod.periodname }}</a></li>
-<li class="w3-hide-small w3-hide-medium"><a href="#" class="w3-hover-white">{{ thisgroup.groupname }}</a></li>
-<li class="w3-hide-small w3-hide-medium"><a href="#" class="w3-hover-white">Edit</a></li>
+<li class="w3-hide-small w3-hide-medium"><a href="javascript:void(0)" class="w3-hover-white">{{ thisgroup.groupname }}</a></li>
+<li class="w3-hide-small w3-hide-medium"><a href="javascript:void(0)" class="w3-hover-white">Edit</a></li>
 {% endblock %}
 {% block sidenav %}
 <h4><b>Tools</b></h4>
-<a class="accordion" href="#">
+<a class="accordion" href="javascript:void(0)">
     Apply a Template <i class="fa fa-caret-down w3-right"></i>
 </a>
 <div id="templates" class="w3-accordion-content w3-card-4 panel">
     {% for g in grouptemplates %}
-    <a href="#" class="w3-hover-black group_template_button" id="{{ g.grouptemplateid }}">{{ g.grouptemplatename }}</a>
+    <a href="javascript:void(0)" class="w3-hover-black group_template_button" id="{{ g.grouptemplateid }}">{{ g.grouptemplatename }}</a>
     {% endfor %}
 </div>
 <div class="submit_hide">
-    <a class="accordion" href="#">
+    <a class="accordion" href="javascript:void(0)">
         Autofill <i class="fa fa-caret-down w3-right"></i>
     </a>
     <div id="autofill_settings" class="w3-accordion-content w3-card-4 panel">
-        <a href="#">
+        <a href="javascript:void(0)">
             Primary Only <select id="primary_only" class="form-attribute">
                 <option value="1" selected="selected">Yes</option>
                 <option value="0">No</option>
             </select>
         </a>
-        <a href="#">
+        <a href="javascript:void(0)">
             Minimum Level <select id="minimumlevel" class="form-attribute">
                 {% for n in range(maximumlevel + 1) %}
                 {% if n == thisgroup.minimumlevel and n == 0 %}
@@ -278,7 +278,7 @@
                 {% endfor %}
             </select>
         </a>
-        <a href="#">
+        <a href="javascript:void(0)">
             Maximum Level <select id="maximumlevel" class="form-attribute">
                 {% for n in range(maximumlevel + 1) %}
                 {% if n == thisgroup.maximumlevel and n == 0 %}
@@ -293,15 +293,15 @@
                 {% endfor %}
             </select>
         </a>
-        <a href="#" class="w3-hover-black submit_button" data-submittype="autofill" data-method="POST">
+        <a href="javascript:void(0)" class="w3-hover-black submit_button" data-submittype="autofill" data-method="POST">
             <i class="fa fa-flask save_icon"></i><i class="fa fa-circle-o-notch fa-spin spin_icon"></i> Autofill Missing Players
         </a>
     </div>
-    <a href="#" class="w3-hover-black" id="clear_players"><i class="fa fa-eraser"></i> Clear Players</a>
-    <a href="#" class="w3-hover-black submit_button" data-method="DELETE"><i class="fa fa-trash save_icon"></i><i class="fa fa-circle-o-notch fa-spin spin_icon"></i> Delete Group</a>
+    <a href="javascript:void(0)" class="w3-hover-black" id="clear_players"><i class="fa fa-eraser"></i> Clear Players</a>
+    <a href="javascript:void(0)" class="w3-hover-black submit_button" data-method="DELETE"><i class="fa fa-trash save_icon"></i><i class="fa fa-circle-o-notch fa-spin spin_icon"></i> Delete Group</a>
     <h4><b>Save</b></h4>
-    <a href="#" class="w3-hover-black submit_button" data-submittype="save" data-method="POST"><i class="fa fa-save save_icon"></i><i class="fa fa-circle-o-notch fa-spin spin_icon"></i> Save Changes</a>
-    <a href="#" class="w3-hover-black submit_button" data-submittype="submit" data-method="POST"><i class="fa fa-check save_icon"></i><i class="fa fa-circle-o-notch fa-spin spin_icon"></i> Submit</a>
+    <a href="javascript:void(0)" class="w3-hover-black submit_button" data-submittype="save" data-method="POST"><i class="fa fa-save save_icon"></i><i class="fa fa-circle-o-notch fa-spin spin_icon"></i> Save Changes</a>
+    <a href="javascript:void(0)" class="w3-hover-black submit_button" data-submittype="submit" data-method="POST"><i class="fa fa-check save_icon"></i><i class="fa fa-circle-o-notch fa-spin spin_icon"></i> Submit</a>
 </div>
 {% endblock %}
 {% block content %}

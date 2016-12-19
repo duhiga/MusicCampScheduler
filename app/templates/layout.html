@@ -304,7 +304,7 @@
             <li class="w3-opennav w3-left"><a href="/user/{{ thisuser.userid }}/musiclibrary/" class="w3-hover-white w3-large w3-theme-l1" style="padding:12px 8px !important;"><i class="fa fa-book"></i></a></li>
             {% endif %}
             {% block navbar%}{% endblock %}
-            <li><a href="#" class="w3-theme-l1">&nbsp;{{ thisuser.firstname }} {{ thisuser.lastname }}</a></li>
+            <li><a href="javascript:void(0)" class="w3-theme-l1">&nbsp;{{ thisuser.firstname }} {{ thisuser.lastname }}</a></li>
             <!-- Specific page breadcrumbs/title pages go here -->
             {% block breadcrumbs %}{% endblock %}
         </ul>
@@ -334,7 +334,7 @@
         <h4><b>Admin</b></h4>
         <a href="/user/{{ thisuser.userid }}/groupqueue/" class="w3-hover-black"><i class="fa fa-ellipsis-h"></i> Queued Groups</a>
         <a href="/user/{{ thisuser.userid }}/useradmin/" class="w3-hover-black"><i class="fa fa-universal-access"></i> User Administration</a>
-        <a class="accordion" href="#">
+        <a class="accordion" href="javascript:void(0)">
             Database Editor <i class="fa fa-caret-down w3-right"></i>
         </a>
         <div id="editor" class="w3-accordion-content w3-card-4 panel">
@@ -357,7 +357,7 @@
         <!-- Footer -->
         <div class="w3-bottom">
             <ul class="w3-navbar w3-theme w3-animate-bottom w3-left-align w3-large submit_hide">
-                <li><a href="#" class="w3-hover-white submit_button" data-submittype="submit" data-method="POST"><i class="fa fa-check save_icon"></i><i class="fa fa-circle-o-notch fa-spin spin_icon"></i> Submit</a></li>
+                <li><a href="javascript:void(0)" class="w3-hover-white submit_button" data-submittype="submit" data-method="POST"><i class="fa fa-check save_icon"></i><i class="fa fa-circle-o-notch fa-spin spin_icon"></i> Submit</a></li>
             </ul>
         </div>
         {% endblock %}

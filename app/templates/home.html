@@ -87,12 +87,37 @@
 </script>
 {% endblock %}
 {% block breadcrumbs %}
-<li class="w3-hide-small"><a href="#" class="w3-hover-white">{{ date.strftime('%d %b') }}</a></li>
+<li class="w3-hide-small"><a href="javascript:void(0)" class="w3-hover-white">{{ date.strftime('%d %b') }}</a></li>
 {% endblock %}
 {% block content %}
+<header>
+    <div class="w3-center">
+        <a class="w3-btn w3-white w3-border" href="/user/{{ thisuser.userid }}/date/{{ previousday.strftime('%Y-%m-%d') }}/">&#10094; Previous</a>
+        <div class="w3-dropdown-hover">
+            <button class="w3-btn w3-white w3-border">
+                {% if date.strftime('%Y-%m-%d') == today.strftime('%Y-%m-%d') %}
+                Today
+                {% else %}
+                {{ date.strftime('%a, %d %b') }}
+                {% endif %}
+                &nbsp;<i class="fa fa-caret-down"></i>
+            </button>
+            <div class="w3-dropdown-content w3-border">
+                {% for d in dates %}
+                {% if d.strftime('%Y-%m-%d') == today.strftime('%Y-%m-%d') %}
+                <a href="/user/{{ thisuser.userid }}/date/{{d.strftime('%Y-%m-%d')}}/">Today</a>
+                {% else %}
+                <a href="/user/{{ thisuser.userid }}/date/{{d.strftime('%Y-%m-%d')}}/">{{ d.strftime('%a, %d %b') }}</a>
+                {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+        <a class="w3-btn w3-white w3-border" href="/user/{{ thisuser.userid }}/date/{{ nextday.strftime('%Y-%m-%d') }}/">Next &#10095;</a>
+    </div>
+</header>
     <div class="w3-row">
         <div class="w3-container">
-            <h2>Your Schedule</h2>
+            <h2>Schedule: {% if date.strftime('%Y-%m-%d') == today.strftime('%Y-%m-%d') %}Today{% else %}{{ date.strftime('%d %b') }}{% endif %}</h2>
             <div id="home_protip_welcome" class="w3-panel w3-blue protip" hidden="hidden">
                 <span class="w3-closebtn protip_close">&times;</span>
                 <h3>Welcome</h3>
@@ -115,8 +140,8 @@
         <div class="w3-row">
             <div class="w3-container">
                 <div class="w3-panel w3-black">
-                    <h3>Under Construction</h3>
-                    <p class="w3-hide-large">This day is still being scheduled. Groups on here may change, Check back later for your final schedule.</p>
+                    <h3>Scheduling Not Complete</h3>
+                    <p>Sessions on this day are still not finalised and may change.</p>
                 </div>
             </div>
         </div>
@@ -131,40 +156,15 @@
             </div>
         </div>
         {% endif %}
-        <p>
-            <div class="w3-center">
-                <a class="w3-btn w3-white w3-border" href="/user/{{ thisuser.userid }}/date/{{ previousday.strftime('%Y-%m-%d') }}/">&#10094; Previous</a>
-                <div class="w3-dropdown-hover">
-                    <button class="w3-btn w3-white w3-border">
-                        {% if date.strftime('%Y-%m-%d') == today.strftime('%Y-%m-%d') %}
-                        Today
-                        {% else %}
-                        {{ date.strftime('%a, %d %b') }}
-                        {% endif %}
-                    </button>
-                    <div class="w3-dropdown-content w3-border">
-                        {% for d in dates %}
-                        {% if d.strftime('%Y-%m-%d') == today.strftime('%Y-%m-%d') %}
-                        <a href="/user/{{ thisuser.userid }}/date/{{d.strftime('%Y-%m-%d')}}/">Today</a>
-                        {% else %}
-                        <a href="/user/{{ thisuser.userid }}/date/{{d.strftime('%Y-%m-%d')}}/">{{ d.strftime('%a, %d %b') }}</a>
-                        {% endif %}
-                        {% endfor %}
-                    </div>
-                </div>
-                <a class="w3-btn w3-white w3-border" href="/user/{{ thisuser.userid }}/date/{{ nextday.strftime('%Y-%m-%d') }}/">Next &#10095;</a>
-            </div>
-        </p>
         <div class="w3-row">
             <div class="w3-container w3-half">
-                <h2>Morning</h2>
                 {% set afternoon = 0 %}
                 {% for p in schedule %}
 
                 {% if p.starttime > midday and afternoon == 0 %}
-            </div>
+                <br /></div>
+            
             <div class="w3-container w3-half">
-                <h2>Afternoon</h2>
                 {% set afternoon = 1 %}
                 {% endif %}
                 <div class="w3-card-4">
@@ -185,21 +185,21 @@
 
                     ">
                 <h5>
-                    {{p.starttime.strftime('%H:%M')}}:
+                        {{p.starttime.strftime('%H:%M')}}:
 
-                    {% if p.groupname == 'absent' %}
-                    Absent
-                    {% elif p.groupname and p.ismusical == 1 %}
-                    {{p.groupname}}
-                    {% elif p.iseveryone == 1 %}
-                    {{p.groupname}}
-                    {% elif unscheduled %}
-                    Check Back Later
-                    {% else %}
-                    Free Period
-                    {% endif %}
+                        {% if p.groupname == 'absent' %}
+                        Absent
+                        {% elif p.groupname and p.ismusical == 1 %}
+                        {{p.groupname}}
+                        {% elif p.iseveryone == 1 %}
+                        {{p.groupname}}
+                        {% elif unscheduled %}
+                        Check Back Later
+                        {% else %}
+                        Free Period
+                        {% endif %}
 
-                    <i class="fa fa-caret-down w3-right"></i>
+                        <i class="fa fa-caret-down w3-right"></i>
                 </h5>
             </header>
                     <div class="w3-accordion-content panel">
@@ -223,7 +223,7 @@
                             </div>
                             <br />
                             {% endif %}
-                            {% if unscheduled and p.iseveryone != 1 %}
+                            {% if unscheduled and p.iseveryone != 1  and p.groupname != 'absent' %}
                             <div class="w3-container w3-red">
                                 <h4>Scheduling in Progress</h4>
                                 <p>Scheduling for this day is unfinished and this allocation may change.</p>

@@ -844,10 +844,15 @@ def grouprequest(userid,periodid=None,musicid=None):
         intwodays = today + datetime.timedelta(days=2)
         now = datetime.datetime.now() #get the time now
         #if this camper is inactive, has not arrived at camp yet, or is departing before the end of tomorrow
-        if (thisuser.isactive != 1 or thisuser.arrival > now or thisuser.departure < intwodays) and periodid is None:
+        if (thisuser.isactive != 1) and periodid is None:
             session.close()
-            return errorpage(thisuser,'Your user is currently set to inactive or are not attending camp at this time. Inactive users cannot request groups. Navigate to your settings and change them, or revisit this page at another time.')
-
+            return errorpage(thisuser,'Your account is currently set to inactive. Inactive users cannot request groups. Is this is a mistake, navigate to your settings and set yourself to active.')
+        if (thisuser.arrival > intwodays) and periodid is None:
+            session.close()
+            return errorpage(thisuser,'You are not attending camp yet, so you cannot request a group. If this is a mistake, you can change your arrival time in your settings.')
+        if (thisuser.departure < intwodays) and periodid is None:
+            session.close()
+            return errorpage(thisuser,"You are set to depart camp in less than one days' time, so you cannot request a group. If this is incorrect, you can change your departure time in your settings.")
         #find the instruments this user plays
         thisuserinstruments = session.query(instrument).filter(instrument.userid == userid, instrument.isactive == 1).all()
         thisuserinstruments_serialized = [i.serialize for i in thisuserinstruments]
@@ -1548,11 +1553,11 @@ def send_home_link_email(userid):
 %s\n
 Your homepage, containing your daily schedule, is here:\n
 %s/user/%s/ \n
-WARNING: DO NOT GIVE THIS LINK TO ANYONE ELSE. It is yours, and yours alone and contains your connection credentials.\n
+WARNING: DO NOT GIVE THIS LINK, OR ANY LINK ON THIS WEBSITE TO ANYONE ELSE. It is yours, and yours alone and contains your connection credentials.\n
 A small rundown of how to use the web app:\n
 -Visit this page each day to see your schedule. Click or tap each item to see times, locations, and the instrument you're playing. Don't forget to refresh the page each day, your phone may not refresh the page if you minimise it and come back to it later.
 -If you're going to be absent for a session or meal, plesae notify us at least one day before by navigating to a future date with the "Next" button, selecting your desired period, then selecting "Mark Me as Absent".
--You can request groups in a few ways. You can create a custom group with the request group link on the left (on a mobile, click on the settings menu on the top left of the screen). Or, you can visit the music library in the same menu, select music you'd like to play, and click the request button there. When you're on the group requset page, fill in your desired information, and press submit. Leaving blanks for other player names is fine and encouraged, you'll be matched up with other players at the end of the day.\n
+-You can request groups in a few ways. The best way is to visit the music library by clicking the book icon in your top bar, select music you'd like to play, and click the request button there. When you're on the group requset page, fill in your desired information, and press submit. Leaving blanks for other player names is fine and encouraged, you'll be matched up with other players at the end of the day.\n
 If you have any questions, please reply to this email or contact us on %s.\n
 Thanks!\n
 %s %s

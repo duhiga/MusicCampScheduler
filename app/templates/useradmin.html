@@ -58,6 +58,11 @@
 
 </script>
 {% endblock %}
+{% block navbar %}
+<li class="w3-opennav w3-right">
+    <a href="/user/{{ thisuser.userid }}/newuser/" class="w3-hover-white w3-large w3-theme-l1"><i class="fa fa-plus"></i></a>
+</li>
+{% endblock %}
 {% block breadcrumbs %}
 <li class="w3-hide-small"><a href="#" class="w3-hover-white">User Administration</a></li>
 {% endblock %}

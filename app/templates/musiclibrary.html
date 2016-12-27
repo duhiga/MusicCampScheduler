@@ -29,7 +29,7 @@
 {% endblock %}
 {% block navbar %}
 <li class="w3-opennav w3-right">
-    <a href="/user/{{ thisuser.userid }}/musiclibrary/new/" class="w3-hover-white w3-large w3-theme-l1"><i class="fa fa-plus"></i></a>
+    <a href="/user/{{ thisuser.logonid }}/musiclibrary/new/" class="w3-hover-white w3-large w3-theme-l1"><i class="fa fa-plus"></i></a>
 </li>
 {% endblock %}
 {% block breadcrumbs %}
@@ -37,7 +37,7 @@
 {% endblock %}
 {% block sidenav %}
 <h4><b>Tools</b></h4>
-<a href="/user/{{ thisuser.userid }}/musiclibrary/new/" class="w3-hover-black"><i class="fa fa-plus"></i> Create New Entry</a>
+<a href="/user/{{ thisuser.logonid }}/musiclibrary/new/" class="w3-hover-black"><i class="fa fa-plus"></i> Create New Entry</a>
 {% endblock %}
 {% block content %}
 <div class="w3-row">
@@ -58,9 +58,9 @@
                 {% if musics != None %}
                 {% for m in musics %}
                 <tr class="searchable" data-search="{{m.composer}} {{m.musicname}} {% for i in instrumentlist %}{% if m[i] > 0 %}{{i}} {% endif %}{% endfor %} {% for t in grouptemplates %}{% if m.grouptemplateid == t.grouptemplateid %}{{t.grouptemplatename}}{% endif %}{% endfor %}">
-                    <td><a href="/user/{{ thisuser.userid }}/musiclibrary/details/{{ m.musicid }}">{{ m.composer }}</a></td>
+                    <td><a href="/user/{{ thisuser.logonid }}/musiclibrary/details/{{ m.musicid }}">{{ m.composer }}</a></td>
                     <td>
-                        <a href="/user/{{ thisuser.userid }}/musiclibrary/details/{{ m.musicid }}">
+                        <a href="/user/{{ thisuser.logonid }}/musiclibrary/details/{{ m.musicid }}">
                             <div class="w3-hide-medium w3-hide-large">{% if m.musicname|length > 25 %}{{ m.musicname[0:25] }}...{% else %}{{ m.musicname }}{% endif %}</div><div class="w3-hide-small">{{ m.musicname }}</div>
                         </a>
                     </td>
@@ -84,7 +84,7 @@
                 {% endif %}
             </tbody>
         </table>
-        <p>Have your own music? <a href="/user/{{ thisuser.userid }}/musiclibrary/new/" class="w3-btn w3-green w3-round w3-border">Add it to the library</a></p>
+        <p>Have your own music? <a href="/user/{{ thisuser.logonid }}/musiclibrary/new/" class="w3-btn w3-green w3-round w3-border">Add it to the library</a></p>
     </div>
 </div>
 {% endblock %}

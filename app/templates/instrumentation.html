@@ -97,8 +97,8 @@
 </script>
 {% endblock %}
 {% block breadcrumbs %}
-<li class="w3-hide-small"><a href="/user/{{ thisuser.userid }}/date/{{thisperiod.starttime.strftime('%Y-%m-%d')}}/" class="w3-hover-white">{{ thisperiod.starttime.strftime('%d %b') }}</a></li>
-<li class="w3-hide-small"><a href="/user/{{ thisuser.userid }}/period/{{ thisperiod.periodid }}/" class="w3-hover-white">{{ thisperiod.periodname }}</a></li>
+<li class="w3-hide-small"><a href="/user/{{ thisuser.logonid }}/date/{{thisperiod.starttime.strftime('%Y-%m-%d')}}/" class="w3-hover-white">{{ thisperiod.starttime.strftime('%d %b') }}</a></li>
+<li class="w3-hide-small"><a href="/user/{{ thisuser.logonid }}/period/{{ thisperiod.periodid }}/" class="w3-hover-white">{{ thisperiod.periodname }}</a></li>
 <li class="w3-hide-small w3-hide-medium"><a href="#" class="w3-hover-white">New Instrumentation</a></li>
 {% endblock %}
 {% block sidenav %}

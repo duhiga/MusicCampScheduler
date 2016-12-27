@@ -1,7 +1,7 @@
 {% extends "layout.html" %}
 {% block title%}Music Library - {{ campname }}{% endblock %}
 {% block breadcrumbs %}
-<li class="w3-hide-small"><a href="/user/{{ thisuser.userid }}/musiclibrary/" class="w3-hover-white">Music Library</a></li>
+<li class="w3-hide-small"><a href="/user/{{ thisuser.logonid }}/musiclibrary/" class="w3-hover-white">Music Library</a></li>
 <li class="w3-hide-small"><a href="#" class="w3-hover-white">Music Details</a></li>
 {% endblock %}
 {% block content %}
@@ -61,7 +61,7 @@
             </table>
         </p>
         {% if canplay == True %}
-        <a class="w3-btn-block w3-green w3-border w3-round" href="/user/{{ thisuser.userid }}/grouprequest/music/{{ thismusic.musicid }}"><i class="fa fa-music"></i> Request to play this work</a>
+        <a class="w3-btn-block w3-green w3-border w3-round" href="/user/{{ thisuser.logonid }}/grouprequest/music/{{ thismusic.musicid }}"><i class="fa fa-music"></i> Request to play this work</a>
         {% endif %}
             </div>
     

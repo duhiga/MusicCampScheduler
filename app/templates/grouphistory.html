@@ -36,19 +36,19 @@
                 <tr>
                     <td>
                         {% if g.periodid != None %}
-                        <a href="/user/{{ thisuser.userid }}/date/{{ g.starttime.strftime('%Y-%m-%d') }}/">{{ g.starttime.strftime('%d %b') }}</a>
+                        <a href="/user/{{ thisuser.logonid }}/date/{{ g.starttime.strftime('%Y-%m-%d') }}/">{{ g.starttime.strftime('%d %b') }}</a>
                     </td>
                     {% else %}
                     Queued
                     {% endif %}
                     <td>
                         {% if g.periodid != None %}
-                        <a href="/user/{{ thisuser.userid }}/period/{{ g.periodid }}/">{{ g.starttime.strftime('%H:%M') }}</a>
+                        <a href="/user/{{ thisuser.logonid }}/period/{{ g.periodid }}/">{{ g.starttime.strftime('%H:%M') }}</a>
                         {% else %}
                         Queued
                         {% endif %}
                     </td>
-                    <td><a href="/user/{{ thisuser.userid }}/group/{{ g.groupid }}/">{{ g.groupname }}</a></td>
+                    <td><a href="/user/{{ thisuser.logonid }}/group/{{ g.groupid }}/">{{ g.groupname }}</a></td>
                     <td class="w3-hide-small">{{ g.instrumentname }}</td>
                     <td class="w3-hide-small">{{ g.locationname }}</td>
                     <td>

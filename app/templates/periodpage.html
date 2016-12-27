@@ -18,7 +18,7 @@
 </script>
 {% endblock %}
 {% block breadcrumbs %}
-<li class="w3-hide-small"><a href="/user/{{ thisuser.userid }}/date/{{thisperiod.starttime.strftime('%Y-%m-%d')}}/" class="w3-hover-white">{{ thisperiod.starttime.strftime('%d %b') }}</a></li>
+<li class="w3-hide-small"><a href="/user/{{ thisuser.logonid }}/date/{{thisperiod.starttime.strftime('%Y-%m-%d')}}/" class="w3-hover-white">{{ thisperiod.starttime.strftime('%d %b') }}</a></li>
 <li class="w3-hide-small"><a href="#" class="w3-hover-white">{{ thisperiod.periodname }}</a></li>
 {% endblock %}
 {% block content %}
@@ -44,7 +44,7 @@
                 <table class="w3-table">
                     <tr>
                         <th>Event Name</th>
-                        <td><a href="/user/{{ thisuser.userid }}/group/{{ e.groupid }}">{{ e.groupname }}</a></td>
+                        <td><a href="/user/{{ thisuser.logonid }}/group/{{ e.groupid }}">{{ e.groupname }}</a></td>
                     </tr>
                     <tr>
                         <th>Location</th>
@@ -77,7 +77,7 @@
                 <tr>
                     <td>{{ p.firstname }} {{ p.lastname }}</td>
                     <td>{{ p.instrumentname }}</td>
-                    <td><a href="/user/{{ thisuser.userid }}/group/{{ p.groupid }}/">{{ p.groupname }}</a></td>
+                    <td><a href="/user/{{ thisuser.logonid }}/group/{{ p.groupid }}/">{{ p.groupname }}</a></td>
                     <td>{{ p.locationname }}</td>
                 </tr>
                 {% endfor %}

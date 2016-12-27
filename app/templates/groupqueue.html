@@ -39,7 +39,7 @@
                         {% endif %}
                     </td>
                     <td>{{ q.firstname }} {{ q.lastname }}</td>
-                    <td><a href="/user/{{ thisuser.userid }}/group/{{ q.groupid }}/edit/">{{ q.groupname }}</a></td>
+                    <td><a href="/user/{{ thisuser.logonid }}/group/{{ q.groupid }}/edit/">{{ q.groupname }}</a></td>
                     <td>
                         {% if q.starttime != None and q.endtime != None %}
                         {{ q.starttime.strftime('%d %b') }} {{ q.periodname }}

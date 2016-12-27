@@ -298,18 +298,18 @@
             <li class="w3-opennav w3-left w3-hide-large">
                 <a class="w3-hover-white w3-large" href="javascript:void(0)" onclick="w3_open()" style="padding:12px 12px !important;"><i class="fa fa-bars"></i></a>
             </li>
-            <li class="w3-opennav w3-left"><a href="/user/{{ thisuser.userid }}/" class="w3-hover-white w3-large" style="padding:12px 8px !important;"><i class="fa fa-home"></i></a></li>
+            <li class="w3-opennav w3-left"><a href="/user/{{ thisuser.logonid }}/" class="w3-hover-white w3-large" style="padding:12px 8px !important;"><i class="fa fa-home"></i></a></li>
             {% if thisuser.isactive == 1 %}
-            <li class="w3-opennav w3-left"><a href="/user/{{ thisuser.userid }}/grouprequest/" class="w3-hover-white w3-large" style="padding:12px 8px !important;"><i class="fa fa-music"></i></a></li>
-            <li class="w3-opennav w3-left"><a href="/user/{{ thisuser.userid }}/musiclibrary/" class="w3-hover-white w3-large" style="padding:12px 8px !important;"><i class="fa fa-book"></i></a></li>
-            <li class="w3-opennav w3-left"><a href="/user/{{ thisuser.userid }}/grouphistory/" class="w3-hover-white w3-large" style="padding:12px 8px !important;"><i class="fa fa-history"></i></a></li>
+            <li class="w3-opennav w3-left"><a href="/user/{{ thisuser.logonid }}/grouprequest/" class="w3-hover-white w3-large" style="padding:12px 8px !important;"><i class="fa fa-music"></i></a></li>
+            <li class="w3-opennav w3-left"><a href="/user/{{ thisuser.logonid }}/musiclibrary/" class="w3-hover-white w3-large" style="padding:12px 8px !important;"><i class="fa fa-book"></i></a></li>
+            <li class="w3-opennav w3-left"><a href="/user/{{ thisuser.logonid }}/grouphistory/" class="w3-hover-white w3-large" style="padding:12px 8px !important;"><i class="fa fa-history"></i></a></li>
             {% endif %}
             {% if thisuser.isannouncer == 1 %}
-            <li class="w3-opennav w3-left"><a href="/user/{{ thisuser.userid }}/announcement/" class="w3-hover-white w3-large" style="padding:12px 8px !important;"><i class="fa fa-comment"></i></a></li>
+            <li class="w3-opennav w3-left"><a href="/user/{{ thisuser.logonid }}/announcement/" class="w3-hover-white w3-large" style="padding:12px 8px !important;"><i class="fa fa-comment"></i></a></li>
             {% endif %}
             {% if thisuser.isadmin == 1 %}
-            <li class="w3-opennav w3-left"><a href="/user/{{ thisuser.userid }}/groupqueue/" class="w3-hover-white w3-large" style="padding:12px 8px !important;"><i class="fa fa-ellipsis-h"></i></a></li>
-            <li class="w3-opennav w3-left"><a href="/user/{{ thisuser.userid }}/useradmin/" class="w3-hover-white w3-large" style="padding:12px 8px !important;"><i class="fa fa-universal-access"></i></a></li>
+            <li class="w3-opennav w3-left"><a href="/user/{{ thisuser.logonid }}/groupqueue/" class="w3-hover-white w3-large" style="padding:12px 8px !important;"><i class="fa fa-ellipsis-h"></i></a></li>
+            <li class="w3-opennav w3-left"><a href="/user/{{ thisuser.logonid }}/useradmin/" class="w3-hover-white w3-large" style="padding:12px 8px !important;"><i class="fa fa-universal-access"></i></a></li>
             {% endif %}
             {% block navbar%}{% endblock %}
             <!-- Specific page breadcrumbs/title pages go here -->
@@ -328,31 +328,31 @@
         <!-- Specific page sidenav points go here -->
         {% block sidenav %}{% endblock %}
         <h4><b>Navigation</b></h4>
-        <a href="/user/{{ thisuser.userid }}/" class="w3-hover-black"><i class="fa fa-home"></i> Home</a>
+        <a href="/user/{{ thisuser.logonid }}/" class="w3-hover-black"><i class="fa fa-home"></i> Home</a>
         {% if thisuser.isactive == 1 %}
-        <a href="/user/{{ thisuser.userid }}/grouprequest/" class="w3-hover-black"><i class="fa fa-music"></i> Request a group</a>
-        <a href="/user/{{ thisuser.userid }}/musiclibrary/" class="w3-hover-black"><i class="fa fa-book"></i> Music Library</a>
+        <a href="/user/{{ thisuser.logonid }}/grouprequest/" class="w3-hover-black"><i class="fa fa-music"></i> Request a group</a>
+        <a href="/user/{{ thisuser.logonid }}/musiclibrary/" class="w3-hover-black"><i class="fa fa-book"></i> Music Library</a>
         {% endif %}
-        <a href="/user/{{ thisuser.userid }}/grouphistory/" class="w3-hover-black"><i class="fa fa-history"></i> Group History</a>
-        <a href="/user/{{ thisuser.userid }}/settings/" class="w3-hover-black"><i class="fa fa-cogs"></i> Settings</a>
+        <a href="/user/{{ thisuser.logonid }}/grouphistory/" class="w3-hover-black"><i class="fa fa-history"></i> Group History</a>
+        <a href="/user/{{ thisuser.logonid }}/settings/" class="w3-hover-black"><i class="fa fa-cogs"></i> Settings</a>
         <a href="mailto:{{ supportemailaddress }}" class="w3-hover-black"><i class="fa fa-envelope"></i> Contact Support</a>
         {% if thisuser.isannouncer == 1 %}
         <h4><b>Announcer</b></h4>
-        <a href="/user/{{ thisuser.userid }}/announcement/" class="w3-hover-black"><i class="fa fa-comment"></i> Announcement Editor</a>
+        <a href="/user/{{ thisuser.logonid }}/announcement/" class="w3-hover-black"><i class="fa fa-comment"></i> Announcement Editor</a>
         {% endif %}
         {% if thisuser.isadmin == 1 %}
         <h4><b>Admin</b></h4>
-        <a href="/user/{{ thisuser.userid }}/groupqueue/" class="w3-hover-black"><i class="fa fa-ellipsis-h"></i> Queued Groups</a>
-        <a href="/user/{{ thisuser.userid }}/useradmin/" class="w3-hover-black"><i class="fa fa-universal-access"></i> User Administration</a>
+        <a href="/user/{{ thisuser.logonid }}/groupqueue/" class="w3-hover-black"><i class="fa fa-ellipsis-h"></i> Queued Groups</a>
+        <a href="/user/{{ thisuser.logonid }}/useradmin/" class="w3-hover-black"><i class="fa fa-universal-access"></i> User Administration</a>
         <a class="accordion" href="javascript:void(0)">
             Database Editor <i class="fa fa-caret-down w3-right"></i>
         </a>
         <div id="editor" class="w3-accordion-content w3-card-4 panel">
-            <a href="/user/{{ thisuser.userid }}/setup/" class="w3-hover-black"><i class="fa fa-wrench"></i> Initial Setup</a>
-            <a href="/user/{{ thisuser.userid }}/objecteditor/grouptemplate/" class="w3-hover-black">Group Templates</a>
-            <a href="/user/{{ thisuser.userid }}/objecteditor/location/" class="w3-hover-black">Locations</a>
-            <a href="/user/{{ thisuser.userid }}/objecteditor/period/" class="w3-hover-black">Periods</a>
-            <a href="/user/{{ thisuser.userid }}/objecteditor/music/" class="w3-hover-black">Music Library</a>
+            <a href="/user/{{ thisuser.logonid }}/setup/" class="w3-hover-black"><i class="fa fa-wrench"></i> Initial Setup</a>
+            <a href="/user/{{ thisuser.logonid }}/objecteditor/grouptemplate/" class="w3-hover-black">Group Templates</a>
+            <a href="/user/{{ thisuser.logonid }}/objecteditor/location/" class="w3-hover-black">Locations</a>
+            <a href="/user/{{ thisuser.logonid }}/objecteditor/period/" class="w3-hover-black">Periods</a>
+            <a href="/user/{{ thisuser.logonid }}/objecteditor/music/" class="w3-hover-black">Music Library</a>
         </div>
         {% endif %}
     </nav>

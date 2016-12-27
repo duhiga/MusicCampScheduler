@@ -41,6 +41,7 @@ class user(Base):
     __tablename__ = 'users'
 
     userid = Column(UUID, primary_key=True, unique=True)
+    logonid = Column(UUID, unique=True)
     firstname = Column(String)
     lastname = Column(String)
     email = Column(String)
@@ -178,7 +179,7 @@ Base.metadata.create_all(engine)
 #this section manages the admin user. This will be the user that the admin will use to set up the database from the webapp
 session = Session()
 #try to find a user named 'Administrator' whos ID matches the app's configured AdminUUID
-admin = session.query(user).filter(user.userid == getconfig('AdminUUID'), user.firstname == 'Administrator').first()
+admin = session.query(user).filter(user.logonid == getconfig('AdminUUID'), user.firstname == 'Administrator').first()
 #if we don't find one, it means that this is the first boot, or the AdminUUID has been changed
 if admin is None:
     #try to find a user called Administrator
@@ -186,12 +187,12 @@ if admin is None:
     #if we find one, it means that someone has changed the AdminUUID parameter. Update this user to match it.
     if findadmin is not None:
         print('Found Administrator user did not match AdminUUID parameter. Updating the user details to match.')
-        findadmin.userid = getconfig('AdminUUID')
+        findadmin.logonid = getconfig('AdminUUID')
         session.merge(findadmin)
     #if we don't find one, this is the first boot of the app. Create the administrator user.
     else:
         print('Welcome to the music camp scheduler! This is the first boot of the app. Look in your applicaiton parameters for the AdminUUID parameter, then log in to the setup page with websitename/user/AdminUUID(replace this with your admin UUID)/setup/')
-        admin = user(userid = getconfig('AdminUUID'), firstname = 'Administrator', lastname = 'A', isactive = 0, \
+        admin = user(logonid = getconfig('AdminUUID'), userid = str(uuid.uuid4()), firstname = 'Administrator', lastname = 'A', isactive = 0, \
             arrival = datetime.datetime.strptime(getconfig('StartTime'), '%Y-%m-%d %H:%M'), departure = datetime.datetime.strptime(getconfig('EndTime'), '%Y-%m-%d %H:%M'))
         session.add(admin)
     session.commit()
@@ -312,6 +313,7 @@ def importusers(file):
         else:
             thisuser = user()
             thisuser.userid = str(uuid.uuid4())
+            thisuser.logonid = str(uuid.uuid4())
             thisuser.isactive = 1
             thisuser.grouprequestcount = 0
             thisuser.firstname = row[0]

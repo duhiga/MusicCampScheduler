@@ -46,7 +46,7 @@
             console.log("User requested absence");
             var post_absent = $.ajax({
                 type: 'POST',
-                url: '/user/{{ thisuser.userid }}/period/' + this.id + '/absent/confirm/'
+                url: '/user/{{ thisuser.logonid }}/period/' + this.id + '/absent/confirm/'
             });
 
             // handle response
@@ -62,7 +62,7 @@
             console.log("User Removed their Absence");
             var post_absent = $.ajax({
                 type: 'POST',
-                url: '/user/{{ thisuser.userid }}/period/' + this.id + '/absent/cancel/'
+                url: '/user/{{ thisuser.logonid }}/period/' + this.id + '/absent/cancel/'
             });
 
             // handle response
@@ -74,11 +74,11 @@
 
         //handler for the user changing the dropdown date picker
         $(document).on("change", '.date_select', function () {
-            window.location.replace("/user/{{ thisuser.userid }}/date/" + $(this).val() + "/")
+            window.location.replace("/user/{{ thisuser.logonid }}/date/" + $(this).val() + "/")
             /*
             request = {};
             request.date = $(this).val();
-            response = sendtoserver(request, 'POST', "/user/{{ thisuser.userid }}/requestschedule/");
+            response = sendtoserver(request, 'POST', "/user/{{ thisuser.logonid }}/requestschedule/");
             console.log(response);
             */
         });
@@ -92,7 +92,7 @@
 {% block content %}
 <header>
     <div class="w3-center">
-        <a class="w3-btn w3-white w3-border" href="/user/{{ thisuser.userid }}/date/{{ previousday.strftime('%Y-%m-%d') }}/">&#10094; Previous</a>
+        <a class="w3-btn w3-white w3-border" href="/user/{{ thisuser.logonid }}/date/{{ previousday.strftime('%Y-%m-%d') }}/">&#10094; Previous</a>
         <div class="w3-dropdown-hover">
             <button class="w3-btn w3-white w3-border">
                 {% if date.strftime('%Y-%m-%d') == today.strftime('%Y-%m-%d') %}
@@ -105,14 +105,14 @@
             <div class="w3-dropdown-content w3-border">
                 {% for d in dates %}
                 {% if d.strftime('%Y-%m-%d') == today.strftime('%Y-%m-%d') %}
-                <a href="/user/{{ thisuser.userid }}/date/{{d.strftime('%Y-%m-%d')}}/">Today</a>
+                <a href="/user/{{ thisuser.logonid }}/date/{{d.strftime('%Y-%m-%d')}}/">Today</a>
                 {% else %}
-                <a href="/user/{{ thisuser.userid }}/date/{{d.strftime('%Y-%m-%d')}}/">{{ d.strftime('%a, %d %b') }}</a>
+                <a href="/user/{{ thisuser.logonid }}/date/{{d.strftime('%Y-%m-%d')}}/">{{ d.strftime('%a, %d %b') }}</a>
                 {% endif %}
                 {% endfor %}
             </div>
         </div>
-        <a class="w3-btn w3-white w3-border" href="/user/{{ thisuser.userid }}/date/{{ nextday.strftime('%Y-%m-%d') }}/">Next &#10095;</a>
+        <a class="w3-btn w3-white w3-border" href="/user/{{ thisuser.logonid }}/date/{{ nextday.strftime('%Y-%m-%d') }}/">Next &#10095;</a>
     </div>
 </header>
     <div class="w3-row">
@@ -266,15 +266,15 @@
                             <div class="w3-panel">
                                 <!-- Give the user a link to the whole period details -->
                                 <div class="w3-half w3-hide-medium">
-                                    <a class="w3-btn-block w3-white w3-border w3-round-large" href="/user/{{ thisuser.userid }}/period/{{ p.periodid }}/">Full List</a>
+                                    <a class="w3-btn-block w3-white w3-border w3-round-large" href="/user/{{ thisuser.logonid }}/period/{{ p.periodid }}/">Full List</a>
                                 </div>
-                                <a class="w3-btn-block w3-white w3-border w3-round-large w3-hide-small w3-hide-large" href="/user/{{ thisuser.userid }}/period/{{ p.periodid }}/">Full List</a>
+                                <a class="w3-btn-block w3-white w3-border w3-round-large w3-hide-small w3-hide-large" href="/user/{{ thisuser.logonid }}/period/{{ p.periodid }}/">Full List</a>
                                 <!-- If this is an assigned group, show a link to the group details -->
                                 {% if p.groupname and p.ismusical == 1 %}
                                 <div class="w3-half w3-hide-medium">
-                                    <a class="w3-btn-block w3-white w3-border w3-round-large" href="/user/{{ thisuser.userid }}/group/{{ p.groupid }}/">Group List</a>
+                                    <a class="w3-btn-block w3-white w3-border w3-round-large" href="/user/{{ thisuser.logonid }}/group/{{ p.groupid }}/">Group List</a>
                                 </div>
-                                <a class="w3-btn-block w3-white w3-border w3-round-large w3-hide-small w3-hide-large" href="/user/{{ thisuser.userid }}/group/{{ p.groupid }}/">Group List</a>
+                                <a class="w3-btn-block w3-white w3-border w3-round-large w3-hide-small w3-hide-large" href="/user/{{ thisuser.logonid }}/group/{{ p.groupid }}/">Group List</a>
                                 {% endif %}
 
                                 <!-- If this is a future date, show the user the absent buttons -->
@@ -296,24 +296,24 @@
                                 <!-- Is this user is an conductor, they can request small groups or create instrumentation -->
                                 {% if thisuser.isconductor == 1 and date > today %}
                                 <div class="w3-half w3-hide-medium">
-                                    <a class="w3-btn-block w3-white w3-border w3-round-large" href="/user/{{ thisuser.userid }}/grouprequest/conductor/{{ p.periodid }}/">+Small Group</a>
+                                    <a class="w3-btn-block w3-white w3-border w3-round-large" href="/user/{{ thisuser.logonid }}/grouprequest/conductor/{{ p.periodid }}/">+Small Group</a>
                                 </div>
-                                <a class="w3-btn-block w3-white w3-border w3-round-large w3-hide-small w3-hide-large" href="/user/{{ thisuser.userid }}/grouprequest/conductor/{{ p.periodid }}/">+Small Group</a>
+                                <a class="w3-btn-block w3-white w3-border w3-round-large w3-hide-small w3-hide-large" href="/user/{{ thisuser.logonid }}/grouprequest/conductor/{{ p.periodid }}/">+Small Group</a>
                                 <div class="w3-half w3-hide-medium">
-                                    <a class="w3-btn-block w3-white w3-border w3-round-large" href="/user/{{ thisuser.userid }}/instrumentation/{{ p.periodid }}/">Instrumentation</a>
+                                    <a class="w3-btn-block w3-white w3-border w3-round-large" href="/user/{{ thisuser.logonid }}/instrumentation/{{ p.periodid }}/">Instrumentation</a>
                                 </div>
-                                <a class="w3-btn-block w3-white w3-border w3-round-large w3-hide-small w3-hide-large" href="/user/{{ thisuser.userid }}/instrumentation/{{ p.periodid }}/">Instrumentation</a>
+                                <a class="w3-btn-block w3-white w3-border w3-round-large w3-hide-small w3-hide-large" href="/user/{{ thisuser.logonid }}/instrumentation/{{ p.periodid }}/">Instrumentation</a>
                                 {% endif %}
                                 <!-- If this user is an admin, they can use the super editor, and create public events-->
                                 {% if thisuser.isadmin == 1 %}
                                 <div class="w3-half w3-hide-medium">
-                                    <a class="w3-btn-block w3-white w3-border w3-round-large" href="/user/{{ thisuser.userid }}/group/new/period/{{ p.periodid }}/edit/">+Full Group</a>
+                                    <a class="w3-btn-block w3-white w3-border w3-round-large" href="/user/{{ thisuser.logonid }}/group/new/period/{{ p.periodid }}/edit/">+Full Group</a>
                                 </div>
-                                <a class="w3-btn-block w3-white w3-border w3-round-large w3-hide-small w3-hide-large" href="/user/{{ thisuser.userid }}/group/new/period/{{ p.periodid }}/edit/">+Full Group</a>
+                                <a class="w3-btn-block w3-white w3-border w3-round-large w3-hide-small w3-hide-large" href="/user/{{ thisuser.logonid }}/group/new/period/{{ p.periodid }}/edit/">+Full Group</a>
                                 <div class="w3-half w3-hide-medium">
-                                    <a class="w3-btn-block w3-white w3-border w3-round-large" href="/user/{{ thisuser.userid }}/publicevent/{{ p.periodid }}/">Create Event</a>
+                                    <a class="w3-btn-block w3-white w3-border w3-round-large" href="/user/{{ thisuser.logonid }}/publicevent/{{ p.periodid }}/">Create Event</a>
                                 </div>
-                                <a class="w3-btn-block w3-white w3-border w3-round-large w3-hide-small w3-hide-large" href="/user/{{ thisuser.userid }}/publicevent/{{ p.periodid }}/">Create Event</a>
+                                <a class="w3-btn-block w3-white w3-border w3-round-large w3-hide-small w3-hide-large" href="/user/{{ thisuser.logonid }}/publicevent/{{ p.periodid }}/">Create Event</a>
                                 {% endif %}
                             </div>
                         </div>

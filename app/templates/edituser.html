@@ -73,7 +73,7 @@
                 console.log(request)
                 $.ajax({
                     type: 'POST',
-                    url: '/user/{{thisuser.userid}}/email/',
+                    url: '/user/{{thisuser.logonid}}/email/',
                     contentType: 'application/json;charset=UTF-8',
                     data: JSON.stringify(request, null),
                     success: function (data, textStatus) {
@@ -106,6 +106,62 @@
                 });
             }
         });
+
+        $(document).on("click", '#reset_logon', function (e) {
+            if (isClicked == false) {
+                isClicked = true;
+                $('.save_icon').hide();
+                $('.spin_icon').show();
+                var request = {};
+                request.submittype = 'reset'
+                console.log('Sending to server:')
+                console.log(request)
+                $.ajax({
+                    type: 'POST',
+                    url: '/user/{{thisuser.logonid}}/edituser/{{targetuser.userid}}/',
+                    contentType: 'application/json;charset=UTF-8',
+                    data: JSON.stringify(request, null),
+                    success: function (data, textStatus) {
+                        w3_close();
+                        //upon success, the server will return a message and a URL. give the user the message and send them to the URL.
+                        console.log(data);
+                        $('.save_icon').show();
+                        $('.spin_icon').hide();
+                        if (data.message != 'none' && data.success == 'true') {
+                            toast(data.message, 'success');
+                            isClicked = false;
+                        }
+                        else if (data.message != 'none' && data.success == 'false') {
+                            alert(data.message);
+                            $('.save_icon').show();
+                            $('.spin_icon').hide();
+                            isClicked = false;
+                        }
+                        else if (data.url != 'none') {
+                            window.location = data.url;
+                            $('.save_icon').show();
+                            $('.spin_icon').hide();
+                            isClicked = false;
+                        }
+                        else {
+                            $('.save_icon').show();
+                            $('.spin_icon').hide();
+                            isClicked = false;
+                        }
+                    },
+                    error: function (xhr, textStatus, errorThrown) {
+                        w3_close();
+                        $('.spin_icon').hide();
+                        $('.save_icon').show();
+                        alert('Submission failed with error: ' + errorThrown);
+                        isClicked = false;
+                    },
+                });
+            }
+        });
+
+
+
     });
 </script>
 {% endblock %}
@@ -134,6 +190,7 @@
     {% if thisuser.isadmin == 1 %}
     <h4><b>Tools</b></h4>
     <a href="#" class="w3-hover-black" id="send_email" data-method="POST"><i class="fa fa-envelope-o send_icon_email"></i><i class="fa fa-circle-o-notch fa-spin spin_icon_email"></i> Send Invite Email</a>
+    <a href="#" class="w3-hover-black" id="reset_logon" data-method="POST"><i class="fa fa-random save_icon"></i><i class="fa fa-circle-o-notch fa-spin spin_icon"></i> Reset User Logon</a>
     {% endif %}
     <h4><b>Save</b></h4>
     <a href="#" class="w3-hover-black submit_button" data-submittype="save" data-method="POST"><i class="fa fa-save save_icon"></i><i class="fa fa-circle-o-notch fa-spin spin_icon"></i> Save Changes</a>

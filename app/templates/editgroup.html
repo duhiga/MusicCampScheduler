@@ -172,7 +172,7 @@
             if (groupid == 'None') {
                 groupid = 'new';
             }
-            window.location = '/user/{{ thisuser.userid }}/group/' + groupid + '/period/' + $(this).val() + '/edit/';
+            window.location = '/user/{{ thisuser.logonid }}/group/' + groupid + '/period/' + $(this).val() + '/edit/';
         });
 
         //run when user changes the content of a player dropdown
@@ -237,8 +237,8 @@
 </div>
 {% endblock %}
 {% block breadcrumbs %}
-<li class="w3-hide-small"><a href="/user/{{ thisuser.userid }}/date/{{ selectedperiod.starttime.strftime('%Y-%m-%d') }}/" class="w3-hover-white">{{ selectedperiod.starttime.strftime('%d %b') }}</a></li>
-<li class="w3-hide-small"><a href="/user/{{ thisuser.userid }}/period/{{ selectedperiod.periodid }}/" class="w3-hover-white">{{ selectedperiod.periodname }}</a></li>
+<li class="w3-hide-small"><a href="/user/{{ thisuser.logonid }}/date/{{ selectedperiod.starttime.strftime('%Y-%m-%d') }}/" class="w3-hover-white">{{ selectedperiod.starttime.strftime('%d %b') }}</a></li>
+<li class="w3-hide-small"><a href="/user/{{ thisuser.logonid }}/period/{{ selectedperiod.periodid }}/" class="w3-hover-white">{{ selectedperiod.periodname }}</a></li>
 <li class="w3-hide-small w3-hide-medium"><a href="javascript:void(0)" class="w3-hover-white">{{ thisgroup.groupname }}</a></li>
 <li class="w3-hide-small w3-hide-medium"><a href="javascript:void(0)" class="w3-hover-white">Edit</a></li>
 {% endblock %}

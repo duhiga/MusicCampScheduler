@@ -880,6 +880,13 @@ def newmusic(logonid):
                     return jsonify(message = 'You must enter a name', url = 'none')
                 log('New Music: setting %s to be %s' % (key,value))
                 setattr(thismusic,key,value)
+
+            #try to find a grouptemplate that matches this instrumentation
+            matchingtemplate = session.query(grouptemplate).filter(*[getattr(thismusic,i) == getattr(grouptemplate,i) for i in instrumentlist]).first()
+            if matchingtemplate is not None:
+                print('New Music: Found a template matching this music: %s' % matchingtemplate.grouptemplatename)
+                thismusic.grouptemplateid = matchingtemplate.grouptemplateid
+            
             session.add(thismusic)
             session.commit()
             log('New Music: Successfully created')

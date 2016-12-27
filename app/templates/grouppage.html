@@ -66,7 +66,7 @@
                     <th>Music</th>
                     <td>
                         {% if thisgroup.musicid != None %}
-                        <a href="/user/{{ thisuser.userid }}/musiclibrary/{{ thisgroup.musicid }}/"><i class="fa fa-book"></i>{{ thismusic.composer }}: {{ thismusic.musicname }}</a>
+                        <a href="/user/{{ thisuser.userid }}/musiclibrary/details/{{ thisgroup.musicid }}/"><i class="fa fa-book"></i>{{ thismusic.composer }}: {{ thismusic.musicname }}</a>
                         {% elif thisgroup.musicwritein != None %}
                         {{ thisgroup.musicwritein }}
                         {% else %}

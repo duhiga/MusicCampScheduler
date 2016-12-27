@@ -215,3 +215,7 @@ However, delay the fade out process for 2.5 seconds */
         margin-left:250px;
     }
 }
+
+.no-decoration {
+    text-decoration: none;
+}

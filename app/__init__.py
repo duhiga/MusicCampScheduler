@@ -785,7 +785,7 @@ def musiclibrary(userid):
         else:
             return jsonify(message = message, url = 'none')
 
-@app.route('/user/<userid>/musiclibrary/<musicid>/')
+@app.route('/user/<userid>/musiclibrary/details/<musicid>/')
 def musicdetails(userid,musicid):
 
     session = Session()
@@ -818,6 +818,68 @@ def musicdetails(userid,musicid):
                                 campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
                                 playcount=playcount, \
                                 )
+    except Exception as ex:
+        log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))
+        message = ('Failed to execute %s with exception: %s. Try refreshing the page and trying again or contact camp administration.' % (request.method, ex))
+        session.rollback()
+        session.close()
+        if request.method == 'GET':
+            return errorpage(thisuser,'Failed to display page with exception: %s.' % ex)
+        else:
+            return jsonify(message = message, url = 'none')
+
+@app.route('/user/<userid>/musiclibrary/new/', methods=['GET', 'POST'])
+def newmusic(userid):
+
+    session = Session()
+    #gets the data associated with this user
+    thisuser = session.query(user).filter(user.userid == userid).first()
+    if thisuser is None:
+        return ('Did not find user in database. You have entered an incorrect URL address.')
+    try:
+        if request.method == 'GET':
+            grouptemplates = session.query(grouptemplate).all()
+            grouptemplates_serialized = [i.serialize for i in grouptemplates]
+            return render_template('newmusic.html', \
+                                    thisuser=thisuser, \
+                                    grouptemplates=grouptemplates, \
+                                    grouptemplates_serialized=grouptemplates_serialized, \
+                                    instrumentlist_string=getconfig('Instruments'), \
+                                    campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
+                                    )
+
+        if request.method == 'POST':
+            #format the packet received from the server as JSON
+            content = request.json
+            found_non_zero = False
+            for i in getconfig('Instruments').split(","):
+                if content[i] != 0 and content[i] != '' and content[i] != '0' and content[i] is not None:
+                    found_non_zero = True
+            if not found_non_zero:
+                session.rollback()
+                session.close()
+                return jsonify(message = 'You cannot submit music without instrumentation.', url = 'none')
+            thismusic = music()
+            log('New Music: Submitted by user %s %s' % (thisuser.firstname, thisuser.lastname))
+            for key,value in content.iteritems():
+                if (value is None or value == 'null' or value == '') and key == 'composer':
+                    session.rollback()
+                    session.close()
+                    return jsonify(message = 'You must enter a composer', url = 'none')
+                if (value is None or value == 'null' or value == '') and key == 'name':
+                    session.rollback()
+                    session.close()
+                    return jsonify(message = 'You must enter a name', url = 'none')
+                log('New Music: setting %s to be %s' % (key,value))
+                setattr(thismusic,key,value)
+            session.add(thismusic)
+            session.commit()
+            log('New Music: Successfully created')
+            url = ('/user/' + str(thisuser.userid) + '/musiclibrary/')
+            session.close()
+            flash(u'New Music Accepted', 'success')
+            return jsonify(message = 'none', url = url)
+
     except Exception as ex:
         log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))
         message = ('Failed to execute %s with exception: %s. Try refreshing the page and trying again or contact camp administration.' % (request.method, ex))

@@ -45,7 +45,7 @@
                 {% if thismusic.link != None %}
                 <tr>
                     <th>Sheet Music</th>
-                    <td><a href="{{ thismusic.link }}">IMSLP</a></td>
+                    <td><a href="{{ thismusic.link }}">{{ thismusic.link }}</a></td>
                 </tr>
                 {% endif %}
                 {% if thismusic.notes != None %}
@@ -61,7 +61,7 @@
             </table>
         </p>
         {% if canplay == True %}
-        <a class="w3-btn-block w3-white w3-border w3-round" href="/user/{{ thisuser.userid }}/grouprequest/music/{{ thismusic.musicid }}"><i class="fa fa-music"></i> Request to play this work</a>
+        <a class="w3-btn-block w3-green w3-border w3-round" href="/user/{{ thisuser.userid }}/grouprequest/music/{{ thismusic.musicid }}"><i class="fa fa-music"></i> Request to play this work</a>
         {% endif %}
             </div>
     

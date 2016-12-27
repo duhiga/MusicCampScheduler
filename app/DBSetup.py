@@ -66,7 +66,7 @@ class music(Base):
     notes = Column(String)
     link = Column(String)
     grouptemplateid = Column(Integer, ForeignKey('grouptemplates.grouptemplateid'))
-
+    
     @property
     def serialize(self):
         return serialize_class(self, self.__class__)

@@ -1475,7 +1475,10 @@ def edituser(logonid, targetuserid):
             session.close()
             return errorpage(thisuser,'You do not have permission to view this page.')
         if targetuserid is not None:
-            targetuser = session.query(user).filter(user.userid == targetuserid).first()
+            if targetuserid == 'self':
+                targetuser = session.query(user).filter(user.userid == thisuser.userid).first()
+            else:
+                targetuser = session.query(user).filter(user.userid == targetuserid).first()
             if targetuser is None:
                     session.close()
                     return errorpage(thisuser,'Could not find requested user in database.')
@@ -1611,7 +1614,7 @@ def newuser(logonid):
 
 @app.route('/user/<logonid>/settings/', methods=['GET', 'POST'])
 def settings(logonid):
-    return edituser(logonid,userid)
+    return edituser(logonid,'self')
 
 #sends bulk emails to an array of users sent with the request
 @app.route('/user/<logonid>/email/', methods=['POST'])

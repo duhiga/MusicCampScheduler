@@ -48,7 +48,7 @@ def getschedule(session,thisuser,date):
 
     schedule = []
     #for each period in the requested day
-    for p in session.query(period).filter(period.starttime > date, period.endtime < nextday).all():
+    for p in session.query(period).filter(period.starttime > date, period.endtime < nextday).order_by(period.starttime).all():
         #try to find a group assignment for the user
         g = session.query(group.groupname, period.starttime, period.endtime, location.locationname, group.groupid, group.ismusical, group.iseveryone, \
                             period.periodid, period.periodname, groupassignment.instrumentname, period.meal, group.groupdescription, music.composer, music.musicname, group.musicwritein).\
@@ -1885,6 +1885,10 @@ def objecteditor(logonid, input, objectid=None):
             table = 'music'
             type = 'Music'
             objects_query = session.query(music)
+        elif input == 'group':
+            table = 'group'
+            type = 'Group'
+            objects_query = session.query(group)
         else:
             session.close()
             return render_template('errorpage.html', \
@@ -1923,6 +1927,8 @@ def objecteditor(logonid, input, objectid=None):
                                 object = period()
                             elif table == 'music':
                                 object = music()
+                            elif table == 'group':
+                                object = group()
                             session.add(object)
                         else:
                             log('Trying to find a %s object with id %s' % (table, o[table + 'id']))
@@ -1936,7 +1942,7 @@ def objecteditor(logonid, input, objectid=None):
                                 log('Changing object %s key %s to %s' % (table, key, value))
                                 setattr(object,key,value)
                         session.merge(object)
-                        url = '/user/' + thisuser.userid + '/objecteditor/' + table + '/'
+                        url = '/user/' + thisuser.logonid + '/objecteditor/' + table + '/'
                         session.commit()
                         session.close()
                         return jsonify(message = 'none', url = url)
@@ -1948,7 +1954,7 @@ def objecteditor(logonid, input, objectid=None):
         if request.method == 'DELETE':
             try:
                 session.delete(objects_query.filter(getattr(globals()[table],(table + 'id')) == request.json).first())
-                url = '/user/' + thisuser.userid + '/objecteditor/' + table + '/'
+                url = '/user/' + thisuser.logonid + '/objecteditor/' + table + '/'
                 session.commit()
                 session.close()
                 return jsonify(message = 'none', url = url)

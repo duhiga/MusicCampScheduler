@@ -58,6 +58,9 @@
                     {% if key != table + 'id' %}
                     <th>{{ key }}</th>
                     <td><input type="text" class="attribute" data-key="{{ key }}" data-mapping="{{ o[id] }}" value="{{ o[key] }}"></td>
+                    {% else %}
+                    <th>{{ key }}</th>
+                    <td>{{ o[key] }}</td>
                     {% endif %}
                 </tr>
                 {% endfor %}

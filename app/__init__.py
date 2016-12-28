@@ -452,17 +452,20 @@ def editgroup(logonid,groupid,periodid=None):
             else:
                 lastarrival = datetime.datetime.strptime(getconfig('StartTime'), '%Y-%m-%d %H:%M')
                 firstdeparture = datetime.datetime.strptime(getconfig('EndTime'), '%Y-%m-%d %H:%M')
+            log('Last Arrival time of players in this group: %s' % lastarrival)
+            log('First Departure time of players in this group: %s' % firstdeparture)
             periods = []
             for p in periodlist:
-                if (currentperiod and p.periodid == currentperiod.periodid) \
-                        or (len(session.query(user.userid).join(groupassignment).join(group).join(period).filter(group.periodid == p.periodid, or_(user.userid.in_(thisgroupplayers_query), group.musicid == thisgroup.musicid)).all()) == 0\
-                        and p.starttime > lastarrival and p.starttime < firstdeparture):
+                if thisgroupplayers_query.first() is None or ((currentperiod and p.periodid == currentperiod.periodid) \
+                        or (len(session.query(user.userid).join(groupassignment).join(group).join(period).filter(group.periodid == p.periodid, or_(user.userid.in_(thisgroupplayers_query))).all()) == 0\
+                        and p.starttime > lastarrival and p.starttime < firstdeparture)):
                     periods.append(p)
 
             #if there was no selected period by the user, select the first period
             if periodid is not None:
                 selectedperiod = session.query(period).filter(period.periodid == periodid).first()
             elif currentperiod is None:
+                log('This is a periodless group. Selecting a period for the group.')
                 tomorrow = datetime.datetime.combine(datetime.date.today(), datetime.time.min) + datetime.timedelta(days=1)
                 for p in periods:
                     if p.starttime > tomorrow and session.query(period.periodid).join(group).filter(period.periodid == p.periodid, group.iseveryone == 1).first() is None:
@@ -470,7 +473,7 @@ def editgroup(logonid,groupid,periodid=None):
                         break
             else:
                 selectedperiod = currentperiod
-
+            log('This group selected period is %s on date %s' % (selectedperiod.periodname, selectedperiod.starttime))
             thislocation = session.query(location).join(group).filter(group.groupid == groupid).first()
             #gets the list of players playing in the given group
             thisgroupplayers = session.query(user.userid, user.firstname, user.lastname, groupassignment.instrumentname).join(groupassignment).join(group).\
@@ -490,13 +493,13 @@ def editgroup(logonid,groupid,periodid=None):
                     'instrumentname': p.instrumentname, 'grade': p.grade, 'isprimary': p.isprimary})
 
             #Get a list of the available music not being used in the period selected
-            musics_used_query = session.query(music.musicid).join(group).join(period).filter(period.periodid == periodid, group.groupid != thisgroup.groupid)
+            musics_used_query = session.query(music.musicid).join(group).join(period).filter(period.periodid == selectedperiod.periodid, group.groupid != thisgroup.groupid)
             musics = session.query(music).filter(~music.musicid.in_(musics_used_query)).all()
             musics_serialized = [i.serialize for i in musics]
             thismusic = session.query(music).filter(music.musicid == thisgroup.musicid).first()
 
             #get a list of the locations not being used in this period
-            locations_used_query = session.query(location.locationid).join(group).join(period).filter(period.periodid == periodid, group.groupid != thisgroup.groupid)
+            locations_used_query = session.query(location.locationid).join(group).join(period).filter(period.periodid == selectedperiod.periodid, group.groupid != thisgroup.groupid, location.locationname != 'None')
             locations = session.query(location).filter(~location.locationid.in_(locations_used_query)).all()
             log('This groups status is %s' % thisgroup.status)
 
@@ -566,6 +569,7 @@ def editgroup(logonid,groupid,periodid=None):
             thisgroupassignments = session.query(groupassignment).filter(groupassignment.groupid == thisgroup.groupid).all()
             for a in thisgroupassignments:
                 session.delete(a)
+
             #add the content in the packet to this group's attributes
             for key,value in content.iteritems():
                 if (value is None or value == 'null' or value == '') and key != 'primary_only':
@@ -578,6 +582,24 @@ def editgroup(logonid,groupid,periodid=None):
                 session.add(thisgroup)
                 thisgroup.requesttime = datetime.datetime.now()
                 session.commit()
+
+            location_clash = session.query(location.locationname, group.groupid).join(group).join(period).filter(period.periodid == thisperiod.periodid, location.locationid == content['locationid'], group.groupid != thisgroup.groupid).first()
+            if location_clash is not None:
+                log('Group %s is already using this location %s' % (location_clash.groupid, location_clash.locationname))
+                session.rollback()
+                session.close()
+                return jsonify(message = 'This location is already being used at this time. Select another.', url = 'none')
+
+            if content['musicid'] != '' and content['musicid'] != 'null' and content['musicid'] is not None:
+                music_clash = session.query(music.musicname, music.composer, group.groupid).join(group).join(period).filter(period.periodid == thisperiod.periodid, music.musicid == content['musicid'], group.groupid != thisgroup.groupid)
+                if music_clash is not None:
+                    log('Group %s is already using this music %s %s' % (music_clash.groupid, music_clash.composer, music_clash.musicname))
+                    session.rollback()
+                    session.close()
+                    return jsonify(message = 'This music is already being used at this time. You cannot schedule in this period.', url = 'none')
+
+
+
             foundfilled = False
             for p in content['objects']:
                 if p['userid'] != '' and p['userid'] is not None:

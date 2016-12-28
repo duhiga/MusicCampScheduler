@@ -306,7 +306,7 @@ def mark_absent(logonid,periodid,command):
 
     currentassignment = session.query(group.groupname, groupassignment.groupassignmentid).\
                     join(groupassignment).join(user).join(period).\
-                    filter(period.periodid == periodid, user.userid == userid).first()
+                    filter(period.periodid == periodid, user.userid == thisuser.userid).first()
     log('User is currently assigned to ' + str(currentassignment))
     #case if the user is not assigned to anything, and attempted to mark themselves as absent
     if currentassignment == None and command == 'confirm':
@@ -316,7 +316,7 @@ def mark_absent(logonid,periodid,command):
         log('found absent group %s' % absentgroup)
         #assign this person to the absent group
         try:
-            session.add(groupassignment(userid = userid, groupid = absentgroup.groupid))
+            session.add(groupassignment(userid = thisuser.userid, groupid = absentgroup.groupid))
             session.commit()
             session.close()
             return 'Now user marked absent for period'

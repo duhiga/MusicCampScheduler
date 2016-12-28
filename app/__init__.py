@@ -591,7 +591,7 @@ def editgroup(logonid,groupid,periodid=None):
                 return jsonify(message = 'This location is already being used at this time. Select another.', url = 'none')
 
             if content['musicid'] != '' and content['musicid'] != 'null' and content['musicid'] is not None:
-                music_clash = session.query(music.musicname, music.composer, group.groupid).join(group).join(period).filter(period.periodid == thisperiod.periodid, music.musicid == content['musicid'], group.groupid != thisgroup.groupid)
+                music_clash = session.query(music.musicname, music.composer, group.groupid).join(group).join(period).filter(period.periodid == thisperiod.periodid, music.musicid == content['musicid'], group.groupid != thisgroup.groupid).first()
                 if music_clash is not None:
                     log('Group %s is already using this music %s %s' % (music_clash.groupid, music_clash.composer, music_clash.musicname))
                     session.rollback()

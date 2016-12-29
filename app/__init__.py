@@ -1198,8 +1198,9 @@ def grouprequest(logonid,periodid=None,musicid=None):
                 #add the grouprequest to the database
                 session.add(grouprequest)    
             #If we have got to here, the user successfully created their group (or was matchmade). We need to increment their total.
-            thisuser.grouprequestcount = thisuser.grouprequestcount + 1
-            log('%s %s has now made %s group requests' % (thisuser.firstname, thisuser.lastname, thisuser.grouprequestcount))
+            if not conductorpage:
+                thisuser.grouprequestcount = thisuser.grouprequestcount + 1
+                log('%s %s has now made %s group requests' % (thisuser.firstname, thisuser.lastname, thisuser.grouprequestcount))
             #for each player object in the players array in the JSON packet
             for p in content['objects']:
                 #if we are on the conductorpage, you cannot submit blank players. Give the user an error and take them back to their home.

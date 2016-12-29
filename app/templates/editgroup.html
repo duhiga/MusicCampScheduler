@@ -7,9 +7,6 @@
         if (ob.attr('id') == 'groupname' && ob.val() == '') {
             return false
         }
-        if (ob.attr('id') == 'periodid' && ob.val() == '') {
-            return false
-        }
         else {
             return true
         }
@@ -167,12 +164,14 @@
 
         //when user changes the period dropdown box, reload the page with data from the new period
         $(document).on("change", '#periodid', function () {
-            console.log('User selected period ' + $(this).val() + ', reloading page for that period');
-            groupid = '{{ thisgroup.groupid }}'
-            if (groupid == 'None') {
-                groupid = 'new';
+            if ($(this).val() != '') {
+                console.log('User selected period ' + $(this).val() + ', reloading page for that period');
+                groupid = '{{ thisgroup.groupid }}'
+                if (groupid == 'None') {
+                    groupid = 'new';
+                }
+                window.location = '/user/{{ thisuser.logonid }}/group/' + groupid + '/period/' + $(this).val() + '/edit/';
             }
-            window.location = '/user/{{ thisuser.logonid }}/group/' + groupid + '/period/' + $(this).val() + '/edit/';
         });
 
         //run when user changes the content of a player dropdown
@@ -370,6 +369,7 @@
                 {% endif %}
                 <td>
                     <select id="periodid" class="form-attribute form-validate w3-select w3-border">
+                        <option value=""></option>
                         {% for p in periods %}
                         {% if p.periodid == selectedperiod.periodid %}
                         <option value="{{ p.periodid }}" selected="selected">{{ p.starttime.strftime('%d %b') }}: {{ p.periodname }}</option>

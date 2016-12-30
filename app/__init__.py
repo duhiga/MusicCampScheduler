@@ -953,9 +953,6 @@ def grouprequest(logonid,periodid=None,musicid=None):
         if (thisuser.isactive != 1) and periodid is None:
             session.close()
             return errorpage(thisuser,'Your account is currently set to inactive. Inactive users cannot request groups. Is this is a mistake, navigate to your settings and set yourself to active.')
-        if (thisuser.arrival > intwodays) and periodid is None:
-            session.close()
-            return errorpage(thisuser,'You are not attending camp yet, so you cannot request a group. If this is a mistake, you can change your arrival time in your settings.')
         if (thisuser.departure < intwodays) and periodid is None:
             session.close()
             return errorpage(thisuser,"You are set to depart camp in less than one days' time, so you cannot request a group. If this is incorrect, you can change your departure time in your settings.")
@@ -981,15 +978,15 @@ def grouprequest(logonid,periodid=None,musicid=None):
             if thisuser.grouprequestcount == 0 or thisuser.grouprequestcount == None or thisuser.grouprequestcount == '':
                 thisuser.grouprequestcount = 0
                 alreadyrequestedratio = 0
-            log('GROUPREQUEST: User has requested %s groups since the start of camp. Maximum allowance is %s per day, and there have been %s days of camp so far.' \
-                % (thisuser.grouprequestcount, getconfig('DailyGroupRequestLimit'), \
-                (now - datetime.datetime.strptime(getconfig('StartTime'), '%Y-%m-%d %H:%M')).days + 1))
-            if thisuser.grouprequestcount >= ((now - datetime.datetime.strptime(getconfig('StartTime'), '%Y-%m-%d %H:%M')).days + 1) * int(getconfig('DailyGroupRequestLimit')):
+            log('GROUPREQUEST: User has requested %s groups' % thisuser.grouprequestcount)
+            log('GROUPREQUEST: Maximum allowance is %s plus an extra %s per day' % (getconfig('BonusGroupRequests'), getconfig('DailyGroupRequestLimit')))
+            log('GROUPREQUEST: User arrived at camp at %s.' % thisuser.arrival)
+            log('GROUPREQUEST: User is allowed total %s requests.' % (((now - thisuser.arrival).days + 2) * float(getconfig('DailyGroupRequestLimit')) + float(getconfig('BonusGroupRequests'))))
+            if thisuser.grouprequestcount >= (((now - thisuser.arrival).days + 2) * float(getconfig('DailyGroupRequestLimit')) + float(getconfig('BonusGroupRequests'))):
                 log('GROUPREQUEST: This user is denied access to request another group.')
                 session.close()
-                return errorpage(thisuser,"You have requested %s groups throughout the camp, and you're allowed %s per day. Unfortunately, the camp has been running %s days and you've reached the limit. Please come back tomorrow!" % \
-                    (thisuser.grouprequestcount, getconfig('DailyGroupRequestLimit'), \
-                    (now - datetime.datetime.strptime(getconfig('StartTime'), '%Y-%m-%d %H:%M')).days + 1))
+                return errorpage(thisuser,"You have requested %s groups throughout the camp, and you're allowed %s per day (as well as %s welcome bonus requests!). You've reached your limit for today. Come back tomorrow!" % \
+                    (thisuser.grouprequestcount, getconfig('DailyGroupRequestLimit'), getconfig('BonusGroupRequests')))
         
         #The below runs when a user visits the grouprequest page
         if request.method == 'GET':

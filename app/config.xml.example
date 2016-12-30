@@ -20,6 +20,7 @@
     StartTime="2016-12-28 18:00"
     EndTime="2017-01-05 07:45"
     DailyGroupRequestLimit="1"
+    BonusGroupRequests="1"
     GroupRequestPlayerLimit="8"
     AutoAssignLimitHigh="1"
     AutoAssignLimitLow="1"

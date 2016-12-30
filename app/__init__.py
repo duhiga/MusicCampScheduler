@@ -467,10 +467,14 @@ def editgroup(logonid,groupid,periodid=None):
             elif currentperiod is None:
                 log('This is a periodless group. Selecting a period for the group.')
                 tomorrow = datetime.datetime.combine(datetime.date.today(), datetime.time.min) + datetime.timedelta(days=1)
+                foundperiod = False
                 for p in periods:
                     if p.starttime > tomorrow and session.query(period.periodid).join(group).filter(period.periodid == p.periodid, group.iseveryone == 1).first() is None:
                         selectedperiod = p
+                        foundperiod = True
                         break
+                if not foundperiod:
+                    selectedperiod = None
             else:
                 selectedperiod = currentperiod
             log('This group selected period is %s on date %s' % (selectedperiod.periodname, selectedperiod.starttime))

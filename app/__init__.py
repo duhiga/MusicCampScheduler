@@ -1192,11 +1192,11 @@ def grouprequest(logonid,periodid=None,musicid=None):
                         #if the original group doesn't have music already assigned, we can assign it music from the user request
                         if musicstatus is not None:
                             setattr(grouprequest,musicstatus,musicvalue)
-                        match = True
+                        Match = True
                         break
             #if we didn't get a match, we need to create the grouprequest, we won't be using an old one
             if Match == False:
-                log('No group already exists with the correct instrumentation slots. Creating a new group.')
+                log('MATCHMAKING: No group already exists with the correct instrumentation slots. Creating a new group.')
                 #add the grouprequest to the database
                 session.add(grouprequest)    
             #If we have got to here, the user successfully created their group (or was matchmade). We need to increment their total.

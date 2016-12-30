@@ -1425,14 +1425,17 @@ def periodpage(logonid,periodid):
             join(groupassignment).join(group).join(period).\
             filter(user.isactive == 1, user.arrival <= thisperiod.starttime, user.departure >= thisperiod.endtime, group.periodid == thisperiod.periodid, group.status == 'Confirmed')
         #find all other players to be displayed to the user
-        nonplayers = (session.query(user.userid, user.firstname, user.lastname).filter(~user.userid.in_(players_in_groups_query), user.isactive == 1, user.arrival <= thisperiod.starttime, user.departure >= thisperiod.endtime).all())
+        unallocatedplayers = session.query(user.userid, user.firstname, user.lastname, instrument.instrumentname).join(instrument).filter(~user.userid.in_(players_in_groups_query), user.isactive == 1, user.arrival <= thisperiod.starttime, user.departure >= thisperiod.endtime, instrument.isprimary == 1).all()
+        unallocatedplayers_query = session.query(user.userid).join(instrument).filter(~user.userid.in_(players_in_groups_query), user.isactive == 1, user.arrival <= thisperiod.starttime, user.departure >= thisperiod.endtime, instrument.isprimary == 1)
+        nonplayers = session.query(user.userid, user.firstname, user.lastname, sqlalchemy.sql.expression.literal_column("'Non Player'").label("instrumentname")).filter(~user.userid.in_(players_in_groups_query), ~user.userid.in_(unallocatedplayers_query), user.isactive == 1, user.arrival <= thisperiod.starttime, user.departure >= thisperiod.endtime)
         thisperiod = session.query(period).filter(period.periodid == periodid).first()
         session.close()
         return render_template('periodpage.html', \
                                 players=players, \
+                                unallocatedplayers=unallocatedplayers, \
                                 publicevents=publicevents, \
                                 nonplayers=nonplayers, \
-                                campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
+                                campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=(getconfig('Instruments') + ',Non Player').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
                                 thisuser=thisuser, \
                                 thisperiod=thisperiod, \
                                 )

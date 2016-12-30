@@ -81,6 +81,14 @@
                     <td>{{ p.locationname }}</td>
                 </tr>
                 {% endfor %}
+                {% for p in unallocatedplayers %}
+                <tr>
+                    <td>{{ p.firstname }} {{ p.lastname }}</td>
+                    <td>{{ p.instrumentname }}</td>
+                    <td>{{ p.groupname }}</td>
+                    <td>{{ p.locationname }}</td>
+                </tr>
+                {% endfor %}
                 {% for p in nonplayers %}
                 <tr>
                     <td>{{ p.firstname }} {{ p.lastname }}</td>

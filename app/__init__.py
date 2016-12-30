@@ -1427,7 +1427,7 @@ def periodpage(logonid,periodid):
         #find all other players to be displayed to the user
         unallocatedplayers = session.query(user.userid, user.firstname, user.lastname, instrument.instrumentname).join(instrument).filter(~user.userid.in_(players_in_groups_query), user.isactive == 1, user.arrival <= thisperiod.starttime, user.departure >= thisperiod.endtime, instrument.isprimary == 1).all()
         unallocatedplayers_query = session.query(user.userid).join(instrument).filter(~user.userid.in_(players_in_groups_query), user.isactive == 1, user.arrival <= thisperiod.starttime, user.departure >= thisperiod.endtime, instrument.isprimary == 1)
-        nonplayers = session.query(user.userid, user.firstname, user.lastname, sqlalchemy.sql.expression.literal_column("'Non Player'").label("instrumentname")).filter(~user.userid.in_(players_in_groups_query), ~user.userid.in_(unallocatedplayers_query), user.isactive == 1, user.arrival <= thisperiod.starttime, user.departure >= thisperiod.endtime)
+        nonplayers = session.query(user.userid, user.firstname, user.lastname, sqlalchemy.sql.expression.literal_column("'Non Player'").label("instrumentname")).filter(~user.userid.in_(players_in_groups_query), ~user.userid.in_(unallocatedplayers_query), user.isactive == 1, user.arrival <= thisperiod.starttime, user.departure >= thisperiod.endtime).all()
         thisperiod = session.query(period).filter(period.periodid == periodid).first()
         session.close()
         return render_template('periodpage.html', \

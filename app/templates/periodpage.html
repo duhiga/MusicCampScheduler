@@ -52,7 +52,7 @@
                     </tr>
                     <tr>
                         <th>Attendees</th>
-                        <td>{{ players|length + nonplayers|length }}</td>
+                        <td>{{ players|length + unallocatedplayers|length + nonplayers|length }}</td>
                     </tr>
                 </table>
                 {% if e.groupdescription != None %}

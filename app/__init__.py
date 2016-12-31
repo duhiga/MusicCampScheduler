@@ -678,20 +678,22 @@ def editgroup(logonid,groupid,periodid=None):
                                 #if we found at least one possible player
                                 if len(possible_players_query.all()) > 0:
                                     #get the players that have already played in groups at this camp, and inverse it to get the players with playcounts of zero. Limit the query to just the spots we have left.
-                                    already_played_query = session.query(user.userid).join(groupassignment).join(group).filter(group.ismusical == 1).\
-                                        filter(groupassignment.userid.in_(possible_players_query))
-                                    final_list = session.query(user.userid,sqlalchemy.sql.expression.literal_column("0").label("playcount")).filter(user.userid.in_(possible_players_query)).\
+                                    already_played_query = session.query(user.userid).join(groupassignment).join(group).filter(group.ismusical == 1, groupassignment.instrumentname != 'Conductor', groupassignment.userid.in_(possible_players_query))
+                                    final_list = session.query(user.userid,user.firstname,user.lastname,sqlalchemy.sql.expression.literal_column("0").label("groupname"),sqlalchemy.sql.expression.literal_column("0").label("playcount")).filter(user.userid.in_(possible_players_query)).\
                                                     filter(~user.userid.in_(already_played_query)).limit(requiredplayers).all()
                                     #append the players that have already played, ordered by the number of times they've played. Keep the query limited to just the number we need. The admin controls if the query allows non-primary instruments by the content['primary_only']
                                     if len(final_list) < requiredplayers:
-                                        for p in (session.query(user.userid, func.count(groupassignment.userid).label("playcount")).group_by(user.userid).outerjoin(groupassignment).\
-                                                outerjoin(group).outerjoin(instrument, groupassignment.userid == instrument.userid).filter(group.ismusical == 1).filter(groupassignment.userid.in_(possible_players_query)).\
+                                        for p in (session.query(user.userid,user.firstname,user.lastname,func.count(user.userid).label("playcount")).\
+                                                group_by(user.userid).\
+                                                outerjoin(groupassignment).\
+                                                outerjoin(group, group.groupid == groupassignment.groupid).\
+                                                filter(group.ismusical == 1, groupassignment.instrumentname != 'Conductor', group.periodid != None, groupassignment.userid.in_(possible_players_query), ).\
                                                 order_by(func.count(groupassignment.userid)).limit(requiredplayers - len(final_list)).all()):
                                             final_list.append(p)
                                     log('Players in final list with playcounts:')
                                     #add groupassignments for the final player list
                                     for pl in final_list:
-                                        log('Selected %s with playcount %s to play %s' % (pl.userid, pl.playcount, i))
+                                        log('Selected %s %s with playcount %s to play %s' % (pl.firstname, pl.lastname, pl.playcount, i))
                                         playergroupassignment = groupassignment(userid = pl.userid, groupid = thisgroup.groupid, instrumentname = i)
                                         session.add(playergroupassignment)
 

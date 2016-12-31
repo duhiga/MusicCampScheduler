@@ -10,6 +10,45 @@
             });
         });
     });
+
+    $(document).ready(function () {
+        $('.reset_spin').hide();
+
+        $(document).on("click", '.reset', function (e) {
+            $('.reset_icon[data-pairing="' + $(this).attr('id') + '"]').hide();
+            $('.reset_spin[data-pairing="' + $(this).attr('id') + '"]').show();
+            var request = {};
+            var ob = $(this);
+            request.groupid = ob.attr('id');
+            console.log('Sending to server:')
+            console.log(request);
+            $.ajax({
+                type: 'POST',
+                url: '/user/{{thisuser.logonid}}/groupqueue/',
+                contentType: 'application/json;charset=UTF-8',
+                data: JSON.stringify(request, null),
+                success: function (data, textStatus) {
+                    //upon success, the server will return a message and a URL. give the user the message and send them to the URL.
+                    console.log(data);
+                    $('.reset_icon[data-pairing="' + ob.attr('id') + '"]').show();
+                    $('.reset_spin[data-pairing="' + ob.attr('id') + '"]').hide();
+                    if (data.message == 'none' && data.success == 'true') {
+                        toast('Reset Group Period and Location', 'success');
+                        $('.period_text[data-pairing="' + ob.attr('id') + '"]').html('&nbsp;');
+                    }
+                    else if (data.message != 'none' && data.success == 'false') {
+                        alert(data.message);
+                    }
+                },
+                error: function (xhr, textStatus, errorThrown) {
+                    $('.reset_icon[data-pairing="' + ob.attr('id') + '"]').show();
+                    $('.reset_spin[data-pairing="' + ob.attr('id') + '"]').hide();
+                    alert('Submission failed with error: ' + errorThrown);
+                },
+            });
+        });
+    });
+
 </script>
 {% endblock %}
 {% block breadcrumbs %}
@@ -27,6 +66,7 @@
                     <th><div class="w3-hide-small">Group Name</div><div class="w3-hide-medium w3-hide-large">Name</div></th>
                     <th>Period</th>
                     <th>Status</th>
+                    <th>Reset</th>
                 </tr>
             </thead>
             <tbody class="zebra-table">
@@ -40,12 +80,18 @@
                     </td>
                     <td>{{ q.firstname }} {{ q.lastname }}</td>
                     <td><a href="/user/{{ thisuser.logonid }}/group/{{ q.groupid }}/edit/">{{ q.groupname }}</a></td>
-                    <td>
+                    <td class="period_text" data-pairing="{{ q.groupid }}">
                         {% if q.starttime != None and q.endtime != None %}
                         {{ q.starttime.strftime('%d %b') }} {{ q.periodname }}
                         {% endif %}
                     </td>
                     <td>{{ q.status }}</td>
+                    <td>
+                        <button class="w3-btn w3-white w3-hover-black w3-border w3-round-large reset" style="width: 100%" id="{{ q.groupid }}">
+                            <i class="fa fa-minus-square reset_icon" data-pairing="{{ q.groupid }}"></i>
+                            <i class="fa fa-circle-o-notch fa-spin reset_spin" data-pairing="{{ q.groupid }}"></i>
+                        </button>
+                    </td>
                 </tr>
                 {% endfor %}
                 {% endif %}

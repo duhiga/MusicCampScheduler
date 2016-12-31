@@ -266,15 +266,15 @@
                             <div class="w3-panel">
                                 <!-- Give the user a link to the whole period details -->
                                 <div class="w3-half w3-hide-medium">
-                                    <a class="w3-btn-block w3-white w3-border w3-round-large" href="/user/{{ thisuser.logonid }}/period/{{ p.periodid }}/">Full List</a>
+                                    <a class="w3-btn-block w3-hover-black w3-white w3-border w3-round-large" href="/user/{{ thisuser.logonid }}/period/{{ p.periodid }}/">Full List</a>
                                 </div>
-                                <a class="w3-btn-block w3-white w3-border w3-round-large w3-hide-small w3-hide-large" href="/user/{{ thisuser.logonid }}/period/{{ p.periodid }}/">Full List</a>
+                                <a class="w3-btn-block w3-hover-black w3-white w3-border w3-round-large w3-hide-small w3-hide-large" href="/user/{{ thisuser.logonid }}/period/{{ p.periodid }}/">Full List</a>
                                 <!-- If this is an assigned group, show a link to the group details -->
                                 {% if p.groupname and p.ismusical == 1 %}
                                 <div class="w3-half w3-hide-medium">
-                                    <a class="w3-btn-block w3-white w3-border w3-round-large" href="/user/{{ thisuser.logonid }}/group/{{ p.groupid }}/">Group List</a>
+                                    <a class="w3-btn-block w3-hover-black w3-white w3-border w3-round-large" href="/user/{{ thisuser.logonid }}/group/{{ p.groupid }}/">Group List</a>
                                 </div>
-                                <a class="w3-btn-block w3-white w3-border w3-round-large w3-hide-small w3-hide-large" href="/user/{{ thisuser.logonid }}/group/{{ p.groupid }}/">Group List</a>
+                                <a class="w3-btn-block w3-hover-black w3-white w3-border w3-round-large w3-hide-small w3-hide-large" href="/user/{{ thisuser.logonid }}/group/{{ p.groupid }}/">Group List</a>
                                 {% endif %}
 
                                 <!-- If this is a future date, show the user the absent buttons -->
@@ -282,38 +282,38 @@
                                 <!-- If if the user is currently not assigned to a group, show them a button where they can mark themselves as absent -->
                                 {% if not p.groupname or p.iseveryone %}
                                 <div class="w3-half w3-hide-medium">
-                                    <button id={{ p.periodid }} data-periodname="{{ p.periodname }}" class="absent_request_button w3-btn-block w3-white w3-border w3-round-large">Mark Me Absent</button>
+                                    <button id={{ p.periodid }} data-periodname="{{ p.periodname }}" class="absent_request_button w3-btn-block w3-hover-black w3-white w3-border w3-round-large">Mark Me Absent</button>
                                 </div>
-                                <button id={{ p.periodid }} data-periodname="{{ p.periodname }}" class="absent_request_button w3-btn-block w3-white w3-border w3-round-large w3-hide-small w3-hide-large">Mark Me Absent</button>
+                                <button id={{ p.periodid }} data-periodname="{{ p.periodname }}" class="absent_request_button w3-btn-block w3-hover-black w3-white w3-border w3-round-large w3-hide-small w3-hide-large">Mark Me Absent</button>
                                 <!-- If they are currently absent, show the a button to mark themselves as present -->
                                 {% elif p.groupname == "absent" %}
                                 <div class="w3-half w3-hide-medium">
-                                    <button id={{ p.periodid }} data-periodname="{{ p.periodname }}" class="absent_cancel_button w3-btn-block w3-white w3-border w3-round-large">Mark Me Present</button>
+                                    <button id={{ p.periodid }} data-periodname="{{ p.periodname }}" class="absent_cancel_button w3-btn-block w3-hover-black w3-white w3-border w3-round-large">Mark Me Present</button>
                                 </div>
-                                <button id={{ p.periodid }} data-periodname="{{ p.periodname }}" class="absent_cancel_button w3-btn-block w3-white w3-border w3-round-large w3-hide-small w3-hide-large">Mark Me Present</button>
+                                <button id={{ p.periodid }} data-periodname="{{ p.periodname }}" class="absent_cancel_button w3-btn-block w3-hover-black w3-white w3-border w3-round-large w3-hide-small w3-hide-large">Mark Me Present</button>
                                 {% endif %}
                                 {% endif %}
                                 <!-- Is this user is an conductor, they can request small groups or create instrumentation -->
                                 {% if thisuser.isconductor == 1 and date > today %}
                                 <div class="w3-half w3-hide-medium">
-                                    <a class="w3-btn-block w3-white w3-border w3-round-large" href="/user/{{ thisuser.logonid }}/grouprequest/conductor/{{ p.periodid }}/">+Small Group</a>
+                                    <a class="w3-btn-block w3-hover-black w3-white w3-border w3-round-large" href="/user/{{ thisuser.logonid }}/grouprequest/conductor/{{ p.periodid }}/">+Small Group</a>
                                 </div>
-                                <a class="w3-btn-block w3-white w3-border w3-round-large w3-hide-small w3-hide-large" href="/user/{{ thisuser.logonid }}/grouprequest/conductor/{{ p.periodid }}/">+Small Group</a>
+                                <a class="w3-btn-block w3-hover-black w3-white w3-border w3-round-large w3-hide-small w3-hide-large" href="/user/{{ thisuser.logonid }}/grouprequest/conductor/{{ p.periodid }}/">+Small Group</a>
                                 <div class="w3-half w3-hide-medium">
-                                    <a class="w3-btn-block w3-white w3-border w3-round-large" href="/user/{{ thisuser.logonid }}/instrumentation/{{ p.periodid }}/">Instrumentation</a>
+                                    <a class="w3-btn-block w3-hover-black w3-white w3-border w3-round-large" href="/user/{{ thisuser.logonid }}/instrumentation/{{ p.periodid }}/">Instrumentation</a>
                                 </div>
-                                <a class="w3-btn-block w3-white w3-border w3-round-large w3-hide-small w3-hide-large" href="/user/{{ thisuser.logonid }}/instrumentation/{{ p.periodid }}/">Instrumentation</a>
+                                <a class="w3-btn-block w3-hover-black w3-white w3-border w3-round-large w3-hide-small w3-hide-large" href="/user/{{ thisuser.logonid }}/instrumentation/{{ p.periodid }}/">Instrumentation</a>
                                 {% endif %}
                                 <!-- If this user is an admin, they can use the super editor, and create public events-->
                                 {% if thisuser.isadmin == 1 %}
                                 <div class="w3-half w3-hide-medium">
-                                    <a class="w3-btn-block w3-white w3-border w3-round-large" href="/user/{{ thisuser.logonid }}/group/new/period/{{ p.periodid }}/edit/">+Full Group</a>
+                                    <a class="w3-btn-block w3-hover-black w3-white w3-border w3-round-large" href="/user/{{ thisuser.logonid }}/group/new/period/{{ p.periodid }}/edit/">+Full Group</a>
                                 </div>
-                                <a class="w3-btn-block w3-white w3-border w3-round-large w3-hide-small w3-hide-large" href="/user/{{ thisuser.logonid }}/group/new/period/{{ p.periodid }}/edit/">+Full Group</a>
+                                <a class="w3-btn-block w3-hover-black w3-white w3-border w3-round-large w3-hide-small w3-hide-large" href="/user/{{ thisuser.logonid }}/group/new/period/{{ p.periodid }}/edit/">+Full Group</a>
                                 <div class="w3-half w3-hide-medium">
-                                    <a class="w3-btn-block w3-white w3-border w3-round-large" href="/user/{{ thisuser.logonid }}/publicevent/{{ p.periodid }}/">Create Event</a>
+                                    <a class="w3-btn-block w3-hover-black w3-white w3-border w3-round-large" href="/user/{{ thisuser.logonid }}/publicevent/{{ p.periodid }}/">Create Event</a>
                                 </div>
-                                <a class="w3-btn-block w3-white w3-border w3-round-large w3-hide-small w3-hide-large" href="/user/{{ thisuser.logonid }}/publicevent/{{ p.periodid }}/">Create Event</a>
+                                <a class="w3-btn-block w3-hover-black w3-white w3-border w3-round-large w3-hide-small w3-hide-large" href="/user/{{ thisuser.logonid }}/publicevent/{{ p.periodid }}/">Create Event</a>
                                 {% endif %}
                             </div>
                         </div>

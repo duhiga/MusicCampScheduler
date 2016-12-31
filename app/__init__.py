@@ -1316,7 +1316,7 @@ def announcementpage(logonid):
             return jsonify(message = message, url = 'none')
 
 #This page shows the queued groups, it is only accessible by the admin
-@app.route('/user/<logonid>/groupqueue/')
+@app.route('/user/<logonid>/groupqueue/', methods=['GET', 'POST'])
 def groupqueue(logonid):
     session = Session()
     #gets the data associated with this user
@@ -1328,15 +1328,29 @@ def groupqueue(logonid):
             session.close()
             return 'You do not have permission to view this page'
         else:
-            queuedgroups = session.query(group.groupid, group.requesttime, group.status, group.groupname, period.periodname, period.starttime, period.endtime, user.firstname, user.lastname).\
-                outerjoin(period).outerjoin(user).filter(group.status == "Queued", user.isactive == 1).order_by(group.requesttime).all()
-            log("Found %s queued groups to show the user" % len(queuedgroups))
-            session.close()
-            return render_template('groupqueue.html', \
-                                    queuedgroups=queuedgroups, \
-                                    thisuser=thisuser, \
-                                    campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
-                                    )
+            if request.method == 'GET':
+                queuedgroups = session.query(group.groupid, group.requesttime, group.status, group.groupname, period.periodname, period.starttime, period.endtime, user.firstname, user.lastname).\
+                    outerjoin(period).outerjoin(user).filter(group.status == "Queued", user.isactive == 1).order_by(group.requesttime).all()
+                log("Found %s queued groups to show the user" % len(queuedgroups))
+                session.close()
+                return render_template('groupqueue.html', \
+                                        queuedgroups=queuedgroups, \
+                                        thisuser=thisuser, \
+                                        campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
+                                        )
+            if request.method == 'POST':
+                thisgroup = session.query(group).filter(group.groupid == request.json['groupid']).first()
+                if thisgroup is None:
+                    session.rollback()
+                    session.close()
+                    return jsonify(message = 'Could not find this group in the database. Refresh your page and try again.', success = 'false')
+                else:
+                    thisgroup.periodid = None
+                    thisgroup.locationid = None
+                    session.merge(thisgroup)
+                    session.commit()
+                    session.close()
+                    return jsonify(message = 'none', success = 'true')
 
     except Exception as ex:
         log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))

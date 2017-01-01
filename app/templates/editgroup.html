@@ -370,9 +370,9 @@
                 </td>
                 {% endif %}
                 <td>
+                    {% if periods != [] %}
                     <select id="periodid" class="form-attribute form-validate w3-select w3-border">
                         <option value=""></option>
-                        {% if periods %}
                         {% for p in periods %}
                         {% if selectedperiod and p.periodid == selectedperiod.periodid %}
                         <option value="{{ p.periodid }}" selected="selected">{{ p.starttime.strftime('%d %b') }}: {{ p.periodname }}</option>
@@ -380,10 +380,10 @@
                         <option value="{{ p.periodid }}">{{ p.starttime.strftime('%d %b') }}: {{ p.periodname }}</option>
                         {% endif %}
                         {% endfor %}
-                        {% else %}
-                        No suitable periods found
-                        {% endif %}
                     </select>
+                    {% else %}
+                    No suitable periods found
+                    {% endif %}
                 </td>
             </tr>
             <tr>

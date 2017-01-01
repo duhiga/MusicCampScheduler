@@ -236,8 +236,10 @@
 </div>
 {% endblock %}
 {% block breadcrumbs %}
+{% if selectedperiod %}
 <li class="w3-hide-small"><a href="/user/{{ thisuser.logonid }}/date/{{ selectedperiod.starttime.strftime('%Y-%m-%d') }}/" class="w3-hover-white">{{ selectedperiod.starttime.strftime('%d %b') }}</a></li>
 <li class="w3-hide-small"><a href="/user/{{ thisuser.logonid }}/period/{{ selectedperiod.periodid }}/" class="w3-hover-white">{{ selectedperiod.periodname }}</a></li>
+{% endif %}
 <li class="w3-hide-small w3-hide-medium"><a href="javascript:void(0)" class="w3-hover-white">{{ thisgroup.groupname }}</a></li>
 <li class="w3-hide-small w3-hide-medium"><a href="javascript:void(0)" class="w3-hover-white">Edit</a></li>
 {% endblock %}
@@ -370,13 +372,17 @@
                 <td>
                     <select id="periodid" class="form-attribute form-validate w3-select w3-border">
                         <option value=""></option>
+                        {% if periods %}
                         {% for p in periods %}
-                        {% if p.periodid == selectedperiod.periodid %}
+                        {% if selectedperiod and p.periodid == selectedperiod.periodid %}
                         <option value="{{ p.periodid }}" selected="selected">{{ p.starttime.strftime('%d %b') }}: {{ p.periodname }}</option>
                         {% else %}
                         <option value="{{ p.periodid }}">{{ p.starttime.strftime('%d %b') }}: {{ p.periodname }}</option>
                         {% endif %}
                         {% endfor %}
+                        {% else %}
+                        No suitable periods found
+                        {% endif %}
                     </select>
                 </td>
             </tr>

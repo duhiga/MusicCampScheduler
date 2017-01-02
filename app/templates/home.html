@@ -252,7 +252,7 @@
                                 {% if p.musicname != None %}
                                 <tr>
                                     <th>Music</th>
-                                    <td>{{p.composer}} - {{p.musicname}}</td>
+                                    <td><a href="/user/{{ thisuser.logonid }}/musiclibrary/details/{{ p.musicid }}/"><i class="fa fa-book"></i>{{ p.composer }}: {{ p.musicname }}</a></td>
                                 </tr>
                                 {% elif p.musicwritein != '' and p.musicwritein != None %}
                                 <tr>

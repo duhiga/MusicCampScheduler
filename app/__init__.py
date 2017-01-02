@@ -50,7 +50,7 @@ def getschedule(session,thisuser,date):
     #for each period in the requested day
     for p in session.query(period).filter(period.starttime > date, period.endtime < nextday).order_by(period.starttime).all():
         #try to find a group assignment for the user
-        g = session.query(group.groupname, period.starttime, period.endtime, location.locationname, group.groupid, group.ismusical, group.iseveryone, \
+        g = session.query(group.groupname, period.starttime, period.endtime, location.locationname, group.groupid, group.ismusical, group.iseveryone, music.musicid, \
                             period.periodid, period.periodname, groupassignment.instrumentname, period.meal, group.groupdescription, music.composer, music.musicname, group.musicwritein).\
                             join(period).join(groupassignment).join(user).join(instrument).outerjoin(location).outerjoin(music).\
                             filter(user.userid == thisuser.userid, group.periodid == p.periodid, group.status == 'Confirmed').first()

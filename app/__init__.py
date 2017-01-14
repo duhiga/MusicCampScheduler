@@ -822,7 +822,7 @@ def editgroup(logonid,groupid,periodid=None):
                                             groupcounts_subquery.c.groupcount.nullsfirst(), 
                                             #then order by their total playcounts
                                             playcounts_subquery.c.playcount.nullsfirst()
-                                        #).limit(requiredplayers
+                                        ).limit(requiredplayers
                                         ).all()
                                     log('AUTOFILL: Players in final list with playcounts:')
                                     #add groupassignments for the final player list

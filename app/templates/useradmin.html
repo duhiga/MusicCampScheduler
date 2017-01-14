@@ -34,7 +34,7 @@
 
         $(function () {
             $(".tablesorter").tablesorter({
-                sortList: [[4, 1], [1, 0]]
+                sortList: [[5, 1], [1, 0]]
             });
         });
 
@@ -83,7 +83,9 @@
                     <td><input type="checkbox" id="select_all"></td>
                     <th>First</th>
                     <th>Last</th>
-                    <th class="w3-hide-small">Active</th>
+                    <th class="w3-hide-small w3-hide-medium">Active</th>
+                    <th class="w3-hide-small">Instrument</th>
+                    <th class="w3-hide-small w3-hide-medium">Request Count</th>
                     <th><div class="w3-hide-small">Playcount</div><div class="w3-hide-medium w3-hide-large">Plays</div></th>
                     <th>Home</th>
                 </tr>
@@ -101,7 +103,9 @@
                     <td><input type="checkbox" value="{{ u.userid }}" data-key="userid" data-mapping="{{ u.userid }}" class="checkbox form-object-master form-validate"></td>
                     <td><a href="/user/{{ thisuser.logonid }}/edituser/{{ u.userid }}/">{{ u.firstname }}</a></td>
                     <td><a href="/user/{{ thisuser.logonid }}/edituser/{{ u.userid }}/">{{ u.lastname }}</a></td>
-                    <td class="w3-hide-small">{% if u.isactive == 1 %}Yes{% else %}No{% endif %}</td>
+                    <td class="w3-hide-small w3-hide-medium">{% if u.isactive == 1 %}Yes{% else %}No{% endif %}</td>
+                    <td class="w3-hide-small">{{u.instrumentname}}</td>
+                    <th class="w3-hide-small w3-hide-medium">{{u.grouprequestcount}}</th>
                     <td>{% if u.playcount != 'Non Player' %}{{ u.playcount }}{% else %}&nbsp;{% endif %}</td>
                     <td><a href="/user/{{ u.logonid }}/">Home</a></td>
                 </tr>

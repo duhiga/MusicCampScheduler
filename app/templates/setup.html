@@ -3,13 +3,6 @@
 {% block breadcrumbs %}
 <li class="w3-hide-small"><a href="#" class="w3-hover-white">Application Setup</a></li>
 {% endblock %}
-{% block sidenav %}
-<div class="submit_hide">
-    <h4><b>Save</b></h4>
-    <a href="#" class="w3-hover-black submit_button" data-submittype="save" data-method="POST"><i class="fa fa-save save_icon"></i><i class="fa fa-circle-o-notch fa-spin spin_icon"></i> Save Changes</a>
-    <a href="#" class="w3-hover-black submit_button" data-submittype="submit" data-method="POST"><i class="fa fa-check save_icon"></i><i class="fa fa-circle-o-notch fa-spin spin_icon"></i> Submit</a>
-</div>
-{% endblock %}
 {% block content %}
 <div class="w3-row">
     <div class="w3-container">
@@ -17,6 +10,7 @@
         <div>
             <p>Step 1: upload a config.xml file</p>
             <p>Step 2: upload a campers.csv file</p>
+            <p>Step 3: upload a musiclibrary.csv file</p>
             <form method="post" enctype="multipart/form-data">
                 <input type="file" name="file"><br />
                 <input type="submit" value="Upload">

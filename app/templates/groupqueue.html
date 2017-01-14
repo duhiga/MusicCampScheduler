@@ -75,7 +75,7 @@
                 <tr>
                     <td>
                         {% if q.requesttime != None %}
-                        {{ q.requesttime.strftime('%Y-%m-%d %H:%M')}}
+                        {{ q.requesttime.strftime('%d%b %H:%M')}}
                         {% endif %}
                     </td>
                     <td>{{ q.firstname }} {{ q.lastname }}</td>

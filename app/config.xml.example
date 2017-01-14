@@ -46,7 +46,7 @@
     <!-- Fill in the location objects with location names and maximum capacities. Locations are places that groups 
          can rehearse -->
     <Location Name="Dining Room" Capacity="100"></Location>
-    <Location Name="Green Room" Capacity="60"></Location>
+    <Location Name="Rec Room" Capacity="60"></Location>
     <Location Name="Room 1" Capacity="5"></Location>
     <Location Name="Room 2" Capacity="5"></Location>
     <!-- Templates that users can pick from when requesting groups go here. Note that
@@ -64,8 +64,8 @@
     <GroupTemplate Name="Brass Quintet" Size="S" Trumpet="2" Trombone="1" Tuba="1" Horn="1"></GroupTemplate>
     <GroupTemplate Name="Brass Quintet (Doubled)" Size="S" Trumpet="4" Trombone="2" Tuba="2" Horn="2"></GroupTemplate>
     <!-- Public events occur every day at the specified time. They appear on all user's home pages at that time unless they are in a specific group.-->
-    <PublicEvent Name="Surgery" Period="Surgery" Location="Eclipse"></PublicEvent>
-    <PublicEvent Name="Noisy Scrubs" Period="Noisy Scrubs" Location="Rec Room"></PublicEvent>
+    <PublicEvent Name="Drinks" Period="Surgery" Location="Eclipse"></PublicEvent>
+    <PublicEvent Name="Beginners" Period="Noisy Scrubs" Location="Rec Room"></PublicEvent>
     <PublicEvent Name="Breakfast" Period="Breakfast" Location="Dining Room"></PublicEvent>
     <PublicEvent Name="Lunch" Period="Lunch" Location="Dining Room"></PublicEvent>
     <PublicEvent Name="Dinner" Period="Dinner" Location="Dining Room"></PublicEvent>

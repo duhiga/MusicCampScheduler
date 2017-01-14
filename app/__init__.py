@@ -426,340 +426,365 @@ def editgroup(logonid,groupid,periodid=None):
     if thisuser is None:
         return ('Did not find user in database. You have entered an incorrect URL address.')
 
-    #try:
-    if thisuser.isadmin != 1:
-        session.close()
-        return 'You do not have permission to do this.'
-    if periodid == 'None':
-        periodid = None
-    if groupid == 'new' or groupid is None:
-        groupid = None
-        thisgroup = group(ismusical = 1, requesteduserid = thisuser.userid)
-        requestor = thisuser
-    else:
-        thisgroup = session.query(group).filter(group.groupid == groupid).first()
-        requestor = session.query(user).filter(user.userid == thisgroup.requesteduserid).first()
-    if request.method == 'GET':
+    try:
+        if thisuser.isadmin != 1:
+            session.close()
+            return 'You do not have permission to do this.'
+        if periodid == 'None':
+            periodid = None
+        if groupid == 'new' or groupid is None:
+            groupid = None
+            thisgroup = group(ismusical = 1, requesteduserid = thisuser.userid)
+            requestor = thisuser
+        else:
+            thisgroup = session.query(group).filter(group.groupid == groupid).first()
+            requestor = session.query(user).filter(user.userid == thisgroup.requesteduserid).first()
+        if request.method == 'GET':
 
-        tomorrow = datetime.datetime.combine(datetime.date.today(), datetime.time.min) + datetime.timedelta(days=1)
+            tomorrow = datetime.datetime.combine(datetime.date.today(), datetime.time.min) + datetime.timedelta(days=1)
 
-        #Current period tracks the period that the group is already set to (none, if it's a new group)
-        currentperiod = session.query(period).filter(period.periodid == thisgroup.periodid).first()
+            #Current period tracks the period that the group is already set to (none, if it's a new group)
+            currentperiod = session.query(period).filter(period.periodid == thisgroup.periodid).first()
 
-        #print out the list of players and remove any that have already left camp
-        thisgroupplayers = session.query(user.userid, user.firstname, user.lastname, groupassignment.instrumentname, user.departure).join(groupassignment).join(group).filter(group.groupid == thisgroup.groupid).order_by(groupassignment.instrumentname).all()
-        if thisgroupplayers is not None:
-            log('Players in this group:')
+            #print out the list of players and remove any that have already left camp
+            thisgroupplayers = session.query(user.userid, user.firstname, user.lastname, groupassignment.instrumentname, user.departure).join(groupassignment).join(group).filter(group.groupid == thisgroup.groupid).order_by(groupassignment.instrumentname).all()
+            if thisgroupplayers is not None:
+                log('Players in this group:')
+                for p in thisgroupplayers:
+                    log('%s %s: %s' % (p.firstname, p.lastname, p.instrumentname))
+                    if p.departure <= tomorrow:
+                        a = session.query(groupassignment).filter(groupassignment.userid == p.userid, groupassignment.groupid == thisgroup.groupid).first()
+                        log('Found user %s %s with departure before tomorrow, removing them from this group.' % (p.firstname, p.lastname))
+                        session.delete(a)
+                session.commit()
+
+            #find all periods from now until the end of time to display to the user, then removes any periods that the people in this group cannot play in
+            thisgroupplayers_query = session.query(user.userid).join(groupassignment).join(group).filter(group.groupid == thisgroup.groupid).order_by(groupassignment.instrumentname)
+            periodlist = session.query(period).order_by(period.starttime).all()
+            if thisgroupplayers_query.first() is not None:
+                lastarrival = session.query(func.max(user.arrival).label("lastarrival")).filter(user.userid.in_(thisgroupplayers_query)).first().lastarrival
+                firstdeparture = session.query(func.min(user.departure).label("firstdeparture")).filter(user.userid.in_(thisgroupplayers_query)).first().firstdeparture
+            else:
+                lastarrival = datetime.datetime.strptime(getconfig('StartTime'), '%Y-%m-%d %H:%M')
+                firstdeparture = datetime.datetime.strptime(getconfig('EndTime'), '%Y-%m-%d %H:%M')
+            log('Last Arrival time of players in this group: %s' % lastarrival)
+            log('First Departure time of players in this group: %s' % firstdeparture)
+            periods = []
+            for p in periodlist:
+                if thisgroupplayers_query.first() is None or ((currentperiod and p.periodid == currentperiod.periodid) \
+                        or (len(session.query(user.userid).join(groupassignment).join(group).join(period).filter(group.periodid == p.periodid, or_(user.userid.in_(thisgroupplayers_query))).all()) == 0\
+                        and p.starttime > lastarrival and p.starttime < firstdeparture)):
+                    periods.append(p)
+
+            #if there was no selected period by the user, select the first period
+            if periodid is not None:
+                selectedperiod = session.query(period).filter(period.periodid == periodid).first()
+            elif currentperiod is None:
+                log('This is a periodless group. Selecting a period for the group.')
+                foundperiod = False
+                for p in periods:
+                    if p.starttime > tomorrow and session.query(period.periodid).join(group).filter(period.periodid == p.periodid, group.iseveryone == 1).first() is None:
+                        selectedperiod = p
+                        foundperiod = True
+                        break
+                if not foundperiod:
+                    selectedperiod = None
+            else:
+                selectedperiod = currentperiod
+            thislocation = session.query(location).join(group).filter(group.groupid == groupid).first()
+            #gets the list of players playing in the given group
+            thisgroupplayers = session.query(user.userid, user.firstname, user.lastname, groupassignment.instrumentname).join(groupassignment).join(group).\
+                                    filter(group.groupid == thisgroup.groupid).order_by(groupassignment.instrumentname).all()
+            thisgroupplayers_serialized = []
             for p in thisgroupplayers:
-                log('%s %s: %s' % (p.firstname, p.lastname, p.instrumentname))
-                if p.departure <= tomorrow:
-                    a = session.query(groupassignment).filter(groupassignment.userid == p.userid, groupassignment.groupid == thisgroup.groupid).first()
-                    log('Found user %s %s with departure before tomorrow, removing them from this group.' % (p.firstname, p.lastname))
+                    thisgroupplayers_serialized.append({'userid': p.userid, 'firstname': p.firstname, 'lastname': p.lastname,
+                    'instrumentname': p.instrumentname})
+            if selectedperiod is not None:
+                #Finds all players who are already playing in this period (except in this specific group)
+                playersPlayingInPeriod = session.query(user.userid).join(groupassignment).join(group).filter(group.groupid != thisgroup.groupid).filter(group.periodid == selectedperiod.periodid)
+                #finds all players who are available to play in this group (they aren't already playing in other groups)
+                playersdump = session.query(user.userid,user.firstname,user.lastname,instrument.instrumentname,instrument.grade,instrument.isprimary).\
+                            join(instrument).filter(~user.userid.in_(playersPlayingInPeriod), user.isactive == 1, user.arrival <= selectedperiod.starttime, user.departure >= selectedperiod.endtime, instrument.isactive == 1).all()
+            else:
+                playersdump = session.query(user.userid,user.firstname,user.lastname,instrument.instrumentname,instrument.grade,instrument.isprimary).\
+                            join(instrument).filter(user.isactive == 1, instrument.isactive == 1).all()
+            playersdump_serialized = []
+            for p in playersdump:
+                playersdump_serialized.append({'userid': p.userid, 'firstname': p.firstname, 'lastname': p.lastname,
+                    'instrumentname': p.instrumentname, 'grade': p.grade, 'isprimary': p.isprimary})
+
+            #Get a list of the available music not being used in the period selected
+            if selectedperiod is not None:
+                musics_used_query = session.query(music.musicid).join(group).join(period).filter(period.periodid == selectedperiod.periodid, group.groupid != thisgroup.groupid)
+                musics = session.query(music).filter(~music.musicid.in_(musics_used_query)).all()
+            else:
+                musics = session.query(music).all()
+            musics_serialized = [i.serialize for i in musics]
+            thismusic = session.query(music).filter(music.musicid == thisgroup.musicid).first()
+
+            #get a list of the locations not being used in this period
+            if selectedperiod is not None:
+                locations_used_query = session.query(location.locationid).join(group).join(period).filter(period.periodid == selectedperiod.periodid, group.groupid != thisgroup.groupid, location.locationname != 'None')
+                locations = session.query(location).filter(~location.locationid.in_(locations_used_query)).all()
+            else:
+                locations = session.query(location).all()
+            log('This groups status is %s' % thisgroup.status)
+
+            #find all group templates to show in a dropdown
+            grouptemplates = session.query(grouptemplate).all()
+            grouptemplates_serialized = [i.serialize for i in grouptemplates]
+
+            groupmin = getgrouplevel(session,thisgroup,'min')
+            groupmax = getgrouplevel(session,thisgroup,'max')
+
+            template = render_template('editgroup.html', \
+                                currentperiod=currentperiod, \
+                                selectedperiod=selectedperiod, \
+                                campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
+                                thisgroup=thisgroup, \
+                                thisgroupplayers=thisgroupplayers, \
+                                thisuser=thisuser, \
+                                periods=periods, \
+                                thislocation=thislocation, \
+                                locations=locations, \
+                                playersdump=playersdump, \
+                                playersdump_serialized=playersdump_serialized, \
+                                thisgroupplayers_serialized=thisgroupplayers_serialized, \
+                                maximumlevel=int(getconfig('MaximumLevel')), \
+                                grouptemplates=grouptemplates, \
+                                grouptemplates_serialized=grouptemplates_serialized, \
+                                musics=musics, \
+                                musics_serialized=musics_serialized, \
+                                thismusic=thismusic, \
+                                instrumentlist_string=getconfig('Instruments'), \
+                                groupmin=groupmin, \
+                                groupmax=groupmax, \
+                                requestor=requestor, \
+                                )
+            session.close()
+            return template
+
+        if request.method == 'DELETE':
+            if groupid is not None:
+                thisgroupassignments = session.query(groupassignment).filter(groupassignment.groupid == thisgroup.groupid).all()
+                for a in thisgroupassignments:
                     session.delete(a)
-            session.commit()
+                session.commit()
+                session.delete(thisgroup)
+                session.commit()
+            else:
+                session.rollback()
+            url = ('/user/' + str(thisuser.logonid) + '/')
+            message = 'none'
+            flash(u'Group Deleted','message')
+            log('Sending user to URL: %s' % url)
+            session.close()
+            return jsonify(message = message, url = url)
 
-        #find all periods from now until the end of time to display to the user, then removes any periods that the people in this group cannot play in
-        thisgroupplayers_query = session.query(user.userid).join(groupassignment).join(group).filter(group.groupid == thisgroup.groupid).order_by(groupassignment.instrumentname)
-        periodlist = session.query(period).order_by(period.starttime).all()
-        if thisgroupplayers_query.first() is not None:
-            lastarrival = session.query(func.max(user.arrival).label("lastarrival")).filter(user.userid.in_(thisgroupplayers_query)).first().lastarrival
-            firstdeparture = session.query(func.min(user.departure).label("firstdeparture")).filter(user.userid.in_(thisgroupplayers_query)).first().firstdeparture
-        else:
-            lastarrival = datetime.datetime.strptime(getconfig('StartTime'), '%Y-%m-%d %H:%M')
-            firstdeparture = datetime.datetime.strptime(getconfig('EndTime'), '%Y-%m-%d %H:%M')
-        log('Last Arrival time of players in this group: %s' % lastarrival)
-        log('First Departure time of players in this group: %s' % firstdeparture)
-        periods = []
-        for p in periodlist:
-            if thisgroupplayers_query.first() is None or ((currentperiod and p.periodid == currentperiod.periodid) \
-                    or (len(session.query(user.userid).join(groupassignment).join(group).join(period).filter(group.periodid == p.periodid, or_(user.userid.in_(thisgroupplayers_query))).all()) == 0\
-                    and p.starttime > lastarrival and p.starttime < firstdeparture)):
-                periods.append(p)
-
-        #if there was no selected period by the user, select the first period
-        if periodid is not None:
-            selectedperiod = session.query(period).filter(period.periodid == periodid).first()
-        elif currentperiod is None:
-            log('This is a periodless group. Selecting a period for the group.')
-            foundperiod = False
-            for p in periods:
-                if p.starttime > tomorrow and session.query(period.periodid).join(group).filter(period.periodid == p.periodid, group.iseveryone == 1).first() is None:
-                    selectedperiod = p
-                    foundperiod = True
-                    break
-            if not foundperiod:
-                selectedperiod = None
-        else:
-            selectedperiod = currentperiod
-        thislocation = session.query(location).join(group).filter(group.groupid == groupid).first()
-        #gets the list of players playing in the given group
-        thisgroupplayers = session.query(user.userid, user.firstname, user.lastname, groupassignment.instrumentname).join(groupassignment).join(group).\
-                                filter(group.groupid == thisgroup.groupid).order_by(groupassignment.instrumentname).all()
-        thisgroupplayers_serialized = []
-        for p in thisgroupplayers:
-                thisgroupplayers_serialized.append({'userid': p.userid, 'firstname': p.firstname, 'lastname': p.lastname,
-                'instrumentname': p.instrumentname})
-        if selectedperiod is not None:
-            #Finds all players who are already playing in this period (except in this specific group)
-            playersPlayingInPeriod = session.query(user.userid).join(groupassignment).join(group).filter(group.groupid != thisgroup.groupid).filter(group.periodid == selectedperiod.periodid)
-            #finds all players who are available to play in this group (they aren't already playing in other groups)
-            playersdump = session.query(user.userid,user.firstname,user.lastname,instrument.instrumentname,instrument.grade,instrument.isprimary).\
-                        join(instrument).filter(~user.userid.in_(playersPlayingInPeriod), user.isactive == 1, user.arrival <= selectedperiod.starttime, user.departure >= selectedperiod.endtime, instrument.isactive == 1).all()
-        else:
-            playersdump = session.query(user.userid,user.firstname,user.lastname,instrument.instrumentname,instrument.grade,instrument.isprimary).\
-                        join(instrument).filter(user.isactive == 1, instrument.isactive == 1).all()
-        playersdump_serialized = []
-        for p in playersdump:
-            playersdump_serialized.append({'userid': p.userid, 'firstname': p.firstname, 'lastname': p.lastname,
-                'instrumentname': p.instrumentname, 'grade': p.grade, 'isprimary': p.isprimary})
-
-        #Get a list of the available music not being used in the period selected
-        if selectedperiod is not None:
-            musics_used_query = session.query(music.musicid).join(group).join(period).filter(period.periodid == selectedperiod.periodid, group.groupid != thisgroup.groupid)
-            musics = session.query(music).filter(~music.musicid.in_(musics_used_query)).all()
-        else:
-            musics = session.query(music).all()
-        musics_serialized = [i.serialize for i in musics]
-        thismusic = session.query(music).filter(music.musicid == thisgroup.musicid).first()
-
-        #get a list of the locations not being used in this period
-        if selectedperiod is not None:
-            locations_used_query = session.query(location.locationid).join(group).join(period).filter(period.periodid == selectedperiod.periodid, group.groupid != thisgroup.groupid, location.locationname != 'None')
-            locations = session.query(location).filter(~location.locationid.in_(locations_used_query)).all()
-        else:
-            locations = session.query(location).all()
-        log('This groups status is %s' % thisgroup.status)
-
-        #find all group templates to show in a dropdown
-        grouptemplates = session.query(grouptemplate).all()
-        grouptemplates_serialized = [i.serialize for i in grouptemplates]
-
-        groupmin = getgrouplevel(session,thisgroup,'min')
-        groupmax = getgrouplevel(session,thisgroup,'max')
-        log('GOT TO THE END!!!')
-        template = render_template('editgroup.html', \
-                            currentperiod=currentperiod, \
-                            selectedperiod=selectedperiod, \
-                            campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
-                            thisgroup=thisgroup, \
-                            thisgroupplayers=thisgroupplayers, \
-                            thisuser=thisuser, \
-                            periods=periods, \
-                            thislocation=thislocation, \
-                            locations=locations, \
-                            playersdump=playersdump, \
-                            playersdump_serialized=playersdump_serialized, \
-                            thisgroupplayers_serialized=thisgroupplayers_serialized, \
-                            maximumlevel=int(getconfig('MaximumLevel')), \
-                            grouptemplates=grouptemplates, \
-                            grouptemplates_serialized=grouptemplates_serialized, \
-                            musics=musics, \
-                            musics_serialized=musics_serialized, \
-                            thismusic=thismusic, \
-                            instrumentlist_string=getconfig('Instruments'), \
-                            groupmin=groupmin, \
-                            groupmax=groupmax, \
-                            requestor=requestor, \
-                            )
-        session.close()
-        return template
-
-    if request.method == 'DELETE':
-        if groupid is not None:
+        if request.method == 'POST':
+            #format the packet received from the server as JSON
+            content = request.json
+            if content['groupname'] == '' or content['groupname'] == 'null' or content['groupname'] is None:
+                session.rollback()
+                session.close()
+                return jsonify(message = 'You must give this group a name before saving or autofilling.', url = 'none')
+            if content['periodid'] != '' and content['periodid'] != 'null' and content['periodid'] is not None:
+                thisperiod = session.query(period).filter(period.periodid == content['periodid']).first()
+            else:
+                session.rollback()
+                session.close()
+                return jsonify(message = 'Could not find a period with the selected id. Refresh the page and try again.', url = 'none')
             thisgroupassignments = session.query(groupassignment).filter(groupassignment.groupid == thisgroup.groupid).all()
             for a in thisgroupassignments:
                 session.delete(a)
-            session.commit()
-            session.delete(thisgroup)
-            session.commit()
-        else:
-            session.rollback()
-        url = ('/user/' + str(thisuser.logonid) + '/')
-        message = 'none'
-        flash(u'Group Deleted','message')
-        log('Sending user to URL: %s' % url)
-        session.close()
-        return jsonify(message = message, url = url)
 
-    if request.method == 'POST':
-        #format the packet received from the server as JSON
-        content = request.json
-        if content['groupname'] == '' or content['groupname'] == 'null' or content['groupname'] is None:
-            session.rollback()
-            session.close()
-            return jsonify(message = 'You must give this group a name before saving or autofilling.', url = 'none')
-        if content['periodid'] != '' and content['periodid'] != 'null' and content['periodid'] is not None:
-            thisperiod = session.query(period).filter(period.periodid == content['periodid']).first()
-        else:
-            session.rollback()
-            session.close()
-            return jsonify(message = 'Could not find a period with the selected id. Refresh the page and try again.', url = 'none')
-        thisgroupassignments = session.query(groupassignment).filter(groupassignment.groupid == thisgroup.groupid).all()
-        for a in thisgroupassignments:
-            session.delete(a)
+            #add the content in the packet to this group's attributes
+            for key,value in content.iteritems():
+                if (value is None or value == 'null' or value == '') and key != 'primary_only':
+                    log('Setting %s to be NULL' % (key))
+                    setattr(thisgroup,key,None)
+                elif key != 'primary_only':
+                    log('Setting %s to be %s' % (key, value))
+                    setattr(thisgroup,key,value)
+            if groupid == None:
+                session.add(thisgroup)
+                thisgroup.requesttime = datetime.datetime.now()
+                session.commit()
 
-        #add the content in the packet to this group's attributes
-        for key,value in content.iteritems():
-            if (value is None or value == 'null' or value == '') and key != 'primary_only':
-                log('Setting %s to be NULL' % (key))
-                setattr(thisgroup,key,None)
-            elif key != 'primary_only':
-                log('Setting %s to be %s' % (key, value))
-                setattr(thisgroup,key,value)
-        if groupid == None:
-            session.add(thisgroup)
-            thisgroup.requesttime = datetime.datetime.now()
-            session.commit()
-
-        location_clash = session.query(location.locationname, group.groupid).join(group).join(period).filter(period.periodid == thisperiod.periodid, location.locationid == content['locationid'], group.groupid != thisgroup.groupid).first()
-        if location_clash is not None:
-            log('Group %s is already using this location %s' % (location_clash.groupid, location_clash.locationname))
-            session.rollback()
-            session.close()
-            return jsonify(message = 'This location is already being used at this time. Select another.', url = 'none')
-
-        if content['musicid'] != '' and content['musicid'] != 'null' and content['musicid'] is not None:
-            music_clash = session.query(music.musicname, music.composer, group.groupid).join(group).join(period).filter(period.periodid == thisperiod.periodid, music.musicid == content['musicid'], group.groupid != thisgroup.groupid).first()
-            if music_clash is not None:
-                log('Group %s is already using this music %s %s' % (music_clash.groupid, music_clash.composer, music_clash.musicname))
+            location_clash = session.query(location.locationname, group.groupid).join(group).join(period).filter(period.periodid == thisperiod.periodid, location.locationid == content['locationid'], group.groupid != thisgroup.groupid).first()
+            if location_clash is not None:
+                log('Group %s is already using this location %s' % (location_clash.groupid, location_clash.locationname))
                 session.rollback()
                 session.close()
-                return jsonify(message = 'This music is already being used at this time. You cannot schedule in this period.', url = 'none')
+                return jsonify(message = 'This location is already being used at this time. Select another.', url = 'none')
 
-
-
-        foundfilled = False
-        for p in content['objects']:
-            if p['userid'] != '' and p['userid'] is not None:
-                foundfilled = True
-                log('Attempting to find user %s' % p['userid'])
-                playeruser = session.query(user).filter(user.userid == p['userid']).first()
-                #if the player is already playing in something, we have a clash and we have to exit completely. This may happen if multiple people are creating groups at the same time.
-                currentassignment = session.query(groupassignment.instrumentname, group.groupname, group.groupid).join(group).filter(groupassignment.userid == p['userid']).filter(group.periodid == thisperiod.periodid).first()
-                if currentassignment is not None:
-                    #if the player is already playing in something, we have a clash and we have to exit completely. This may happen if multiple people are creating groups at the same time.
-                    if currentassignment.groupid != thisgroup.groupid:
-                        url = 'none'
-                        message = ('Found a clash for %s. They are already playing %s in %s. Refresh the page and try again.' % (playeruser.firstname, currentassignment.instrumentname, currentassignment.groupname))
-                        log(message)
-                        session.rollback()
-                        session.close()
-                        return jsonify(message = message, url = url)
-                #if we found a player and no clash, we can assign this player to the group
-                if playeruser is None:
-                    url = ('/user/' + str(thisuser.logonid) + '/')
+            if content['musicid'] != '' and content['musicid'] != 'null' and content['musicid'] is not None:
+                music_clash = session.query(music.musicname, music.composer, group.groupid).join(group).join(period).filter(period.periodid == thisperiod.periodid, music.musicid == content['musicid'], group.groupid != thisgroup.groupid).first()
+                if music_clash is not None:
+                    log('Group %s is already using this music %s %s' % (music_clash.groupid, music_clash.composer, music_clash.musicname))
                     session.rollback()
                     session.close()
-                    return jsonify(message = 'Could not find one of your selected players in the database. Please refresh the page and try again.', url = url)
-                else:
-                    #if the player is inactive or not attending camp at this time, they should never have been shown to the admin and chosen - this could happen if they were set to inactive while the admin had the page open
-                    if playeruser.isactive != 1 or playeruser.arrival > thisperiod.starttime or playeruser.departure < thisperiod.endtime:
-                        url = 'none'
-                        message = ('The user %s %s is set to inactive and they cannot be assigned. Refresh the page and try again with a different user.' % (playeruser.firstname, playeruser.lastname))
+                    return jsonify(message = 'This music is already being used at this time. You cannot schedule in this period.', url = 'none')
+
+
+
+            foundfilled = False
+            for p in content['objects']:
+                if p['userid'] != '' and p['userid'] is not None:
+                    foundfilled = True
+                    log('Attempting to find user %s' % p['userid'])
+                    playeruser = session.query(user).filter(user.userid == p['userid']).first()
+                    #if the player is already playing in something, we have a clash and we have to exit completely. This may happen if multiple people are creating groups at the same time.
+                    currentassignment = session.query(groupassignment.instrumentname, group.groupname, group.groupid).join(group).filter(groupassignment.userid == p['userid']).filter(group.periodid == thisperiod.periodid).first()
+                    if currentassignment is not None:
+                        #if the player is already playing in something, we have a clash and we have to exit completely. This may happen if multiple people are creating groups at the same time.
+                        if currentassignment.groupid != thisgroup.groupid:
+                            url = 'none'
+                            message = ('Found a clash for %s. They are already playing %s in %s. Refresh the page and try again.' % (playeruser.firstname, currentassignment.instrumentname, currentassignment.groupname))
+                            log(message)
+                            session.rollback()
+                            session.close()
+                            return jsonify(message = message, url = url)
+                    #if we found a player and no clash, we can assign this player to the group
+                    if playeruser is None:
+                        url = ('/user/' + str(thisuser.logonid) + '/')
                         session.rollback()
                         session.close()
-                        return jsonify(message = message, url = url)
+                        return jsonify(message = 'Could not find one of your selected players in the database. Please refresh the page and try again.', url = url)
                     else:
-                        playergroupassignment = groupassignment(userid = playeruser.userid, groupid = thisgroup.groupid, instrumentname = p['instrumentname'])
-                        session.add(playergroupassignment)
+                        #if the player is inactive or not attending camp at this time, they should never have been shown to the admin and chosen - this could happen if they were set to inactive while the admin had the page open
+                        if playeruser.isactive != 1 or playeruser.arrival > thisperiod.starttime or playeruser.departure < thisperiod.endtime:
+                            url = 'none'
+                            message = ('The user %s %s is set to inactive and they cannot be assigned. Refresh the page and try again with a different user.' % (playeruser.firstname, playeruser.lastname))
+                            session.rollback()
+                            session.close()
+                            return jsonify(message = message, url = url)
+                        else:
+                            playergroupassignment = groupassignment(userid = playeruser.userid, groupid = thisgroup.groupid, instrumentname = p['instrumentname'])
+                            session.add(playergroupassignment)
                             
-        #get the minimum level of this group
-        mingrade = getgrouplevel(session,thisgroup,'min')
-        maxgrade = getgrouplevel(session,thisgroup,'max')
-        if content['submittype'] == 'autofill' and (mingrade == 0 or maxgrade == 0) and foundfilled != True:
-            session.rollback()
-            session.close()
-            return jsonify(message = 'You cannot autofill with all empty players and an auto minimum or maximum level. Set the level or pick at least one player.', url = 'none')
-        if thisgroup.status == 'Confirmed' and (thisgroup.periodid == '' or thisgroup.groupname == '' or thisgroup.locationid == ''):
-            session.rollback()
-            session.close()
-            return jsonify(message = 'Confirmed groups must have a name, assigned period, assigned location and no empty player slots.', url = 'none')
-
-        #----AUTOFILL SECTION----
-        if content['submittype'] == 'autofill':
-            log('AUTOFILL: User selected to autofill the group')
-            log('AUTOFILL: Primary_only switch set to %s' % content['primary_only'])
-            if content['periodid'] == '' or content['periodid'] is None:
+            #get the minimum level of this group
+            mingrade = getgrouplevel(session,thisgroup,'min')
+            maxgrade = getgrouplevel(session,thisgroup,'max')
+            if content['submittype'] == 'autofill' and (mingrade == 0 or maxgrade == 0) and foundfilled != True:
                 session.rollback()
                 session.close()
-                return jsonify(message = 'You must have a period selected before autofilling.', url = 'none')
-            else:
-                for i in getconfig('Instruments').split(","):
-                    numberinstrument = getattr(thisgroup,i)
-                    if int(numberinstrument) > 0:
-                        log('AUTOFILL: Group has configured %s total players for instrument %s' % (numberinstrument, i))
-                        currentinstrumentplayers = session.query(user).join(groupassignment).filter(groupassignment.groupid == thisgroup.groupid, groupassignment.instrumentname == i).all()
-                        requiredplayers = int(numberinstrument) - len(currentinstrumentplayers)
-                        log('AUTOFILL: Found %s current players for instrument %s' % (len(currentinstrumentplayers), i))
-                        log('AUTOFILL: We need to autofill %s extra players for instrument %s' % (requiredplayers, i))
-                        if requiredplayers > 0:
-                            #get the userids of everyone that's already playing in something this period
-                            everyone_playing_in_period_query = session.query(
-                                    user.userid.label('everyone_playing_in_period_query_userid')
-                                ).join(groupassignment
-                                ).join(group
-                                ).join(period
-                                ).filter(
-                                    period.periodid == thisgroup.periodid
-                                )
+                return jsonify(message = 'You cannot autofill with all empty players and an auto minimum or maximum level. Set the level or pick at least one player.', url = 'none')
+            if thisgroup.status == 'Confirmed' and (thisgroup.periodid == '' or thisgroup.groupname == '' or thisgroup.locationid == ''):
+                session.rollback()
+                session.close()
+                return jsonify(message = 'Confirmed groups must have a name, assigned period, assigned location and no empty player slots.', url = 'none')
 
-                            #combine the last query with another query, finding everyone that both plays an instrument that's found in thisgroup AND isn't in the list of users that are already playing in this period.
-                            #The admin controls if the query allows non-primary instruments by the content['primary_only']
-                            possible_players_query = session.query(
-                                    user.userid.label('possible_players_query_userid')
-                                ).outerjoin(instrument
-                                ).filter(
-                                    ~user.userid.in_(everyone_playing_in_period_query), 
-                                    user.isactive == 1, 
-                                    user.arrival <= thisperiod.starttime, 
-                                    user.departure >= thisperiod.endtime
-                                ).filter(
-                                    instrument.grade >= mingrade, 
-                                    instrument.grade <= maxgrade, 
-                                    instrument.instrumentname == i, 
-                                    instrument.isactive == 1, 
-                                    instrument.isprimary >= int(content['primary_only'])
-                                )
-
-                            for pl in possible_players_query.all():
-                                log('Found possible player %s' % (pl.possible_players_query_userid))
-
-                            log('Found %s possible players of a requested %s for instrument %s.' % (len(possible_players_query.all()), requiredplayers, i))
-                            #if we found at least one possible player
-                            if len(possible_players_query.all()) > 0:
-                                #get the players that have already played in groups at this camp, and inverse it to get the players with playcounts of zero. Limit the query to just the spots we have left. These will be the people at the top of the list.
-                                already_played_query = session.query(
-                                        user.userid
+            #----AUTOFILL SECTION----
+            if content['submittype'] == 'autofill':
+                log('AUTOFILL: User selected to autofill the group')
+                log('AUTOFILL: Primary_only switch set to %s' % content['primary_only'])
+                if content['periodid'] == '' or content['periodid'] is None:
+                    session.rollback()
+                    session.close()
+                    return jsonify(message = 'You must have a period selected before autofilling.', url = 'none')
+                else:
+                    for i in getconfig('Instruments').split(","):
+                        numberinstrument = getattr(thisgroup,i)
+                        if int(numberinstrument) > 0:
+                            log('AUTOFILL: Group has configured %s total players for instrument %s' % (numberinstrument, i))
+                            currentinstrumentplayers = session.query(user).join(groupassignment).filter(groupassignment.groupid == thisgroup.groupid, groupassignment.instrumentname == i).all()
+                            requiredplayers = int(numberinstrument) - len(currentinstrumentplayers)
+                            log('AUTOFILL: Found %s current players for instrument %s' % (len(currentinstrumentplayers), i))
+                            log('AUTOFILL: We need to autofill %s extra players for instrument %s' % (requiredplayers, i))
+                            if requiredplayers > 0:
+                                #get the userids of everyone that's already playing in something this period
+                                everyone_playing_in_period_query = session.query(
+                                        user.userid.label('everyone_playing_in_period_query_userid')
                                     ).join(groupassignment
                                     ).join(group
+                                    ).join(period
                                     ).filter(
-                                        group.ismusical == 1, 
-                                        groupassignment.instrumentname != 'Conductor', 
-                                        user.userid.in_(possible_players_query)
+                                        period.periodid == thisgroup.periodid
                                     )
 
-                                #make a query that totals the nmber of times each potential user has played at camp.
-                                playcounts_subquery = session.query(
-                                        user.userid.label('playcounts_userid'),
-                                        func.count(user.userid).label("playcount")
-                                    ).group_by(
-                                        user.userid
-                                    ).outerjoin(groupassignment, groupassignment.userid == user.userid
-                                    ).outerjoin(group, group.groupid == groupassignment.groupid
+                                #combine the last query with another query, finding everyone that both plays an instrument that's found in thisgroup AND isn't in the list of users that are already playing in this period.
+                                #The admin controls if the query allows non-primary instruments by the content['primary_only']
+                                possible_players_query = session.query(
+                                        user.userid.label('possible_players_query_userid')
+                                    ).outerjoin(instrument
                                     ).filter(
-                                        user.userid.in_(possible_players_query),
-                                        groupassignment.instrumentname != 'Conductor', 
-                                        group.ismusical == 1, 
-                                        group.periodid != None,
-                                        group.groupid != thisgroup.groupid
-                                    ).subquery()
+                                        ~user.userid.in_(everyone_playing_in_period_query), 
+                                        user.isactive == 1, 
+                                        user.arrival <= thisperiod.starttime, 
+                                        user.departure >= thisperiod.endtime
+                                    ).filter(
+                                        instrument.grade >= mingrade, 
+                                        instrument.grade <= maxgrade, 
+                                        instrument.instrumentname == i, 
+                                        instrument.isactive == 1, 
+                                        instrument.isprimary >= int(content['primary_only'])
+                                    )
 
-                                #if this group has assignment music
-                                if thisgroup.musicid is not None:
-                                    #get a count of the amount of times that each potential player has played in this group
-                                    musiccounts_subquery = session.query(
-                                            user.userid.label('musiccounts_userid'),
-                                            func.count(user.userid).label("musiccount")
+                                log('AUTOFILL: Found %s possible players of a requested %s for instrument %s.' % (len(possible_players_query.all()), requiredplayers, i))
+                                #if we found at least one possible player
+                                if len(possible_players_query.all()) > 0:
+                                    #get the players that have already played in groups at this camp, and inverse it to get the players with playcounts of zero. Limit the query to just the spots we have left. These will be the people at the top of the list.
+                                    already_played_query = session.query(
+                                            user.userid
+                                        ).join(groupassignment
+                                        ).join(group
+                                        ).filter(
+                                            group.ismusical == 1, 
+                                            groupassignment.instrumentname != 'Conductor', 
+                                            user.userid.in_(possible_players_query)
+                                        )
+
+                                    #make a query that totals the nmber of times each potential user has played at camp.
+                                    playcounts_subquery = session.query(
+                                            user.userid.label('playcounts_userid'),
+                                            func.count(user.userid).label("playcount")
+                                        ).group_by(
+                                            user.userid
+                                        ).outerjoin(groupassignment, groupassignment.userid == user.userid
+                                        ).outerjoin(group, group.groupid == groupassignment.groupid
+                                        ).filter(
+                                            user.userid.in_(possible_players_query),
+                                            groupassignment.instrumentname != 'Conductor', 
+                                            group.ismusical == 1, 
+                                            group.periodid != None,
+                                            group.groupid != thisgroup.groupid
+                                        ).subquery()
+
+                                    #if this group has assignment music
+                                    if thisgroup.musicid is not None:
+                                        #get a count of the amount of times that each potential player has played in this group
+                                        musiccounts_subquery = session.query(
+                                                user.userid.label('musiccounts_userid'),
+                                                func.count(user.userid).label("musiccount")
+                                            ).group_by(
+                                                user.userid
+                                            ).outerjoin(groupassignment, groupassignment.userid == user.userid
+                                            ).outerjoin(group, group.groupid == groupassignment.groupid
+                                            ).filter(
+                                                user.userid.in_(possible_players_query),
+                                                groupassignment.instrumentname != 'Conductor', 
+                                                group.ismusical == 1,           
+                                                group.periodid != None,
+                                                group.groupid != thisgroup.groupid,
+                                                #grab all groups that share a musicid with this group
+                                                group.musicid == thisgroup.musicid
+                                            ).subquery()
+                                    else:
+                                        #make a query with all userids, and 0s in the next column so the subsequent queries work (because no users have a playcount for this music)
+                                        musiccounts_subquery = session.query(
+                                                user.userid.label('musiccounts_userid'),
+                                                sqlalchemy.sql.expression.literal_column("0").label("musiccount")
+                                            ).filter(
+                                                user.userid.in_(possible_players_query),
+                                            ).subquery()
+
+                                    #THIS ISN'T WORKING - GROUPCOUNT ALWAYS COMES UP AS NONE...
+                                    #make a query we can use to total up the number of times each user has played in a group like this
+
+                                    groupcounts_subquery = session.query(
+                                            user.userid.label('groupcounts_userid'),
+                                            func.count(user.userid).label("groupcount")
                                         ).group_by(
                                             user.userid
                                         ).outerjoin(groupassignment, groupassignment.userid == user.userid
@@ -770,106 +795,81 @@ def editgroup(logonid,groupid,periodid=None):
                                             group.ismusical == 1,           
                                             group.periodid != None,
                                             group.groupid != thisgroup.groupid,
-                                            #grab all groups that share a musicid with this group
-                                            group.musicid == thisgroup.musicid
+                                            #grab all groups that share a name with this group, or have the same instrumentation of this group
+                                            or_(
+                                                group.groupname == thisgroup.groupname,
+                                                and_(*[getattr(thisgroup,inst) == getattr(group,inst) for inst in instrumentlist])
+                                            )
                                         ).subquery()
-                                else:
-                                    #make a query with all userids, and 0s in the next column so the subsequent queries work (because no users have a playcount for this music)
-                                    musiccounts_subquery = session.query(
-                                            user.userid.label('musiccounts_userid'),
-                                            sqlalchemy.sql.expression.literal_column("0").label("musiccount")
+
+                                    #Put it all together!
+                                    final_list = session.query(
+                                            user.userid,
+                                            user.firstname,
+                                            user.lastname,
+                                            playcounts_subquery.c.playcount,
+                                            musiccounts_subquery.c.musiccount,
+                                            groupcounts_subquery.c.groupcount
+                                        ).outerjoin(playcounts_subquery, playcounts_subquery.c.playcounts_userid == user.userid
+                                        ).outerjoin(musiccounts_subquery, musiccounts_subquery.c.musiccounts_userid == user.userid
+                                        ).outerjoin(groupcounts_subquery, groupcounts_subquery.c.groupcounts_userid == user.userid
                                         ).filter(
-                                            user.userid.in_(possible_players_query),
-                                        ).subquery()
+                                            user.userid.in_(possible_players_query)
+                                        ).order_by(
+                                            #order by the number of times that the players have played this specific piece of music
+                                            musiccounts_subquery.c.musiccount.nullsfirst(), 
+                                            #then order by the number of times that the players have played in a group similar to this in name or instrumentation
+                                            groupcounts_subquery.c.groupcount.nullsfirst(), 
+                                            #then order by their total playcounts
+                                            playcounts_subquery.c.playcount.nullsfirst()
+                                        #).limit(requiredplayers
+                                        ).all()
+                                    log('AUTOFILL: Players in final list with playcounts:')
+                                    #add groupassignments for the final player list
+                                    for pl in final_list:
+                                        log('AUTOFILL: Selected %s %s to play %s with totals - musiccount:%s groupcount:%s playcount:%s ' % (pl.firstname, pl.lastname, i, pl.musiccount, pl.groupcount, pl.playcount))
+                                        playergroupassignment = groupassignment(userid = pl.userid, groupid = thisgroup.groupid, instrumentname = i)
+                                        session.add(playergroupassignment)
 
-                                #THIS ISN'T WORKING - GROUPCOUNT ALWAYS COMES UP AS NONE...
-                                #make a query we can use to total up the number of times each user has played in a group like this
-                                groupcounts_subquery = session.query(
-                                        user.userid.label('groupcounts_userid'),
-                                        func.count(user.userid).label("groupcount")
-                                    ).group_by(
-                                        user.userid
-                                    ).outerjoin(groupassignment, groupassignment.userid == user.userid
-                                    ).outerjoin(group, group.groupid == groupassignment.groupid
-                                    ).filter(
-                                        user.userid.in_(possible_players_query),
-                                        groupassignment.instrumentname != 'Conductor', 
-                                        group.ismusical == 1,           
-                                        group.periodid != None,
-                                        group.groupid != thisgroup.groupid,
-                                        #grab all groups that share a name with this group, or have the same instrumentation of this group
-                                        group.groupname == thisgroup.groupname
-                                        #and_(*[getattr(thisgroup,i) == getattr(group,inst) for inst in instrumentlist])
-                                    ).subquery()
-
-                                #Put it all together!
-                                final_list = session.query(
-                                        user.userid,
-                                        user.firstname,
-                                        user.lastname,
-                                        playcounts_subquery.c.playcount,
-                                        musiccounts_subquery.c.musiccount,
-                                        groupcounts_subquery.c.groupcount
-                                    ).outerjoin(playcounts_subquery, playcounts_subquery.c.playcounts_userid == user.userid
-                                    ).outerjoin(musiccounts_subquery, musiccounts_subquery.c.musiccounts_userid == user.userid
-                                    ).outerjoin(groupcounts_subquery, groupcounts_subquery.c.groupcounts_userid == user.userid
-                                    ).filter(
-                                        user.userid.in_(possible_players_query)
-                                    ).order_by(
-                                        #order by the number of times that the players have played this specific piece of music
-                                        musiccounts_subquery.c.musiccount.nullsfirst(), 
-                                        #then order by the number of times that the players have played in a group similar to this in name or instrumentation
-                                        groupcounts_subquery.c.groupcount.nullsfirst(), 
-                                        #then order by their total playcounts
-                                        playcounts_subquery.c.playcount.nullsfirst()
-                                    #).limit(requiredplayers
-                                    ).all()
-                                log('AUTOFILL: Players in final list with playcounts:')
-                                #add groupassignments for the final player list
-                                for pl in final_list:
-                                    log('AUTOFILL: Selected %s %s to play %s with totals - musiccount:%s groupcount:%s playcount:%s ' % (pl.firstname, pl.lastname, i, pl.musiccount, pl.groupcount, pl.playcount))
-                                    playergroupassignment = groupassignment(userid = pl.userid, groupid = thisgroup.groupid, instrumentname = i)
-                                    session.add(playergroupassignment)
-
-        #Check for empty instrument slots if group is set to confirmed - if there are empties we have to switch it back to queued
-        if thisgroup.status == 'Confirmed':
-            for i in getconfig('Instruments').split(","):
-                log('This group has a required %s number of %s and an assigned %s.' % (i, getattr(thisgroup,i), session.query(user).join(groupassignment).filter(groupassignment.groupid == thisgroup.groupid, groupassignment.instrumentname == i).count()))
-                if int(session.query(user).join(groupassignment).filter(groupassignment.groupid == thisgroup.groupid, groupassignment.instrumentname == i).count()) != int(getattr(thisgroup,i)):
-                    thisgroup.status = 'Queued'
-                    try:
-                        session.merge(thisgroup)
-                        session.commit()
-                    except Exception as ex:
-                        log('failed to commit changes to database after a groupedit on group %s with error: %s' % (thisgroup.groupid,ex))
-                    flash(u'Changes Partially Saved','message')
-                    return jsonify(message = 'Your group is not confirmed because there are empty instrument slots. Your other changes have been saved.', url = '/user/' + str(thisuser.logonid) + '/group/' + str(thisgroup.groupid) + '/edit/')
-        try:
-            session.merge(thisgroup)
-            session.commit()
-        except Exception as ex:
-            log('failed to commit changes to database after a groupedit on group %s with error: %s' % (thisgroup.groupid,ex))
-        if content['submittype'] == 'autofill':
-            url = '/user/' + str(thisuser.logonid) + '/group/' + str(thisgroup.groupid) + '/edit/'
-            message = 'none'
-            flash(u'Autofill Completed','message')
-        elif content['submittype'] == 'save':
-            if groupid == None:
-                url = '/user/' + str(thisuser.logonid) + '/group/' + str(thisgroup.groupid) + '/edit/'
-            else:
-                url = 'none'
-            message = 'none'
-        else:
-            url = '/user/' + str(thisuser.logonid) + '/group/' + str(thisgroup.groupid) + '/'
-            message = 'none'
+            #Check for empty instrument slots if group is set to confirmed - if there are empties we have to switch it back to queued
             if thisgroup.status == 'Confirmed':
-                flash(u'Group Confirmed and Scheduled','message')
+                for i in getconfig('Instruments').split(","):
+                    log('This group has a required %s number of %s and an assigned %s.' % (i, getattr(thisgroup,i), session.query(user).join(groupassignment).filter(groupassignment.groupid == thisgroup.groupid, groupassignment.instrumentname == i).count()))
+                    if int(session.query(user).join(groupassignment).filter(groupassignment.groupid == thisgroup.groupid, groupassignment.instrumentname == i).count()) != int(getattr(thisgroup,i)):
+                        thisgroup.status = 'Queued'
+                        try:
+                            session.merge(thisgroup)
+                            session.commit()
+                        except Exception as ex:
+                            log('failed to commit changes to database after a groupedit on group %s with error: %s' % (thisgroup.groupid,ex))
+                        flash(u'Changes Partially Saved','message')
+                        return jsonify(message = 'Your group is not confirmed because there are empty instrument slots. Your other changes have been saved.', url = '/user/' + str(thisuser.logonid) + '/group/' + str(thisgroup.groupid) + '/edit/')
+            try:
+                session.merge(thisgroup)
+                session.commit()
+            except Exception as ex:
+                log('failed to commit changes to database after a groupedit on group %s with error: %s' % (thisgroup.groupid,ex))
+            if content['submittype'] == 'autofill':
+                url = '/user/' + str(thisuser.logonid) + '/group/' + str(thisgroup.groupid) + '/edit/'
+                message = 'none'
+                flash(u'Autofill Completed','message')
+            elif content['submittype'] == 'save':
+                if groupid == None:
+                    url = '/user/' + str(thisuser.logonid) + '/group/' + str(thisgroup.groupid) + '/edit/'
+                else:
+                    url = 'none'
+                message = 'none'
             else:
-                flash(u'Changes Saved','success')
-        session.close()
-        return jsonify(message = message, url = url)
+                url = '/user/' + str(thisuser.logonid) + '/group/' + str(thisgroup.groupid) + '/'
+                message = 'none'
+                if thisgroup.status == 'Confirmed':
+                    flash(u'Group Confirmed and Scheduled','message')
+                else:
+                    flash(u'Changes Saved','success')
+            session.close()
+            return jsonify(message = message, url = url)
     
-    """except Exception as ex:
+    except Exception as ex:
         log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))
         message = ('Failed to execute %s with exception: %s. Try refreshing the page and trying again or contact camp administration.' % (request.method, ex))
         session.rollback()
@@ -877,7 +877,7 @@ def editgroup(logonid,groupid,periodid=None):
         if request.method == 'GET':
             return errorpage(thisuser,'Failed to display page with exception: %s.' % ex)
         else:
-            return jsonify(message = message, url = 'none')"""
+            return jsonify(message = message, url = 'none')
         
 @app.route('/user/<logonid>/group/<groupid>/period/<periodid>/edit/', methods=['GET', 'POST', 'DELETE'])
 def editgroupperiod(logonid,groupid,periodid):
@@ -1400,7 +1400,6 @@ def conductorgrouprequest(logonid,periodid):
 def musicgrouprequest(logonid,musicid):
     return grouprequest(logonid,None,musicid)
 
-
 #This page is used by an "announcer" to edit the announcement that users see when they open their homes
 @app.route('/user/<logonid>/announcement/', methods=['GET', 'POST'])
 def announcementpage(logonid):
@@ -1646,12 +1645,54 @@ def useradmin(logonid):
             #get the list of people that play instruments
             players_query = session.query(instrument.userid).filter(instrument.isactive == 1)
             #get the players that have not played yet in this camp, add a 0 playcount to them and append them to the list
-            already_played_query = session.query(user.userid).join(groupassignment).join(group).filter(group.ismusical == 1, group.status == 'Confirmed', user.userid.in_(players_query))
-            users = session.query(user.userid, user.logonid, user.isactive, user.firstname, user.lastname, user.isadmin, user.isconductor, user.isannouncer, sqlalchemy.sql.expression.literal_column("0").label("playcount")).\
-                            filter(~user.userid.in_(already_played_query)).filter(user.userid.in_(players_query)).all()
+            already_played_query = session.query(
+                                user.userid
+                            ).join(groupassignment
+                            ).join(group
+                            ).filter(
+                                group.ismusical == 1, 
+                                group.status == 'Confirmed', 
+                                user.userid.in_(players_query)
+                            )
+            users = session.query(
+                                user.userid, 
+                                user.logonid, 
+                                user.isactive, 
+                                user.firstname, 
+                                user.lastname, 
+                                user.isadmin, 
+                                user.isconductor, 
+                                user.isannouncer, 
+                                user.grouprequestcount,
+                                instrument.instrumentname,
+                                sqlalchemy.sql.expression.literal_column("0").label("playcount")
+                            ).outerjoin(instrument
+                            ).filter(
+                                ~user.userid.in_(already_played_query),
+                                user.userid.in_(players_query),
+                                instrument.isprimary == 1
+                            ).all()
             #append the players that have already played.
-            for p in (session.query(user.userid, user.logonid, user.isactive, user.firstname, user.lastname, user.isadmin, user.isconductor, user.isannouncer, func.count(groupassignment.userid).label("playcount")).group_by(user.userid).outerjoin(groupassignment).outerjoin(group).\
-                        filter(group.ismusical == 1, group.status == 'Confirmed', user.userid.in_(players_query)).order_by(func.count(groupassignment.userid)).all()):
+            for p in (session.query(
+                                user.userid, 
+                                user.logonid, 
+                                user.isactive, 
+                                user.firstname, 
+                                user.lastname, 
+                                user.isadmin, 
+                                user.isconductor, 
+                                user.isannouncer, 
+                                user.grouprequestcount,
+                                func.count(groupassignment.userid).label("playcount")
+                            ).group_by(user.userid
+                            ).outerjoin(groupassignment, user.userid == groupassignment.userid
+                            ).outerjoin(group
+                            ).filter(
+                                group.ismusical == 1, 
+                                group.status == 'Confirmed', 
+                                user.userid.in_(players_query),
+                            ).order_by(func.count(groupassignment.userid)
+                            ).all()):
                 users.append(p)
             #get the inverse of that - the non-players and add it to the list
             for p in (session.query(user.userid, user.logonid, user.firstname, user.lastname, user.isadmin, user.isconductor, user.isannouncer, sqlalchemy.sql.expression.literal_column("'Non Player'").label("playcount")).filter(~user.userid.in_(players_query)).all()):
@@ -2041,11 +2082,16 @@ def setup(logonid):
                 if file and allowed_file(file.filename):
                     filename = secure_filename(file.filename)
                     if filename == 'config.xml':
-                        return dbbuild(file.read())
+                        message = dbbuild(file.read())
                     if filename == 'campers.csv':
-                        return(importusers(file))
+                         message = importusers(file)
                     if filename == 'musiclibrary.csv':
-                        return(importmusic(file))
+                         message = importmusic(file)
+                    if message == 'Success':
+                        flash(message,'success')
+                    else:
+                        flash(message,'error')
+                    return message
     
     except Exception as ex:
         log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))

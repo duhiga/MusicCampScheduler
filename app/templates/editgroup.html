@@ -268,7 +268,7 @@
             Minimum Level <select id="minimumlevel" class="form-attribute">
                 {% for n in range(maximumlevel + 1) %}
                 {% if n == thisgroup.minimumlevel and n == 0 %}
-                <option value="{{ n }}" selected="selected">Auto</option>
+                <option value="{{ n }}" selected="selected">Auto ({{groupmin}})</option>
                 {% elif n == thisgroup.minimumlevel %}
                 <option value="{{ n }}" selected="selected">{{ n }}</option>
                 {% elif n == 0 %}
@@ -283,7 +283,7 @@
             Maximum Level <select id="maximumlevel" class="form-attribute">
                 {% for n in range(maximumlevel + 1) %}
                 {% if n == thisgroup.maximumlevel and n == 0 %}
-                <option value="{{ n }}" selected="selected">Auto</option>
+                <option value="{{ n }}" selected="selected">Auto ({{groupmax}})</option>
                 {% elif n == thisgroup.maximumlevel %}
                 <option value="{{ n }}" selected="selected">{{ n }}</option>
                 {% elif n == 0 %}
@@ -433,26 +433,6 @@
                 </td>
             </tr>
             <tr>
-                <th>Minimum Level:</th>
-                <td>
-                    {% if thisgroup.minimumlevel == 0 %}
-                    {{groupmin}} (Automatically Generated)
-                    {% else %}
-                    {{thisgroup.minimumlevel}}
-                    {% endif %}
-                </td>
-            </tr>
-            <tr>
-                <th>Maximum Level:</th>
-                <td>
-                    {% if thisgroup.maximumlevel == 0 %}
-                    {{groupmax}} (Automatically Generated)
-                    {% else %}
-                    {{thisgroup.maximumlevel}}
-                    {% endif %}
-                </td>
-            </tr>
-            <tr>
                 <th>Total Players:</th>
                 <td id="total_players"></td>
             </tr>
@@ -500,22 +480,24 @@
     </div>
     <div class="w3-third w3-container">
         <h2>Group Event Log</h2>
-        <table class="tablesorter border-table">
+        <table style="width:100%" class="tablesorter border-table">
             <tr>
                 <th>Time</th>
                 <th>Event</th>
             </tr>
-            {% set rows = thisgroup.log.split(',') %}
-            {% for row in rows %}
-            <tr>
-                {% set columns = row.split(';') %}
-                {% for column in columns %}
-                <td>
-                    {{column}}
-                </td>
-                {%endfor%}
-            </tr>
-            {% endfor %}
+            {% if thisgroup.log %}
+                {% set rows = thisgroup.log.split(',') %}
+                {% for row in rows %}
+                <tr>
+                    {% set columns = row.split(';') %}
+                    {% for column in columns %}
+                    <td>
+                        {{column}}
+                    </td>
+                    {%endfor%}
+                </tr>
+                {% endfor %}
+            {% endif %}
         </table>
     </div>
 </div>

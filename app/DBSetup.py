@@ -96,6 +96,13 @@ class group(Base):
     def serialize(self):
         return serialize_class(self, self.__class__)
 
+    def addtolog(self,text):
+        now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M') #get the time now and convert it to a string format
+        if self.log is None or self.log == '':
+            self.log = now + ';' + text
+        else:
+            self.log = self.log + ',' + now + ';' + text
+
 class grouptemplate(Base):
     __tablename__ = 'grouptemplates'
 

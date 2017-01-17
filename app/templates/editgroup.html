@@ -307,7 +307,7 @@
 {% endblock %}
 {% block content %}
 <div class="w3-row">
-    <div class="w3-container">
+    <div class="w3-container w3-twothird">
         <h2>Group Configuration</h2>
         <table class="w3-table border-table">
             <tr>
@@ -496,5 +496,27 @@
                 <td class="players_cell" data-instrument="{{ i }}"></td>
             </tr>
             {% endfor %}
-        </table></div></div>
-        {% endblock %}
+        </table>
+    </div>
+    <div class="w3-third w3-container">
+        <h2>Group Event Log</h2>
+        <table class="tablesorter border-table">
+            <tr>
+                <th>Time</th>
+                <th>Event</th>
+            </tr>
+            {% set rows = thisgroup.log.split(',') %}
+            {% for row in rows %}
+            <tr>
+                {% set columns = row.split(';') %}
+                {% for column in columns %}
+                <td>
+                    {{column}}
+                </td>
+                {%endfor%}
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -103,6 +103,14 @@ class group(Base):
         else:
             self.log = self.log + ',' + now + ';' + text
 
+    def delete(self, session):
+        thisgroupassignments = session.query(groupassignment).filter(groupassignment.groupid == self.groupid).all()
+        for a in thisgroupassignments:
+            session.delete(a)
+        session.commit()
+        session.delete(self)
+        session.commit()
+
 class grouptemplate(Base):
     __tablename__ = 'grouptemplates'
 

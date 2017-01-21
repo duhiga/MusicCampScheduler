@@ -9,5 +9,9 @@ def getconfig(attribute):
         #if not, use the config file in the local store
         config = untangle.parse('config.xml')
         attr = config.root.CampDetails[attribute]
-
     return attr
+
+#sets up debugging
+def log(string):
+    if int(getconfig('Debug')) == 1:
+        print(string)

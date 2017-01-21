@@ -27,11 +27,6 @@ app.config['ALLOWED_EXTENSIONS'] = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif
 app.secret_key = getconfig('SecretKey')
 Session = sessionmaker(bind=engine)
 
-#sets up debugging
-def log(string):
-    if int(getconfig('Debug')) == 1:
-        print(string)
-
 # For a given file, return whether it's an allowed type or not
 def allowed_file(filename):
     return '.' in filename and \

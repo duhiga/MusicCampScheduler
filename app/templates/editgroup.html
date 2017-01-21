@@ -391,6 +391,7 @@
                 <td class="w3-hide-small">{{ thislocation.locationname }}</td>
                 <td>
                     <select id="locationid" class="form-attribute w3-select w3-border">
+                        <option value=""></option>
                         {% for l in locations %}
                         {% if l.locationid == thislocation.locationid %}
                         <option value="{{ l.locationid }}" selected="selected">{{ l.locationname }} - Cap: {{ l.capacity }}</option>

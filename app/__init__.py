@@ -599,7 +599,7 @@ def editgroup(logonid,groupid,periodid=None):
                 session.delete(a)
 
             #add the content in the packet to this group's attributes
-            for key,value in content.iteritems():
+            for key,value in content.items():
                 if (value is None or value == 'null' or value == '') and key != 'primary_only':
                     log('Setting %s to be NULL' % (key))
                     setattr(thisgroup,key,None)
@@ -1032,7 +1032,7 @@ def newmusic(logonid):
                 return jsonify(message = 'You cannot submit music without instrumentation.', url = 'none')
             thismusic = music()
             log('New Music: Submitted by user %s %s' % (thisuser.firstname, thisuser.lastname))
-            for key,value in content.iteritems():
+            for key,value in content.items():
                 if (value is None or value == 'null' or value == '') and key == 'composer':
                     session.rollback()
                     session.close()
@@ -1047,7 +1047,7 @@ def newmusic(logonid):
             #try to find a grouptemplate that matches this instrumentation
             matchingtemplate = session.query(grouptemplate).filter(*[getattr(thismusic,i) == getattr(grouptemplate,i) for i in instrumentlist]).first()
             if matchingtemplate is not None:
-                print('New Music: Found a template matching this music: %s' % matchingtemplate.grouptemplatename)
+                log('New Music: Found a template matching this music: %s' % matchingtemplate.grouptemplatename)
                 thismusic.grouptemplateid = matchingtemplate.grouptemplateid
             
             session.add(thismusic)
@@ -1791,7 +1791,7 @@ def edituser(logonid, targetuserid):
                         return jsonify(message = 'Your departure time must be after your arrival time.', url = 'none')
             
             #add the content in the packet to this group's attributes
-            for key,value in content.iteritems():
+            for key,value in content.items():
                 if (thisuser.isadmin != 1 and thisuser.isadmin != '1') and key != 'arrival' and key != 'departure' and key != 'isactive' and key != 'submittype' and key != 'objects':
                     session.rollback()
                     session.close()
@@ -1823,7 +1823,7 @@ def edituser(logonid, targetuserid):
                     session.rollback()
                     session.close()
                     return jsonify(message = 'You have submitted illegal parameters for your instrument. No changes have been made to your instrument listings.', url = 'none')
-                for key,value in i.iteritems():
+                for key,value in i.items():
                     if key != 'instrumentid':
                         if thisuser.isadmin != 1 and key != 'isactive' and key != 'isprimary':
                             session.rollback()
@@ -2200,7 +2200,7 @@ def objecteditor(logonid, input, objectid=None):
                                 session.rollback()
                                 session.close()
                                 return jsonify(message = 'Could not find one of your requested objects. This is a malformed request packet.', url = 'none')
-                        for key, value in o.iteritems():
+                        for key, value in o.items():
                             if key != table + 'id':
                                 log('Changing object %s key %s to %s' % (table, key, value))
                                 setattr(object,key,value)

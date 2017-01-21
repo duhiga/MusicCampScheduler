@@ -57,6 +57,14 @@
 {% block content %}
 <div class="w3-row">
     <div class="w3-container">
+        <h3>Auto-Scheduler</h3>
+        <select class="w3-border w3-select">
+            <option value="">Select a Period...</option>
+        </select>
+        <button class="w3-btn w3-white w3-hover-black w3-border w3-round-large" id="fillall">
+            Auto-Schedule
+            <i class="fa fa-circle-o-notch fa-spin reset_spin"></i>
+        </button>
         <h3>Queued Groups</h3>
         <table style="width:100%" class="tablesorter">
             <thead>

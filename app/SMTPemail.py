@@ -28,7 +28,7 @@ def send_email(recipient, subject, body):
         #server.sendmail(FROM, TO, message)
         #server.close()
 
-        print 'Successfully sent email to %s' % recipient
+        print ('Successfully sent email to %s' % recipient)
         return 'Successfully Sent Email'
     except Exception as ex:
         print ('Failed to send email to %s. Full error: %s' % (recipient, ex))

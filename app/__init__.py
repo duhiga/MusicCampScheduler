@@ -19,16 +19,15 @@ from config import *
 from SMTPemail import *
 from tablefunctions import *
 
-# Make the WSGI interface available at the top level so wfastcgi can get it.
+#Make the WSGI interface available at the top level so wfastcgi can get it.
 app = Flask(__name__)
-#app.secret_key = 'MusicCampIsCool'
 wsgi_app = app.wsgi_app
-# These are the extension that we are accepting to be uploaded
+#These are the extension that we are accepting to be uploaded
 app.config['ALLOWED_EXTENSIONS'] = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'xml', 'csv'])
 app.secret_key = getconfig('SecretKey')
 Session = sessionmaker(bind=engine)
 
-# For a given file, return whether it's an allowed type or not
+#For a given file, return whether it's an allowed type or not
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1] in app.config['ALLOWED_EXTENSIONS']
@@ -288,308 +287,297 @@ def editgroup(logonid,groupid,periodid=None):
     thisuser = session.query(user).filter(user.logonid == logonid).first()
     if thisuser is None:
         return ('Did not find user in database. You have entered an incorrect URL address.')
+    log('GROUPEDIT: Page request by user %s %s' % (thisuser.firstname, thisuser.lastname))
+    #try:
+    if thisuser.isadmin != 1:
+        session.close()
+        return 'You do not have permission to do this.'
+    if periodid == 'None':
+        periodid = None
+    if groupid == 'new' or groupid is None:
+        groupid = None
+        thisgroup = group(ismusical = 1, requesteduserid = thisuser.userid)
+        requestor = thisuser
+    else:
+        thisgroup = session.query(group).filter(group.groupid == groupid).first()
+        requestor = session.query(user).filter(user.userid == thisgroup.requesteduserid).first()
+    if request.method == 'GET':
 
-    try:
-        if thisuser.isadmin != 1:
-            session.close()
-            return 'You do not have permission to do this.'
-        if periodid == 'None':
-            periodid = None
-        if groupid == 'new' or groupid is None:
-            groupid = None
-            thisgroup = group(ismusical = 1, requesteduserid = thisuser.userid)
-            requestor = thisuser
-        else:
-            thisgroup = session.query(group).filter(group.groupid == groupid).first()
-            requestor = session.query(user).filter(user.userid == thisgroup.requesteduserid).first()
-        if request.method == 'GET':
+        tomorrow = datetime.datetime.combine(datetime.date.today(), datetime.time.min) + datetime.timedelta(days=1)
 
-            tomorrow = datetime.datetime.combine(datetime.date.today(), datetime.time.min) + datetime.timedelta(days=1)
+        #Current period tracks the period that the group is already set to (none, if it's a new group)
+        currentperiod = session.query(period).filter(period.periodid == thisgroup.periodid).first()
 
-            #Current period tracks the period that the group is already set to (none, if it's a new group)
-            currentperiod = session.query(period).filter(period.periodid == thisgroup.periodid).first()
-
-            #print out the list of players and remove any that have already left camp
-            thisgroupplayers = session.query(user.userid, user.firstname, user.lastname, groupassignment.instrumentname, user.departure).join(groupassignment).join(group).filter(group.groupid == thisgroup.groupid).order_by(groupassignment.instrumentname).all()
-            if thisgroupplayers is not None:
-                log('Players in this group:')
-                for p in thisgroupplayers:
-                    log('%s %s: %s' % (p.firstname, p.lastname, p.instrumentname))
-                    if p.departure <= tomorrow:
-                        a = session.query(groupassignment).filter(groupassignment.userid == p.userid, groupassignment.groupid == thisgroup.groupid).first()
-                        log('Found user %s %s with departure before tomorrow, removing them from this group.' % (p.firstname, p.lastname))
-                        session.delete(a)
-                session.commit()
-
-            #find all periods from now until the end of time to display to the user, then removes any periods that the people in this group cannot play in
-            thisgroupplayers_query = session.query(user.userid).join(groupassignment).join(group).filter(group.groupid == thisgroup.groupid).order_by(groupassignment.instrumentname)
-            periodlist = session.query(period).order_by(period.starttime).all()
-            if thisgroupplayers_query.first() is not None:
-                lastarrival = session.query(func.max(user.arrival).label("lastarrival")).filter(user.userid.in_(thisgroupplayers_query)).first().lastarrival
-                firstdeparture = session.query(func.min(user.departure).label("firstdeparture")).filter(user.userid.in_(thisgroupplayers_query)).first().firstdeparture
-            else:
-                lastarrival = datetime.datetime.strptime(getconfig('StartTime'), '%Y-%m-%d %H:%M')
-                firstdeparture = datetime.datetime.strptime(getconfig('EndTime'), '%Y-%m-%d %H:%M')
-            log('Last Arrival time of players in this group: %s' % lastarrival)
-            log('First Departure time of players in this group: %s' % firstdeparture)
-            periods = []
-            for p in periodlist:
-                if thisgroupplayers_query.first() is None or ((currentperiod and p.periodid == currentperiod.periodid) \
-                        or (len(session.query(user.userid).join(groupassignment).join(group).join(period).filter(group.periodid == p.periodid, or_(user.userid.in_(thisgroupplayers_query))).all()) == 0\
-                        and p.starttime > lastarrival and p.starttime < firstdeparture)):
-                    periods.append(p)
-
-            #if there was no selected period by the user, select the first period
-            if periodid is not None:
-                selectedperiod = session.query(period).filter(period.periodid == periodid).first()
-            elif currentperiod is None:
-                log('This is a periodless group. Selecting a period for the group.')
-                foundperiod = False
-                for p in periods:
-                    if p.starttime > tomorrow and session.query(period.periodid).join(group).filter(period.periodid == p.periodid, group.iseveryone == 1).first() is None:
-                        selectedperiod = p
-                        foundperiod = True
-                        break
-                if not foundperiod:
-                    selectedperiod = None
-            else:
-                selectedperiod = currentperiod
-            thislocation = session.query(location).join(group).filter(group.groupid == groupid).first()
-            #gets the list of players playing in the given group
-            thisgroupplayers = session.query(user.userid, user.firstname, user.lastname, groupassignment.instrumentname).join(groupassignment).join(group).\
-                                    filter(group.groupid == thisgroup.groupid).order_by(groupassignment.instrumentname).all()
-            thisgroupplayers_serialized = []
+        #print out the list of players and remove any that have already left camp
+        thisgroupplayers = session.query(user.userid, user.firstname, user.lastname, groupassignment.instrumentname, user.departure).join(groupassignment).join(group).filter(group.groupid == thisgroup.groupid).order_by(groupassignment.instrumentname).all()
+        if thisgroupplayers is not None:
             for p in thisgroupplayers:
-                    thisgroupplayers_serialized.append({'userid': p.userid, 'firstname': p.firstname, 'lastname': p.lastname,
-                    'instrumentname': p.instrumentname})
-            if selectedperiod is not None:
-                #Finds all players who are already playing in this period (except in this specific group)
-                playersPlayingInPeriod = session.query(user.userid).join(groupassignment).join(group).filter(group.groupid != thisgroup.groupid).filter(group.periodid == selectedperiod.periodid)
-                #finds all players who are available to play in this group (they aren't already playing in other groups)
-                playersdump = session.query(user.userid,user.firstname,user.lastname,instrument.instrumentname,instrument.grade,instrument.isprimary).\
-                            join(instrument).filter(~user.userid.in_(playersPlayingInPeriod), user.isactive == 1, user.arrival <= selectedperiod.starttime, user.departure >= selectedperiod.endtime, instrument.isactive == 1).all()
-            else:
-                playersdump = session.query(user.userid,user.firstname,user.lastname,instrument.instrumentname,instrument.grade,instrument.isprimary).\
-                            join(instrument).filter(user.isactive == 1, instrument.isactive == 1).all()
-            playersdump_serialized = []
-            for p in playersdump:
-                playersdump_serialized.append({'userid': p.userid, 'firstname': p.firstname, 'lastname': p.lastname,
-                    'instrumentname': p.instrumentname, 'grade': p.grade, 'isprimary': p.isprimary})
+                if p.departure <= tomorrow:
+                    a = session.query(groupassignment).filter(groupassignment.userid == p.userid, groupassignment.groupid == thisgroup.groupid).first()
+                    log('GROUPEDIT: Found user %s %s with departure before tomorrow, removing them from this group.' % (p.firstname, p.lastname))
+                    session.delete(a)
+            session.commit()
 
-            #Get a list of the available music not being used in the period selected
-            if selectedperiod is not None:
-                musics_used_query = session.query(music.musicid).join(group).join(period).filter(period.periodid == selectedperiod.periodid, group.groupid != thisgroup.groupid)
-                musics = session.query(music).filter(~music.musicid.in_(musics_used_query)).all()
-            else:
-                musics = session.query(music).all()
-            musics_serialized = [i.serialize for i in musics]
-            thismusic = session.query(music).filter(music.musicid == thisgroup.musicid).first()
+        #find all periods from now until the end of time to display to the user, then removes any periods that the people in this group cannot play in
+        thisgroupplayers_query = session.query(user.userid).join(groupassignment).join(group).filter(group.groupid == thisgroup.groupid).order_by(groupassignment.instrumentname)
+        periodlist = session.query(period).order_by(period.starttime).all()
+        if thisgroupplayers_query.first() is not None:
+            lastarrival = session.query(func.max(user.arrival).label("lastarrival")).filter(user.userid.in_(thisgroupplayers_query)).first().lastarrival
+            firstdeparture = session.query(func.min(user.departure).label("firstdeparture")).filter(user.userid.in_(thisgroupplayers_query)).first().firstdeparture
+        else:
+            lastarrival = datetime.datetime.strptime(getconfig('StartTime'), '%Y-%m-%d %H:%M')
+            firstdeparture = datetime.datetime.strptime(getconfig('EndTime'), '%Y-%m-%d %H:%M')
+        log('GROUPEDIT: Last Arrival time of players in this group: %s' % lastarrival)
+        log('GROUPEDIT: First Departure time of players in this group: %s' % firstdeparture)
+        periods = []
+        for p in periodlist:
+            if thisgroupplayers_query.first() is None or ((currentperiod and p.periodid == currentperiod.periodid) \
+                    or (len(session.query(user.userid).join(groupassignment).join(group).join(period).filter(group.periodid == p.periodid, or_(user.userid.in_(thisgroupplayers_query))).all()) == 0\
+                    and p.starttime > lastarrival and p.starttime < firstdeparture)):
+                periods.append(p)
 
-            #get a list of the locations not being used in this period
-            if selectedperiod is not None:
-                locations_used_query = session.query(location.locationid).join(group).join(period).filter(period.periodid == selectedperiod.periodid, group.groupid != thisgroup.groupid, location.locationname != 'None')
-                locations = session.query(location).filter(~location.locationid.in_(locations_used_query)).all()
-            else:
-                locations = session.query(location).all()
-            log('This groups status is %s' % thisgroup.status)
+        #if there was no selected period by the user, select the first period
+        if periodid is not None:
+            selectedperiod = session.query(period).filter(period.periodid == periodid).first()
+        elif currentperiod is None:
+            log('GROUPEDIT: This is a periodless group. Selecting a period for the group.')
+            foundperiod = False
+            for p in periods:
+                if p.starttime > tomorrow and session.query(period.periodid).join(group).filter(period.periodid == p.periodid, group.iseveryone == 1).first() is None:
+                    selectedperiod = p
+                    foundperiod = True
+                    break
+            if not foundperiod:
+                selectedperiod = None
+        else:
+            selectedperiod = currentperiod
+        thislocation = session.query(location).join(group).filter(group.groupid == groupid).first()
+        #gets the list of players playing in the given group
+        thisgroupplayers = session.query(user.userid, user.firstname, user.lastname, groupassignment.instrumentname).join(groupassignment).join(group).\
+                                filter(group.groupid == thisgroup.groupid).order_by(groupassignment.instrumentname).all()
+        thisgroupplayers_serialized = []
+        for p in thisgroupplayers:
+                thisgroupplayers_serialized.append({'userid': p.userid, 'firstname': p.firstname, 'lastname': p.lastname,
+                'instrumentname': p.instrumentname})
+        if selectedperiod is not None:
+            #Finds all players who are already playing in this period (except in this specific group)
+            playersPlayingInPeriod = session.query(user.userid).join(groupassignment).join(group).filter(group.groupid != thisgroup.groupid).filter(group.periodid == selectedperiod.periodid)
+            #finds all players who are available to play in this group (they aren't already playing in other groups)
+            playersdump = session.query(user.userid,user.firstname,user.lastname,instrument.instrumentname,instrument.grade,instrument.isprimary).\
+                        join(instrument).filter(~user.userid.in_(playersPlayingInPeriod), user.isactive == 1, user.arrival <= selectedperiod.starttime, user.departure >= selectedperiod.endtime, instrument.isactive == 1).all()
+        else:
+            playersdump = session.query(user.userid,user.firstname,user.lastname,instrument.instrumentname,instrument.grade,instrument.isprimary).\
+                        join(instrument).filter(user.isactive == 1, instrument.isactive == 1).all()
+        playersdump_serialized = []
+        for p in playersdump:
+            playersdump_serialized.append({'userid': p.userid, 'firstname': p.firstname, 'lastname': p.lastname,
+                'instrumentname': p.instrumentname, 'grade': p.grade, 'isprimary': p.isprimary})
 
-            #find all group templates to show in a dropdown
-            grouptemplates = session.query(grouptemplate).all()
-            grouptemplates_serialized = [i.serialize for i in grouptemplates]
+        #Get a list of the available music not being used in the period selected
+        if selectedperiod is not None:
+            musics_used_query = session.query(music.musicid).join(group).join(period).filter(period.periodid == selectedperiod.periodid, group.groupid != thisgroup.groupid)
+            musics = session.query(music).filter(~music.musicid.in_(musics_used_query)).all()
+        else:
+            musics = session.query(music).all()
+        musics_serialized = [i.serialize for i in musics]
+        thismusic = session.query(music).filter(music.musicid == thisgroup.musicid).first()
 
-            groupmin = getgrouplevel(session,thisgroup,'min')
-            groupmax = getgrouplevel(session,thisgroup,'max')
+        #get a list of the locations not being used in this period
+        if selectedperiod is not None:
+            locations_used_query = session.query(location.locationid).join(group).join(period).filter(period.periodid == selectedperiod.periodid, group.groupid != thisgroup.groupid, location.locationname != 'None')
+            locations = session.query(location).filter(~location.locationid.in_(locations_used_query)).all()
+        else:
+            locations = session.query(location).all()
+        log('GROUPEDIT: This groups status is %s' % thisgroup.status)
 
-            template = render_template('editgroup.html', \
-                                currentperiod=currentperiod, \
-                                selectedperiod=selectedperiod, \
-                                campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
-                                thisgroup=thisgroup, \
-                                thisgroupplayers=thisgroupplayers, \
-                                thisuser=thisuser, \
-                                periods=periods, \
-                                thislocation=thislocation, \
-                                locations=locations, \
-                                playersdump=playersdump, \
-                                playersdump_serialized=playersdump_serialized, \
-                                thisgroupplayers_serialized=thisgroupplayers_serialized, \
-                                maximumlevel=int(getconfig('MaximumLevel')), \
-                                grouptemplates=grouptemplates, \
-                                grouptemplates_serialized=grouptemplates_serialized, \
-                                musics=musics, \
-                                musics_serialized=musics_serialized, \
-                                thismusic=thismusic, \
-                                instrumentlist_string=getconfig('Instruments'), \
-                                groupmin=groupmin, \
-                                groupmax=groupmax, \
-                                requestor=requestor, \
-                                )
-            session.close()
-            return template
+        #find all group templates to show in a dropdown
+        grouptemplates = session.query(grouptemplate).all()
+        grouptemplates_serialized = [i.serialize for i in grouptemplates]
 
-        if request.method == 'DELETE':
-            if groupid is not None:
-                thisgroup.delete(session)
-                url = ('/user/' + str(thisuser.logonid) + '/')
-                message = 'none'
-                flash(u'Group Deleted','message')
-                log('Sending user to URL: %s' % url)
-                session.close()
-                return jsonify(message = message, url = url)
-            else:
-                session.rollback()
-                session.close()
-                raise NameError('You must have a period selected before autofilling.')
-            
+        groupmin = getgrouplevel(session,thisgroup,'min')
+        groupmax = getgrouplevel(session,thisgroup,'max')
 
-        if request.method == 'POST':
-            #format the packet received from the server as JSON
-            content = request.json
-            if content['groupname'] == '' or content['groupname'] == 'null' or content['groupname'] is None:
-                session.rollback()
-                session.close()
-                return jsonify(message = 'You must give this group a name before saving or autofilling.', url = 'none')
-            if content['periodid'] != '' and content['periodid'] != 'null' and content['periodid'] is not None:
-                thisperiod = session.query(period).filter(period.periodid == content['periodid']).first()
-            else:
-                session.rollback()
-                session.close()
-                return jsonify(message = 'Could not find a period with the selected id. Refresh the page and try again.', url = 'none')
-            thisgroupassignments = session.query(groupassignment).filter(groupassignment.groupid == thisgroup.groupid).all()
-            for a in thisgroupassignments:
-                session.delete(a)
+        template = render_template('editgroup.html', \
+                            currentperiod=currentperiod, \
+                            selectedperiod=selectedperiod, \
+                            campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
+                            thisgroup=thisgroup, \
+                            thisgroupplayers=thisgroupplayers, \
+                            thisuser=thisuser, \
+                            periods=periods, \
+                            thislocation=thislocation, \
+                            locations=locations, \
+                            playersdump=playersdump, \
+                            playersdump_serialized=playersdump_serialized, \
+                            thisgroupplayers_serialized=thisgroupplayers_serialized, \
+                            maximumlevel=int(getconfig('MaximumLevel')), \
+                            grouptemplates=grouptemplates, \
+                            grouptemplates_serialized=grouptemplates_serialized, \
+                            musics=musics, \
+                            musics_serialized=musics_serialized, \
+                            thismusic=thismusic, \
+                            instrumentlist_string=getconfig('Instruments'), \
+                            groupmin=groupmin, \
+                            groupmax=groupmax, \
+                            requestor=requestor, \
+                            )
+        session.close()
+        return template
 
-            #add the content in the packet to this group's attributes
-            for key,value in content.items():
-                if (value is None or value == 'null' or value == '') and key != 'primary_only':
-                    log('Setting %s to be NULL' % (key))
-                    setattr(thisgroup,key,None)
-                elif key != 'primary_only':
-                    log('Setting %s to be %s' % (key, value))
-                    setattr(thisgroup,key,value)
-            if groupid == None:
-                session.add(thisgroup)
-                thisgroup.requesttime = datetime.datetime.now()
-                session.commit()
-
-            if content['locationid'] is not None and content['locationid'] != '':
-                location_clash = session.query(location.locationname, group.groupid).join(group).join(period).filter(period.periodid == thisperiod.periodid, location.locationid == content['locationid'], group.groupid != thisgroup.groupid).first()
-                if location_clash is not None:
-                    log('Group %s is already using this location %s' % (location_clash.groupid, location_clash.locationname))
-                    session.rollback()
-                    session.close()
-                    return jsonify(message = 'This location is already being used at this time. Select another.', url = 'none')
-
-            if content['musicid'] != '' and content['musicid'] != 'null' and content['musicid'] is not None:
-                music_clash = session.query(music.musicname, music.composer, group.groupid).join(group).join(period).filter(period.periodid == thisperiod.periodid, music.musicid == content['musicid'], group.groupid != thisgroup.groupid).first()
-                if music_clash is not None:
-                    log('Group %s is already using this music %s %s' % (music_clash.groupid, music_clash.composer, music_clash.musicname))
-                    session.rollback()
-                    session.close()
-                    return jsonify(message = 'This music is already being used at this time. You cannot schedule in this period.', url = 'none')
-
-            foundfilled = False
-            for p in content['objects']:
-                if p['userid'] != '' and p['userid'] is not None:
-                    foundfilled = True
-                    log('Attempting to find user %s' % p['userid'])
-                    playeruser = session.query(user).filter(user.userid == p['userid']).first()
-                    #if the player is already playing in something, we have a clash and we have to exit completely. This may happen if multiple people are creating groups at the same time.
-                    currentassignment = session.query(groupassignment.instrumentname, group.groupname, group.groupid).join(group).filter(groupassignment.userid == p['userid']).filter(group.periodid == thisperiod.periodid).first()
-                    if currentassignment is not None:
-                        #if the player is already playing in something, we have a clash and we have to exit completely. This may happen if multiple people are creating groups at the same time.
-                        if currentassignment.groupid != thisgroup.groupid:
-                            url = 'none'
-                            message = ('Found a clash for %s. They are already playing %s in %s. Refresh the page and try again.' % (playeruser.firstname, currentassignment.instrumentname, currentassignment.groupname))
-                            log(message)
-                            session.rollback()
-                            session.close()
-                            return jsonify(message = message, url = url)
-                    #if we found a player and no clash, we can assign this player to the group
-                    if playeruser is None:
-                        url = ('/user/' + str(thisuser.logonid) + '/')
-                        session.rollback()
-                        session.close()
-                        return jsonify(message = 'Could not find one of your selected players in the database. Please refresh the page and try again.', url = url)
-                    else:
-                        #if the player is inactive or not attending camp at this time, they should never have been shown to the admin and chosen - this could happen if they were set to inactive while the admin had the page open
-                        if playeruser.isactive != 1 or playeruser.arrival > thisperiod.starttime or playeruser.departure < thisperiod.endtime:
-                            url = 'none'
-                            message = ('The user %s %s is set to inactive and they cannot be assigned. Refresh the page and try again with a different user.' % (playeruser.firstname, playeruser.lastname))
-                            session.rollback()
-                            session.close()
-                            return jsonify(message = message, url = url)
-                        else:
-                            playergroupassignment = groupassignment(userid = playeruser.userid, groupid = thisgroup.groupid, instrumentname = p['instrumentname'])
-                            session.add(playergroupassignment)
-
-            if thisgroup.status == 'Confirmed' and (
-                    thisgroup.periodid == '' or thisgroup.periodid is None or
-                    thisgroup.groupname == '' or thisgroup.groupname is None or
-                    thisgroup.locationid == '' or thisgroup.locationid is None
-                    ):
-                session.rollback()
-                session.close()
-                return jsonify(message = 'Confirmed groups must have a name, assigned period, assigned location and no empty player slots.', url = 'none')
-
-            #----AUTOFILL SECTION----
-            if content['submittype'] == 'autofill':
-                log('User selected to autofill the group')
-                log('Primary_only switch set to %s' % content['primary_only'])
-                if content['periodid'] == '' or content['periodid'] is None:
-                    session.rollback()
-                    session.close()
-                    raise NameError('You must have a period selected before autofilling.')
-                else:
-                    if thisperiod is not None:
-                        try:
-                            final_list = autofill(session,thisgroup,thisperiod,int(content['primary_only']))
-                            #add groupassignments for the final player list
-                            for pl in final_list:
-                                playergroupassignment = groupassignment(userid = pl.userid, groupid = thisgroup.groupid, instrumentname = pl.instrumentname)
-                                session.add(playergroupassignment)
-                        except Exception as ex:
-                            raise NameError(ex)
-
-            #Check for empty instrument slots if group is set to confirmed - if there are empties we have to switch it back to queued
-            if thisgroup.status == 'Confirmed':
-                for i in getconfig('Instruments').split(","):
-                    log('This group has a required %s number of %s and an assigned %s.' % (i, getattr(thisgroup,i), session.query(user).join(groupassignment).filter(groupassignment.groupid == thisgroup.groupid, groupassignment.instrumentname == i).count()))
-                    if int(session.query(user).join(groupassignment).filter(groupassignment.groupid == thisgroup.groupid, groupassignment.instrumentname == i).count()) != int(getattr(thisgroup,i)):
-                        thisgroup.status = 'Queued'
-                        try:
-                            session.merge(thisgroup)
-                            session.commit()
-                        except Exception as ex:
-                            log('failed to commit changes to database after a groupedit on group %s with error: %s' % (thisgroup.groupid,ex))
-                        flash(u'Changes Partially Saved','message')
-                        return jsonify(message = 'Your group is not confirmed because there are empty instrument slots. Your other changes have been saved.', url = '/user/' + str(thisuser.logonid) + '/group/' + str(thisgroup.groupid) + '/edit/')
-            try:
-                session.merge(thisgroup)
-                session.commit()
-            except Exception as ex:
-                log('failed to commit changes to database after a groupedit on group %s with error: %s' % (thisgroup.groupid,ex))
-            if content['submittype'] == 'autofill':
-                url = '/user/' + str(thisuser.logonid) + '/group/' + str(thisgroup.groupid) + '/edit/'
-                message = 'none'
-                flash(u'Autofill Completed','message')
-            elif content['submittype'] == 'save':
-                if groupid == None:
-                    url = '/user/' + str(thisuser.logonid) + '/group/' + str(thisgroup.groupid) + '/edit/'
-                else:
-                    url = 'none'
-                message = 'none'
-            else:
-                url = '/user/' + str(thisuser.logonid) + '/group/' + str(thisgroup.groupid) + '/'
-                message = 'none'
-                if thisgroup.status == 'Confirmed':
-                    flash(u'Group Confirmed and Scheduled','message')
-                else:
-                    flash(u'Changes Saved','success')
+    if request.method == 'DELETE':
+        if groupid is not None:
+            thisgroup.delete(session)
+            url = ('/user/' + str(thisuser.logonid) + '/')
+            message = 'none'
+            flash(u'Group Deleted','message')
+            log('Sending user to URL: %s' % url)
             session.close()
             return jsonify(message = message, url = url)
+        else:
+            session.rollback()
+            session.close()
+            raise Exception('You must have a period selected before autofilling.')
+            
+
+    if request.method == 'POST':
+        #format the packet received from the server as JSON
+        content = request.json
+        if content['groupname'] == '' or content['groupname'] == 'null' or content['groupname'] is None:
+            session.rollback()
+            session.close()
+            return jsonify(message = 'You must give this group a name before saving or autofilling.', url = 'none')
+        if content['periodid'] != '' and content['periodid'] != 'null' and content['periodid'] is not None:
+            thisperiod = session.query(period).filter(period.periodid == content['periodid']).first()
+        else:
+            session.rollback()
+            session.close()
+            return jsonify(message = 'Could not find a period with the selected id. Refresh the page and try again.', url = 'none')
+        thisgroupassignments = session.query(groupassignment).filter(groupassignment.groupid == thisgroup.groupid).all()
+        for a in thisgroupassignments:
+            session.delete(a)
+
+        #add the content in the packet to this group's attributes
+        for key,value in content.items():
+            if (value is None or value == 'null' or value == '') and key != 'primary_only':
+                log('Setting %s to be NULL' % (key))
+                setattr(thisgroup,key,None)
+            elif key != 'primary_only':
+                log('Setting %s to be %s' % (key, value))
+                setattr(thisgroup,key,value)
+        if groupid == None:
+            session.add(thisgroup)
+            thisgroup.requesttime = datetime.datetime.now()
+            session.commit()
+
+        if content['locationid'] is not None and content['locationid'] != '':
+            location_clash = session.query(location.locationname, group.groupid).join(group).join(period).filter(period.periodid == thisperiod.periodid, location.locationid == content['locationid'], group.groupid != thisgroup.groupid).first()
+            if location_clash is not None:
+                log('Group %s is already using this location %s' % (location_clash.groupid, location_clash.locationname))
+                session.rollback()
+                session.close()
+                return jsonify(message = 'This location is already being used at this time. Select another.', url = 'none')
+
+        if content['musicid'] != '' and content['musicid'] != 'null' and content['musicid'] is not None:
+            music_clash = session.query(music.musicname, music.composer, group.groupid).join(group).join(period).filter(period.periodid == thisperiod.periodid, music.musicid == content['musicid'], group.groupid != thisgroup.groupid).first()
+            if music_clash is not None:
+                log('Group %s is already using this music %s %s' % (music_clash.groupid, music_clash.composer, music_clash.musicname))
+                session.rollback()
+                session.close()
+                return jsonify(message = 'This music is already being used at this time. You cannot schedule in this period.', url = 'none')
+
+        foundfilled = False
+        for p in content['objects']:
+            if p['userid'] != '' and p['userid'] is not None:
+                foundfilled = True
+                log('Attempting to find user %s' % p['userid'])
+                playeruser = session.query(user).filter(user.userid == p['userid']).first()
+                #if the player is already playing in something, we have a clash and we have to exit completely. This may happen if multiple people are creating groups at the same time.
+                currentassignment = session.query(groupassignment.instrumentname, group.groupname, group.groupid).join(group).filter(groupassignment.userid == p['userid']).filter(group.periodid == thisperiod.periodid).first()
+                if currentassignment is not None:
+                    #if the player is already playing in something, we have a clash and we have to exit completely. This may happen if multiple people are creating groups at the same time.
+                    if currentassignment.groupid != thisgroup.groupid:
+                        url = 'none'
+                        message = ('Found a clash for %s. They are already playing %s in %s. Refresh the page and try again.' % (playeruser.firstname, currentassignment.instrumentname, currentassignment.groupname))
+                        log(message)
+                        session.rollback()
+                        session.close()
+                        return jsonify(message = message, url = url)
+                #if we found a player and no clash, we can assign this player to the group
+                if playeruser is None:
+                    url = ('/user/' + str(thisuser.logonid) + '/')
+                    session.rollback()
+                    session.close()
+                    return jsonify(message = 'Could not find one of your selected players in the database. Please refresh the page and try again.', url = url)
+                else:
+                    #if the player is inactive or not attending camp at this time, they should never have been shown to the admin and chosen - this could happen if they were set to inactive while the admin had the page open
+                    if playeruser.isactive != 1 or playeruser.arrival > thisperiod.starttime or playeruser.departure < thisperiod.endtime:
+                        url = 'none'
+                        message = ('The user %s %s is set to inactive and they cannot be assigned. Refresh the page and try again with a different user.' % (playeruser.firstname, playeruser.lastname))
+                        session.rollback()
+                        session.close()
+                        return jsonify(message = message, url = url)
+                    else:
+                        playergroupassignment = groupassignment(userid = playeruser.userid, groupid = thisgroup.groupid, instrumentname = p['instrumentname'])
+                        session.add(playergroupassignment)
+
+        if thisgroup.status == 'Confirmed' and (
+                thisgroup.periodid == '' or thisgroup.periodid is None or
+                thisgroup.groupname == '' or thisgroup.groupname is None or
+                thisgroup.locationid == '' or thisgroup.locationid is None
+                ):
+            session.rollback()
+            session.close()
+            return jsonify(message = 'Confirmed groups must have a name, assigned period, assigned location and no empty player slots.', url = 'none')
+
+        #----AUTOFILL SECTION----
+        if content['submittype'] == 'autofill':
+            log('User selected to autofill the group')
+            log('Primary_only switch set to %s' % content['primary_only'])
+            if content['periodid'] == '' or content['periodid'] is None:
+                session.rollback()
+                session.close()
+                log('GROUPEDIT: missing period when requesting an autofill, sending the user a fail message')
+                return jsonify(message = 'You must select a period before autofilling', url = 'none')
+            else:
+                if thisperiod is not None:
+                    #get the optimal list of players to be filled into this group
+                    final_list = autofill(session,thisgroup,thisperiod,int(content['primary_only']))
+                    #create group assignments for each player in the final_list
+                    thisgroup.addplayers(session,final_list)
+
+        #Check for empty instrument slots if group is set to confirmed - if there are empties we have to switch it back to queued
+        if thisgroup.status == 'Confirmed':
+            for i in getconfig('Instruments').split(","):
+                log('This group has a required %s number of %s and an assigned %s.' % (i, getattr(thisgroup,i), session.query(user).join(groupassignment).filter(groupassignment.groupid == thisgroup.groupid, groupassignment.instrumentname == i).count()))
+                if thisgroup.locationid is None or thisgroup.locationid == '' or thisgroup.totalinstrumentation != thisgroup.totalallocatedplayers:
+                    thisgroup.status = 'Queued'
+                    session.merge(thisgroup)
+                    session.commit()
+                    flash(u'Changes Partially Saved','message')
+                    return jsonify(message = 'Your group is not confirmed because there are empty instrument slots or your location is blank. Your other changes have been saved.', url = '/user/' + str(thisuser.logonid) + '/group/' + str(thisgroup.groupid) + '/edit/')
+        session.merge(thisgroup)
+        session.commit()
+        if content['submittype'] == 'autofill':
+            url = '/user/' + str(thisuser.logonid) + '/group/' + str(thisgroup.groupid) + '/edit/'
+            message = 'none'
+            flash(u'Autofill Completed','message')
+        elif content['submittype'] == 'save':
+            if groupid == None:
+                url = '/user/' + str(thisuser.logonid) + '/group/' + str(thisgroup.groupid) + '/edit/'
+            else:
+                url = 'none'
+            message = 'none'
+        else:
+            url = '/user/' + str(thisuser.logonid) + '/group/' + str(thisgroup.groupid) + '/'
+            message = 'none'
+            if thisgroup.status == 'Confirmed':
+                flash(u'Group Confirmed and Scheduled','message')
+            else:
+                flash(u'Changes Saved','success')
+        session.close()
+        return jsonify(message = message, url = url)
     
-    except Exception as ex:
+    """except Exception as ex:
         log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))
         message = ('Failed to execute %s with exception: %s. Try refreshing the page and trying again or contact camp administration.' % (request.method, ex))
         session.rollback()
@@ -597,7 +585,7 @@ def editgroup(logonid,groupid,periodid=None):
         if request.method == 'GET':
             return errorpage(thisuser,'Failed to display page with exception: %s.' % ex)
         else:
-            return jsonify(message = message, url = 'none')
+            return jsonify(message = message, url = 'none')"""
         
 @app.route('/user/<logonid>/group/<groupid>/period/<periodid>/edit/', methods=['GET', 'POST', 'DELETE'])
 def editgroupperiod(logonid,groupid,periodid):
@@ -1022,8 +1010,7 @@ def grouprequest(logonid,periodid=None,musicid=None):
                         #if it's a named player, not a blank drop-down
                         if p['userid'] != 'null' and p['userid'] != '':
                             #find a list of players that are already assigned to this group, and play the instrument requested by the grouprequest
-                            instrumentclash = session.query(groupassignment).filter(groupassignment.instrumentname == p['instrumentname'],\
-                                groupassignment.groupid == m.groupid).all()
+                            instrumentclash = session.query(groupassignment).filter(groupassignment.instrumentname == p['instrumentname'], groupassignment.groupid == m.groupid).all()
                             #if the list of players already matches the group instrumentation for this instrument, this match fails and break out
                             if instrumentclash is not None and instrumentclash != []:
                                 if len(instrumentclash) >= getattr(m, p['instrumentname']):
@@ -1079,8 +1066,7 @@ def grouprequest(logonid,periodid=None,musicid=None):
                 if p['userid'] != 'null' and p['userid'] != '':
                     playeruser = session.query(user).filter(user.userid == p['userid']).first()
                     if playeruser is not None:
-                        playergroupassignment = groupassignment(userid = playeruser.userid, groupid = grouprequest.groupid, instrumentname = p['instrumentname'])
-                        session.add(playergroupassignment)
+                        grouprequest.addplayer(session,playeruser,p['instrumentname'])
                         grouprequest.addtolog('Adding player %s %s to group with instrument %s (Requested by %s %s)' % (playeruser.firstname,playeruser.lastname,p['instrumentname'],thisuser.firstname,thisuser.lastname))
                     else:
                         url = ('/user/' + str(thisuser.logonid) + '/')
@@ -1184,22 +1170,45 @@ def groupqueue(logonid):
     thisuser = session.query(user).filter(user.logonid == logonid).first()
     if thisuser is None:
         return ('Did not find user in database. You have entered an incorrect URL address.')
+    log('GROUPQUEUE: page requested by user %s %s with method %s' % (thisuser.firstname,thisuser.lastname,request.method))
     try:
-        if thisuser.isadmin != 1:
-            session.close()
-            return 'You do not have permission to view this page'
-        else:
-            if request.method == 'GET':
-                queuedgroups = session.query(group.groupid, group.requesttime, group.status, group.groupname, period.periodname, period.starttime, period.endtime, user.firstname, user.lastname).\
-                    outerjoin(period).outerjoin(user).filter(group.status == "Queued", user.isactive == 1).order_by(group.requesttime).all()
-                log("Found %s queued groups to show the user" % len(queuedgroups))
+        if request.method == 'GET':
+            if thisuser.isadmin != 1:
+                session.close()
+                return 'You do not have permission to view this page'
+            else:
+                queuedgroups = session.query(
+                                    group.groupid, 
+                                    group.requesttime, 
+                                    group.status, 
+                                    group.groupname, 
+                                    period.periodname, 
+                                    period.starttime, 
+                                    period.endtime, 
+                                    user.firstname, 
+                                    user.lastname
+                                ).outerjoin(period
+                                ).outerjoin(user
+                                ).filter(
+                                    group.status == "Queued", 
+                                ).order_by(
+                                    group.periodid.nullslast(),
+                                    group.requesttime
+                                ).all()
+                log("GROUPQUEUE: Found %s queued groups to show the user" % len(queuedgroups))
+            
+                #find all periods after now so the admin can choose which they want to fill with groups
+                periods = session.query(period).filter(period.starttime > datetime.datetime.now()).all()
                 session.close()
                 return render_template('groupqueue.html', \
                                         queuedgroups=queuedgroups, \
+                                        periods=periods, \
                                         thisuser=thisuser, \
                                         campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
                                         )
-            if request.method == 'POST':
+        if request.method == 'POST':
+            log('GROUPQUEUE: POST received with submittype %s' % request.json['submittype'])
+            if request.json['submittype'] == 'reset':
                 thisgroup = session.query(group).filter(group.groupid == request.json['groupid']).first()
                 if thisgroup is None:
                     session.rollback()
@@ -1212,6 +1221,94 @@ def groupqueue(logonid):
                     session.commit()
                     session.close()
                     return jsonify(message = 'none', success = 'true')
+            elif request.json['submittype'] == 'fillall':
+                log('FILLALL: Admin has initiated a fill_all action for period id:%s' % request.json['periodid'])
+                #first, check if the period they selected is valid and in the future
+                if request.json['periodid'] is None or request.json['periodid'] == '':
+                    raise Exception('You must choose a period before requesting the fill-all.')
+                else:
+                    thisperiod = session.query(period).filter(period.periodid == request.json['periodid'], period.starttime > datetime.datetime.now()).first()
+                    log('FILLALL: Filling period name:%s id:%s' % (thisperiod.periodname,thisperiod.periodid))
+                if thisperiod is None:
+                    raise Exception('Could not find the requested period, or the selected period is in the past. Refresh the page and try again.')
+
+                #iterate through the groups that already have this period assigned. If we fail to allocate on just one of these, we need to break out and inform the admin
+                possiblegroups = session.query(group
+                            ).outerjoin(period
+                            ).filter(
+                                or_(
+                                    group.periodid == thisperiod.periodid, 
+                                    group.periodid == None
+                                    ), 
+                                group.status == "Queued"
+                            ).order_by(
+                                group.periodid.nullslast(),
+                                group.requesttime
+                            ).all()
+                log('FILLALL: Found %s groups to be filled' % len(possiblegroups))
+                for g in possiblegroups:
+                    #first, purge any players that have since left the camp or are marked inactive
+                    g.purgeoldplayers(session)
+                    #then, if this group is empty, has no allocated period and was requested by a player that is old, delete it
+                    requesteduser = session.query(user).filter(user.userid == g.requesteduserid).first()
+                    if g.periodid is None and \
+                            g.totalallocatedplayers == 0 and \
+                            (requesteduser.isactive != 1 or requesteduser.departure < datetime.datetime.now()):
+                        log('FILLALL: Group name:%s id:%s is an orphan group and will now be deleted' % (g.groupname,g.groupid))
+                        g.delete(session)
+                    else:
+                        log('FILLALL: Attempting autofill, location allocation and confirmation for group name:%s id:%s' % (g.groupname,g.groupid))
+                        #first, see if we can assign the group a location for this period
+                        if g.locationid is None or g.locationid == '':
+                            locations_used_query = session.query(location.locationid).join(group).join(period).filter(period.periodid == thisperiod.periodid)
+                            thislocation = session.query(location).filter(~location.locationid.in_(locations_used_query),location.capacity >= g.totalinstrumentation).order_by(location.capacity).first()
+                        else:
+                            thislocation = session.query(location).filter(location.locationid == g.locationid).first()
+                        #if we could not find a suitable location, break out and send the user a message informing them
+                        if thislocation is None:
+                            log('FILLALL: No suitable location exists for group with name %s and id %s. Can not autofill this group.' % (g.groupname,g.groupid))
+                            if g.periodid is not None:
+                                message = 'Fill-All failed at group "%s". Could not find a suitable location for this group. Try editing other groups in the period to make room, or reduce the number of players in the group.' % g.groupname
+                                url = 'refresh'
+                                session.commit()
+                                session.close()
+                                flash(u'Period Partially Filled', 'message')
+                                return jsonify(message = message, url = url )
+                        else:
+                            #find how many players can be autofilled into this group
+                            players = autofill(session,g,thisperiod)
+                            #if the autofill didn't completely fill the group and this group already has an assigned period, we need to break out and inform the admin that they need to do this group manually
+                            if g.totalinstrumentation != g.totalallocatedplayers + len(players) and g.periodid is not None:
+                                message = 'Fill-All failed at group "%s". This is because the group requires %s players, but the autofill algorythm only found %s players. Select this group and fill it manually, then attempt to fill-all again.' % (g.groupname,g.totalinstrumentation,g.totalallocatedplayers+len(players))
+                                url = 'refresh'
+                                log('FILLALL: Autofill failed to completely fill group name:%s id:%s totalinstrumentation:%s totalallocatedplayers:%s. Found only %s players to autofill. Sending an error to the admin.' % (g.groupname,g.groupid,g.totalinstrumentation,g.totalallocatedplayers,len(players)))
+                                session.commit()
+                                session.close()
+                                flash(u'Period Partially Filled', 'message')
+                                return jsonify(message = message, url = url)
+                            #if this group doesn't have an assigned period and can't be assigned to the selected period - just skip it.
+                            elif g.totalinstrumentation != g.totalallocatedplayers + len(players):
+                                log('FILLALL: Found that group %s cannot be autofilled with current players in the pool. Skipping this group.')
+                            else:
+                                #if we got here, this group is good to go
+                                #assign the location as found in a previous query
+                                g.locationid = thislocation.locationid
+                                #assign the period as selected
+                                g.periodid = thisperiod.periodid
+                                #allocate the players
+                                g.addplayers(session,players)
+                                #confirm the group
+                                g.status = "Confirmed"
+                                session.merge(g)
+                                session.commit()
+                                log('FILLALL: Group confirmed - Status:%s Name:%s Locationid:%s Periodid:%s TotalPlayers:%s TotalSetInstrumentation:%s' % (g.status,g.groupname,g.locationid,g.periodid,g.totalallocatedplayers,g.totalinstrumentation))
+                    
+                session.commit()
+                session.close()
+                log('FILLALL: Fill-all operitaion successful')
+                flash(u'Period Sucessfully Filled', 'success')
+                return jsonify(message = 'none', url = 'refresh')
+                    
 
     except Exception as ex:
         log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))
@@ -1750,8 +1847,7 @@ def instrumentation(logonid,periodid):
                     if userconductor is not None:
                         userplayinginperiod = session.query(user.userid).join(groupassignment).join(group).join(period).filter(period.periodid == thisperiod.periodid, user.userid == content['conductoruserid']).first()
                         if userplayinginperiod is None:
-                            conductorassignment = groupassignment(userid = content['conductoruserid'], groupid = grouprequest.groupid, instrumentname = 'Conductor')
-                            session.add(conductorassignment)
+                            grouprequest.addplayer(session,getuser(content['conductoruserid']),'Conductor')
                         else:
                             url = 'none'
                             log('Instrumentation creation failed, conductor is already assigned to a group')

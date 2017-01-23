@@ -136,7 +136,7 @@ def getgroupname(session,thisgroup):
     return name
 
 #iterates through the empty slots in a group and finds players to potentially fill them. returns a list of players.
-def autofill(session,thisgroup,thisperiod,primary_only):
+def autofill(session,thisgroup,thisperiod,primary_only=0):
     #get the minimum level of this group
     minlevel = getgrouplevel(session,thisgroup,'min')
     maxlevel = getgrouplevel(session,thisgroup,'max')
@@ -144,11 +144,10 @@ def autofill(session,thisgroup,thisperiod,primary_only):
         raise NameError('You cannot autofill with all empty players and an auto minimum or maximum level. Set the level or pick at least one player.')
     final_list = []
     for i in getconfig('Instruments').split(","):
-        numberinstrument = getattr(thisgroup,i)
-        if int(numberinstrument) > 0:
-            log('AUTOFILL: Group has configured %s total players for instrument %s' % (numberinstrument, i))
+        if int(getattr(thisgroup,i)) > 0:
+            log('AUTOFILL: Group has configured %s total players for instrument %s' % (getattr(thisgroup,i), i))
             currentinstrumentplayers = session.query(user).join(groupassignment).filter(groupassignment.groupid == thisgroup.groupid, groupassignment.instrumentname == i).all()
-            requiredplayers = int(numberinstrument) - len(currentinstrumentplayers)
+            requiredplayers = int(getattr(thisgroup,i)) - len(currentinstrumentplayers)
             log('AUTOFILL: Found %s current players for instrument %s' % (len(currentinstrumentplayers), i))
             log('AUTOFILL: We need to autofill %s extra players for instrument %s' % (requiredplayers, i))
             if requiredplayers > 0:
@@ -183,17 +182,7 @@ def autofill(session,thisgroup,thisperiod,primary_only):
                 log('AUTOFILL: Found %s possible players of a requested %s for instrument %s.' % (len(possible_players_query.all()), requiredplayers, i))
                 #if we found at least one possible player
                 if len(possible_players_query.all()) > 0:
-                    #get the players that have already played in groups at this camp, and inverse it to get the players with playcounts of zero. Limit the query to just the spots we have left. These will be the people at the top of the list.
-                    already_played_query = session.query(
-                            user.userid
-                        ).join(groupassignment
-                        ).join(group
-                        ).filter(
-                            group.ismusical == 1, 
-                            groupassignment.instrumentname != 'Conductor', 
-                            user.userid.in_(possible_players_query)
-                        )
-
+                    
                     #make a query that totals the nmber of times each potential user has played at camp.
                     playcounts_subquery = session.query(
                             user.userid.label('playcounts_userid'),
@@ -222,7 +211,6 @@ def autofill(session,thisgroup,thisperiod,primary_only):
                             ).outerjoin(group, group.groupid == groupassignment.groupid
                             ).filter(
                                 user.userid.in_(possible_players_query),
-                                groupassignment.instrumentname != 'Conductor', 
                                 group.ismusical == 1,           
                                 group.periodid != None,
                                 group.groupid != thisgroup.groupid,
@@ -264,18 +252,23 @@ def autofill(session,thisgroup,thisperiod,primary_only):
                             user.userid,
                             user.firstname,
                             user.lastname,
+                            instrument.isprimary,
                             sqlalchemy.sql.expression.literal(i).label("instrumentname"),
                             playcounts_subquery.c.playcount,
                             musiccounts_subquery.c.musiccount,
                             groupcounts_subquery.c.groupcount
+                        ).join(instrument, instrument.userid == user.userid
                         ).outerjoin(playcounts_subquery, playcounts_subquery.c.playcounts_userid == user.userid
                         ).outerjoin(musiccounts_subquery, musiccounts_subquery.c.musiccounts_userid == user.userid
                         ).outerjoin(groupcounts_subquery, groupcounts_subquery.c.groupcounts_userid == user.userid
                         ).filter(
-                            user.userid.in_(possible_players_query)
+                            user.userid.in_(possible_players_query),
+                            instrument.instrumentname == i
                         ).order_by(
                             #order by the number of times that the players have played this specific piece of music
                             musiccounts_subquery.c.musiccount.nullsfirst(), 
+                            #then order by primary instruments
+                            instrument.isprimary.desc(),
                             #then order by the number of times that the players have played in a group similar to this in name or instrumentation
                             groupcounts_subquery.c.groupcount.nullsfirst(), 
                             #then order by their total playcounts
@@ -284,6 +277,7 @@ def autofill(session,thisgroup,thisperiod,primary_only):
                         ).all()
                     log('AUTOFILL: Players in final list with playcounts:')
                     for pl in instrument_list:
-                        log('AUTOFILL: Found %s %s to play %s with totals - musiccount:%s groupcount:%s playcount:%s ' % (pl.firstname, pl.lastname, pl.instrumentname, pl.musiccount, pl.groupcount, pl.playcount))
+                        log('AUTOFILL: Found %s %s to play %s with totals - isprimary:%s musiccount:%s groupcount:%s playcount:%s ' % (pl.firstname, pl.lastname, pl.isprimary, pl.isprimary, pl.musiccount, pl.groupcount, pl.playcount))
                         final_list.append(pl)
+    log('AUTOFILL: Completed autofill selections')
     return final_list

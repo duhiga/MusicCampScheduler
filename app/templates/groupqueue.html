@@ -12,40 +12,100 @@
     });
 
     $(document).ready(function () {
+        var fillall_clicked = false;
         $('.reset_spin').hide();
+        $('.auto_schedule_spinicon').hide();
 
         $(document).on("click", '.reset', function (e) {
-            $('.reset_icon[data-pairing="' + $(this).attr('id') + '"]').hide();
-            $('.reset_spin[data-pairing="' + $(this).attr('id') + '"]').show();
-            var request = {};
-            var ob = $(this);
-            request.groupid = ob.attr('id');
-            console.log('Sending to server:')
-            console.log(request);
-            $.ajax({
-                type: 'POST',
-                url: '/user/{{thisuser.logonid}}/groupqueue/',
-                contentType: 'application/json;charset=UTF-8',
-                data: JSON.stringify(request, null),
-                success: function (data, textStatus) {
-                    //upon success, the server will return a message and a URL. give the user the message and send them to the URL.
-                    console.log(data);
-                    $('.reset_icon[data-pairing="' + ob.attr('id') + '"]').show();
-                    $('.reset_spin[data-pairing="' + ob.attr('id') + '"]').hide();
-                    if (data.message == 'none' && data.success == 'true') {
-                        toast('Reset Group Period and Location', 'success');
-                        $('.period_text[data-pairing="' + ob.attr('id') + '"]').html('&nbsp;');
-                    }
-                    else if (data.message != 'none' && data.success == 'false') {
-                        alert(data.message);
-                    }
-                },
-                error: function (xhr, textStatus, errorThrown) {
-                    $('.reset_icon[data-pairing="' + ob.attr('id') + '"]').show();
-                    $('.reset_spin[data-pairing="' + ob.attr('id') + '"]').hide();
-                    alert('Submission failed with error: ' + errorThrown);
-                },
-            });
+            if (!fillall_clicked) {
+                $('.reset_icon[data-pairing="' + $(this).attr('id') + '"]').hide();
+                $('.reset_spin[data-pairing="' + $(this).attr('id') + '"]').show();
+                var request = {};
+                request.submittype = 'reset';
+                var ob = $(this);
+                request.groupid = ob.attr('id');
+                console.log('Sending to server:')
+                console.log(request);
+                $.ajax({
+                    type: 'POST',
+                    url: '/user/{{thisuser.logonid}}/groupqueue/',
+                    contentType: 'application/json;charset=UTF-8',
+                    data: JSON.stringify(request, null),
+                    success: function (data, textStatus) {
+                        //upon success, the server will return a success message. Remove the period associated with the group from the page.
+                        console.log(data);
+                        $('.reset_icon[data-pairing="' + ob.attr('id') + '"]').show();
+                        $('.reset_spin[data-pairing="' + ob.attr('id') + '"]').hide();
+                        if (data.message == 'none' && data.success == 'true') {
+                            toast('Reset Group Period and Location', 'success');
+                            $('.period_text[data-pairing="' + ob.attr('id') + '"]').html('&nbsp;');
+                        }
+                        else if (data.message != 'none' && data.success == 'false') {
+                            alert(data.message);
+                        }
+                    },
+                    error: function (xhr, textStatus, errorThrown) {
+                        $('.reset_icon[data-pairing="' + ob.attr('id') + '"]').show();
+                        $('.reset_spin[data-pairing="' + ob.attr('id') + '"]').hide();
+                        alert('Submission failed with error: ' + errorThrown);
+                    },
+                });
+            }
+        });
+
+        $(document).on("click", '#fillall', function (e) {
+            if (!fillall_clicked) {
+                fillall_clicked = true
+                $('.auto_schedule_text').hide();
+                $('.auto_schedule_spinicon').show();
+                $('.reset_icon').hide();
+                $('.reset_spin').show();
+                var request = {};
+                request.submittype = 'fillall'
+                request.periodid = $('#periodid').val();
+                console.log('Sending to server:')
+                console.log(request);
+                $.ajax({
+                    type: 'POST',
+                    url: '/user/{{thisuser.logonid}}/groupqueue/',
+                    contentType: 'application/json;charset=UTF-8',
+                    data: JSON.stringify(request, null),
+                    success: function (data, textStatus) {
+
+                        //upon success, the server will return a message and a URL. give the user the message and send them to the URL.
+                        console.log('Server returned ' + textStatus)
+                        if (data.message != 'none') {
+                            alert(data.message);
+                            fillall_clicked = false;
+                        }
+
+                        if (data.url != 'none') {
+                            if (data.url == 'refresh') {
+                                location.reload()
+                            }
+                            else {
+                                window.location = data.url;
+                            }
+                        }
+                        else {
+                            $('.auto_schedule_text').show();
+                            $('.auto_schedule_spinicon').hide();
+                            $('.reset_icon').show();
+                            $('.reset_spin').hide();
+                            fillall_clicked = false;
+                        }
+
+                    },
+                    error: function (xhr, textStatus, errorThrown) {
+                        alert('Submission failed with error: ' + errorThrown);
+                        $('.auto_schedule_text').show();
+                        $('.auto_schedule_spinicon').hide();
+                        $('.reset_icon').show();
+                        $('.reset_spin').hide();
+                        fillall_clicked = false;
+                    },
+                });
+            }
         });
     });
 
@@ -58,12 +118,14 @@
 <div class="w3-row">
     <div class="w3-container">
         <h3>Auto-Scheduler</h3>
-        <select class="w3-border w3-select">
+        <select class="w3-border w3-select" id="periodid" style="width:50%">
             <option value="">Select a Period...</option>
+            {% for p in periods %}
+            <option value="{{p.periodid}}">{{ p.starttime.strftime('%d %b') }}: {{ p.periodname }}</option>
+            {% endfor %}
         </select>
         <button class="w3-btn w3-white w3-hover-black w3-border w3-round-large" id="fillall">
-            Auto-Schedule
-            <i class="fa fa-circle-o-notch fa-spin reset_spin"></i>
+            <div class="auto_schedule_text">Auto-Schedule</div><div class="auto_schedule_spinicon"><i class="fa fa-circle-o-notch fa-spin"></i></div>
         </button>
         <h3>Queued Groups</h3>
         <table style="width:100%" class="tablesorter">

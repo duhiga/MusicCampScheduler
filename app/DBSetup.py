@@ -57,6 +57,34 @@ class user(Base):
     def serialize(self):
         return serialize_class(self, self.__class__)
 
+    #adds this user to a group. The group object passed in must have at least a groupid and periodid
+    def addtogroup(self,session,thisgroup,instrumentname):
+        #check if this user plays this instrument
+        if session.query(instrument).filter(instrument.userid == self.userid, instrument.instrumentname == instrumentname).first() is None:
+            log('ADDPLAYER: Found that player %s %s does not play instrument %s, cannot assign them to group %s' % (self.firstname,self.lastname,instrumentname,thisgroup.groupid))
+            raise Exception('Found that player %s %s does not play instrument %s, cannot assign them to group %s' % (self.firstname,self.lastname,instrumentname,thisgroup.groupid))
+        #if the user is already in this group, don't add another groupassignment, just log it
+        if session.query(groupassignment).filter(groupassignment.userid == self.userid, groupassignment.groupid == thisgroup.groupid).first() is not None:
+            log('ADDPLAYER: Found that player %s %s is already in group %s. Made no changes to this player.' % (self.firstname,self.lastname,group.groupid))
+        #if the user is already playing in another group at this time, raise an exception
+        elif thisgroup.periodid is not None and session.query(groupassignment).join(group).filter(groupassignment.userid == self.userid, group.periodid == thisgroup.periodid).first() is not None:
+            log('ADDPLAYER: Found that player %s %s is already assigned to a group during this period.' % (self.firstname,self.lastname))
+            raise Exception('Found that player %s %s is already assigned to a group during this period.' % (self.firstname,self.lastname))
+        else:
+            playergroupassignment = groupassignment(userid = self.userid, groupid = thisgroup.groupid, instrumentname = instrumentname)
+            session.add(playergroupassignment)
+
+#gets a user object from a userid, or a logodin if the logon flag is set to true
+def getuser(session,userid,logon=False):
+    if logon:
+        thisuser = session.query(user).filter(user.logonid == userid).first()
+    else:
+        thisuser = session.query(user).filter(user.userid == userid).first()
+    if thisuser is None:
+        raise Exception('Could not find user in database')
+    else:
+        return thisuser
+
 class music(Base):
     __tablename__ = 'musics'
 
@@ -96,6 +124,20 @@ class group(Base):
     def serialize(self):
         return serialize_class(self, self.__class__)
 
+    @property
+    def totalinstrumentation(self):
+        total = 0
+        for i in getconfig('Instruments').split(","):
+            total = total + int(getattr(self,i))
+        return int(total)
+
+    @property
+    def totalallocatedplayers(self):
+        s = Session()
+        total = s.query(groupassignment).filter(groupassignment.groupid == self.groupid).count()
+        s.close()
+        return total
+
     def addtolog(self,text):
         now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M') #get the time now and convert it to a string format
         if self.log is None or self.log == '':
@@ -110,6 +152,70 @@ class group(Base):
         session.commit()
         session.delete(self)
         session.commit()
+
+    def getplayers(self,session):
+        return session.query(groupassignment).filter(groupassignment.groupid == thisgroup.groupid).all()
+
+    #confirms the group
+    def confirm(self, session):
+        if self.locationid is None:
+            raise Exception('CONFIRMGROUP: Failed to confirm group becasue the group is missing a locationid')
+        elif self.periodid is None:
+            raise Exception('CONFIRMGROUP: Failed to confirm group becasue the group is missing a periodid')
+        elif self.groupname is None or self.groupname == '':
+            raise Exception('CONFIRMGROUP: Failed to confirm group becasue the group is missing a groupname')
+        elif session.query(group).filter(group.periodid == self.periodid, group.locationid == self.locationid, group.groupid != self.groupid).first() is not None:
+            raise Exception('CONFIRMGROUP: Failed to confirm group becasue the group location is already in use by another group at this time')
+        elif self.musicid is not None and session.query(group).filter(group.musicid == self.musicid, group.periodid == self.periodid, group.groupid != self.groupid).first() is not None:
+            raise Exception('CONFIRMGROUP: Failed to confirm group because the group music is already in use by another group at this time')
+        
+        #check if any players are playing in other groups
+        playersPlayingInPeriod = session.query(groupassignment.userid).join(group).filter(group.periodid == periodid, group.groupid != self.groupid)
+        if session.query(groupassignment.userid).filter(user.userid.in_(playersPlayingInPeriod), groupassignment.groupid == self.groupid).first() is not None:
+            raise Exception('CONFIRMGROUP: Failed to confirm group becasue at least one player is in another group at this time')
+
+        else:
+            self.status = 'Confirmed'
+            
+    #adds a single player to this group. The object passed in needs to have at least a userid
+    def addplayer(self,session,player,instrumentname):
+        #check if this user plays this instrument
+        if session.query(instrument).filter(instrument.userid == player.userid, instrument.instrumentname == instrumentname).first() is None:
+            log('ADDPLAYER: Found that player %s %s does not play instrument %s, cannot assign them to group %s' % (player.firstname,player.lastname,instrumentname,self.groupid))
+            raise Exception('Found that player %s %s does not play instrument %s, cannot assign them to group %s' % (player.firstname,player.lastname,instrumentname,self.groupid))
+        #if the player is already in this group, don't make another groupassignment, just log it.
+        if session.query(groupassignment).filter(groupassignment.userid == player.userid, groupassignment.groupid == self.groupid).first() is not None:
+            log('ADDPLAYER: Found that player %s %s is already in this group. Made no changes to this player.' % (player.firstname,player.lastname))
+        #if the player is in another group at this time, raise an exception
+        elif self.periodid is not None and session.query(groupassignment).join(group).filter(groupassignment.userid == player.userid, group.periodid == self.periodid).first() is not None:
+            log('ADDPLAYER: Found that player %s %s is already assigned to a group during this period.' % (player.firstname,player.lastname))
+            raise Exception('Found that player %s %s is already assigned to a group during this period.' % (player.firstname,player.lastname))
+        #otherwise, create a groupassignment for them
+        else:
+            playergroupassignment = groupassignment(userid = player.userid, groupid = self.groupid, instrumentname = player.instrumentname)
+            session.add(playergroupassignment)
+
+    #adds a list of players to this group. The list must contain at least userids. Does not commit the group.
+    def addplayers(self,session,playerlist):
+        try:
+            log('ADDPLAYERS: Adding a list of players to group name:%s id:%s' % (self.groupname, self.groupid))
+            for player in playerlist:
+                addplayer(session,player,player.instrumentname)
+        except Exception as ex:
+            raise Exception(ex)
+
+    def purgeoldplayers(self,session):
+        log('GROUPPURGE: Purging old players from group name:%s id:%s' % (self.groupname,self.groupid))
+        oldplayers = session.query(groupassignment
+                        ).join(user
+                        ).filter(
+                            groupassignment.groupid == self.groupid,
+                            user.departure < datetime.datetime.now(),
+                            user.isactive != 1
+                        ).all()
+        for p in oldplayers:
+            session.delete(p)
+        return False
 
 class grouptemplate(Base):
     __tablename__ = 'grouptemplates'

@@ -13,6 +13,8 @@ from sqlalchemy.dialects.postgresql import UUID
 import uuid
 import os
 from config import *
+from sqlalchemy import *
+from sqlalchemy.orm import aliased
 
 engine = create_engine(getconfig('DATABASE_URL'))
 Session = sessionmaker()
@@ -87,15 +89,18 @@ class user(Base):
 
 #gets a user object from a userid, or a logodin if the logon flag is set to true
 def getuser(session,userid,logon=False):
-    if logon:
-        thisuser = session.query(user).filter(user.logonid == userid).first()
+    if userid is None:
+        return None
     else:
-        thisuser = session.query(user).filter(user.userid == userid).first()
-    if thisuser is None:
-        log('GETUSER: Exception - Could not find user:%s logon:%s in database' % (userid,logon))
-        raise Exception('Could not find user in database')
-    else:
-        return thisuser
+        if logon:
+            thisuser = session.query(user).filter(user.logonid == userid).first()
+        else:
+            thisuser = session.query(user).filter(user.userid == userid).first()
+        if thisuser is None:
+            log('GETUSER: Exception - Could not find user:%s logon:%s in database' % (userid,logon))
+            raise Exception('Could not find user in database')
+        else:
+            return thisuser
 
 class music(Base):
     __tablename__ = 'musics'
@@ -114,12 +119,15 @@ class music(Base):
 
 #gets a music object from a musicid
 def getmusic(session,musicid):
-    thismusic = session.query(music).filter(music.musicid == musicid).first()
-    if thismusic is None:
-        log('GETMUSIC: Exception - Could not find music %s in database' % (musicid))
-        raise Exception('Could not find music in database')
+    if musicid is None:
+        return None
     else:
-        return thismusic
+        thismusic = session.query(music).filter(music.musicid == musicid).first()
+        if thismusic is None:
+            log('GETMUSIC: Exception - Could not find music %s in database' % (musicid))
+            raise Exception('Could not find music in database')
+        else:
+            return thismusic
 
 #both group and grouptemplate tables and classes are initialized without the instrument columns
 class group(Base):
@@ -227,23 +235,23 @@ class group(Base):
 
     #checks if the group can be confirmed, and confirms the group
     def confirm(self, session):
+        log('CONFIRMGROUP: Attempting to confirm group name:%s id:%s' % (self.groupname,self.groupid))
         if self.locationid is None:
-            raise Exception('CONFIRMGROUP: Failed to confirm group becasue the group is missing a locationid')
+            raise Exception('Failed to confirm group %s becasue the group is missing a locationid' % self.groupname)
         elif self.periodid is None:
-            raise Exception('CONFIRMGROUP: Failed to confirm group becasue the group is missing a periodid')
+            raise Exception('Failed to confirm group %s becasue the group is missing a periodid' % self.groupname)
         elif self.groupname is None or self.groupname == '':
-            raise Exception('CONFIRMGROUP: Failed to confirm group becasue the group is missing a groupname')
+            raise Exception('Failed to confirm group becasue the group is missing a groupname')
         elif session.query(group).filter(group.periodid == self.periodid, group.locationid == self.locationid, group.groupid != self.groupid).first() is not None:
-            raise Exception('CONFIRMGROUP: Failed to confirm group becasue the group location is already in use by another group at this time')
+            raise Exception('Failed to confirm group %s becasue the group location is already in use by another group at this time' % self.groupname)
         elif self.musicid is not None and session.query(group).filter(group.musicid == self.musicid, group.periodid == self.periodid, group.groupid != self.groupid).first() is not None:
-            raise Exception('CONFIRMGROUP: Failed to confirm group because the group music is already in use by another group at this time')
-        
-        #check if any players are playing in other groups
-        playersPlayingInPeriod = session.query(groupassignment.userid).join(group).filter(group.periodid == periodid, group.groupid != self.groupid)
-        if session.query(groupassignment.userid).filter(user.userid.in_(playersPlayingInPeriod), groupassignment.groupid == self.groupid).first() is not None:
-            raise Exception('CONFIRMGROUP: Failed to confirm group becasue at least one player is in another group at this time')
+            raise Exception('Failed to confirm group %s because the group music is already in use by another group at this time' % self.groupname)
 
+        #check if any players are playing in other groups
+        if self.checkplayerclash:
+            raise Exception('Failed to confirm group becasue at least one player is in another group at this time.')
         else:
+            log('CONFIRMGROUP: Successfully confirmed group name:%s id:%s' % (self.groupname,self.groupid))
             self.status = 'Confirmed'
             
     #adds a single player to this group. The object passed in needs to have at least a userid
@@ -261,15 +269,27 @@ class group(Base):
             raise Exception('Found that player %s %s is already assigned to a group during this period.' % (player.firstname,player.lastname))
         #otherwise, create a groupassignment for them
         else:
-            playergroupassignment = groupassignment(userid = player.userid, groupid = self.groupid, instrumentname = player.instrumentname)
+            log('ADDPLAYER: Adding player %s %s to group playing instrument %s' % (player.firstname,player.lastname,instrumentname))
+            playergroupassignment = groupassignment(userid = player.userid, groupid = self.groupid, instrumentname = instrumentname)
             session.add(playergroupassignment)
+
+    #checks if this group can fit into a given period or not (checks player clashes with other groups)
+    def checkplayerclash(self,session,selectedperiod):
+        playersPlayingInPeriod = session.query(groupassignment.userid).join(group).filter(group.groupid != self.groupid).filter(group.periodid == selectedperiod.periodid)
+        if session.query(groupassignment.userid).filter(groupassignment.groupid == self.groupid, groupassignment.userid.in_(playersPlayingInPeriod)).first() is not None:
+            log('CHECKPLAYERCLASH: Found a player clash for group with id:%s and period id:%s' % (self.groupid,selectedperiod.periodid))
+            return True
+        else:
+            log('CHECKPLAYERCLASH: Found that group id:%s can fit into period id:%s' % (self.groupid,selectedperiod.periodid))
+            return False
 
     #adds a list of players to this group. The list must contain at least userids. Does not commit the group.
     def addplayers(self,session,playerlist):
         try:
             log('ADDPLAYERS: Adding a list of players to group name:%s id:%s' % (self.groupname, self.groupid))
             for player in playerlist:
-                addplayer(session,player,player.instrumentname)
+                self.addplayer(session,player,player.instrumentname)
+            log('ADDPLAYERS: Finished adding players to group')
         except Exception as ex:
             raise Exception(ex)
 
@@ -288,12 +308,15 @@ class group(Base):
 
 #gets a group object from a groupid
 def getgroup(session,groupid):
-    thisgroup = session.query(group).filter(group.groupid == groupid).first()
-    if thisgroup is None:
-        log('GETGROUP: Exception - Could not find group %s in database' % (groupid))
-        raise Exception('Could not find group in database')
+    if groupid is None:
+        return None
     else:
-        return thisgroup
+        thisgroup = session.query(group).filter(group.groupid == groupid).first()
+        if thisgroup is None:
+            log('GETGROUP: Exception - Could not find group %s in database' % (groupid))
+            raise Exception('Could not find group in database')
+        else:
+            return thisgroup
 
 class grouptemplate(Base):
     __tablename__ = 'grouptemplates'
@@ -311,12 +334,15 @@ class grouptemplate(Base):
 
 #gets a grouptemplate object from a grouptemplateid
 def getgrouptemplate(session,grouptemplateid):
-    thisgrouptemplate = session.query(grouptemplate).filter(grouptemplate.grouptemplateid == grouptemplateid).first()
-    if thisgrouptemplate is None:
-        log('GETGROUPTEMPLATE: Exception - Could not find grouptemplate %s in database' % (grouptemplateid))
-        raise Exception('Could not find grouptemplate in database')
+    if grouptemplateid is None:
+        return None
     else:
-        return thisgrouptemplate
+        thisgrouptemplate = session.query(grouptemplate).filter(grouptemplate.grouptemplateid == grouptemplateid).first()
+        if thisgrouptemplate is None:
+            log('GETGROUPTEMPLATE: Exception - Could not find grouptemplate %s in database' % (grouptemplateid))
+            raise Exception('Could not find grouptemplate in database')
+        else:
+            return thisgrouptemplate
 
 #add the columns for each instrument in the application configuration to the group and grouptemplates tables
 instrumentlist = getconfig('Instruments').split(",")
@@ -342,12 +368,15 @@ class instrument(Base):
 
 #gets a instrument object from a instrumentid
 def getinstrument(session,instrumentid):
-    thisinstrument = session.query(instrument).filter(instrument.instrumentid == instrumentid).first()
-    if thisinstrument is None:
-        log('GETINSTRUMENT: Exception - Could not find instrument %s in database' % (instrumentid))
-        raise Exception('Could not find instrument in database')
+    if instrumentid is None:
+        return None
     else:
-        return thisinstrument
+        thisinstrument = session.query(instrument).filter(instrument.instrumentid == instrumentid).first()
+        if thisinstrument is None:
+            log('GETINSTRUMENT: Exception - Could not find instrument %s in database' % (instrumentid))
+            raise Exception('Could not find instrument in database')
+        else:
+            return thisinstrument
 
 class groupassignment(Base):
     __tablename__ = 'groupassignments'
@@ -363,12 +392,15 @@ class groupassignment(Base):
 
 #gets a groupassignment object from a groupassignmentid
 def getgroupassignment(session,groupassignmentid):
-    thisgroupassignment = session.query(groupassignment).filter(groupassignment.groupassignmentid == groupassignmentid).first()
-    if thisgroupassignment is None:
-        log('GETGROUPASSIGNMENT: Exception - Could not find groupassignment %s in database' % (groupassignmentid))
-        raise Exception('Could not find groupassignment in database')
+    if groupassignmentid is None:
+        return None
     else:
-        return thisgroupassignment
+        thisgroupassignment = session.query(groupassignment).filter(groupassignment.groupassignmentid == groupassignmentid).first()
+        if thisgroupassignment is None:
+            log('GETGROUPASSIGNMENT: Exception - Could not find groupassignment %s in database' % (groupassignmentid))
+            raise Exception('Could not find groupassignment in database')
+        else:
+            return thisgroupassignment
 
 class location(Base):
     __tablename__ = 'locations'
@@ -383,12 +415,18 @@ class location(Base):
 
 #gets a location object from a locationid
 def getlocation(session,locationid):
-    thislocation = session.query(location).filter(location.locationid == locationid).first()
-    if thislocation is None:
-        log('GETLOCATION: Exception - Could not find location %s in database' % (locationid))
-        raise Exception('Could not find location in database')
+    if locationid is None:
+        return None
     else:
-        return thislocation
+        if locationid is None:
+            return None
+        else:
+            thislocation = session.query(location).filter(location.locationid == locationid).first()
+            if thislocation is None:
+                log('GETLOCATION: Exception - Could not find location %s in database' % (locationid))
+                raise Exception('Could not find location in database')
+            else:
+                return thislocation
 
 class period(Base):
     __tablename__ = 'periods'
@@ -405,12 +443,15 @@ class period(Base):
 
 #gets a period object from a periodid
 def getperiod(session,periodid):
-    thisperiod = session.query(period).filter(period.periodid == periodid).first()
-    if thisperiod is None:
-        log('GETPERIOD: Exception - Could not find period %s in database' % (periodid))
-        raise Exception('Could not find period in database')
+    if periodid is None:
+        return None
     else:
-        return thisperiod
+        thisperiod = session.query(period).filter(period.periodid == periodid).first()
+        if thisperiod is None:
+            log('GETPERIOD: Exception - Could not find period %s in database' % (periodid))
+            raise Exception('Could not find period in database')
+        else:
+            return thisperiod
 
 class announcement(Base):
     __tablename__ = 'announcements'
@@ -421,12 +462,15 @@ class announcement(Base):
 
 #gets a announcement object from a announcementid
 def getannouncement(session,announcementid):
-    thisannouncement = session.query(announcement).filter(announcement.announcementid == announcementid).first()
-    if thisannouncement is None:
-        log('GETANNOUNCEMENT: Exception - Could not find announcement %s in database' % (announcementid))
-        raise Exception('Could not find announcement in database')
+    if announcementid is None:
+        return None
     else:
-        return thisannouncement
+        thisannouncement = session.query(announcement).filter(announcement.announcementid == announcementid).first()
+        if thisannouncement is None:
+            log('GETANNOUNCEMENT: Exception - Could not find announcement %s in database' % (announcementid))
+            raise Exception('Could not find announcement in database')
+        else:
+            return thisannouncement
 
 Base.metadata.create_all(engine)
 

@@ -1186,6 +1186,7 @@ def groupqueue(logonid):
                                     group.requesttime, 
                                     group.status, 
                                     group.groupname, 
+                                    period.periodid,
                                     period.periodname, 
                                     period.starttime, 
                                     period.endtime, 
@@ -1231,7 +1232,7 @@ def groupqueue(logonid):
                 if request.json['periodid'] is None or request.json['periodid'] == '':
                     raise Exception('You must choose a period before requesting the fill-all.')
                 else:
-                    thisperiod = session.query(period).filter(period.periodid == request.json['periodid'], period.starttime > datetime.datetime.now()).first()
+                    thisperiod = getperiod(session,request.json['periodid'])
                     log('FILLALL: Filling period name:%s id:%s' % (thisperiod.periodname,thisperiod.periodid))
                 if thisperiod is None:
                     raise Exception('Could not find the requested period, or the selected period is in the past. Refresh the page and try again.')
@@ -1254,20 +1255,23 @@ def groupqueue(logonid):
                     #first, purge any players that have since left the camp or are marked inactive
                     g.purgeoldplayers(session)
                     #then, if this group is empty, has no allocated period and was requested by a player that is old, delete it
-                    requesteduser = session.query(user).filter(user.userid == g.requesteduserid).first()
+                    requesteduser = getuser(session,g.requesteduserid)
                     if g.periodid is None and \
                             g.totalallocatedplayers == 0 and \
                             (requesteduser.isactive != 1 or requesteduser.departure < datetime.datetime.now()):
                         log('FILLALL: Group name:%s id:%s is an orphan group and will now be deleted' % (g.groupname,g.groupid))
                         g.delete(session)
+                    #then, check if any of the players in this group are already playing in this period
+                    elif g.checkplayerclash(session,thisperiod):
+                        log('FILLALL: Found that group %s cannot be autofilled because players already in this group are already playing in this period. Skipping this group.')
                     else:
                         log('FILLALL: Attempting autofill, location allocation and confirmation for group name:%s id:%s' % (g.groupname,g.groupid))
-                        #first, see if we can assign the group a location for this period
+                        #see if we can assign the group a location for this period
                         if g.locationid is None or g.locationid == '':
                             locations_used_query = session.query(location.locationid).join(group).join(period).filter(period.periodid == thisperiod.periodid)
                             thislocation = session.query(location).filter(~location.locationid.in_(locations_used_query),location.capacity >= g.totalinstrumentation).order_by(location.capacity).first()
                         else:
-                            thislocation = session.query(location).filter(location.locationid == g.locationid).first()
+                            thislocation = getlocation(session,g.locationid)
                         #if we could not find a suitable location, break out and send the user a message informing them
                         if thislocation is None:
                             log('FILLALL: No suitable location exists for group with name %s and id %s. Can not autofill this group.' % (g.groupname,g.groupid))
@@ -1359,10 +1363,7 @@ def publiceventpage(logonid,periodid):
             #if the user pressed "submit" on the public event page
             if request.method == 'POST':
                 if request.json['locationid'] == '' or request.json['groupname'] == '':
-                    session.rollback()
-                    url = ('none')
-                    session.close()
-                    return jsonify(message = 'Submission failed. You must submit both an event name and location.', url = url)
+                    raise Exception('Submission failed. You must submit both an event name and location.')
                 event = group(periodid = periodid, iseveryone = 1, groupname =  request.json['groupname'], requesteduserid = thisuser.userid,\
                     ismusical = 0, locationid = request.json['locationid'], status = "Confirmed", requesttime = datetime.datetime.now())
                 if request.json['groupdescription'] and request.json['groupdescription'] != '':
@@ -1844,19 +1845,11 @@ def instrumentation(logonid,periodid):
                 #check if a group already exists for this period with the same name
                 namecheck = session.query(group).filter(group.groupname == content['groupname'], group.periodid == thisperiod.periodid).first()
                 if namecheck is not None:
-                    url = 'none'
-                    log('Instrumentation creation failed, duplicate name for this period')
-                    session.close()
-                    session.rollback()
-                    return jsonify(message = 'Could not create instrumentation, there is already a group named %s in this period.' % namecheck.groupname, url = url)
+                    raise Exception('Could not create instrumentation, there is already a group named %s in this period.' % namecheck.groupname)
                 #for each player object in the players array in the JSON packet
                 for key, value in content.items():
                     if (key == 'groupname' or key == 'maximumlevel' or key == 'mininumlevel') and value == '':
-                        url = 'none'
-                        log('Instrumentation creation failed, misconfiguration')
-                        session.close()
-                        session.rollback()
-                        return jsonify(message = 'Could not create instrumentation, you must enter a groupname, music, maximumlevel and mininumlevel', url = url)
+                        raise Exception('Could not create instrumentation, you must enter a groupname, music, maximumlevel and mininumlevel')
                     if value != '' and value is not None and value != 'null' and value != 'None':
                         setattr(grouprequest, key, value)
                     else:
@@ -1869,19 +1862,11 @@ def instrumentation(logonid,periodid):
                     if userconductor is not None:
                         userplayinginperiod = session.query(user.userid).join(groupassignment).join(group).join(period).filter(period.periodid == thisperiod.periodid, user.userid == content['conductoruserid']).first()
                         if userplayinginperiod is None:
-                            grouprequest.addplayer(session,getuser(content['conductoruserid']),'Conductor')
+                            grouprequest.addplayer(session,getuser(session,content['conductoruserid']),'Conductor')
                         else:
-                            url = 'none'
-                            log('Instrumentation creation failed, conductor is already assigned to a group')
-                            session.close()
-                            session.rollback()
-                            return jsonify(message = 'Could not create instrumentation, %s is already assigned to a group during this period.' % userconductor.firstname, url = url)
+                            raise Exception('Could not create instrumentation, %s is already assigned to a group during this period.' % userconductor.firstname)
                     else:
-                        url = 'none'
-                        log('Instrumentation creation failed, conductor user is not set up properly')
-                        session.close()
-                        session.rollback()
-                        return jsonify(message = 'The user requested as the conductor is not set up to be a conductor in the database.', url = url)
+                        raise Exception('The user requested as the conductor is not set up to be a conductor in the database.')
                 session.commit()
                 #send the URL for the group that was just created to the user, and send them to that page
                 url = ('/user/' + str(thisuser.logonid) + '/group/' + str(grouprequest.groupid) + '/')
@@ -1912,42 +1897,42 @@ def setup(logonid):
         session.close()
         return str(ex)
 
-    #try:
-    #check if this user is an admin or the Administrator superuser, if they are not, deny them.
-    if thisuser.isadmin != 1 and thisuser.logonid != getconfig('AdminUUID'):
-        return errorpage(thisuser,'You are not allowed to view this page.')
-    else:
-        if request.method == 'GET':
-            session.close()
-            return render_template('setup.html', \
-                                            thisuser=thisuser, \
-                                            campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
-                                            )
-        if request.method == 'POST':
-            session.close()
-            # Get the name of the uploaded file
-            file_bytes = request.files['file']
-            filename = secure_filename(file_bytes.filename)
-            if file_bytes and allowed_file(filename):
-                log('SETUP: File received named %s' % filename)
+    try:
+        #check if this user is an admin or the Administrator superuser, if they are not, deny them.
+        if thisuser.isadmin != 1 and thisuser.logonid != getconfig('AdminUUID'):
+            return errorpage(thisuser,'You are not allowed to view this page.')
+        else:
+            if request.method == 'GET':
+                session.close()
+                return render_template('setup.html', \
+                                                thisuser=thisuser, \
+                                                campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
+                                                )
+            if request.method == 'POST':
+                session.close()
+                # Get the name of the uploaded file
+                file_bytes = request.files['file']
+                filename = secure_filename(file_bytes.filename)
+                if file_bytes and allowed_file(filename):
+                    log('SETUP: File received named %s' % filename)
 
-                file_string = file_bytes.getvalue()
-                file_text = file_string.decode('UTF-8')
-                csv = StringIO(file_text)
+                    file_string = file_bytes.getvalue()
+                    file_text = file_string.decode('UTF-8')
+                    csv = StringIO(file_text)
 
-                if filename == 'config.xml':
-                    message = dbbuild(file_text)
-                if filename == 'campers.csv':
-                        message = importusers(csv)
-                if filename == 'musiclibrary.csv':
-                        message = importmusic(csv)
-                if message == 'Success':
-                    flash(message,'success')
-                else:
-                    flash(message,'error')
-                return redirect(request.url)
+                    if filename == 'config.xml':
+                        message = dbbuild(file_text)
+                    if filename == 'campers.csv':
+                            message = importusers(csv)
+                    if filename == 'musiclibrary.csv':
+                            message = importmusic(csv)
+                    if message == 'Success':
+                        flash(message,'success')
+                    else:
+                        flash(message,'error')
+                    return redirect(request.url)
     
-    """except Exception as ex:
+    except Exception as ex:
         log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))
         message = ('Failed to execute %s with exception: %s. Try refreshing the page and trying again or contact camp administration.' % (request.method, ex))
         session.rollback()
@@ -1955,7 +1940,7 @@ def setup(logonid):
         if request.method == 'GET':
             return errorpage(thisuser,'Failed to display page. %s' % ex)
         else:
-            return jsonify(message = message, url = 'none')"""
+            return jsonify(message = message, url = 'none')
 
 #This page is viewable by the admin only, it lets them edit different objects in the database - grouptemplates, locations, periods, etc.
 @app.route('/user/<logonid>/objecteditor/<input>/', methods=["GET","POST","DELETE"])

@@ -152,7 +152,7 @@
                     <td><a href="/user/{{ thisuser.logonid }}/group/{{ q.groupid }}/edit/">{{ q.groupname }}</a></td>
                     <td class="period_text" data-pairing="{{ q.groupid }}">
                         {% if q.starttime != None and q.endtime != None %}
-                        {{ q.starttime.strftime('%d %b') }} {{ q.periodname }}
+                        <a href="/user/{{ thisuser.logonid }}/period/{{ q.periodid }}/">{{ q.starttime.strftime('%d %b') }} {{ q.periodname }}</a>
                         {% endif %}
                     </td>
                     <td>{{ q.status }}</td>

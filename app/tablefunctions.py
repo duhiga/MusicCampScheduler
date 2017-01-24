@@ -117,7 +117,7 @@ def autofill(session,thisgroup,thisperiod,primary_only=0):
                     ).join(group
                     ).join(period
                     ).filter(
-                        period.periodid == thisgroup.periodid
+                        period.periodid == thisperiod.periodid
                     )
 
                 #combine the last query with another query, finding everyone that both plays an instrument that's found in thisgroup AND isn't in the list of users that are already playing in this period.
@@ -131,8 +131,8 @@ def autofill(session,thisgroup,thisperiod,primary_only=0):
                         user.arrival <= thisperiod.starttime, 
                         user.departure >= thisperiod.endtime
                     ).filter(
-                        instrument.grade >= minlevel, 
-                        instrument.grade <= maxlevel, 
+                        instrument.level >= minlevel, 
+                        instrument.level <= maxlevel, 
                         instrument.instrumentname == i, 
                         instrument.isactive == 1, 
                         instrument.isprimary >= int(primary_only)

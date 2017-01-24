@@ -43,47 +43,6 @@ def getschedule(session,thisuser,date):
             schedule.append(p)
     return schedule
 
-#from an input group, returns the highest and lowest instrument levels that should be assigned depending on its config
-def getgrouplevel(session,inputgroup,min_or_max):
-    if min_or_max == 'min':
-        log('GETGROUPLEVEL: Finding group %s level' % min_or_max)
-        #if the group is set to "auto", i.e. blank or 0, find the minimum level of all the players currently playing in the group
-        if inputgroup.minimumlevel is None or inputgroup.minimumlevel == '' or inputgroup.minimumlevel == '0' or inputgroup.minimumlevel == 0:
-            minimumgradeob = session.query(user.firstname, user.lastname, instrument.instrumentname, instrument.grade).join(groupassignment).join(group).\
-                join(instrument, and_(groupassignment.instrumentname == instrument.instrumentname, user.userid == instrument.userid)).\
-                filter(group.groupid == inputgroup.groupid).order_by(instrument.grade).first()
-            #if we find at least one player in this group, set the minimumgrade to be this players level minus the autoassignlimitlow
-            if minimumgradeob is not None:
-                log('GETGROUPLEVEL: Found minimum grade in group %s to be %s %s playing %s with grade %s' % (inputgroup.groupid, minimumgradeob.firstname, minimumgradeob.lastname, minimumgradeob.instrumentname, minimumgradeob.grade))
-                level = int(minimumgradeob.grade) - int(getconfig('AutoAssignLimitLow'))
-                if level < 1:
-                    level = 1
-            #if we don't find a player in this group, set the minimum level to be 0 (not allowed to autofill)
-            else: 
-                level = 0
-        #if this group's minimum level is explicitly set, use that setting
-        else:
-            level = inputgroup.minimumlevel
-    if min_or_max == 'max':
-        if inputgroup.maximumlevel is None or inputgroup.maximumlevel == '' or inputgroup.maximumlevel == '0' or inputgroup.maximumlevel == 0:
-            minimumgradeob = session.query(user.firstname, user.lastname, instrument.instrumentname, instrument.grade).join(groupassignment).join(group).\
-                join(instrument, and_(groupassignment.instrumentname == instrument.instrumentname, user.userid == instrument.userid)).\
-                filter(group.groupid == inputgroup.groupid).order_by(instrument.grade).first()
-            #if we find at least one player in this group, set the maximumgrade to be this players level plus the autoassignlimithigh
-            if minimumgradeob is not None:
-                log('GETGROUPLEVEL: Found minimum grade in group %s to be %s %s playing %s with grade %s' % (inputgroup.groupid, minimumgradeob.firstname, minimumgradeob.lastname, minimumgradeob.instrumentname, minimumgradeob.grade))
-                level = int(minimumgradeob.grade) + int(getconfig('AutoAssignLimitHigh'))
-                if level > int(getconfig('AutoAssignLimitHigh')):
-                    level = getconfig('MaximumLevel')
-            #if we don't find a player in this group, set the maximum level to 0 (not allowed to autofill)
-            else:
-                level = 0
-        #if this group's maximum level is explicitly set, use that setting
-        else:
-            level = inputgroup.maximumlevel
-    log('GETGROUPLEVEL: Found %s grade of group %s to be %s' % (min_or_max,inputgroup.groupid,level))
-    return int(level)
-
 def getgroupname(session,thisgroup):
     log('GETGROUPNAME: Generating a name for requested group')
     instrumentlist = getconfig('Instruments').split(",")
@@ -138,8 +97,8 @@ def getgroupname(session,thisgroup):
 #iterates through the empty slots in a group and finds players to potentially fill them. returns a list of players.
 def autofill(session,thisgroup,thisperiod,primary_only=0):
     #get the minimum level of this group
-    minlevel = getgrouplevel(session,thisgroup,'min')
-    maxlevel = getgrouplevel(session,thisgroup,'max')
+    minlevel = thisgroup.getminlevel(session)
+    maxlevel = thisgroup.getmaxlevel(session)
     if minlevel == 0 or maxlevel == 0:
         raise NameError('You cannot autofill with all empty players and an auto minimum or maximum level. Set the level or pick at least one player.')
     final_list = []

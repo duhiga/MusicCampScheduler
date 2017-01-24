@@ -6,10 +6,11 @@
             of the camp. This is used when creating the database.
           -GroupRequeLimit is the maximum number of times a normal user can request a group per day.
           -AutoAssign limits are used when automatically assigning players to groups. The autoassign algorythm picks players
-            according to the lowest level already contained in the group, plus and minus these limits. -->
+            according to the lowest level already contained in the group, plus and minus these limits. 
+            -->
   <CampDetails
     Name="Music Camp (Appears on all dashboards)"
-    Timezone="UTC"
+    TZ="UTC"
     SMTP_Server="smtp.gmail.com"
     SMTP_User="username@gmail.com"
     SMTP_Password="SMTP Password"

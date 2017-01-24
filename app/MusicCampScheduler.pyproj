@@ -36,9 +36,7 @@
     <Compile Include="SMTPemail.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="tablefunctions.py">
-      <SubType>Code</SubType>
-    </Compile>
+    <Compile Include="tablefunctions.py" />
     <Compile Include="__init__.py" />
     <Compile Include="DBSetup.py" />
   </ItemGroup>

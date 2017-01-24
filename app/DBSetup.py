@@ -58,9 +58,9 @@ class user(Base):
         return serialize_class(self, self.__class__)
 
     #adds this user to a group. The group object passed in must have at least a groupid and periodid
-    def addtogroup(self,session,thisgroup,instrumentname):
-        #check if this user plays this instrument
-        if session.query(instrument).filter(instrument.userid == self.userid, instrument.instrumentname == instrumentname).first() is None:
+    def addtogroup(self,session,thisgroup,instrumentname=None):
+        #check if this user plays this instrument (if an instrument was specified)
+        if instrumentname is not None and session.query(instrument).filter(instrument.userid == self.userid, instrument.instrumentname == instrumentname).first() is None:
             log('ADDPLAYER: Found that player %s %s does not play instrument %s, cannot assign them to group %s' % (self.firstname,self.lastname,instrumentname,thisgroup.groupid))
             raise Exception('Found that player %s %s does not play instrument %s, cannot assign them to group %s' % (self.firstname,self.lastname,instrumentname,thisgroup.groupid))
         #if the user is already in this group, don't add another groupassignment, just log it
@@ -74,6 +74,17 @@ class user(Base):
             playergroupassignment = groupassignment(userid = self.userid, groupid = thisgroup.groupid, instrumentname = instrumentname)
             session.add(playergroupassignment)
 
+    #marking a user absent for a period simply assigns them to a group called "absent" during that period
+    def markabsent(self,session,thisperiod):
+        absentgroup = session.query(group.groupid).join(period).filter(group.groupname == 'absent', period.periodid == thisperiod.periodid).first()
+        self.addtogroup(session,absentgroup)
+
+    #marking a user present searches for an absent listing for them, and removes it
+    def markpresent(self,session,thisperiod):
+        absentassignment = session.query(groupassignment).join(group).filter(group.groupname == 'absent', group.periodid == thisperiod.periodid, groupassignment.userid == self.userid).first()
+        if absentassignment is not None:
+            session.delete(absentassignment)
+
 #gets a user object from a userid, or a logodin if the logon flag is set to true
 def getuser(session,userid,logon=False):
     if logon:
@@ -81,6 +92,7 @@ def getuser(session,userid,logon=False):
     else:
         thisuser = session.query(user).filter(user.userid == userid).first()
     if thisuser is None:
+        log('GETUSER: Exception - Could not find user:%s logon:%s in database' % (userid,logon))
         raise Exception('Could not find user in database')
     else:
         return thisuser
@@ -99,6 +111,15 @@ class music(Base):
     @property
     def serialize(self):
         return serialize_class(self, self.__class__)
+
+#gets a music object from a musicid
+def getmusic(session,musicid):
+    thismusic = session.query(music).filter(music.musicid == musicid).first()
+    if thismusic is None:
+        log('GETMUSIC: Exception - Could not find music %s in database' % (musicid))
+        raise Exception('Could not find music in database')
+    else:
+        return thismusic
 
 #both group and grouptemplate tables and classes are initialized without the instrument columns
 class group(Base):
@@ -145,6 +166,53 @@ class group(Base):
         else:
             self.log = self.log + ',' + now + ';' + text
 
+    #this function obtains the min level, depending on if it's explicitly set, or has players already assigned
+    def getminlevel(self,session):
+        log('GETMINLEVEL: Finding group minimum level')
+        #if the group is set to "auto", i.e. blank or 0, find the minimum level of all the players currently playing in the group
+        if self.minimumlevel is None or self.minimumlevel == '' or self.minimumlevel == '0' or self.minimumlevel == 0:
+            minimumlevelob = session.query(user.firstname, user.lastname, instrument.instrumentname, instrument.level).join(groupassignment).join(group).\
+                join(instrument, and_(groupassignment.instrumentname == instrument.instrumentname, user.userid == instrument.userid)).\
+                filter(group.groupid == self.groupid).order_by(instrument.level).first()
+            #if we find at least one player in this group, set the minimumlevel to be this players level minus the autoassignlimitlow
+            if minimumlevelob is not None:
+                log('GETMINLEVEL: Found minimum level in group %s to be %s %s playing %s with level %s' % (self.groupid, minimumlevelob.firstname, minimumlevelob.lastname, minimumlevelob.instrumentname, minimumlevelob.level))
+                level = int(minimumlevelob.level) - int(getconfig('AutoAssignLimitLow'))
+                if level < 1:
+                    level = 1
+            #if we don't find a player in this group, set the minimum level to be 0 (not allowed to autofill)
+            else: 
+                level = 0
+        #if this group's minimum level is explicitly set, use that setting
+        else:
+            level = self.minimumlevel
+        log('GETMINLEVEL: Found minimum level of group %s to be %s' % (self.groupid,level))
+        return int(level)
+
+    #this function obtains the max level, depending on if it's explicitly set, or has players already assigned
+    def getmaxlevel(self,session):
+        log('GETMINLEVEL: Finding group minimum level')
+        #if the group is set to "auto", i.e. blank or 0, find the maximum level of all the players currently playing in the group
+        if self.maximumlevel is None or self.maximumlevel == '' or self.maximumlevel == '0' or self.maximumlevel == 0:
+            minimumlevelob = session.query(user.firstname, user.lastname, instrument.instrumentname, instrument.level).join(groupassignment).join(group).\
+                join(instrument, and_(groupassignment.instrumentname == instrument.instrumentname, user.userid == instrument.userid)).\
+                filter(group.groupid == self.groupid).order_by(instrument.level).first()
+            #if we find at least one player in this group, set the maximumlevel to be this players level plus the autoassignlimithigh
+            if minimumlevelob is not None:
+                log('GETMAXLEVEL: Found minimum level in group %s to be %s %s playing %s with level %s' % (self.groupid, minimumlevelob.firstname, minimumlevelob.lastname, minimumlevelob.instrumentname, minimumlevelob.level))
+                level = int(minimumlevelob.level) + int(getconfig('AutoAssignLimitHigh'))
+                if level > int(getconfig('AutoAssignLimitHigh')):
+                    level = getconfig('MaximumLevel')
+            #if we don't find a player in this group, set the maximum level to 0 (not allowed to autofill)
+            else:
+                level = 0
+        #if this group's maximum level is explicitly set, use that setting
+        else:
+            level = self.maximumlevel
+        log('GETMAXLEVEL: Found maximum level of group %s to be %s' % (self.groupid,level))
+        return int(level)
+
+    #deletes the group
     def delete(self, session):
         thisgroupassignments = session.query(groupassignment).filter(groupassignment.groupid == self.groupid).all()
         for a in thisgroupassignments:
@@ -153,10 +221,11 @@ class group(Base):
         session.delete(self)
         session.commit()
 
+    #get groupassignment listings for all players in this group
     def getplayers(self,session):
         return session.query(groupassignment).filter(groupassignment.groupid == thisgroup.groupid).all()
 
-    #confirms the group
+    #checks if the group can be confirmed, and confirms the group
     def confirm(self, session):
         if self.locationid is None:
             raise Exception('CONFIRMGROUP: Failed to confirm group becasue the group is missing a locationid')
@@ -217,6 +286,15 @@ class group(Base):
             session.delete(p)
         return False
 
+#gets a group object from a groupid
+def getgroup(session,groupid):
+    thisgroup = session.query(group).filter(group.groupid == groupid).first()
+    if thisgroup is None:
+        log('GETGROUP: Exception - Could not find group %s in database' % (groupid))
+        raise Exception('Could not find group in database')
+    else:
+        return thisgroup
+
 class grouptemplate(Base):
     __tablename__ = 'grouptemplates'
 
@@ -230,6 +308,15 @@ class grouptemplate(Base):
     @property
     def serialize(self):
         return serialize_class(self, self.__class__)
+
+#gets a grouptemplate object from a grouptemplateid
+def getgrouptemplate(session,grouptemplateid):
+    thisgrouptemplate = session.query(grouptemplate).filter(grouptemplate.grouptemplateid == grouptemplateid).first()
+    if thisgrouptemplate is None:
+        log('GETGROUPTEMPLATE: Exception - Could not find grouptemplate %s in database' % (grouptemplateid))
+        raise Exception('Could not find grouptemplate in database')
+    else:
+        return thisgrouptemplate
 
 #add the columns for each instrument in the application configuration to the group and grouptemplates tables
 instrumentlist = getconfig('Instruments').split(",")
@@ -245,13 +332,22 @@ class instrument(Base):
     instrumentid = Column(Integer, primary_key=True, unique=True)
     userid = Column(UUID, ForeignKey('users.userid'))
     instrumentname = Column(String)
-    grade = Column(Integer)
+    level = Column(Integer)
     isprimary = Column(Integer)
     isactive = Column(Integer)
 
     @property
     def serialize(self):
         return serialize_class(self, self.__class__)
+
+#gets a instrument object from a instrumentid
+def getinstrument(session,instrumentid):
+    thisinstrument = session.query(instrument).filter(instrument.instrumentid == instrumentid).first()
+    if thisinstrument is None:
+        log('GETINSTRUMENT: Exception - Could not find instrument %s in database' % (instrumentid))
+        raise Exception('Could not find instrument in database')
+    else:
+        return thisinstrument
 
 class groupassignment(Base):
     __tablename__ = 'groupassignments'
@@ -265,6 +361,15 @@ class groupassignment(Base):
     def serialize(self):
         return serialize_class(self, self.__class__)
 
+#gets a groupassignment object from a groupassignmentid
+def getgroupassignment(session,groupassignmentid):
+    thisgroupassignment = session.query(groupassignment).filter(groupassignment.groupassignmentid == groupassignmentid).first()
+    if thisgroupassignment is None:
+        log('GETGROUPASSIGNMENT: Exception - Could not find groupassignment %s in database' % (groupassignmentid))
+        raise Exception('Could not find groupassignment in database')
+    else:
+        return thisgroupassignment
+
 class location(Base):
     __tablename__ = 'locations'
 
@@ -275,6 +380,15 @@ class location(Base):
     @property
     def serialize(self):
         return serialize_class(self, self.__class__)
+
+#gets a location object from a locationid
+def getlocation(session,locationid):
+    thislocation = session.query(location).filter(location.locationid == locationid).first()
+    if thislocation is None:
+        log('GETLOCATION: Exception - Could not find location %s in database' % (locationid))
+        raise Exception('Could not find location in database')
+    else:
+        return thislocation
 
 class period(Base):
     __tablename__ = 'periods'
@@ -289,12 +403,30 @@ class period(Base):
     def serialize(self):
         return serialize_class(self, self.__class__)
 
+#gets a period object from a periodid
+def getperiod(session,periodid):
+    thisperiod = session.query(period).filter(period.periodid == periodid).first()
+    if thisperiod is None:
+        log('GETPERIOD: Exception - Could not find period %s in database' % (periodid))
+        raise Exception('Could not find period in database')
+    else:
+        return thisperiod
+
 class announcement(Base):
     __tablename__ = 'announcements'
 
     announcementid = Column(Integer, primary_key=True, unique=True)
     creationtime = Column(DateTime)
     content = Column(Text(convert_unicode=True))
+
+#gets a announcement object from a announcementid
+def getannouncement(session,announcementid):
+    thisannouncement = session.query(announcement).filter(announcement.announcementid == announcementid).first()
+    if thisannouncement is None:
+        log('GETANNOUNCEMENT: Exception - Could not find announcement %s in database' % (announcementid))
+        raise Exception('Could not find announcement in database')
+    else:
+        return thisannouncement
 
 Base.metadata.create_all(engine)
 
@@ -332,98 +464,100 @@ def createlocation(session,name,capacity):
 
 #Database Build section. The below configures periods and groups depending on how the config.xml is configured.
 def dbbuild(configfile):
-    try:
-        conf = untangle.parse(configfile)
-        #Grab the camp start and end times from the config file
-        CampStartTime = datetime.datetime.strptime(getconfig('StartTime'), '%Y-%m-%d %H:%M')
-        CampEndTime = datetime.datetime.strptime(getconfig('EndTime'), '%Y-%m-%d %H:%M')
-        #Prepare for the loop, which will go through each day of camp and create an instance of each day's period
-        ThisDay = datetime.datetime.strptime(datetime.datetime.strftime(CampStartTime, '%Y-%m-%d'), '%Y-%m-%d')
-        #start our session, then go through the loop
-        session = Session()
-        loop = 'start'
-        find_location = session.query(location).filter(location.locationname == 'None').first()
-        createlocation(session,'None',0)
-        for x in range(0,len(conf.root.CampDetails.Location)):
-            createlocation(session,conf.root.CampDetails.Location[x]['Name'], conf.root.CampDetails.Location[x]['Capacity'])
-        session.commit()
-        #For each day covered by the camp start and end time
-        while loop == 'start':
-            log('Creating initial groups for %s' % ThisDay)
-            #For each period covered by the camp's configured period list
-            for x in range(0,len(conf.root.CampDetails.Period)):
-                ThisStartTime = datetime.datetime.strptime((datetime.datetime.strftime(ThisDay, '%Y-%m-%d') + ' ' + conf.root.CampDetails.Period[x]['StartTime']),'%Y-%m-%d %H:%M')
-                ThisEndTime = datetime.datetime.strptime((datetime.datetime.strftime(ThisDay, '%Y-%m-%d') + ' ' + conf.root.CampDetails.Period[x]['EndTime']),'%Y-%m-%d %H:%M')
-                ThisPeriodName = conf.root.CampDetails.Period[x]['Name']
-                ThisPeriodMeal = conf.root.CampDetails.Period[x]['Meal']
+    #try:
+    log('Initiating initial database build from config file')
+    conf = untangle.parse(configfile)
+    #Grab the camp start and end times from the config file
+    CampStartTime = datetime.datetime.strptime(getconfig('StartTime'), '%Y-%m-%d %H:%M')
+    CampEndTime = datetime.datetime.strptime(getconfig('EndTime'), '%Y-%m-%d %H:%M')
+    #Prepare for the loop, which will go through each day of camp and create an instance of each day's period
+    ThisDay = datetime.datetime.strptime(datetime.datetime.strftime(CampStartTime, '%Y-%m-%d'), '%Y-%m-%d')
+    #start our session, then go through the loop
+    session = Session()
+    loop = 'start'
+    find_location = session.query(location).filter(location.locationname == 'None').first()
+    createlocation(session,'None',0)
+    for x in range(0,len(conf.root.CampDetails.Location)):
+        createlocation(session,conf.root.CampDetails.Location[x]['Name'], conf.root.CampDetails.Location[x]['Capacity'])
+    session.commit()
+    #For each day covered by the camp start and end time
+    while loop == 'start':
+        log('Creating initial groups for %s' % ThisDay)
+        #For each period covered by the camp's configured period list
+        for x in range(0,len(conf.root.CampDetails.Period)):
+            ThisStartTime = datetime.datetime.strptime((datetime.datetime.strftime(ThisDay, '%Y-%m-%d') + ' ' + conf.root.CampDetails.Period[x]['StartTime']),'%Y-%m-%d %H:%M')
+            ThisEndTime = datetime.datetime.strptime((datetime.datetime.strftime(ThisDay, '%Y-%m-%d') + ' ' + conf.root.CampDetails.Period[x]['EndTime']),'%Y-%m-%d %H:%M')
+            ThisPeriodName = conf.root.CampDetails.Period[x]['Name']
+            ThisPeriodMeal = conf.root.CampDetails.Period[x]['Meal']
+            find_period = session.query(period).filter(period.periodname == ThisPeriodName,period.starttime == ThisStartTime,period.endtime == ThisEndTime).first()
+            #only create periods and groups if we are inside the specific camp start and end time
+            if ThisStartTime <= CampEndTime and ThisStartTime >= CampStartTime:
                 find_period = session.query(period).filter(period.periodname == ThisPeriodName,period.starttime == ThisStartTime,period.endtime == ThisEndTime).first()
-                #only create periods and groups if we are inside the specific camp start and end time
-                if ThisStartTime <= CampEndTime and ThisStartTime >= CampStartTime:
-                    find_period = session.query(period).filter(period.periodname == ThisPeriodName,period.starttime == ThisStartTime,period.endtime == ThisEndTime).first()
-                    #if no period exists in the database, create it
-                    if find_period is None:
-                        find_period = period(periodname = ThisPeriodName,starttime = ThisStartTime,endtime = ThisEndTime,meal=ThisPeriodMeal)
-                        session.add(find_period)
-                        log('Created period: %s at %s with meal switch set to %s' % (find_period.periodname, find_period.starttime, find_period.meal))
-                    #check if this period has public events that need to be created
-                    for x in range(0,len(conf.root.CampDetails.PublicEvent)):
-                        find_event = session.query(group).filter(group.groupname == conf.root.CampDetails.PublicEvent[x]['Name'],group.periodid == find_period.periodid,group.iseveryone == 1,group.ismusical == 0).first()
-                        if find_event is None and find_period.periodname == conf.root.CampDetails.PublicEvent[x]['Period']:
-                            log('right before locationname search')
-                            find_location = session.query(location).filter(location.locationname == conf.root.CampDetails.PublicEvent[x]['Location']).first()
-                            if find_location is None:
-                                log('User input a location that does not exist when configuring event %s' % conf.root.CampDetails.PublicEvent[x]['Name'])
-                            else:
-                                find_event = group(groupname = conf.root.CampDetails.PublicEvent[x]['Name'],periodid = find_period.periodid,iseveryone = 1,ismusical = 0,locationid = find_location.locationid,status="Confirmed",requesttime=datetime.datetime.now())
-                                if conf.root.CampDetails.PublicEvent[x]['Description'] is not None:
-                                    find_event.groupdescription = conf.root.CampDetails.PublicEvent[x]['Description']
-                                session.add(find_event)
-                                log('Created public event: %s during period %s at %s' % (find_event.groupname, find_period.periodname, find_period.starttime))
-                    #if no absentgroup exists in the database, create it
-                    find_absent_group = session.query(group).filter(group.groupname == 'absent',group.periodid == find_period.periodid).first()
-                    if find_absent_group is None:
-                        find_absent_group = group(groupname = 'absent',periodid = find_period.periodid,ismusical=0,status="Confirmed",requesttime=datetime.datetime.now(),minimumlevel=0,maximumlevel=0)
-                        session.add(find_absent_group)
-                        log('Created group: placeholder for absentees at %s' % (find_period.starttime))
-                #if we hit the camp's configured end time, then stop looping
-                if ThisStartTime > CampEndTime:
-                    loop = 'stop'
-            ThisDay = ThisDay + datetime.timedelta(days=1)    
-        #create group templates
-        session.commit()
-        for x in range(0,len(conf.root.CampDetails.GroupTemplate)):
-            find_template = session.query(grouptemplate).filter(grouptemplate.grouptemplatename == conf.root.CampDetails.GroupTemplate[x]['Name']).first()
-            if find_template is None:
-                template = grouptemplate()
-                attributelist = [a for a in dir(template) if not a.startswith('_') and not callable(getattr(template,a)) and not a == 'grouptemplateid' and not a == 'metadata' and not a == 'serialize']
-                for v in attributelist:
-                    if conf.root.CampDetails.GroupTemplate[x]['%s' % v] is not None:
-                        setattr(template, v, conf.root.CampDetails.GroupTemplate[x]['%s' % v])
-                    else:
-                        setattr(template, v, 0)
-                setattr(template, 'grouptemplatename', conf.root.CampDetails.GroupTemplate[x]['Name'])
-                setattr(template, 'size', conf.root.CampDetails.GroupTemplate[x]['Size'])
-                setattr(template, 'minimumlevel', conf.root.CampDetails.GroupTemplate[x]['MinimumLevel'])
-                setattr(template, 'maximumlevel', conf.root.CampDetails.GroupTemplate[x]['MaximumLevel'])
-                if conf.root.CampDetails.GroupTemplate[x]['DefaultLocation'] is not None:
-                    defaultloc = session.query(location).filter(location.locationname == conf.root.CampDetails.GroupTemplate[x]['DefaultLocation']).first()
-                    log('Found group default location for %s to be %s' % (template.grouptemplatename, defaultloc.locationname))
-                    setattr(template, 'defaultlocationid', defaultloc.locationid)
+                #if no period exists in the database, create it
+                if find_period is None:
+                    find_period = period(periodname = ThisPeriodName,starttime = ThisStartTime,endtime = ThisEndTime,meal=ThisPeriodMeal)
+                    session.add(find_period)
+                    log('Created period: %s at %s with meal switch set to %s' % (find_period.periodname, find_period.starttime, find_period.meal))
+                #check if this period has public events that need to be created
+                for x in range(0,len(conf.root.CampDetails.PublicEvent)):
+                    find_event = session.query(group).filter(group.groupname == conf.root.CampDetails.PublicEvent[x]['Name'],group.periodid == find_period.periodid,group.iseveryone == 1,group.ismusical == 0).first()
+                    if find_event is None and find_period.periodname == conf.root.CampDetails.PublicEvent[x]['Period']:
+                        log('right before locationname search')
+                        find_location = session.query(location).filter(location.locationname == conf.root.CampDetails.PublicEvent[x]['Location']).first()
+                        if find_location is None:
+                            log('User input a location that does not exist when configuring event %s' % conf.root.CampDetails.PublicEvent[x]['Name'])
+                        else:
+                            find_event = group(groupname = conf.root.CampDetails.PublicEvent[x]['Name'],periodid = find_period.periodid,iseveryone = 1,ismusical = 0,locationid = find_location.locationid,status="Confirmed",requesttime=datetime.datetime.now())
+                            if conf.root.CampDetails.PublicEvent[x]['Description'] is not None:
+                                find_event.groupdescription = conf.root.CampDetails.PublicEvent[x]['Description']
+                            session.add(find_event)
+                            log('Created public event: %s during period %s at %s' % (find_event.groupname, find_period.periodname, find_period.starttime))
+                #if no absentgroup exists in the database, create it
+                find_absent_group = session.query(group).filter(group.groupname == 'absent',group.periodid == find_period.periodid).first()
+                if find_absent_group is None:
+                    find_absent_group = group(groupname = 'absent',periodid = find_period.periodid,ismusical=0,status="Confirmed",requesttime=datetime.datetime.now(),minimumlevel=0,maximumlevel=0)
+                    session.add(find_absent_group)
+                    log('Created group: placeholder for absentees at %s' % (find_period.starttime))
+            #if we hit the camp's configured end time, then stop looping
+            if ThisStartTime > CampEndTime:
+                loop = 'stop'
+        ThisDay = ThisDay + datetime.timedelta(days=1)    
+    #create group templates
+    session.commit()
+    for x in range(0,len(conf.root.CampDetails.GroupTemplate)):
+        find_template = session.query(grouptemplate).filter(grouptemplate.grouptemplatename == conf.root.CampDetails.GroupTemplate[x]['Name']).first()
+        if find_template is None:
+            template = grouptemplate()
+            attributelist = [a for a in dir(template) if not a.startswith('_') and not callable(getattr(template,a)) and not a == 'grouptemplateid' and not a == 'metadata' and not a == 'serialize']
+            for v in attributelist:
+                if conf.root.CampDetails.GroupTemplate[x]['%s' % v] is not None:
+                    setattr(template, v, conf.root.CampDetails.GroupTemplate[x]['%s' % v])
                 else:
-                    noneloc = session.query(location).filter(location.locationname == 'None').first()
-                    log('No default location set for template %s. Setting default location to be %s' % (template.grouptemplatename, noneloc.locationname))
-                    setattr(template, 'defaultlocationid', noneloc.locationid)
-                session.add(template)
-                session.commit()
-                log('Created grouptemplate: %s with size %s' % (template.grouptemplatename, template.size))
-        session.commit()
-        session.close()
-        log('Finished database build')
-        return 'Success'
-    except Exception as ex:
+                    setattr(template, v, 0)
+            setattr(template, 'grouptemplatename', conf.root.CampDetails.GroupTemplate[x]['Name'])
+            setattr(template, 'size', conf.root.CampDetails.GroupTemplate[x]['Size'])
+            setattr(template, 'minimumlevel', conf.root.CampDetails.GroupTemplate[x]['MinimumLevel'])
+            setattr(template, 'maximumlevel', conf.root.CampDetails.GroupTemplate[x]['MaximumLevel'])
+            if conf.root.CampDetails.GroupTemplate[x]['DefaultLocation'] is not None:
+                defaultloc = session.query(location).filter(location.locationname == conf.root.CampDetails.GroupTemplate[x]['DefaultLocation']).first()
+                log('Found group default location for %s to be %s' % (template.grouptemplatename, defaultloc.locationname))
+                setattr(template, 'defaultlocationid', defaultloc.locationid)
+            else:
+                noneloc = session.query(location).filter(location.locationname == 'None').first()
+                log('No default location set for template %s. Setting default location to be %s' % (template.grouptemplatename, noneloc.locationname))
+                setattr(template, 'defaultlocationid', noneloc.locationid)
+            session.add(template)
+            session.commit()
+            log('Created grouptemplate: %s with size %s' % (template.grouptemplatename, template.size))
+    session.commit()
+    session.close()
+    log('Finished database build')
+    return 'Success'
+    
+    """except Exception as ex:
         session.rollback()
         session.close()
-        return ('Failed to import with exception: %s.' % ex)
+        return ('Failed to import with exception: %s.' % ex)"""
 
 def importusers(file):
     try:
@@ -432,7 +566,7 @@ def importusers(file):
         CampEndTime = datetime.datetime.strptime(getconfig('EndTime'), '%Y-%m-%d %H:%M')
         #the below reads the camp input file and creates the users and instrument bindings it finds there.
         #ifile  = open(file, "rb")
-        reader = csv.reader(file)
+        reader = csv.reader(file, delimiter=',')
         rownum = 0
         for row in reader:
             # Save header row.
@@ -466,21 +600,21 @@ def importusers(file):
                 log('Created user: %s %s' % (thisuser.firstname, thisuser.lastname))
                 session.commit()
                 if row[4] is not '':
-                    instrument1 = instrument(userid = thisuser.userid, instrumentname = row[4].capitalize().replace(" ", ""), grade = row[5], isprimary = 1, isactive = 1)
+                    instrument1 = instrument(userid = thisuser.userid, instrumentname = row[4].capitalize().replace(" ", ""), level = row[5], isprimary = 1, isactive = 1)
                     session.add(instrument1)
-                    log('Created instrument listing: %s at level %s for %s' % (instrument1.instrumentname, instrument1.grade, thisuser.firstname))
+                    log('Created instrument listing: %s at level %s for %s' % (instrument1.instrumentname, instrument1.level, thisuser.firstname))
                 if row[6] is not '':
-                    instrument2 = instrument(userid = thisuser.userid, instrumentname = row[6].capitalize().replace(" ", ""), grade = row[7], isprimary = 0, isactive = 1)
+                    instrument2 = instrument(userid = thisuser.userid, instrumentname = row[6].capitalize().replace(" ", ""), level = row[7], isprimary = 0, isactive = 1)
                     session.add(instrument2)
-                    log('Created instrument listing: %s at level %s for %s' % (instrument2.instrumentname, instrument2.grade, thisuser.firstname))
+                    log('Created instrument listing: %s at level %s for %s' % (instrument2.instrumentname, instrument2.level, thisuser.firstname))
                 if row[8] is not '':
-                    instrument3 = instrument(userid = thisuser.userid, instrumentname = row[8].capitalize().replace(" ", ""), grade = row[9], isprimary = 0, isactive = 1)
+                    instrument3 = instrument(userid = thisuser.userid, instrumentname = row[8].capitalize().replace(" ", ""), level = row[9], isprimary = 0, isactive = 1)
                     session.add(instrument3)
-                    log('Created instrument listing: %s at level %s for %s' % (instrument3.instrumentname, instrument3.grade, thisuser.firstname))
+                    log('Created instrument listing: %s at level %s for %s' % (instrument3.instrumentname, instrument3.level, thisuser.firstname))
                 if row[10] is not '':
-                    instrument4 = instrument(userid = thisuser.userid, instrumentname = row[10].capitalize().replace(" ", ""), grade = row[11], isprimary = 0, isactive = 1)
+                    instrument4 = instrument(userid = thisuser.userid, instrumentname = row[10].capitalize().replace(" ", ""), level = row[11], isprimary = 0, isactive = 1)
                     session.add(instrument4)
-                    log('Created instrument listing: %s at level %s for %s' % (instrument4.instrumentname, instrument4.grade, thisuser.firstname))
+                    log('Created instrument listing: %s at level %s for %s' % (instrument4.instrumentname, instrument4.level, thisuser.firstname))
             rownum += 1
         session.commit()
         userscount = session.query(user).count()
@@ -489,31 +623,42 @@ def importusers(file):
     except Exception as ex:
         session.rollback()
         session.close()
+        log('IMPORTUSERS: Failed to import with exception: %s.' % ex)
         return ('Failed to import with exception: %s.' % ex)
 
 def importmusic(file):
     try:
         session = Session()
-        reader = csv.reader(file)
-        headers = reader.next()
-        log(headers)
+        reader = csv.reader(file, delimiter=',')
+        headers = []
+        headerfound = False
         for row in reader:
-            thismusic = music()
-            for header in headers:
-                if header in getconfig('Instruments').split(",") and row[headers.index(header)] == '':
-                    setattr(thismusic,header,0)
-                elif row[headers.index(header)] != '':
-                    setattr(thismusic,header,row[headers.index(header)])
+            #if this is the first iteration, the headers should be here
+            if not headerfound:
+                for column in row:
+                    headers.append(column)
+                log('IMPORTMUSIC: Headers for this import:')
+                log(headers)
+                headerfound = True
+            #if it's not the first iteration, it's a data row
+            else:
+                thismusic = music()
+                for idx, item in enumerate(row):
+                    if headers[idx] in getconfig('Instruments').split(",") and item == '':
+                        setattr(thismusic,headers[idx],0)
+                    elif item != '':
+                        setattr(thismusic,headers[idx],item)
                 matchingtemplate = session.query(grouptemplate).filter(*[getattr(thismusic,i) == getattr(grouptemplate,i) for i in instrumentlist]).first()
                 if matchingtemplate is not None:
                     log('Found a template matching this music: %s' % matchingtemplate.grouptemplatename)
                     thismusic.grouptemplateid = matchingtemplate.grouptemplateid
-            session.add(thismusic)
+                session.add(thismusic)
         session.commit()
         session.close()
         return ('Success')
     except Exception as ex:
         session.rollback()
         session.close()
+        log('IMPORTMUSIC: Failed to import with exception: %s.' % ex)
         return ('Failed to import with exception: %s.' % ex)
 

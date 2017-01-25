@@ -44,12 +44,13 @@
     <Period Name="Period 4" StartTime="16:15" EndTime="17:30" Meal="0"></Period>
     <Period Name="Dinner" StartTime="18:30" EndTime="19:30" Meal="1"></Period>
     <Period Name="Period 5" StartTime="19:30" EndTime="21:00" Meal="0"></Period>
-    <!-- Fill in the location objects with location names and maximum capacities. Locations are places that groups 
-         can rehearse -->
-    <Location Name="Dining Room" Capacity="100"></Location>
+    <!-- Fill in the location objects. Locations are places that groups can rehearse 
+        DisabledInstruments is optional, it configures which instruments are not allowed in which venues.
+        AutoAllocate is also optional, set this to zero if this location should not be allocated when automatically scheduling a period -->
+    <Location Name="Dining Room" Capacity="100" AutoAllocate="0"></Location>
     <Location Name="Rec Room" Capacity="60"></Location>
-    <Location Name="Room 1" Capacity="5"></Location>
-    <Location Name="Room 2" Capacity="5"></Location>
+    <Location Name="Room 1" Capacity="5" DisabledInstruments="Piano,Doublebass"></Location>
+    <Location Name="Room 2" Capacity="5" DisabledInstruments="Piano"></Location>
     <!-- Templates that users can pick from when requesting groups go here. Note that
          1. Everything is case sensitive, and
          2. You don't need to put every instrument name in, just the ones that are used in the group

@@ -102,7 +102,8 @@
                                                     {% if u.isadmin == 1 %}Admin{% endif %}
                                                     {% if u.isannouncer == 1 %}Announcer{% endif %}
                                                     {% if u.isconductor == 1 %}Conductor{% endif %}
-                                                    Playcount:{% if u.playcount != 'Non Player' %}{{ u.playcount }}{% else %}NonPlayer{% endif %}
+                                                    Playcount:{% if u.playcount %}{{ u.playcount }}{% else %}0{% endif %}
+                                                    {% if u.instrumentname %}{{u.instrumentname}}{% endif %}
                                                     ">
                     <td><input type="checkbox" value="{{ u.userid }}" data-key="userid" data-mapping="{{ u.userid }}" class="checkbox form-object-master form-validate"></td>
                     <td><a href="/user/{{ thisuser.logonid }}/edituser/{{ u.userid }}/">{{ u.firstname }}</a></td>

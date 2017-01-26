@@ -1490,72 +1490,61 @@ def useradmin(logonid):
         session.close()
         return str(ex)
 
-    try:
-        #check if this user is a conductor, if they are not, deny them.
-        if thisuser.isadmin != 1 and thisuser.logonid != getconfig('AdminUUID'):
-            raise Exception('You are not allowed to view this page.')
-        else:
-            #get the list of people that play instruments
-            players_query = session.query(instrument.userid).filter(instrument.isactive == 1)
-            #get the players that have not played yet in this camp, add a 0 playcount to them and append them to the list
-            already_played_query = session.query(
-                                user.userid
-                            ).join(groupassignment
-                            ).join(group
-                            ).filter(
-                                group.ismusical == 1, 
-                                group.status == 'Confirmed', 
-                                user.userid.in_(players_query)
+    #try:
+    #check if this user is a conductor, if they are not, deny them.
+    if thisuser.isadmin != 1 and thisuser.logonid != getconfig('AdminUUID'):
+        raise Exception('You are not allowed to view this page.')
+    else:
+        #get the list of people that play instruments
+        players_query = session.query(instrument.userid).filter(instrument.isactive == 1)
+        #get the userids and their associated primary instruments
+        primaryinstruments_subquery = session.query(
+                            instrument.userid.label('primaryinstruments_userid'),
+                            instrument.instrumentname.label('instrumentname')
+                        ).filter(
+                            instrument.isactive == 1, 
+                            instrument.isprimary == 1
+                        ).subquery()
+
+        #make a query that totals the nmber of times each potential user has played at camp.
+        playcounts_subquery = session.query(
+                            user.userid.label('playcounts_userid'),
+                            func.count(user.userid).label("playcount")
+                        ).group_by(
+                            user.userid
+                        ).outerjoin(groupassignment, groupassignment.userid == user.userid
+                        ).outerjoin(group, group.groupid == groupassignment.groupid
+                        ).filter(
+                            groupassignment.instrumentname != 'Conductor', 
+                            group.ismusical == 1, 
+                            group.periodid != None,
+                        ).subquery()
+
+        users = session.query(
+                            user.userid, 
+                            user.logonid, 
+                            user.isactive, 
+                            user.firstname, 
+                            user.lastname, 
+                            user.isadmin, 
+                            user.isconductor, 
+                            user.isannouncer, 
+                            user.grouprequestcount, 
+                            primaryinstruments_subquery.c.instrumentname,
+                            playcounts_subquery.c.playcount,
+                        ).outerjoin(primaryinstruments_subquery, primaryinstruments_subquery.c.primaryinstruments_userid == user.userid
+                        ).outerjoin(playcounts_subquery, playcounts_subquery.c.playcounts_userid == user.userid
+                        ).order_by(
+                            user.firstname,
+                            user.lastname
+                        ).all()
+
+        return render_template('useradmin.html', \
+                            thisuser=thisuser, \
+                            users=users, \
+                            campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
                             )
-            users = session.query(
-                                user.userid, 
-                                user.logonid, 
-                                user.isactive, 
-                                user.firstname, 
-                                user.lastname, 
-                                user.isadmin, 
-                                user.isconductor, 
-                                user.isannouncer, 
-                                user.grouprequestcount,
-                                instrument.instrumentname,
-                                sqlalchemy.sql.expression.literal_column("0").label("playcount")
-                            ).outerjoin(instrument
-                            ).filter(
-                                ~user.userid.in_(already_played_query),
-                                user.userid.in_(players_query),
-                                instrument.isprimary == 1
-                            ).all()
-            #append the players that have already played.
-            for p in (session.query(
-                                user.userid, 
-                                user.logonid, 
-                                user.isactive, 
-                                user.firstname, 
-                                user.lastname, 
-                                user.isadmin, 
-                                user.isconductor, 
-                                user.isannouncer, 
-                                user.grouprequestcount,
-                                func.count(groupassignment.userid).label("playcount")
-                            ).group_by(user.userid
-                            ).outerjoin(groupassignment, user.userid == groupassignment.userid
-                            ).outerjoin(group
-                            ).filter(
-                                group.ismusical == 1, 
-                                group.status == 'Confirmed', 
-                                user.userid.in_(players_query),
-                            ).order_by(func.count(groupassignment.userid)
-                            ).all()):
-                users.append(p)
-            #get the inverse of that - the non-players and add it to the list
-            for p in (session.query(user.userid, user.logonid, user.firstname, user.lastname, user.isadmin, user.isconductor, user.isannouncer, sqlalchemy.sql.expression.literal_column("'Non Player'").label("playcount")).filter(~user.userid.in_(players_query)).all()):
-                users.append(p)
-            return render_template('useradmin.html', \
-                                thisuser=thisuser, \
-                                users=users, \
-                                campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
-                                )
-    except Exception as ex:
+    """except Exception as ex:
         log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))
         message = ('Failed to execute %s with exception: %s. Try refreshing the page and trying again or contact camp administration.' % (request.method, ex))
         session.rollback()
@@ -1563,7 +1552,7 @@ def useradmin(logonid):
         if request.method == 'GET':
             return errorpage(thisuser,'Failed to display page. %s' % ex)
         else:
-            return jsonify(message = message, url = 'none')
+            return jsonify(message = message, url = 'none')"""
 
 #handles the useredit page
 @app.route('/user/<logonid>/edituser/<targetuserid>/', methods=['GET', 'POST'])

@@ -34,7 +34,11 @@
 
         $(function () {
             $(".tablesorter").tablesorter({
-                sortList: [[5, 1], [1, 0]]
+                headers: {
+                    4: {
+                        sorter: 'scoreorder',
+                    },
+                },
             });
         });
 
@@ -104,9 +108,9 @@
                     <td><a href="/user/{{ thisuser.logonid }}/edituser/{{ u.userid }}/">{{ u.firstname }}</a></td>
                     <td><a href="/user/{{ thisuser.logonid }}/edituser/{{ u.userid }}/">{{ u.lastname }}</a></td>
                     <td class="w3-hide-small w3-hide-medium">{% if u.isactive == 1 %}Yes{% else %}No{% endif %}</td>
-                    <td class="w3-hide-small">{{u.instrumentname}}</td>
+                    <td class="w3-hide-small">{% if u.instrumentname %}{{u.instrumentname}}{% else %}&nbsp;{% endif %}</td>
                     <th class="w3-hide-small w3-hide-medium">{{u.grouprequestcount}}</th>
-                    <td>{% if u.playcount != 'Non Player' %}{{ u.playcount }}{% else %}&nbsp;{% endif %}</td>
+                    <td>{% if u.playcount and u.instrumentname %}{{ u.playcount }}{% elif u.instrumentname %}0{% else %}&nbsp;{% endif %}</td>
                     <td><a href="/user/{{ u.logonid }}/">Home</a></td>
                 </tr>
                 {% endfor %}

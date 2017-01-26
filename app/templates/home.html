@@ -92,7 +92,7 @@
 {% block content %}
 <header>
     <div class="w3-center">
-        <a class="w3-btn w3-white w3-border" href="/user/{{ thisuser.logonid }}/date/{{ previousday.strftime('%Y-%m-%d') }}/">&#10094; Previous</a>
+        <a class="w3-btn w3-white w3-border" href="/user/{{ thisuser.logonid }}/date/{{ previousday.strftime('%Y-%m-%d') }}/"><i class="fa fa-caret-left"></i>&nbsp;Previous</a>
         <div class="w3-dropdown-hover">
             <button class="w3-btn w3-white w3-border">
                 {% if date.strftime('%Y-%m-%d') == today.strftime('%Y-%m-%d') %}
@@ -112,7 +112,7 @@
                 {% endfor %}
             </div>
         </div>
-        <a class="w3-btn w3-white w3-border" href="/user/{{ thisuser.logonid }}/date/{{ nextday.strftime('%Y-%m-%d') }}/">Next &#10095;</a>
+        <a class="w3-btn w3-white w3-border" href="/user/{{ thisuser.logonid }}/date/{{ nextday.strftime('%Y-%m-%d') }}/">Next&nbsp;<i class="fa fa-caret-right"></i></a>
     </div>
 </header>
     <div class="w3-row">

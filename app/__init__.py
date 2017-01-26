@@ -1188,9 +1188,12 @@ def groupscheduler(logonid):
                                 period.starttime, 
                                 period.endtime, 
                                 user.firstname, 
-                                user.lastname
+                                user.lastname,
+                                music.composer,
+                                music.musicname
                             ).outerjoin(period
                             ).outerjoin(user
+                            ).outerjoin(music
                             ).filter(
                                 group.groupname != 'absent',
                                 group.iseveryone != 1

@@ -173,7 +173,7 @@
                         <tbody class="zebra-table">
                             {% if groups != None %}
                             {% for g in groups %}
-                            <tr class="searchable" data-search="{{ g.requesttime.strftime('%d %b')}} {{g.groupname}} {{ g.firstname }} {{ g.lastname }} {% if g.starttime and g.starttime < now and g.status == 'Confirmed' %}Complete{% else %}{{g.status}}{% endif %} {{g.description}} {% if g.starttime %}{{ g.starttime.strftime('%d %b') }}{% endif %} {{ g.periodname }} {% for i in instrumentlist %}{% if g[i] > 0 %}{{i}} {% endif %}{% endfor %}">
+                            <tr class="searchable" data-search="{{g.composer}} {{g.musicname}} {{ g.requesttime.strftime('%d %b')}} {{g.groupname}} {{ g.firstname }} {{ g.lastname }} {% if g.starttime and g.starttime < now and g.status == 'Confirmed' %}Complete{% else %}{{g.status}}{% endif %} {{g.description}} {% if g.starttime %}{{ g.starttime.strftime('%d %b') }}{% endif %} {{ g.periodname }} {% for i in instrumentlist %}{% if g[i] > 0 %}{{i}} {% endif %}{% endfor %}">
                                 <td>
                                     {% if g.requesttime != None %}
                                     {{ g.requesttime.strftime('%d%b %H:%M')}}

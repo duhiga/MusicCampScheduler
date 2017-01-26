@@ -1268,8 +1268,23 @@ def groupqueue(logonid):
                         log('FILLALL: Attempting autofill, location allocation and confirmation for group name:%s id:%s' % (g.groupname,g.groupid))
                         #see if we can assign the group a location for this period
                         if g.locationid is None or g.locationid == '':
+                            #get the instruments in this group to check against the location restrictions
+                            instrumentation = []
+                            for i in getconfig('Instruments').split(","):
+                                if getattr(g,i) > 0:
+                                    instrumentation.append(i)
+                            #get the locations already being used in this period
                             locations_used_query = session.query(location.locationid).join(group).join(period).filter(period.periodid == thisperiod.periodid)
-                            thislocation = session.query(location).filter(~location.locationid.in_(locations_used_query),location.capacity >= g.totalinstrumentation).order_by(location.capacity).first()
+                            #get the location with the minimum capacity that fits this group, is currently free, and does not void any instrument restrictions
+                            thislocation = session.query(
+                                                    location
+                                                ).filter(
+                                                    ~location.locationid.in_(locations_used_query),
+                                                    location.capacity >= g.totalinstrumentation,
+                                                    *[getattr(location,i) > 0 for i in instrumentation]
+                                                ).order_by(
+                                                    location.capacity
+                                                ).first()
                         else:
                             thislocation = getlocation(session,g.locationid)
                         #if we could not find a suitable location, break out and send the user a message informing them

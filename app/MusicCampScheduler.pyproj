@@ -72,7 +72,7 @@
     <Content Include="templates\setup.html" />
     <Content Include="templates\announcement.html" />
     <Content Include="templates\publicevent.html" />
-    <Content Include="templates\groupqueue.html" />
+    <Content Include="templates\groupscheduler.html" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="css\" />

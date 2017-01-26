@@ -1164,176 +1164,172 @@ def announcementpage(logonid):
             return jsonify(message = message, url = 'none')
 
 #This page shows the queued groups, it is only accessible by the admin
-@app.route('/user/<logonid>/groupqueue/', methods=['GET', 'POST'])
-def groupqueue(logonid):
+@app.route('/user/<logonid>/groupscheduler/', methods=['GET', 'POST'])
+def groupscheduler(logonid):
 
     try:
         session = Session()
         thisuser = getuser(session,logonid,True)
-        log('GROUPQUEUE: user firstname:%s lastname:%s method:%s' % (thisuser.firstname, thisuser.lastname, request.method))
+        log('GROUPSCHEDULER: user firstname:%s lastname:%s method:%s' % (thisuser.firstname, thisuser.lastname, request.method))
     except Exception as ex:
         session.close()
         return str(ex)
 
-    try:
-        if request.method == 'GET':
-            if thisuser.isadmin != 1:
-                session.close()
-                return 'You do not have permission to view this page'
-            else:
-                queuedgroups = session.query(
-                                    group.groupid, 
-                                    group.requesttime, 
-                                    group.status, 
-                                    group.groupname, 
-                                    period.periodid,
-                                    period.periodname, 
-                                    period.starttime, 
-                                    period.endtime, 
-                                    user.firstname, 
-                                    user.lastname
-                                ).outerjoin(period
-                                ).outerjoin(user
-                                ).filter(
-                                    group.status == "Queued", 
-                                ).order_by(
-                                    group.periodid.nullslast(),
-                                    group.requesttime
-                                ).all()
-                log("GROUPQUEUE: Found %s queued groups to show the user" % len(queuedgroups))
-            
-                #find all periods after now so the admin can choose which they want to fill with groups
-                periods = session.query(period).filter(period.starttime > datetime.datetime.now()).all()
-                session.close()
-                return render_template('groupqueue.html', \
-                                        queuedgroups=queuedgroups, \
-                                        periods=periods, \
-                                        thisuser=thisuser, \
-                                        campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
-                                        )
-        if request.method == 'POST':
-            log('GROUPQUEUE: POST received with submittype %s' % request.json['submittype'])
-            if request.json['submittype'] == 'reset':
-                thisgroup = session.query(group).filter(group.groupid == request.json['groupid']).first()
-                if thisgroup is None:
-                    session.rollback()
-                    session.close()
-                    return jsonify(message = 'Could not find this group in the database. Refresh your page and try again.', success = 'false')
-                else:
-                    thisgroup.periodid = None
-                    thisgroup.locationid = None
-                    session.merge(thisgroup)
-                    session.commit()
-                    session.close()
-                    return jsonify(message = 'none', success = 'true')
-            elif request.json['submittype'] == 'fillall':
-                log('FILLALL: Admin has initiated a fill_all action for period id:%s' % request.json['periodid'])
-                #first, check if the period they selected is valid and in the future
-                if request.json['periodid'] is None or request.json['periodid'] == '':
-                    raise Exception('You must choose a period before requesting the fill-all.')
-                else:
-                    thisperiod = getperiod(session,request.json['periodid'])
-                    log('FILLALL: Filling period name:%s id:%s' % (thisperiod.periodname,thisperiod.periodid))
-                if thisperiod is None:
-                    raise Exception('Could not find the requested period, or the selected period is in the past. Refresh the page and try again.')
-
-                #iterate through the groups that already have this period assigned. If we fail to allocate on just one of these, we need to break out and inform the admin
-                possiblegroups = session.query(group
+    #try:
+    if request.method == 'GET':
+        if thisuser.isadmin != 1:
+            session.close()
+            return 'You do not have permission to view this page'
+        else:
+            groups = session.query(*[c for c in group.__table__.c]
+                            ).add_columns(
+                                period.periodid,
+                                period.periodname, 
+                                period.starttime, 
+                                period.endtime, 
+                                user.firstname, 
+                                user.lastname
                             ).outerjoin(period
+                            ).outerjoin(user
                             ).filter(
-                                or_(
-                                    group.periodid == thisperiod.periodid, 
-                                    group.periodid == None
-                                    ), 
-                                group.status == "Queued"
+                                group.groupname != 'absent',
+                                group.iseveryone != 1
                             ).order_by(
+                                group.status.desc(),
                                 group.periodid.nullslast(),
                                 group.requesttime
                             ).all()
-                log('FILLALL: Found %s groups to be filled' % len(possiblegroups))
-                for g in possiblegroups:
-                    #first, purge any players that have since left the camp or are marked inactive
-                    g.purgeoldplayers(session)
-                    #then, if this group is empty, has no allocated period and was requested by a player that is old, delete it
-                    requesteduser = getuser(session,g.requesteduserid)
-                    if g.periodid is None and \
-                            g.totalallocatedplayers == 0 and \
-                            (requesteduser.isactive != 1 or requesteduser.departure < datetime.datetime.now()):
-                        log('FILLALL: Group name:%s id:%s is an orphan group and will now be deleted' % (g.groupname,g.groupid))
-                        g.delete(session)
-                    #then, check if any of the players in this group are already playing in this period
-                    elif g.checkplayerclash(session,thisperiod):
-                        log('FILLALL: Found that group %s cannot be autofilled because players already in this group are already playing in this period. Skipping this group.')
-                    else:
-                        log('FILLALL: Attempting autofill, location allocation and confirmation for group name:%s id:%s' % (g.groupname,g.groupid))
-                        #see if we can assign the group a location for this period
-                        if g.locationid is None or g.locationid == '':
-                            #get the instruments in this group to check against the location restrictions
-                            instrumentation = []
-                            for i in getconfig('Instruments').split(","):
-                                if getattr(g,i) > 0:
-                                    instrumentation.append(i)
-                            #get the locations already being used in this period
-                            locations_used_query = session.query(location.locationid).join(group).join(period).filter(period.periodid == thisperiod.periodid)
-                            #get the location with the minimum capacity that fits this group, is currently free, and does not void any instrument restrictions
-                            thislocation = session.query(
-                                                    location
-                                                ).filter(
-                                                    ~location.locationid.in_(locations_used_query),
-                                                    location.capacity >= g.totalinstrumentation,
-                                                    *[getattr(location,i) > 0 for i in instrumentation]
-                                                ).order_by(
-                                                    location.capacity
-                                                ).first()
-                        else:
-                            thislocation = getlocation(session,g.locationid)
-                        #if we could not find a suitable location, break out and send the user a message informing them
-                        if thislocation is None:
-                            log('FILLALL: No suitable location exists for group with name %s and id %s. Can not autofill this group.' % (g.groupname,g.groupid))
-                            if g.periodid is not None:
-                                message = 'Fill-All failed at group "%s". Could not find a suitable location for this group. Try editing other groups in the period to make room, or reduce the number of players in the group.' % g.groupname
-                                url = 'refresh'
-                                session.commit()
-                                session.close()
-                                flash(u'Period Partially Filled', 'message')
-                                return jsonify(message = message, url = url )
-                        else:
-                            #find how many players can be autofilled into this group
-                            players = autofill(session,g,thisperiod)
-                            #if the autofill didn't completely fill the group and this group already has an assigned period, we need to break out and inform the admin that they need to do this group manually
-                            if g.totalinstrumentation != g.totalallocatedplayers + len(players) and g.periodid is not None:
-                                message = 'Fill-All failed at group "%s". This is because the group requires %s players, but the autofill algorythm only found %s players. Select this group and fill it manually, then attempt to fill-all again.' % (g.groupname,g.totalinstrumentation,g.totalallocatedplayers+len(players))
-                                url = 'refresh'
-                                log('FILLALL: Autofill failed to completely fill group name:%s id:%s totalinstrumentation:%s totalallocatedplayers:%s. Found only %s players to autofill. Sending an error to the admin.' % (g.groupname,g.groupid,g.totalinstrumentation,g.totalallocatedplayers,len(players)))
-                                session.commit()
-                                session.close()
-                                flash(u'Period Partially Filled', 'message')
-                                return jsonify(message = message, url = url)
-                            #if this group doesn't have an assigned period and can't be assigned to the selected period - just skip it.
-                            elif g.totalinstrumentation != g.totalallocatedplayers + len(players):
-                                log('FILLALL: Found that group %s cannot be autofilled with current players in the pool. Skipping this group.')
-                            else:
-                                #if we got here, this group is good to go
-                                #assign the location as found in a previous query
-                                g.locationid = thislocation.locationid
-                                #assign the period as selected
-                                g.periodid = thisperiod.periodid
-                                #allocate the players
-                                g.addplayers(session,players)
-                                #confirm the group
-                                g.status = "Confirmed"
-                                session.merge(g)
-                                session.commit()
-                                log('FILLALL: Group confirmed - Status:%s Name:%s Locationid:%s Periodid:%s TotalPlayers:%s TotalSetInstrumentation:%s' % (g.status,g.groupname,g.locationid,g.periodid,g.totalallocatedplayers,g.totalinstrumentation))
-                    
+            log("GROUPSCHEDULER: Found %s queued groups to show the user" % len(groups))
+            #find all periods after now so the admin can choose which they want to fill with groups
+            periods = session.query(period).filter(period.starttime > datetime.datetime.now()).all()
+            session.close()
+            return render_template('groupscheduler.html', \
+                                    groups=groups, \
+                                    periods=periods, \
+                                    thisuser=thisuser, \
+                                    now=datetime.datetime.now(), \
+                                    campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
+                                    )
+    if request.method == 'POST':
+        log('GROUPSCHEDULER: POST received with submittype %s' % request.json['submittype'])
+        if request.json['submittype'] == 'reset':
+            thisgroup = session.query(group).filter(group.groupid == request.json['groupid']).first()
+            if thisgroup is None:
+                session.rollback()
+                session.close()
+                return jsonify(message = 'Could not find this group in the database. Refresh your page and try again.', success = 'false')
+            else:
+                thisgroup.periodid = None
+                thisgroup.locationid = None
+                session.merge(thisgroup)
                 session.commit()
                 session.close()
-                log('FILLALL: Fill-all operitaion successful')
-                flash(u'Period Sucessfully Filled', 'success')
-                return jsonify(message = 'none', url = 'refresh')
+                return jsonify(message = 'none', success = 'true')
+        elif request.json['submittype'] == 'fillall':
+            log('FILLALL: Admin has initiated a fill_all action for period id:%s' % request.json['periodid'])
+            #first, check if the period they selected is valid and in the future
+            if request.json['periodid'] is None or request.json['periodid'] == '':
+                raise Exception('You must choose a period before requesting the fill-all.')
+            else:
+                thisperiod = getperiod(session,request.json['periodid'])
+                log('FILLALL: Filling period name:%s id:%s' % (thisperiod.periodname,thisperiod.periodid))
+            if thisperiod is None:
+                raise Exception('Could not find the requested period, or the selected period is in the past. Refresh the page and try again.')
+
+            #iterate through the groups that already have this period assigned. If we fail to allocate on just one of these, we need to break out and inform the admin
+            possiblegroups = session.query(group
+                        ).outerjoin(period
+                        ).filter(
+                            or_(
+                                group.periodid == thisperiod.periodid, 
+                                group.periodid == None
+                                ), 
+                            group.status == "Queued"
+                        ).order_by(
+                            group.periodid.nullslast(),
+                            group.requesttime
+                        ).all()
+            log('FILLALL: Found %s groups to be filled' % len(possiblegroups))
+            for g in possiblegroups:
+                #first, purge any players that have since left the camp or are marked inactive
+                g.purgeoldplayers(session)
+                #then, if this group is empty, has no allocated period and was requested by a player that is old, delete it
+                requesteduser = getuser(session,g.requesteduserid)
+                if g.periodid is None and \
+                        g.totalallocatedplayers == 0 and \
+                        (requesteduser.isactive != 1 or requesteduser.departure < datetime.datetime.now()):
+                    log('FILLALL: Group name:%s id:%s is an orphan group and will now be deleted' % (g.groupname,g.groupid))
+                    g.delete(session)
+                #then, check if any of the players in this group are already playing in this period
+                elif g.checkplayerclash(session,thisperiod):
+                    log('FILLALL: Found that group %s cannot be autofilled because players already in this group are already playing in this period. Skipping this group.')
+                else:
+                    log('FILLALL: Attempting autofill, location allocation and confirmation for group name:%s id:%s' % (g.groupname,g.groupid))
+                    #see if we can assign the group a location for this period
+                    if g.locationid is None or g.locationid == '':
+                        #get the instruments in this group to check against the location restrictions
+                        instruments = g.instruments
+                        #get the locations already being used in this period
+                        locations_used_query = session.query(location.locationid).join(group).join(period).filter(period.periodid == thisperiod.periodid)
+                        #get the location with the minimum capacity that fits this group, is currently free, and does not void any instrument restrictions
+                        thislocation = session.query(
+                                                location
+                                            ).filter(
+                                                ~location.locationid.in_(locations_used_query),
+                                                location.capacity >= g.totalinstrumentation,
+                                                *[getattr(location,i) > 0 for i in instruments]
+                                            ).order_by(
+                                                location.capacity
+                                            ).first()
+                    else:
+                        thislocation = getlocation(session,g.locationid)
+                    #if we could not find a suitable location, break out and send the user a message informing them
+                    if thislocation is None:
+                        log('FILLALL: No suitable location exists for group with name %s and id %s. Can not autofill this group.' % (g.groupname,g.groupid))
+                        if g.periodid is not None:
+                            message = 'Fill-All failed at group "%s". Could not find a suitable location for this group. Try editing other groups in the period to make room, or reduce the number of players in the group.' % g.groupname
+                            url = 'refresh'
+                            session.commit()
+                            session.close()
+                            flash(u'Period Partially Filled', 'message')
+                            return jsonify(message = message, url = url )
+                    else:
+                        #find how many players can be autofilled into this group
+                        players = autofill(session,g,thisperiod)
+                        #if the autofill didn't completely fill the group and this group already has an assigned period, we need to break out and inform the admin that they need to do this group manually
+                        if g.totalinstrumentation != g.totalallocatedplayers + len(players) and g.periodid is not None:
+                            message = 'Fill-All failed at group "%s". This is because the group requires %s players, but the autofill algorythm only found %s players. Select this group and fill it manually, then attempt to fill-all again.' % (g.groupname,g.totalinstrumentation,g.totalallocatedplayers+len(players))
+                            url = 'refresh'
+                            log('FILLALL: Autofill failed to completely fill group name:%s id:%s totalinstrumentation:%s totalallocatedplayers:%s. Found only %s players to autofill. Sending an error to the admin.' % (g.groupname,g.groupid,g.totalinstrumentation,g.totalallocatedplayers,len(players)))
+                            session.commit()
+                            session.close()
+                            flash(u'Period Partially Filled', 'message')
+                            return jsonify(message = message, url = url)
+                        #if this group doesn't have an assigned period and can't be assigned to the selected period - just skip it.
+                        elif g.totalinstrumentation != g.totalallocatedplayers + len(players):
+                            log('FILLALL: Found that group %s cannot be autofilled with current players in the pool. Skipping this group.')
+                        else:
+                            #if we got here, this group is good to go
+                            #assign the location as found in a previous query
+                            g.locationid = thislocation.locationid
+                            #assign the period as selected
+                            g.periodid = thisperiod.periodid
+                            #allocate the players
+                            g.addplayers(session,players)
+                            #confirm the group
+                            g.status = "Confirmed"
+                            session.merge(g)
+                            session.commit()
+                            log('FILLALL: Group confirmed - Status:%s Name:%s Locationid:%s Periodid:%s TotalPlayers:%s TotalSetInstrumentation:%s' % (g.status,g.groupname,g.locationid,g.periodid,g.totalallocatedplayers,g.totalinstrumentation))
+                    
+            session.commit()
+            session.close()
+            log('FILLALL: Fill-all operitaion successful')
+            flash(u'Period Sucessfully Filled', 'success')
+            return jsonify(message = 'none', url = 'refresh')
                     
 
-    except Exception as ex:
+    """except Exception as ex:
         log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))
         message = ('Failed to execute %s with exception: %s. Try refreshing the page and trying again or contact camp administration.' % (request.method, ex))
         session.rollback()
@@ -1341,7 +1337,7 @@ def groupqueue(logonid):
         if request.method == 'GET':
             return errorpage(thisuser,'Failed to display page. %s' % ex)
         else:
-            return jsonify(message = message, url = 'none')
+            return jsonify(message = message, url = 'none')"""
 
 #This page is for creating a public event. It comes up as an option for adminsitrators on their homes
 @app.route('/user/<logonid>/publicevent/<periodid>/', methods=['GET', 'POST'])

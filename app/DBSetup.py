@@ -140,12 +140,12 @@ class group(Base):
     requesttime = Column(DateTime)
     requesteduserid = Column(UUID, ForeignKey('users.userid'))
     periodid = Column(Integer, ForeignKey('periods.periodid'))
-    minimumlevel = Column(Integer)
-    maximumlevel = Column(Integer)
+    minimumlevel = Column(Integer, default='0')
+    maximumlevel = Column(Integer, default='0')
     musicid = Column(Integer, ForeignKey('musics.musicid',ondelete='SET NULL'), nullable=True)
     musicwritein = Column(String)
-    ismusical = Column(Integer)
-    iseveryone = Column(Integer)
+    ismusical = Column(Integer, default='0')
+    iseveryone = Column(Integer, default='0')
     status = Column(String)
     log = Column(Text(convert_unicode=True))
 
@@ -153,6 +153,7 @@ class group(Base):
     def serialize(self):
         return serialize_class(self, self.__class__)
 
+    #returns the total number of players that are needed for this group
     @property
     def totalinstrumentation(self):
         total = 0
@@ -160,12 +161,22 @@ class group(Base):
             total = total + int(getattr(self,i))
         return int(total)
 
+    #returns a total number of players currently assigned to this group
     @property
     def totalallocatedplayers(self):
         s = Session()
         total = s.query(groupassignment).filter(groupassignment.groupid == self.groupid).count()
         s.close()
         return total
+
+    #returns an array of instrument names that are contained in this group
+    @property
+    def instruments(self):
+        instrumentation = []
+        for i in getconfig('Instruments').split(","):
+            if getattr(self,i) > 0:
+                instrumentation.append(i)
+        return instrumentation
 
     def addtolog(self,text):
         now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M') #get the time now and convert it to a string format

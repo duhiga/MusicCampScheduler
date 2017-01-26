@@ -298,7 +298,7 @@
             <li class="w3-opennav w3-left w3-hide-large">
                 <a class="w3-hover-white w3-large" href="javascript:void(0)" onclick="w3_open()" style="padding:12px 12px !important;"><i class="fa fa-bars"></i></a>
             </li>
-            <li class="w3-opennav w3-left"><a href="/user/{{ thisuser.logonid }}/" class="w3-hover-white w3-large" style="padding:12px 8px !important;"><i class="fa fa-home"></i></a></li>
+            <li class="w3-opennav w3-left"><a href="/user/{{ thisuser.logonid }}/" class="w3-hover-white w3-large" style="padding:12px 8px !important;"><div class="tooltip"><i class="fa fa-home"></i><span class="tooltiptext tooltipbottom">Home</span></div></a></li>
             {% if thisuser.isactive == 1 %}
             <li class="w3-opennav w3-left"><a href="/user/{{ thisuser.logonid }}/grouprequest/" class="w3-hover-white w3-large" style="padding:12px 8px !important;"><i class="fa fa-music"></i></a></li>
             <li class="w3-opennav w3-left"><a href="/user/{{ thisuser.logonid }}/musiclibrary/" class="w3-hover-white w3-large" style="padding:12px 8px !important;"><i class="fa fa-book"></i></a></li>
@@ -308,7 +308,7 @@
             <li class="w3-opennav w3-left"><a href="/user/{{ thisuser.logonid }}/announcement/" class="w3-hover-white w3-large" style="padding:12px 8px !important;"><i class="fa fa-comment"></i></a></li>
             {% endif %}
             {% if thisuser.isadmin == 1 %}
-            <li class="w3-opennav w3-left"><a href="/user/{{ thisuser.logonid }}/groupqueue/" class="w3-hover-white w3-large" style="padding:12px 8px !important;"><i class="fa fa-ellipsis-h"></i></a></li>
+            <li class="w3-opennav w3-left"><a href="/user/{{ thisuser.logonid }}/groupscheduler/" class="w3-hover-white w3-large" style="padding:12px 8px !important;"><i class="fa fa-ellipsis-h"></i></a></li>
             <li class="w3-opennav w3-left"><a href="/user/{{ thisuser.logonid }}/useradmin/" class="w3-hover-white w3-large" style="padding:12px 8px !important;"><i class="fa fa-universal-access"></i></a></li>
             {% endif %}
             {% block navbar%}{% endblock %}
@@ -342,7 +342,7 @@
         {% endif %}
         {% if thisuser.isadmin == 1 %}
         <h4><b>Admin</b></h4>
-        <a href="/user/{{ thisuser.logonid }}/groupqueue/" class="w3-hover-black"><i class="fa fa-ellipsis-h"></i> Queued Groups</a>
+        <a href="/user/{{ thisuser.logonid }}/groupscheduler/" class="w3-hover-black"><i class="fa fa-ellipsis-h"></i> Group Scheduler</a>
         <a href="/user/{{ thisuser.logonid }}/useradmin/" class="w3-hover-black"><i class="fa fa-universal-access"></i> User Administration</a>
         <a class="accordion" href="javascript:void(0)">
             Database Editor <i class="fa fa-caret-down w3-right"></i>

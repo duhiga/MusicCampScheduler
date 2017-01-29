@@ -487,6 +487,59 @@ for i in instrumentlist:
 
 Base.metadata.create_all(engine)
 
+#The schedule class is not a table, it's used when getting user schedules
+class periodschedule:
+
+    def __init__(self,
+                    groupname = None,
+                    starttime = None,
+                    endtime = None,
+                    locationname = None,
+                    groupid = None,
+                    ismusical = None,
+                    iseveryone = None,
+                    periodid = None,
+                    periodname = None,
+                    instrumentname = None,
+                    meal = None,
+                    groupdescription = None,
+                    composer = None,
+                    musicname = None,
+                    musicwritein = None):
+        self.groupname = groupname
+        self.starttime = starttime
+        self.endtime = endtime
+        self.locationname = locationname
+        self.groupid = groupid
+        self.ismusical = ismusical
+        self.iseveryone = iseveryone
+        self.periodid = periodid
+        self.periodname = periodname
+        self.instrumentname = instrumentname
+        self.meal = meal
+        self.groupdescription = groupdescription
+        self.composer = composer
+        self.musicname = musicname
+        self.musicwritein = musicwritein
+
+    @property
+    def serialize(self):
+        return ({'groupname': self.groupname,
+                'starttime': self.starttime,
+                'endtime': self.endtime,
+                'locationname': self.locationname,
+                'groupid': self.groupid,
+                'ismusical': self.ismusical,
+                'iseveryone': self.iseveryone,
+                'periodid': self.periodid,
+                'periodname': self.periodname,
+                'instrumentname': self.instrumentname,
+                'meal': self.meal,
+                'groupdescription': self.groupdescription,
+                'composer': self.composer,
+                'musicname': self.musicname,
+                'musicwritein': self.musicwritein})
+
 #this section manages the admin user. This will be the user that the admin will use to set up the database from the webapp
 session = Session()
 #try to find a user named 'Administrator' whos ID matches the app's configured AdminUUID

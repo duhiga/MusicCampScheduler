@@ -132,28 +132,6 @@ def home(logonid,inputdate='n'):
         else:
             return jsonify(message = message, url = 'none')
 
-#NOT CURRENTLY USED Currently broken. Doesn't like the fact that the getschedule function returns an array of inconsistant objects. Either make them consistant,
-#or put logic into the 'for s in ...' part of the below function. Or maybe improve the query in the getschedule function.
-"""@app.route('/user/<logonid>/requestschedule/', methods=["POST"])
-def requestschedule(logonid):
-    log('Schedule request for date %s' % request.json['date'])
-    #convert the inputdate to a datetime object
-    date = datetime.datetime.strptime(request.json['date'], '%Y-%m-%d')
-    session = Session()
-    #gets the data associated with this user
-    thisuser = session.query(user).filter(user.logonid == logonid).first()
-    if thisuser is None:
-        session.close()
-        return jsonify(message = 'Your user does not exist. Something went wrong.', url = 'none', status_code = 400)
-
-    schedule_serialized = []
-    for s in getschedule(session,thisuser,date):
-        schedule_serialized.append({'groupname': s.groupname, 'starttime': s.starttime, 'endtime': s.endtime,\
-            'locationname': s.locationname, 'groupid': s.groupid, 'ismusical': s.ismusical, 'iseveryone': s.iseveryone,\
-            'preiodid': s.periodid, 'periodname': s.periodname, 'instrumentname': s.instrumentname})
-
-    return jsonify(schedule_serialized)"""
-
 #When the user selects the "next day" and "previous day" links on their home, it goes to this URL. this route redirects them back
 #to the user home with a date modifier.
 @app.route('/user/<logonid>/date/<date>/')
@@ -2081,3 +2059,127 @@ def send_css(path):
 @app.route('/img/<path:path>')
 def send_png(path):
     return send_from_directory('img', path)
+
+
+
+
+
+
+#NEW STUFF - for Newhome. slowly building it up...
+
+
+@app.route('/user/<logonid>/getuser/', methods=["GET"])
+def get_user(logonid):
+
+    try:
+        session = Session()
+        thisuser = getuser(session,logonid,True)
+        log('GETUSER: user firstname:%s lastname:%s method:%s' % (thisuser.firstname, thisuser.lastname, request.method))
+    except Exception as ex:
+        session.close()
+        return str(ex)
+
+    return jsonify(thisuser.serialize)
+
+
+@app.route('/user/<logonid>/getannouncement/')
+def getannouncement(logonid):
+    try:
+        session = Session()
+        thisuser = getuser(session,logonid,True)
+        log('GETANNOUNCEMENT: user firstname:%s lastname:%s method:%s' % (thisuser.firstname, thisuser.lastname, request.method))
+    except Exception as ex:
+        session.close()
+        return str(ex)
+
+    #get the current announcement
+    currentannouncement = session.query(announcement).order_by(desc(announcement.creationtime)).first()
+    if currentannouncement is not None:
+        announcementcontent = currentannouncement.content.replace("\n","<br />")
+    else:
+        announcementcontent = ''
+    return jsonify(announcementcontent)
+
+#NOT CURRENTLY USED Currently broken. Doesn't like the fact that the getschedule function returns an array of inconsistant objects. Either make them consistant,
+#or put logic into the 'for s in ...' part of the below function. Or maybe improve the query in the getschedule function.
+@app.route('/user/<logonid>/getschedule/<date>/', methods=["GET"])
+def get_schedule(logonid,date):
+
+    try:
+        session = Session()
+        thisuser = getuser(session,logonid,True)
+        log('GETSCHEDULE: user firstname:%s lastname:%s method:%s' % (thisuser.firstname, thisuser.lastname, request.method))
+    except Exception as ex:
+        session.close()
+        return str(ex)
+
+    log('GETSCHEDULE: Schedule request for date %s' % date)
+    #convert the inputdate to a datetime object
+    thisdate = datetime.datetime.strptime(date, '%Y-%m-%d')
+    session = Session()
+    #gets the data associated with this user
+    thisuser = session.query(user).filter(user.logonid == logonid).first()
+    if thisuser is None:
+        session.close()
+        return jsonify(message = 'Your user does not exist. Something went wrong.', url = 'none', status_code = 400)
+
+    schedule_serialized = []
+    for s in getschedule(session,thisuser,thisdate):
+        schedule_serialized.append(s.serialize)
+    return jsonify(schedule_serialized)
+
+@app.route('/user/<logonid>/newhome/')
+def newhome(logonid):
+
+    try:
+        session = Session()
+        thisuser = getuser(session,logonid,True)
+        log('HOME: user firstname:%s lastname:%s method:%s' % (thisuser.firstname, thisuser.lastname, request.method))
+    except Exception as ex:
+        session.close()
+        return str(ex)
+
+    #try:
+        
+    #get impontant datetimes
+    today = datetime.datetime.combine(datetime.date.today(), datetime.time.min) #get today's date
+    log('HOME: Today is %s' % today.strftime('%Y-%m-%d %H:%M'))
+    campstarttime = datetime.datetime.strptime(getconfig('StartTime'), '%Y-%m-%d %H:%M')
+    campendtime = datetime.datetime.strptime(getconfig('EndTime'), '%Y-%m-%d %H:%M')
+    displaydate = today
+    previousday = displaydate + datetime.timedelta(days=-1)
+    midday = displaydate + datetime.timedelta(hours=12)
+    nextday = displaydate + datetime.timedelta(days=1)
+
+    #get an array containing the dates that the camp is running
+    dates = []
+    for d in range((campendtime-campstarttime).days + 2):
+        dates.append(campstarttime + timedelta(days=d))
+
+    session.close()
+
+    return render_template('newhome.html', \
+                        thisuser=thisuser, \
+                        date=displaydate,\
+                        dates=dates, \
+                        previousday=previousday, \
+                        nextday=nextday, \
+                        today=today, \
+                        campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
+                        now = datetime.datetime.now(), \
+                        midday=midday, \
+                        )
+
+    """except Exception as ex:
+        log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))
+        message = ('Failed to execute %s with exception: %s. Try refreshing the page and trying again or contact camp administration.' % (request.method, ex))
+        session.rollback()
+        session.close()
+        if request.method == 'GET':
+            return render_template('errorpage.html', \
+                                        thisuser=thisuser, \
+                                        campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
+                                        errormessage = 'Failed to display page. %s' % ex
+                                        )
+        else:
+            return jsonify(message = message, url = 'none')"""

@@ -3,27 +3,6 @@
 {% block head %}
 <script>
 
-    function openTab(evt, tabName) {
-        // Declare all variables
-        var i, tabcontent, tablinks;
-
-        // Get all elements with class="tabcontent" and hide them
-        tabcontent = document.getElementsByClassName("tabcontent");
-        for (i = 0; i < tabcontent.length; i++) {
-            tabcontent[i].style.display = "none";
-        }
-
-        // Get all elements with class="tablinks" and remove the class "active"
-        tablinks = document.getElementsByClassName("tablinks");
-        for (i = 0; i < tablinks.length; i++) {
-            tablinks[i].className = tablinks[i].className.replace(" active", "");
-        }
-
-        // Show the current tab, and add an "active" class to the link that opened the tab
-        document.getElementById(tabName).style.display = "block";
-        evt.currentTarget.className += " active";
-    }
-
     $(document).ready(function () {
 
         //every second, check if the page hasn't been opened since midnight. If it hasn't, then refresh.
@@ -157,16 +136,8 @@
         </div>
         {% endif %}
         <div class="w3-row">
-            <div class="w3-container w3-half">
-                {% set afternoon = 0 %}
+            <div class="w3-container">
                 {% for p in schedule %}
-
-                {% if p.starttime > midday and afternoon == 0 %}
-                <br /></div>
-            
-            <div class="w3-container w3-half">
-                {% set afternoon = 1 %}
-                {% endif %}
                 <div class="w3-card-4">
                     <header class="accordion w3-container
                     {% if p.groupname =='absent' or p.starttime < thisuser.arrival or p.starttime > thisuser.departure %}

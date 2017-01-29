@@ -1,0 +1,383 @@
+﻿<!DOCTYPE html>
+<html height="100%">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/css/w3.css" media="screen">
+    <link rel="stylesheet" href="/css/w3-theme-black.css" media="screen">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/css/style.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="/css/print.css" media="print">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ favicon }}/apple-touch-icon.png">
+    <link rel="icon" type="image/png" href="{{ favicon }}/favicon-32x32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="{{ favicon }}/favicon-16x16.png" sizes="16x16">
+    <link rel="manifest" href="{{ favicon }}/manifest.json">
+    <link rel="mask-icon" href="{{ favicon }}/safari-pinned-tab.svg" color="#5bbad5">
+    <meta name="theme-color" content="#ffffff">
+    <title>{% block title %}{% endblock %}</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"> </script>
+    <script>if (!window.jQuery) { document.write('<script src="/js/jquery-3.1.1.min.js"><\/script>'); }</script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.1/angular.min.js"> </script>
+    <script>if (!window.angular) { document.write('<script src="/js/angular.min.js"><\/script>'); }</script>
+    <script src="/js/jquery.tablesorter.min.js"></script>
+
+    <script src="/js/application.js"></script>
+    <script src="/js/homeController.js"></script>
+
+    <script>
+
+
+        //functions dealing with setting and getting cookies
+        function setCookie(cname, cvalue, exdays) {
+            var d = new Date();
+            d.setTime(d.getTime() + (exdays * 24 * 60 * 60 * 1000));
+            var expires = "expires=" + d.toUTCString();
+            document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+        }
+
+        function getCookie(cname) {
+            var name = cname + "=";
+            var ca = document.cookie.split(';');
+            for (var i = 0; i < ca.length; i++) {
+                var c = ca[i];
+                while (c.charAt(0) == ' ') {
+                    c = c.substring(1);
+                }
+                if (c.indexOf(name) == 0) {
+                    return c.substring(name.length, c.length);
+                }
+            }
+            return false;
+        }
+
+        //this function 'toasts' the user with a message on the bottom of the screen
+        function toast(message,category) {
+            console.log('Toasting with ' + message)
+            $('#toast').html(message).change();
+            if (category != 'message') {
+                $('#toast').addClass(category);
+            }
+            $('#toast').addClass('show');
+            // After 3 seconds, remove the show class from DIV
+            setTimeout(function(){ $('#toast').removeClass('show'); }, 3000);
+        }
+
+        $(document).ready(function () {
+
+            setCookie('logonid', '{{ thisuser.logonid }}', 365);
+
+            $(".protip_close").click(function () {
+                $(this).parent().slideUp();
+                setCookie($(this).parent().attr('id'), 'clicked', 365);
+            });
+            
+
+            $('.protip').each(function () {
+                if (!getCookie($(this).attr('id')) || getCookie($(this).attr('id')) != 'clicked') {
+                    $(this).show();
+                }
+            });
+
+        });
+
+    </script>
+</head>
+<body height="100%">
+    <div id="toast"></div>
+    <!-- Navbar -->
+    <div class="w3-top no-print">
+        <ul class="w3-navbar w3-black w3-top w3-left-align w3-large">
+            <li class="w3-opennav w3-left w3-hide-large">
+                <a class="w3-hover-white w3-large" href="javascript:void(0)" onclick="w3_open()" style="padding:12px 12px !important;"><i class="fa fa-bars"></i></a>
+            </li>
+            <li class="w3-opennav w3-left"><a href="/user/{{ thisuser.logonid }}/" class="w3-hover-white w3-large" style="padding:12px 8px !important;"><i class="fa fa-home"></i></a></li>
+            {% if thisuser.isactive == 1 %}
+            <li class="w3-opennav w3-left"><a href="/user/{{ thisuser.logonid }}/grouprequest/" class="w3-hover-white w3-large" style="padding:12px 8px !important;"><i class="fa fa-music"></i></a></li>
+            <li class="w3-opennav w3-left"><a href="/user/{{ thisuser.logonid }}/musiclibrary/" class="w3-hover-white w3-large" style="padding:12px 8px !important;"><i class="fa fa-book"></i></a></li>
+            <li class="w3-opennav w3-left"><a href="/user/{{ thisuser.logonid }}/grouphistory/" class="w3-hover-white w3-large" style="padding:12px 8px !important;"><i class="fa fa-history"></i></a></li>
+            {% endif %}
+            {% if thisuser.isannouncer == 1 %}
+            <li class="w3-opennav w3-left"><a href="/user/{{ thisuser.logonid }}/announcement/" class="w3-hover-white w3-large" style="padding:12px 8px !important;"><i class="fa fa-comment"></i></a></li>
+            {% endif %}
+            {% if thisuser.isadmin == 1 %}
+            <li class="w3-opennav w3-left"><a href="/user/{{ thisuser.logonid }}/groupscheduler/" class="w3-hover-white w3-large" style="padding:12px 8px !important;"><i class="fa fa-ellipsis-h"></i></a></li>
+            <li class="w3-opennav w3-left"><a href="/user/{{ thisuser.logonid }}/useradmin/" class="w3-hover-white w3-large" style="padding:12px 8px !important;"><i class="fa fa-universal-access"></i></a></li>
+            {% endif %}
+            {% block navbar%}{% endblock %}
+            <!-- Specific page breadcrumbs/title pages go here -->
+            <li class="w3-hide-small"><a href="javascript:void(0)" class="w3-hover-white">{{ date.strftime('%d %b') }}</a></li>
+        </ul>
+    </div>
+
+    <!-- Sidenav -->
+    <nav class="w3-sidenav w3-collapse w3-theme-l5 w3-animate-left no-print" style="z-index:3;width:250px;padding-bottom:80px" id="mySidenav">
+
+        <a href="javascript:void(0)" onclick="w3_close()" class="w3-right w3-xlarge w3-padding-large w3-hover-black w3-hide-large" title="close menu">
+        <i class="fa fa-remove"></i>
+        </a>
+        <h4><b>{{ thisuser.firstname }} {{ thisuser.lastname }}</b></h4>
+    
+        <!-- Specific page sidenav points go here -->
+        {% block sidenav %}{% endblock %}
+        <h4><b>Navigation</b></h4>
+        <a href="/user/{{ thisuser.logonid }}/" class="w3-hover-black"><i class="fa fa-home"></i> Home</a>
+        {% if thisuser.isactive == 1 %}
+        <a href="/user/{{ thisuser.logonid }}/grouprequest/" class="w3-hover-black"><i class="fa fa-music"></i> Request a group</a>
+        <a href="/user/{{ thisuser.logonid }}/musiclibrary/" class="w3-hover-black"><i class="fa fa-book"></i> Music Library</a>
+        {% endif %}
+        <a href="/user/{{ thisuser.logonid }}/grouphistory/" class="w3-hover-black"><i class="fa fa-history"></i> Group History</a>
+        <a href="/user/{{ thisuser.logonid }}/settings/" class="w3-hover-black"><i class="fa fa-cogs"></i> Settings</a>
+        <a href="mailto:{{ supportemailaddress }}" class="w3-hover-black"><i class="fa fa-envelope"></i> Contact Support</a>
+        {% if thisuser.isannouncer == 1 %}
+        <h4><b>Announcer</b></h4>
+        <a href="/user/{{ thisuser.logonid }}/announcement/" class="w3-hover-black"><i class="fa fa-comment"></i> Announcement Editor</a>
+        {% endif %}
+        {% if thisuser.isadmin == 1 %}
+        <h4><b>Admin</b></h4>
+        <a href="/user/{{ thisuser.logonid }}/groupscheduler/" class="w3-hover-black"><i class="fa fa-ellipsis-h"></i> Group Scheduler</a>
+        <a href="/user/{{ thisuser.logonid }}/useradmin/" class="w3-hover-black"><i class="fa fa-universal-access"></i> User Administration</a>
+        <a class="accordion" href="javascript:void(0)">
+            Database Editor <i class="fa fa-caret-down w3-right"></i>
+        </a>
+        <div id="editor" class="w3-accordion-content w3-card-4 panel">
+            <a href="/user/{{ thisuser.logonid }}/setup/" class="w3-hover-black"><i class="fa fa-wrench"></i> Initial Setup</a>
+            <a href="/user/{{ thisuser.logonid }}/objecteditor/grouptemplate/" class="w3-hover-black">Group Templates</a>
+            <a href="/user/{{ thisuser.logonid }}/objecteditor/location/" class="w3-hover-black">Locations</a>
+            <a href="/user/{{ thisuser.logonid }}/objecteditor/period/" class="w3-hover-black">Periods</a>
+            <a href="/user/{{ thisuser.logonid }}/objecteditor/music/" class="w3-hover-black">Musics</a>
+            <a href="/user/{{ thisuser.logonid }}/objecteditor/group/" class="w3-hover-black">Groups</a>
+        </div>
+        {% endif %}
+    </nav>
+
+    <!-- Overlay effect when opening sidenav on small screens -->
+    <div class="w3-overlay w3-hide-large" onclick="w3_close()" style="cursor:pointer" title="close side menu" id="myOverlay"></div>
+
+    <!-- Main content: shift it to the right by 250 pixels when the sidenav is visible -->
+    <div id="main-content">
+        <header>
+            <div class="w3-center">
+                <a class="w3-btn w3-white w3-border" href="/user/{{ thisuser.logonid }}/date/{{ previousday.strftime('%Y-%m-%d') }}/"><i class="fa fa-caret-left"></i>&nbsp;Previous</a>
+                <div class="w3-dropdown-hover">
+                    <button class="w3-btn w3-white w3-border">
+                        {% if date.strftime('%Y-%m-%d') == today.strftime('%Y-%m-%d') %}
+                        Today
+                        {% else %}
+                        {{ date.strftime('%a, %d %b') }}
+                        {% endif %}
+                        &nbsp;<i class="fa fa-caret-down"></i>
+                    </button>
+                    <div class="w3-dropdown-content w3-border">
+                        {% for d in dates %}
+                        {% if d.strftime('%Y-%m-%d') == today.strftime('%Y-%m-%d') %}
+                        <a href="/user/{{ thisuser.logonid }}/date/{{d.strftime('%Y-%m-%d')}}/">Today</a>
+                        {% else %}
+                        <a href="/user/{{ thisuser.logonid }}/date/{{d.strftime('%Y-%m-%d')}}/">{{ d.strftime('%a, %d %b') }}</a>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+                <a class="w3-btn w3-white w3-border" href="/user/{{ thisuser.logonid }}/date/{{ nextday.strftime('%Y-%m-%d') }}/">Next&nbsp;<i class="fa fa-caret-right"></i></a>
+            </div>
+        </header>
+        <div class="w3-row">
+            <div class="w3-container">
+                <h2>Schedule: {% if date.strftime('%Y-%m-%d') == today.strftime('%Y-%m-%d') %}Today{% else %}{{ date.strftime('%d %b') }}{% endif %}</h2>
+                <div id="home_protip_welcome" class="w3-panel w3-blue protip" hidden="hidden">
+                    <span class="w3-closebtn protip_close">&times;</span>
+                    <h3>Welcome</h3>
+                    <p">Welcome to {{campname}}! This page always shows your schedule for today. You can check out the music library and request to play specific music, by clicking the <i class="fa fa-book"></i>book icon at the top of your screen. You can request custom groups by using the <i class="fa fa-music"></i>music icon at the top of your screen. You'll see more tips like this around the place, just click the &times; in the top right to make them go away for good.</p>
+                </div>
+            </div>
+        </div>
+        {% if thisuser.isactive == 0 %}
+        <div class="w3-row">
+            <div class="w3-container">
+                <div class="w3-panel w3-red">
+                    <h3>Not Active</h3>
+                    <p class="w3-hide-large">Your account is set to inactive and will not be assigned to any groups. You can rectify this by going to your settings. Select the <i class="fa fa-bars"></i>Menu in the top left of your screen, select <i class="fa fa-cogs"></i>Settings, set yourself to active and save.</p>
+                    <p class="w3-hide-small w3-hide-medium">Your account is set to inactive and will not be assigned to any groups. You can rectify this by going to your settings. Select the <i class="fa fa-cogs"></i>Settings link on the left of your screen, set yourself to active and save.</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        {% if unscheduled %}
+        <div class="w3-row">
+            <div class="w3-container">
+                <div class="w3-panel w3-black">
+                    <h3>Scheduling Not Complete</h3>
+                    <p>Sessions on this day are still not finalised and may change.</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        {% if currentannouncement != '' and currentannouncement != None %}
+        <div class="w3-row">
+            <div class="w3-container">
+                <div class="w3-panel w3-light-gray">
+                    <h3>Announcements</h3>
+                    <p>{{ currentannouncement|safe }}</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        <div class="w3-row">
+        <div class="w3-container" ng-app="Application" ng-controller="homeController">
+            <h4>Thisuser: {a thisuser.firstname a} {a thisuser.lastname a}</h4>
+            <div class="w3-card-4" ng-repeat="p in schedule">
+                <header class="accordion w3-container"
+                        ng-class="p.groupname == 'absent' || p.starttime < thisuser.arrival || p.starttime > thisuser.departure ? w3-dark-gray : (
+                                    p.groupname && p.ismusical == 1 ? w3-purple : (
+                                    p.iseveryone == 1 && p.meal == 1 ? w3-blue : (
+                                    p.iseveryone == 1 ? w3-indigo : (
+                                    $scope.unscheduled ? w3-black : (
+                                    w3-green)))))">
+                    <h5 ng-if="p.groupname == 'absent'">{a p.starttime | date:'HH:mm' a}: Absent</h5>
+                    <h5 ng-if="p.groupname != 'absent' && p.groupname && (p.ismusical == 1 || p.iseveryone == 1)">{a p.starttime | date:'HH:mm' a}: {a p.groupname a}</h5>
+                    <h5 ng-if="!p.groupname && unscheduled">{a p.starttime | date:'HH:mm' a}: Check Back Later</h5>
+                    <h5 ng-if="!p.groupname && !unscheduled">{a p.starttime | date:'HH:mm' a}: Free Period</h5>
+                    <i class="fa fa-caret-down w3-right"></i>
+                </header>
+                    <div class="w3-accordion-content panel">
+                        <div class="w3-container">
+                            <div class="w3-container w3-red" ng-if="p.starttime < thisuser.arrival || p.starttime > thisuser.departure">
+                                <p class="w3-hide-large">This period is not within your account's configured dates. Go to your settings by selecting the <i class="fa fa-bars"></i>Menu in the top left of your screen, select <i class="fa fa-cogs"></i>Settings and ensure that the details there are correct.</p>
+                                <p class="w3-hide-small w3-hide-medium">This period is not within your account's configured dates. Go to your settings by using the <i class="fa fa-cogs"></i>Settings link on the left of your screen and ensure that the details there are correct.</p>
+                            </div>
+                            <div ng-if="p.starttime > thisuser.arrival && p.starttime < thisuser.departure">
+                                <!-- If the user is absent, warn them that they won't be assigned to groups -->
+                                <div class="w3-container w3-red" ng-if="p.groupname == 'absent'">
+                                    <h4>{ap.periodnamea}</h4>
+                                    <p ng-if="p.meal == 1">You are marked absent for this period, meaning you will not be present for this meal.</p>
+                                    <p ng-if="p.meal != 1">You are marked absent for this period. You will not be allocated to any groups.</p>
+                                <br />
+                                </div>
+                                <div class="w3-container w3-red" ng-if="unscheduled && p.iseveryone != 1 && p.groupname != 'absent'">
+                                    <h4>Scheduling in Progress</h4>
+                                    <p>Scheduling for this day is unfinished and this allocation may change.</p>
+                                <br />
+                                </div>
+                                <p ng-if="p.groupdescription and p.groupdescription | length > 0">{a p.groupdescription a}</p>
+                                <table class="w3-table">
+                                    <tr>
+                                        <th>Time</th>
+                                        <td>{a p.starttime | date:'HH:mm' a} - {a p.endtime | date:'HH:mm' a}</td>
+                                    </tr>
+                                    <tr ng-if="(p.ismusical == 1 || p.iseveryone == 1) && p.groupname != 'absent'">
+                                        <th>Location</th>
+                                        <td>{a p.locationname a}</td>
+                                    </tr>
+                                    <tr ng-if="p.groupname && p.ismusical == 1">
+                                        <th>Instrument</th>
+                                        <td>{a p.instrumentname a}</td>
+                                    </tr>
+                                    <tr ng-if="p.groupname && p.ismusical == 1 && p.musicname">
+                                        <th>Music</th>
+                                        <td><a href="/user/{a thisuser.logonid a}/musiclibrary/details/{a p.musicid a}/"><i class="fa fa-book"></i>{a p.composer a}: {a p.musicname a}</a></td>
+                                    </tr>
+                                    <tr ng-if="p.groupname && p.ismusical == 1 && !p.musicname && p.musicwritein">
+                                        <th>Music</th>
+                                        <td>{ap.musicwriteina}</td>
+                                    </tr>
+                                </table>
+                                <!-- This panel contains links the user can visit in the context of this period -->
+                                <div class="w3-panel">
+                                    <!-- Give the user a link to the whole period details -->
+                                    <div class="w3-half w3-hide-medium">
+                                        <a class="w3-btn-block w3-hover-black w3-white w3-border w3-round-large" href="/user/{a thisuser.logonid a}/period/{a p.periodid a}/">Full List</a>
+                                    </div>
+                                    <a class="w3-btn-block w3-hover-black w3-white w3-border w3-round-large w3-hide-small w3-hide-large" href="/user/{a thisuser.logonid a}/period/{a p.periodid a}/">Full List</a>
+                                    <!-- If this is an assigned group, show a link to the group details -->
+                                    <div class="w3-half w3-hide-medium" ng-if="p.groupname && p.ismusical == 1">
+                                        <a class="w3-btn-block w3-hover-black w3-white w3-border w3-round-large" href="/user/{a thisuser.logonid a}/group/{a p.groupid a}/">Group List</a>
+                                    </div>
+                                    <a class="w3-btn-block w3-hover-black w3-white w3-border w3-round-large w3-hide-small w3-hide-large" href="/user/{a thisuser.logonid a}/group/{a p.groupid a}/">Group List</a>
+                                    <!-- If this is a future date, show the user the absent buttons -->
+                                    <div ng-if="p.starttime > today">
+                                        <!-- If if the user is currently not assigned to a group, show them a button where they can mark themselves as absent -->
+                                        <div ng-if="!p.groupname || p.iseveryone == 1">
+                                            <div class="w3-half w3-hide-medium">
+                                                <button id={a p.periodid a} data-periodname="{a p.periodname a}" class="absent_request_button w3-btn-block w3-hover-black w3-white w3-border w3-round-large">Mark Me Absent</button>
+                                            </div>
+                                            <button id={a p.periodid a} data-periodname="{a p.periodname a}" class="absent_request_button w3-btn-block w3-hover-black w3-white w3-border w3-round-large w3-hide-small w3-hide-large">Mark Me Absent</button>
+                                        </div>
+                                        <!-- If they are currently absent, show the a button to mark themselves as present -->
+                                        <div ng-if="g.groupname == 'absent'">
+                                            <div class="w3-half w3-hide-medium">
+                                                <button id={a p.periodid a} data-periodname="{a p.periodname a}" class="absent_cancel_button w3-btn-block w3-hover-black w3-white w3-border w3-round-large">Mark Me Present</button>
+                                            </div>
+                                            <button id={a p.periodid a} data-periodname="{a p.periodname a}" class="absent_cancel_button w3-btn-block w3-hover-black w3-white w3-border w3-round-large w3-hide-small w3-hide-large">Mark Me Present</button>
+                                        </div>
+                                    </div>
+                                    <!-- Is this user is an conductor, they can request small groups or create instrumentation -->
+                                    <div ng-if="thisuser.isconductor == 1 && date > today">
+                                        <div class="w3-half w3-hide-medium">
+                                            <a class="w3-btn-block w3-hover-black w3-white w3-border w3-round-large" href="/user/{a thisuser.logonid a}/grouprequest/conductor/{a p.periodid a}/">+Small Group</a>
+                                        </div>
+                                        <a class="w3-btn-block w3-hover-black w3-white w3-border w3-round-large w3-hide-small w3-hide-large" href="/user/{a thisuser.logonid a}/grouprequest/conductor/{a p.periodid a}/">+Small Group</a>
+                                        <div class="w3-half w3-hide-medium">
+                                            <a class="w3-btn-block w3-hover-black w3-white w3-border w3-round-large" href="/user/{a thisuser.logonid a}/instrumentation/{a p.periodid a}/">Instrumentation</a>
+                                        </div>
+                                        <a class="w3-btn-block w3-hover-black w3-white w3-border w3-round-large w3-hide-small w3-hide-large" href="/user/{a thisuser.logonid a}/instrumentation/{a p.periodid a}/">Instrumentation</a>
+                                    </div>
+                                    
+                                    <!-- If this user is an admin, they can use the super editor, and create public events-->
+                                    <div ng-if="thisuser.isadmin == 1">
+                                        <div class="w3-half w3-hide-medium">
+                                            <a class="w3-btn-block w3-hover-black w3-white w3-border w3-round-large" href="/user/{a thisuser.logonid a}/group/new/period/{a p.periodid a}/edit/">+Full Group</a>
+                                        </div>
+                                        <a class="w3-btn-block w3-hover-black w3-white w3-border w3-round-large w3-hide-small w3-hide-large" href="/user/{a thisuser.logonid a}/group/new/period/{a p.periodid a}/edit/">+Full Group</a>
+                                        <div class="w3-half w3-hide-medium">
+                                            <a class="w3-btn-block w3-hover-black w3-white w3-border w3-round-large" href="/user/{a thisuser.logonid a}/publicevent/{a p.periodid a}/">Create Event</a>
+                                        </div>
+                                        <a class="w3-btn-block w3-hover-black w3-white w3-border w3-round-large w3-hide-small w3-hide-large" href="/user/{a thisuser.logonid a}/publicevent/{a p.periodid a}/">Create Event</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Footer -->
+        <div class="w3-bottom">
+            <ul class="w3-navbar w3-theme w3-animate-bottom w3-left-align w3-large submit_hide">
+                <li><a href="javascript:void(0)" class="w3-hover-white submit_button" data-submittype="submit" data-method="POST"><i class="fa fa-check save_icon"></i><i class="fa fa-circle-o-notch fa-spin spin_icon"></i> Submit</a></li>
+            </ul>
+        </div>
+    </div>
+    <script>
+        // Get the Sidenav
+        var mySidenav = document.getElementById("mySidenav");
+        // Get the DIV with overlay effect
+        var overlayBg = document.getElementById("myOverlay");
+        // Toggle between showing and hiding the sidenav, and add overlay effect
+        function w3_open() {
+            if (mySidenav.style.display === 'block') {
+                mySidenav.style.display = 'none';
+                overlayBg.style.display = "none";
+            } else {
+                mySidenav.style.display = 'block';
+                overlayBg.style.display = "block";
+            }
+        }
+        // Close the sidenav with the close button
+        function w3_close() {
+            mySidenav.style.display = "none";
+            overlayBg.style.display = "none";
+        }
+
+        /* Toggle between adding and removing the "active" and "show" classes when the user clicks on one of the accordion buttons. The "active" class is used to add a background color to the current button when its belonging panel is open. The "show" class is used to open the specific accordion panel */
+        var acc = document.getElementsByClassName("accordion");
+        var i;
+
+        for (i = 0; i < acc.length; i++) {
+            acc[i].onclick = function () {
+                this.classList.toggle("active");
+                $(this).next().slideToggle('fast');
+            }
+        }
+
+    </script>
+</body>
+</html>

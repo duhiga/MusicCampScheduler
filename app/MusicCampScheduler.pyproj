@@ -50,9 +50,13 @@
     <Content Include="img\asc.gif" />
     <Content Include="img\bg.gif" />
     <Content Include="img\desc.gif" />
+    <Content Include="js\angular.min.js" />
+    <Content Include="js\application.js" />
+    <Content Include="js\homeController.js" />
     <Content Include="js\jquery-3.1.1.min.js" />
     <Content Include="js\jquery.tablesorter.min.js" />
     <Content Include="requirements.txt" />
+    <Content Include="templates\newhome.html" />
     <Content Include="templates\newmusic.html" />
     <Content Include="templates\musicdetails.html" />
     <Content Include="templates\edituser.html" />

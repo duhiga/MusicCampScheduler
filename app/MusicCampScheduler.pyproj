@@ -43,6 +43,8 @@
   <ItemGroup>
     <Content Include="config.xml" />
     <Content Include="config.xml.example" />
+    <Content Include="css\bootstrap.min.css" />
+    <Content Include="css\newhomestyle.css" />
     <Content Include="css\print.css" />
     <Content Include="css\style.css" />
     <Content Include="css\w3-theme-black.css" />
@@ -50,11 +52,14 @@
     <Content Include="img\asc.gif" />
     <Content Include="img\bg.gif" />
     <Content Include="img\desc.gif" />
+    <Content Include="js\angular-animate.min.js" />
+    <Content Include="js\angular-touch.min.js" />
     <Content Include="js\angular.min.js" />
     <Content Include="js\application.js" />
-    <Content Include="js\homeController.js" />
+    <Content Include="js\bootstrap.min.js" />
     <Content Include="js\jquery-3.1.1.min.js" />
     <Content Include="js\jquery.tablesorter.min.js" />
+    <Content Include="js\ui-bootstrap-tpls-2.5.0.min.js" />
     <Content Include="requirements.txt" />
     <Content Include="templates\newhome.html" />
     <Content Include="templates\newmusic.html" />

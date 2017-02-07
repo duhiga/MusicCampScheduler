@@ -23,6 +23,8 @@ app.controller("scheduleController", function ($scope, $http) {
         console.log('This user:')
         console.log(response.data)
         $scope.thisuser = response.data;
+        $scope.thisuser.arrival = Date.parse($scope.thisuser.arrival);
+        $scope.thisuser.departure = Date.parse($scope.thisuser.departure);
     });
 
     //grabs the user's schedule for the current day
@@ -31,12 +33,13 @@ app.controller("scheduleController", function ($scope, $http) {
         $scope.schedule = response.data;
         angular.forEach($scope.schedule, function (value, key) {
             $scope.schedule[key].isOpen = false;
+            $scope.schedule[key].starttime = Date.parse($scope.schedule[key].starttime)
+            $scope.schedule[key].endtime = Date.parse($scope.schedule[key].endtime)
         });
         console.log('Schedule:')
         console.log($scope.schedule)
     });
 
-    $scope.isAccordionOpen = false;
     $scope.firstname = 'Hello!'
 
 });

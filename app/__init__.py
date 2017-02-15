@@ -2067,7 +2067,6 @@ def send_png(path):
 
 #NEW STUFF - for Newhome. slowly building it up...
 
-
 @app.route('/user/<logonid>/getuser/', methods=["GET"])
 def get_user(logonid):
 
@@ -2123,10 +2122,18 @@ def get_schedule(logonid,date):
         session.close()
         return jsonify(message = 'Your user does not exist. Something went wrong.', url = 'none', status_code = 400)
 
+    schedule = getschedule(session,thisuser,thisdate)
     schedule_serialized = []
-    for s in getschedule(session,thisuser,thisdate):
+    for s in schedule:
         schedule_serialized.append(s.serialize)
-    return jsonify(schedule_serialized)
+
+    unscheduled = False
+    for p in schedule:
+        if session.query(group).filter(group.periodid == p.periodid, group.status == "Confirmed", or_(group.ismusical == 1, group.iseveryone == 1)).first() is None:
+            unscheduled = True
+            break
+
+    return jsonify(schedule = schedule_serialized, unscheduled = unscheduled)
 
 @app.route('/user/<logonid>/newhome/')
 def newhome(logonid):

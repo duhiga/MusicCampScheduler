@@ -200,15 +200,38 @@
                 {% endif %}
 
                 -->
-
+                <script type="text/ng-template" id="modalContent.html" class="modal-script">
+                    <div class="modal-header">
+                        <h3 class="modal-title">Title is: {a $ctrl.title a}</h3>
+                    </div>
+                    <div class="modal-body">
+                        Body is: {a $ctrl.body a}
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-primary" ng-click="$ctrl.ok()">OK</button>
+                        <button class="btn" ng-click="$ctrl.cancel()">Cancel</button>
+                    </div>
+                </script>
                 
-                <div class="w3-container" ng-controller="scheduleController">
- 
+                <div ng-controller="scheduleController">
+
+                    <div ng-controller="modalController">
+                        <table class="table">
+                            <tr ng-repeat="p in people">
+                                <td>{a p a}</td>
+                                <td>
+                                    <button type="button" class="btn btn-sm btn-primary" ng-click="openModal(p)">Delete</button>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+
+
                     <h4>Thisuser: {a thisuser.firstname a} {a thisuser.lastname a}</h4>
 
                     <uib-accordion close-others="true">
 
-                        <div class="w3-card-4" ng-repeat="p in schedule">
+                        <div ng-repeat="p in schedule">
 
                             <div uib-accordion-group is-open="p.isopen" ng-class="{
                                 'panel-danger': p.groupname == 'absent',
@@ -251,7 +274,7 @@
                                     </div>
 
                                     <!-- If the group has a description, show it -->
-                                    <p ng-if="p.groupdescription and p.groupdescription | length > 0">{a p.groupdescription a}</p>
+                                    <p ng-if="p.groupdescription && p.groupdescription.length > 0">{a p.groupdescription a}</p>
 
                                     <!-- Show the user details about this group -->
                                     <table class="table table-bordered">

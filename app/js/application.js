@@ -26,7 +26,7 @@ app.controller("scheduleController", function ($scope, $http, $filter, $log, $do
     });
 
     //grabs the user's schedule for the current day
-    $http.get("/user/" + getCookie('logonid') + "/getschedule/" + "2017-02-05" + "/")
+    $http.get("/user/" + getCookie('logonid') + "/getschedule/" + today + "/")
     .then(function (response) {
         $scope.unscheduled = response.data.unscheduled;
         console.log('Unscheduled: ' + $scope.unscheduled)
@@ -88,4 +88,66 @@ app.controller('modalInstanceCtrl', function ($uibModalInstance, $log, title, bo
         $log.info('Clicked on Cancel');
         $uibModalInstance.dismiss('cancel');
     };
+});
+
+app.controller('groupModalController', function ($scope, $http, $uibModal, $log) {
+    $scope.objects = {}
+    $scope.init = function (groupid) {
+        $http.get("/user/" + getCookie('logonid') + "/getgroup/" + groupid + "/")
+        .then(function (response) {
+            $scope.objects.group = response.data.group;
+            $scope.objects.location = response.data.location;
+            $scope.objects.period = response.data.period;
+            $scope.objects.music = response.data.music;
+            $scope.objects.players = response.data.players;
+            $scope.objects.type = 'group'
+        });
+    };
+    $scope.openModal = openModal;
+
+    function openModal() {
+        var modalInstance = $uibModal.open({
+            templateUrl: 'groupModalContent.html',
+            controller: 'modalInstanceCtrl',
+            controllerAs: '$ctrl',
+            ariaLabelledBy: 'modal-title',
+            ariaDescribedBy: 'modal-body',
+            size: "lg",
+            resolve: {
+                objects: function () { return $scope.objects },
+            }
+        });
+
+        modalInstance.result.then(function (selectedItem) {
+            $scope.selected = selectedItem;
+        }, function () {
+            $log.info('Modal dismissed at: ' + new Date());
+        });
+    }
+});
+
+app.controller('modalInstanceCtrl', function ($uibModalInstance, $log, objects) {
+    var $ctrl = this;
+    $ctrl.objects = objects;
+
+    $ctrl.parseDate = function (date) {
+        parsedDate = Date.parse(date);
+        return parsedDate
+    }
+
+    $ctrl.ok = function () {
+        $log.info('Clicked on OK');
+        $uibModalInstance.close($ctrl.selected);
+    };
+
+    $ctrl.cancel = function () {
+        $log.info('Clicked on Cancel');
+        $uibModalInstance.dismiss('cancel');
+    };
+
+    $ctrl.close = function () {
+        $log.info('Clicked on Close');
+        $uibModalInstance.dismiss('Close');
+    };
+
 });

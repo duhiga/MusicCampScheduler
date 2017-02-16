@@ -2067,6 +2067,113 @@ def send_png(path):
 
 #NEW STUFF - for Newhome. slowly building it up...
 
+@app.route('/user/<logonid>/getsubstitutes/<groupid>/', methods=["GET"])
+def get_substitutes(logonid, groupid):
+
+    try:
+        session = Session()
+        thisuser = getuser(session,logonid,True)
+        log('GETGROUP: user firstname:%s lastname:%s method:%s' % (thisuser.firstname, thisuser.lastname, request.method))
+    except Exception as ex:
+        session.close()
+        return str(ex)
+
+    thisgroup = getgroup(session,groupid)
+    thisperiod = getperiod(session,thisgroup.periodid)
+
+    #find the substitutes for this group
+    if thisgroup.status == 'Confirmed' and thisgroup.iseveryone != 1 and thisgroup.groupname != 'absent':
+        minimumlevel = thisgroup.getminlevel(session)
+        maximumlevel = thisgroup.getmaxlevel(session)
+        #get the list of instruments played in this group and removes duplicates to be used as a subquery later
+        instruments_in_group_query = session.query(
+                                groupassignment.instrumentname
+                            ).join(group
+                            ).filter(group.groupid == thisgroup.groupid
+                            ).group_by(groupassignment.instrumentname)
+        log('GROUPPAGE: Found instruments in group to be %s' % instruments_in_group_query.all())
+        #get the userids of everyone that's already playing in something this period
+        everyone_playing_in_periodquery = session.query(
+                                user.userid
+                            ).join(groupassignment
+                            ).join(group
+                            ).join(period
+                            ).filter(period.periodid == thisgroup.periodid)
+        #combine the last two queries with another query, finding everyone that both plays an instrument that's found in this
+        #group AND isn't in the list of users that are already playing in this period.
+        substitutes = session.query(
+                                instrument.instrumentname, 
+                                user.userid, 
+                                user.firstname, 
+                                user.lastname
+                            ).join(user
+                            ).filter(
+                                ~user.userid.in_(everyone_playing_in_periodquery), 
+                                user.isactive == 1, 
+                                user.arrival <= thisperiod.starttime, 
+                                user.departure >= thisperiod.endtime,
+                                instrument.instrumentname.in_(instruments_in_group_query), 
+                                instrument.level >= minimumlevel, 
+                                instrument.level <= maximumlevel, 
+                                instrument.isactive == 1
+                            ).order_by(instrument.instrumentname
+                            ).all()
+        substitutes_serialized = []
+        for p in substitutes:
+            substitutes_serialized.append({'userid': p.userid, 
+                                           'firstname': p.firstname, 
+                                           'lastname': p.lastname,
+                                           'instrumentname': p.instrumentname})
+    else:
+        substitutes_serialized = None
+
+
+    return jsonify(substitutes = substitutes_serialized)
+
+@app.route('/user/<logonid>/getgroup/<groupid>/', methods=["GET"])
+def get_group(logonid, groupid):
+
+    try:
+        session = Session()
+        thisuser = getuser(session,logonid,True)
+        log('GETGROUP: user firstname:%s lastname:%s method:%s' % (thisuser.firstname, thisuser.lastname, request.method))
+    except Exception as ex:
+        session.close()
+        return str(ex)
+
+    thisgroup = getgroup(session,groupid)
+    thislocation = getlocation(session,thisgroup.locationid)
+    thisperiod = getperiod(session,thisgroup.periodid)
+    if thisgroup.musicid is not None:
+        thismusic_serialized = getmusic(session, thisgroup.musicid).serialize
+    else:
+        thismusic_serialized = None
+
+    #gets the list of players playing in the given group
+    players = session.query(
+                                user.userid, 
+                                user.firstname, 
+                                user.lastname, 
+                                groupassignment.instrumentname
+                            ).join(groupassignment
+                            ).join(group
+                            ).filter(group.groupid == groupid
+                            ).order_by(groupassignment.instrumentname
+                            ).all()
+    players_serialized = []
+    for p in players:
+        players_serialized.append({'userid': p.userid, 
+                                   'firstname': p.firstname, 
+                                   'lastname': p.lastname,
+                                   'instrumentname': p.instrumentname})
+
+    return jsonify(group = thisgroup.serialize, 
+                   location = thislocation.serialize, 
+                   period = thisperiod.serialize, 
+                   music = thismusic_serialized,
+                   players = players_serialized
+                   )
+
 @app.route('/user/<logonid>/getuser/', methods=["GET"])
 def get_user(logonid):
 
@@ -2082,7 +2189,7 @@ def get_user(logonid):
 
 
 @app.route('/user/<logonid>/getannouncement/')
-def getannouncement(logonid):
+def get_announcement(logonid):
     try:
         session = Session()
         thisuser = getuser(session,logonid,True)
@@ -2146,8 +2253,6 @@ def newhome(logonid):
         session.close()
         return str(ex)
 
-    #try:
-        
     #get impontant datetimes
     today = datetime.datetime.combine(datetime.date.today(), datetime.time.min) #get today's date
     log('HOME: Today is %s' % today.strftime('%Y-%m-%d %H:%M'))
@@ -2176,17 +2281,3 @@ def newhome(logonid):
                         now = datetime.datetime.now(), \
                         midday=midday, \
                         )
-
-    """except Exception as ex:
-        log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))
-        message = ('Failed to execute %s with exception: %s. Try refreshing the page and trying again or contact camp administration.' % (request.method, ex))
-        session.rollback()
-        session.close()
-        if request.method == 'GET':
-            return render_template('errorpage.html', \
-                                        thisuser=thisuser, \
-                                        campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
-                                        errormessage = 'Failed to display page. %s' % ex
-                                        )
-        else:
-            return jsonify(message = message, url = 'none')"""

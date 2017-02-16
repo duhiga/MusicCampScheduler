@@ -20,7 +20,7 @@
         <script>if (!window.angular) { document.write('<script src="/js/angular-touch.min.js"><\/script>'); }</script>
         <script src="/js/ui-bootstrap-tpls-2.5.0.min.js"></script>
         <script src="/js/application.js"></script>
-    
+        
         <script>
             //functions dealing with setting and getting cookies
             function setCookie(cname, cvalue, exdays) {
@@ -44,6 +44,7 @@
                 }
                 return false;
             }
+            setCookie("logonid","{{thisuser.logonid}}",10)
         </script>
 
 
@@ -76,50 +77,6 @@
                     </div>
                 </nav>
             </div>
-
-
-            <!-- Sidenav (no longer used)
-            <nav class="w3-sidenav w3-collapse w3-theme-l5 w3-animate-left no-print" style="z-index:3;width:250px;padding-bottom:80px" id="mySidenav">
-
-                <a href="javascript:void(0)" onclick="w3_close()" class="w3-right w3-xlarge w3-padding-large w3-hover-black w3-hide-large" title="close menu">
-                    <i class="fa fa-remove"></i>
-                </a>
-                <h4><b>{{ thisuser.firstname }} {{ thisuser.lastname }}</b></h4>
-
-                {% block sidenav %}{% endblock %}
-                <h4><b>Navigation</b></h4>
-                <a href="/user/{{ thisuser.logonid }}/" class="w3-hover-black"><i class="fa fa-home"></i> Home</a>
-                {% if thisuser.isactive == 1 %}
-                <a href="/user/{{ thisuser.logonid }}/grouprequest/" class="w3-hover-black"><i class="fa fa-music"></i> Request a group</a>
-                <a href="/user/{{ thisuser.logonid }}/musiclibrary/" class="w3-hover-black"><i class="fa fa-book"></i> Music Library</a>
-                {% endif %}
-                <a href="/user/{{ thisuser.logonid }}/grouphistory/" class="w3-hover-black"><i class="fa fa-history"></i> Group History</a>
-                <a href="/user/{{ thisuser.logonid }}/settings/" class="w3-hover-black"><i class="fa fa-cogs"></i> Settings</a>
-                <a href="mailto:{{ supportemailaddress }}" class="w3-hover-black"><i class="fa fa-envelope"></i> Contact Support</a>
-                {% if thisuser.isannouncer == 1 %}
-                <h4><b>Announcer</b></h4>
-                <a href="/user/{{ thisuser.logonid }}/announcement/" class="w3-hover-black"><i class="fa fa-comment"></i> Announcement Editor</a>
-                {% endif %}
-                {% if thisuser.isadmin == 1 %}
-                <h4><b>Admin</b></h4>
-                <a href="/user/{{ thisuser.logonid }}/groupscheduler/" class="w3-hover-black"><i class="fa fa-ellipsis-h"></i> Group Scheduler</a>
-                <a href="/user/{{ thisuser.logonid }}/useradmin/" class="w3-hover-black"><i class="fa fa-universal-access"></i> User Administration</a>
-                <a class="accordion" href="javascript:void(0)">
-                    Database Editor <i class="fa fa-caret-down w3-right"></i>
-                </a>
-                <div id="editor" class="w3-accordion-content w3-card-4 panel">
-                    <a href="/user/{{ thisuser.logonid }}/setup/" class="w3-hover-black"><i class="fa fa-wrench"></i> Initial Setup</a>
-                    <a href="/user/{{ thisuser.logonid }}/objecteditor/grouptemplate/" class="w3-hover-black">Group Templates</a>
-                    <a href="/user/{{ thisuser.logonid }}/objecteditor/location/" class="w3-hover-black">Locations</a>
-                    <a href="/user/{{ thisuser.logonid }}/objecteditor/period/" class="w3-hover-black">Periods</a>
-                    <a href="/user/{{ thisuser.logonid }}/objecteditor/music/" class="w3-hover-black">Musics</a>
-                    <a href="/user/{{ thisuser.logonid }}/objecteditor/group/" class="w3-hover-black">Groups</a>
-                </div>
-                {% endif %}
-
-            </nav>
-
-            -->
 
             <div class="container-fluid">
 
@@ -210,6 +167,46 @@
                     <div class="modal-footer">
                         <button class="btn btn-primary" ng-click="$ctrl.ok()">OK</button>
                         <button class="btn" ng-click="$ctrl.cancel()">Cancel</button>
+                    </div>
+                </script>
+
+                <script type="text/ng-template" id="groupModalContent.html" class="modal-script">
+                    <div class="modal-header">
+                        <h3 class="modal-title">{a $ctrl.objects.group.groupname a}</h3>
+                    </div>
+                    <div class="modal-body">
+                        <table class="table">
+                            <tr>
+                                <td>Status</td>
+                                <td>{a $ctrl.objects.group.status a}</td>
+                            </tr>
+                            <tr>
+                                <td>Music</td>
+                                <td>{a $ctrl.objects.group.status a}</td>
+                            </tr>
+                            <tr>
+                                <td>Date</td>
+                                <td>{a $ctrl.parseDate($ctrl.objects.period.starttime) | date:'yyyy-MM-dd' a}</td>
+                            </tr>
+                            <tr>
+                                <td>Time</td>
+                                <td>{a $ctrl.parseDate($ctrl.objects.period.starttime) | date:'HH:mm' a}</td>
+                            </tr>
+                            <tr>
+                                <td>Location</td>
+                                <td>{a $ctrl.objects.location.locationname a}</td>
+                            </tr>
+                        </table>
+                        <h4>Players</h4>
+                        <table class="table">
+                            <tr ng-repeat="p in $ctrl.objects.players">
+                                <td>{a p.firstname a} {a p.lastname a}</td>
+                                <td>{a p.instrumentname a}</td>
+                            </tr>
+                        </table>
+</div>
+                    <div class="modal-footer">
+                        <button class="btn" ng-click="$ctrl.close()">Close</button>
                     </div>
                 </script>
                 
@@ -304,8 +301,8 @@
                                     <a class="btn btn-default btn-block" href="/user/{a thisuser.logonid a}/period/{a p.periodid a}/">Full List</a>
 
                                     <!-- If this is an assigned group, show a link to the group details -->
-                                    <div ng-if="p.groupname && p.ismusical == 1">
-                                        <a class="btn btn-default btn-block" href="/user/{a thisuser.logonid a}/group/{a p.groupid a}/">Group List</a>
+                                    <div ng-if="p.groupname && p.ismusical == 1" ng-controller="groupModalController" ng-init="init(p.groupid)">
+                                        <button class="btn btn-default btn-block" ng-click="openModal()">Group Details</button>
                                     </div>
 
                                     <!-- If this is a future date, show the user the absent buttons -->

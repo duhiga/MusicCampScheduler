@@ -5,6 +5,32 @@ app.config(['$interpolateProvider', function ($interpolateProvider) {
     $interpolateProvider.endSymbol('a}');
 }]);
 
+app.filter('scoreOrder', function ($http, $log) {
+    return function (input) {
+        //gets the cached instrumentlist, and if it doesn't exist, grabs it from the server
+        instrumentlist = getCookie('instrumentlist');
+        if (instrumentlist == false) {
+            instrumentList = $http.get("/user/" + getCookie('logonid') + "/getinstrumentlist/").data;
+            setCookie("instrumentlist", instrumentlist, 10);
+        }
+
+        $log.info(input);
+        $log.info(instrumentlist);
+
+        var ordered = [];
+
+        for (var i in instrumentlist) {
+            for (var p in input) {
+                if (p.instrumentname == i.instrumentname) {
+                    ordered.push(p)
+                }
+            }
+        }
+        $log.info(ordered)
+        return ordered;
+    }
+});
+
 app.controller('navController', function ($scope) {
     $scope.isNavCollapsed = true;
 });
@@ -93,12 +119,9 @@ app.controller('modalInstanceCtrl', function ($uibModalInstance, $log, title, bo
 app.controller('groupModalController', function ($scope, $http, $uibModal, $log) {
     $scope.objects = {}
     $scope.init = function (groupid) {
-        $http.get("/user/" + getCookie('logonid') + "/getgroup/" + groupid + "/")
+        $http.get("/user/" + getCookie('logonid') + "/getgroupplayers/" + groupid + "/")
         .then(function (response) {
             $scope.objects.group = response.data.group;
-            $scope.objects.location = response.data.location;
-            $scope.objects.period = response.data.period;
-            $scope.objects.music = response.data.music;
             $scope.objects.players = response.data.players;
             $scope.objects.type = 'group'
         });

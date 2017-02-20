@@ -59,21 +59,39 @@ class user(Base):
     def serialize(self):
         return serialize_class(self, self.__class__)
 
-    #adds this user to a group. The group object passed in must have at least a groupid and periodid
-    def addtogroup(self,session,thisgroup,instrumentname=None):
-        #check if this user plays this instrument (if an instrument was specified)
-        if instrumentname is not None and session.query(instrument).filter(instrument.userid == self.userid, instrument.instrumentname == instrumentname).first() is None:
-            log('ADDPLAYER: Found that player %s %s does not play instrument %s, cannot assign them to group %s' % (self.firstname,self.lastname,instrumentname,thisgroup.groupid))
-            raise Exception('Found that player %s %s does not play instrument %s, cannot assign them to group %s' % (self.firstname,self.lastname,instrumentname,thisgroup.groupid))
-        #if the user is already in this group, don't add another groupassignment, just log it
+    def playsinstrument(self, session, thisinstrument):
+        if session.query(userinstrument).filter(userinstrument.userid == self.userid, instrument.instrumentid == thisinstrument.instrumentid).first() is not None:
+            return True
+        else:
+            return False
+
+    def isplayingingroup(self, session, thisgroup):
         if session.query(groupassignment).filter(groupassignment.userid == self.userid, groupassignment.groupid == thisgroup.groupid).first() is not None:
-            log('ADDPLAYER: Found that player %s %s is already in group %s. Made no changes to this player.' % (self.firstname,self.lastname,group.groupid))
+            return True
+        else:
+            return False
+
+    def isplayinginperiod(self, session, thisperiod):
+        if thisgroup.periodid is not None and session.query(groupassignment).join(group).filter(groupassignment.userid == self.userid, group.periodid == thisgroup.periodid).first() is not None:
+            return True
+        else:
+            return False
+
+    #adds this user to a group. The group object passed in must have at least a groupid and periodid
+    def addtogroup(self,session,thisgroup,thisinstrument=None):
+        #check if this user plays this instrument (if an instrument was specified)
+        if thisinstrument is not None and not self.playsinstrument(session, thisinstrument):
+            log('ADDPLAYER: Found that player %s %s does not play instrument %s, cannot assign them to group %s' % (self.firstname,self.lastname,thisinstrument.instrumentname,thisgroup.groupid))
+            raise Exception('Found that player %s %s does not play instrument %s, cannot assign them to group %s' % (self.firstname,self.lastname,thisinstrument.instrumentname,thisgroup.groupid))
+        #if the user is already in this group, don't add another groupassignment, just log it
+        if self.isplayingingroup(session,thisgroup):
+            log('ADDPLAYER: Found that player %s %s is already in group %s. Made no changes to this player.' % (self.firstname,self.lastname,thisgroup.groupid))
         #if the user is already playing in another group at this time, raise an exception
-        elif thisgroup.periodid is not None and session.query(groupassignment).join(group).filter(groupassignment.userid == self.userid, group.periodid == thisgroup.periodid).first() is not None:
+        if thisgroup.periodid is not None and self.isplapyinginperiod(session, getperiod(session,thisgroup.periodid)):
             log('ADDPLAYER: Found that player %s %s is already assigned to a group during this period.' % (self.firstname,self.lastname))
             raise Exception('Found that player %s %s is already assigned to a group during this period.' % (self.firstname,self.lastname))
         else:
-            playergroupassignment = groupassignment(userid = self.userid, groupid = thisgroup.groupid, instrumentname = instrumentname)
+            playergroupassignment = groupassignment(userid = self.userid, groupid = thisgroup.groupid, instrumentid = thisinstrument.instrumentid)
             session.add(playergroupassignment)
 
     #marking a user absent for a period simply assigns them to a group called "absent" during that period
@@ -117,6 +135,16 @@ class music(Base):
     def serialize(self):
         return serialize_class(self, self.__class__)
 
+    #returns true if the music is free during this period, optionally ignoring the input group
+    def isfree(self,session,thisperiod,thisgroup=None):
+        isfreequery = session.query(group).filter(group.periodid == thisperiod.periodid, group.musicid == self.musicid)
+        if thisgroup is not None:
+            isfreequery = isfreequery.filter(group.groupid != thisgroup.groupid)
+        if isfreequery.first() is None:
+            return True
+        else:
+            return False
+
 #gets a music object from a musicid
 def getmusic(session,musicid):
     if musicid is None:
@@ -129,7 +157,17 @@ def getmusic(session,musicid):
         else:
             return thismusic
 
-#both group and grouptemplate tables and classes are initialized without the instrument columns
+class musicinstrument(Base):
+    __tablename__ = 'musicinstruments'
+
+    musicinstrumentid = Column(Integer, primary_key=True, unique=True)
+    musicid = Column(Integer, ForeignKey('musics.musicid'))
+    instrumentid = Column(Integer, ForeignKey('instruments.instrumentid'))
+
+    @property
+    def serialize(self):
+        return serialize_class(self, self.__class__)
+
 class group(Base):
     __tablename__ = 'groups'
 
@@ -147,52 +185,51 @@ class group(Base):
     ismusical = Column(Integer, default='0')
     iseveryone = Column(Integer, default='0')
     status = Column(String)
-    log = Column(Text(convert_unicode=True))
 
     @property
     def serialize(self):
         return serialize_class(self, self.__class__)
 
     #returns the total number of players that are needed for this group
-    @property
-    def totalinstrumentation(self):
-        total = 0
-        for i in getconfig('Instruments').split(","):
-            total = total + int(getattr(self,i))
-        return int(total)
+    def totalinstrumentation(self, session):
+        return session.query(groupassignment).filter(groupassignment.groupid == self.groupid).count()
 
     #returns a total number of players currently assigned to this group
-    @property
-    def totalallocatedplayers(self):
-        s = Session()
-        total = s.query(groupassignment).filter(groupassignment.groupid == self.groupid).count()
-        s.close()
-        return total
+    def totalallocatedplayers(self, session):
+        return session.query(groupassignment).filter(groupassignment.groupid == self.groupid, groupassignment.userid != None).count()
 
-    #returns an array of instrument names that are contained in this group
-    @property
-    def instruments(self):
-        instrumentation = []
-        for i in getconfig('Instruments').split(","):
-            if getattr(self,i) > 0:
-                instrumentation.append(i)
-        return instrumentation
+    #get groupassignment listings for all players in this group
+    def players(self,session):
+        return session.query(groupassignment).filter(groupassignment.groupid == thisgroup.groupid).all()
 
-    def addtolog(self,text):
-        now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M') #get the time now and convert it to a string format
-        if self.log is None or self.log == '':
-            self.log = now + ';' + text
-        else:
-            self.log = self.log + ',' + now + ';' + text
+    #returns an array of instrument objects in this group
+    def instruments(self, session):
+        return session.query(instrument).outerjoin(groupassignment).filter(groupassignment.groupid == self.groupid).all()
+
+    def addtolog(self,session,text):
+        if text is not None and text != '':
+            session.add(grouplog(groupid = self.groupid, message = text))
+
+    def getlevelsquery(self,session):
+        return session.query(
+                        user.firstname, 
+                        user.lastname, 
+                        instrument.instrumentname, 
+                        userinstrument.level
+                    ).join(groupassignment
+                    ).join(group
+                    ).join(userinstrument, and_(groupassignment.instrumentid == userinstrument.instrumentid, 
+                                                user.userid == userinstrument.userid)
+                    ).outerjoin(instrument, userinstrument.userinstrumentid == instrument.instrumentid
+                    ).filter(group.groupid == self.groupid
+                    )
 
     #this function obtains the min level, depending on if it's explicitly set, or has players already assigned
     def getminlevel(self,session):
         log('GETMINLEVEL: Finding group minimum level')
         #if the group is set to "auto", i.e. blank or 0, find the minimum level of all the players currently playing in the group
-        if self.minimumlevel is None or self.minimumlevel == '' or self.minimumlevel == '0' or self.minimumlevel == 0:
-            minimumlevelob = session.query(user.firstname, user.lastname, instrument.instrumentname, instrument.level).join(groupassignment).join(group).\
-                join(instrument, and_(groupassignment.instrumentname == instrument.instrumentname, user.userid == instrument.userid)).\
-                filter(group.groupid == self.groupid).order_by(instrument.level).first()
+        if self.minimumlevel == 0 or self.minimumlevel == '0':
+            minimumlevelob = self.getlevelsquery(session).order_by(userinstrument.level).first()
             #if we find at least one player in this group, set the minimumlevel to be this players level minus the autoassignlimitlow
             if minimumlevelob is not None:
                 log('GETMINLEVEL: Found minimum level in group %s to be %s %s playing %s with level %s' % (self.groupid, minimumlevelob.firstname, minimumlevelob.lastname, minimumlevelob.instrumentname, minimumlevelob.level))
@@ -210,14 +247,12 @@ class group(Base):
 
     #this function obtains the max level, depending on if it's explicitly set, or has players already assigned
     def getmaxlevel(self,session):
-        log('GETMINLEVEL: Finding group minimum level')
+        log('GETMAXLEVEL: Finding group maximum level')
         #if the group is set to "auto", i.e. blank or 0, find the maximum level of all the players currently playing in the group
-        if self.maximumlevel is None or self.maximumlevel == '' or self.maximumlevel == '0' or self.maximumlevel == 0:
-            minimumlevelob = session.query(user.firstname, user.lastname, instrument.instrumentname, instrument.level).join(groupassignment).join(group).\
-                join(instrument, and_(groupassignment.instrumentname == instrument.instrumentname, user.userid == instrument.userid)).\
-                filter(group.groupid == self.groupid).order_by(instrument.level).first()
+        if self.maximumlevel == '0' or self.maximumlevel == 0:
+            maximum = self.getlevelsquery(session).order_by(userinstrument.level).first()
             #if we find at least one player in this group, set the maximumlevel to be this players level plus the autoassignlimithigh
-            if minimumlevelob is not None:
+            if maximumlevelob is not None:
                 log('GETMAXLEVEL: Found minimum level in group %s to be %s %s playing %s with level %s' % (self.groupid, minimumlevelob.firstname, minimumlevelob.lastname, minimumlevelob.instrumentname, minimumlevelob.level))
                 level = int(minimumlevelob.level) + int(getconfig('AutoAssignLimitHigh'))
                 if level > int(getconfig('AutoAssignLimitHigh')):
@@ -240,69 +275,58 @@ class group(Base):
         session.delete(self)
         session.commit()
 
-    #get groupassignment listings for all players in this group
-    def getplayers(self,session):
-        return session.query(groupassignment).filter(groupassignment.groupid == thisgroup.groupid).all()
-
     #checks if the group can be confirmed, and confirms the group
     def confirm(self, session):
         log('CONFIRMGROUP: Attempting to confirm group name:%s id:%s' % (self.groupname,self.groupid))
         if self.locationid is None:
             raise Exception('Failed to confirm group %s becasue the group is missing a locationid' % self.groupname)
-        elif self.periodid is None:
+        if self.periodid is None:
             raise Exception('Failed to confirm group %s becasue the group is missing a periodid' % self.groupname)
-        elif self.groupname is None or self.groupname == '':
+        if self.groupname is None or self.groupname == '':
             raise Exception('Failed to confirm group becasue the group is missing a groupname')
-        elif session.query(group).filter(group.periodid == self.periodid, group.locationid == self.locationid, group.groupid != self.groupid).first() is not None:
+        thisperiod = getperiod(session,self.periodid)
+        thislocation = getlocation(session,self.locationid)
+        if not thislocation.isfree(session,thisperiod,self):
             raise Exception('Failed to confirm group %s becasue the group location is already in use by another group at this time' % self.groupname)
-        elif self.musicid is not None and session.query(group).filter(group.musicid == self.musicid, group.periodid == self.periodid, group.groupid != self.groupid).first() is not None:
-            raise Exception('Failed to confirm group %s because the group music is already in use by another group at this time' % self.groupname)
-
+        if self.musicid is not None:
+            thismusic = getmusic(session,self.musicid)
+            if not thismusic.isfree(session,thisperiod,self):
+                raise Exception('Failed to confirm group %s because the group music is already in use by another group at this time' % self.groupname)
         #check if any players are playing in other groups
-        if self.checkplayerclash:
+        if self.playerclash(session,thisperiod):
             raise Exception('Failed to confirm group becasue at least one player is in another group at this time.')
         else:
             log('CONFIRMGROUP: Successfully confirmed group name:%s id:%s' % (self.groupname,self.groupid))
             self.status = 'Confirmed'
             
     #adds a single player to this group. The object passed in needs to have at least a userid
-    def addplayer(self,session,player,instrumentname):
+    def addplayer(self,session,thisuser,thisinstrument):
         #check if this user plays this instrument
-        if session.query(instrument).filter(instrument.userid == player.userid, instrument.instrumentname == instrumentname).first() is None:
+        if not thisuser.playsinstrument(session,thisinstrument):
             log('ADDPLAYER: Found that player %s %s does not play instrument %s, cannot assign them to group %s' % (player.firstname,player.lastname,instrumentname,self.groupid))
             raise Exception('Found that player %s %s does not play instrument %s, cannot assign them to group %s' % (player.firstname,player.lastname,instrumentname,self.groupid))
         #if the player is already in this group, don't make another groupassignment, just log it.
-        if session.query(groupassignment).filter(groupassignment.userid == player.userid, groupassignment.groupid == self.groupid).first() is not None:
+        if thisuser.isplayingingroup(session,self):
             log('ADDPLAYER: Found that player %s %s is already in this group. Made no changes to this player.' % (player.firstname,player.lastname))
         #if the player is in another group at this time, raise an exception
-        elif self.periodid is not None and session.query(groupassignment).join(group).filter(groupassignment.userid == player.userid, group.periodid == self.periodid).first() is not None:
+        elif self.periodid is not None and thisuser.isplayinginperiod(session,getperiod(session,self.periodid)) is not None:
             log('ADDPLAYER: Found that player %s %s is already assigned to a group during this period.' % (player.firstname,player.lastname))
             raise Exception('Found that player %s %s is already assigned to a group during this period.' % (player.firstname,player.lastname))
         #otherwise, create a groupassignment for them
         else:
             log('ADDPLAYER: Adding player %s %s to group playing instrument %s' % (player.firstname,player.lastname,instrumentname))
-            playergroupassignment = groupassignment(userid = player.userid, groupid = self.groupid, instrumentname = instrumentname)
+            playergroupassignment = groupassignment(userid = thisuser.userid, groupid = self.groupid, instrumentid = thisinstrument.instrumentid)
             session.add(playergroupassignment)
 
     #checks if this group can fit into a given period or not (checks player clashes with other groups)
-    def checkplayerclash(self,session,selectedperiod):
-        playersPlayingInPeriod = session.query(groupassignment.userid).join(group).filter(group.groupid != self.groupid).filter(group.periodid == selectedperiod.periodid)
+    def playerclash(self,session,thisperiod):
+        playersPlayingInPeriod = session.query(groupassignment.userid).join(group).filter(group.groupid != self.groupid).filter(group.periodid == thisperiod.periodid)
         if session.query(groupassignment.userid).filter(groupassignment.groupid == self.groupid, groupassignment.userid.in_(playersPlayingInPeriod)).first() is not None:
-            log('CHECKPLAYERCLASH: Found a player clash for group with id:%s and period id:%s' % (self.groupid,selectedperiod.periodid))
+            log('PLAYERCLASH: Found a player clash for group with id:%s and period id:%s' % (self.groupid,selectedperiod.periodid))
             return True
         else:
-            log('CHECKPLAYERCLASH: Found that group id:%s can fit into period id:%s' % (self.groupid,selectedperiod.periodid))
+            log('PLAYERCLASH: Found that group id:%s can fit into period id:%s' % (self.groupid,selectedperiod.periodid))
             return False
-
-    #adds a list of players to this group. The list must contain at least userids. Does not commit the group.
-    def addplayers(self,session,playerlist):
-        try:
-            log('ADDPLAYERS: Adding a list of players to group name:%s id:%s' % (self.groupname, self.groupid))
-            for player in playerlist:
-                self.addplayer(session,player,player.instrumentname)
-            log('ADDPLAYERS: Finished adding players to group')
-        except Exception as ex:
-            raise Exception(ex)
 
     def purgeoldplayers(self,session):
         log('GROUPPURGE: Purging old players from group name:%s id:%s' % (self.groupname,self.groupid))
@@ -315,7 +339,6 @@ class group(Base):
                         ).all()
         for p in oldplayers:
             session.delete(p)
-        return False
 
 #gets a group object from a groupid
 def getgroup(session,groupid):
@@ -329,15 +352,38 @@ def getgroup(session,groupid):
         else:
             return thisgroup
 
+class grouplog(Base):
+    __tablename__ = 'grouplogs'
+
+    logid = Column(Integer, primary_key=True, unique=True)
+    groupid = Column(Integer, ForeignKey('groups.groupid'))
+    timestamp = Column(DateTime, default=datetime.datetime.now())
+    message = Column(Text(convert_unicode=True))
+
+    @property
+    def serialize(self):
+        return serialize_class(self, self.__class__)
+
 class grouptemplate(Base):
     __tablename__ = 'grouptemplates'
 
     grouptemplateid = Column(Integer, primary_key=True, unique=True)
     grouptemplatename = Column(String)
     size = Column(String)
-    minimumlevel = Column(Integer)
-    maximumlevel = Column(Integer)
+    defaultminimumlevel = Column(Integer)
+    delautmaximumlevel = Column(Integer)
     defaultlocationid = Column(Integer, ForeignKey('locations.locationid'))
+
+    @property
+    def serialize(self):
+        return serialize_class(self, self.__class__)
+
+class grouptemplateinstrument(Base):
+    __tablename__ = 'grouptemplateinstruments'
+
+    grouptemplateinstrumentid = Column(Integer, primary_key=True, unique=True)
+    grouptemplateid = Column(Integer, ForeignKey('grouptemplates.grouptemplateid'))
+    instrumentid = Column(Integer, ForeignKey('instruments.instrumentid'))
 
     @property
     def serialize(self):
@@ -355,12 +401,12 @@ def getgrouptemplate(session,grouptemplateid):
         else:
             return thisgrouptemplate
 
-class instrument(Base):
-    __tablename__ = 'instruments'
+class userinstrument(Base):
+    __tablename__ = 'userinstruments'
 
-    instrumentid = Column(Integer, primary_key=True, unique=True)
+    userinstrumentid = Column(Integer, primary_key=True, unique=True)
     userid = Column(UUID, ForeignKey('users.userid'))
-    instrumentname = Column(String)
+    instrumentid = Column(Integer, ForeignKey('instruments.instrumentid'))
     level = Column(Integer)
     isprimary = Column(Integer)
     isactive = Column(Integer)
@@ -369,25 +415,25 @@ class instrument(Base):
     def serialize(self):
         return serialize_class(self, self.__class__)
 
-#gets a instrument object from a instrumentid
-def getinstrument(session,instrumentid):
+#gets a userinstrument object from a instrumentid
+def getuserinstrument(session,instrumentid):
     if instrumentid is None:
         return None
     else:
-        thisinstrument = session.query(instrument).filter(instrument.instrumentid == instrumentid).first()
+        thisuserinstrument = session.query(instrument).filter(instrument.instrumentid == instrumentid).first()
         if thisinstrument is None:
             log('GETINSTRUMENT: Exception - Could not find instrument %s in database' % (instrumentid))
             raise Exception('Could not find instrument in database')
         else:
-            return thisinstrument
+            return thisuserinstrument
 
 class groupassignment(Base):
     __tablename__ = 'groupassignments'
 
     groupassignmentid = Column(Integer, primary_key=True, unique=True)
-    userid = Column(UUID, ForeignKey('users.userid'))
+    userid = Column(UUID, ForeignKey('users.userid'), nullable=True, default=None)
     groupid = Column(Integer, ForeignKey('groups.groupid'))
-    instrumentname = Column(String)
+    instrumentid = Column(Integer, ForeignKey('instruments.instrumentid'))
 
     @property
     def serialize(self):
@@ -405,6 +451,29 @@ def getgroupassignment(session,groupassignmentid):
         else:
             return thisgroupassignment
 
+class instrument(Base):
+    __tablename__ = 'instruments'
+
+    instrumentid = Column(Integer, primary_key=True, unique=True)
+    instrumentname = Column(Text(convert_unicode=True))
+    order = Column(Integer, unique=True)
+
+    @property
+    def serialize(self):
+        return serialize_class(self, self.__class__)
+
+#gets a groupassignment object from a groupassignmentid
+def getinstrument(session,instrumentid):
+    if groupassignmentid is None:
+        return None
+    else:
+        thisintsrument = session.query(instrument).filter(instrument.instrumentid == instrumentid).first()
+        if thisinstrument is None:
+            log('GETINSTRUMENT: Exception - Could not find instrument %s in database' % (instrumentid))
+            raise Exception('Could not find instrument in database')
+        else:
+            return thisinstrument
+
 class location(Base):
     __tablename__ = 'locations'
 
@@ -417,20 +486,39 @@ class location(Base):
     def serialize(self):
         return serialize_class(self, self.__class__)
 
+    #returns true if the location is free during this period, optionally ignoring the input group
+    def isfree(self,session,thisperiod,thisgroup=None):
+        isfreequery = session.query(group).filter(group.periodid == thisperiod.periodid, group.locationid == self.locationid)
+        if thisgroup is not None:
+            isfreequery = isfreequery.filter(group.groupid != thisgroup.groupid)
+        if isfreequery.first() is None:
+            return True
+        else:
+            return False
+
 #gets a location object from a locationid
 def getlocation(session,locationid):
     if locationid is None:
         return None
     else:
-        if locationid is None:
-            return None
+        thislocation = session.query(location).filter(location.locationid == locationid).first()
+        if thislocation is None:
+            log('GETLOCATION: Exception - Could not find location %s in database' % (locationid))
+            raise Exception('Could not find location in database')
         else:
-            thislocation = session.query(location).filter(location.locationid == locationid).first()
-            if thislocation is None:
-                log('GETLOCATION: Exception - Could not find location %s in database' % (locationid))
-                raise Exception('Could not find location in database')
-            else:
-                return thislocation
+            return thislocation
+
+#this table controls if instruments are able to be placed into a location, for example - you may only have access to a piano in one room
+class locationinstrument(Base):
+    __tablename__ = 'locationinstruments'
+
+    locationinstrumentid = Column(Integer, primary_key=True, unique=True)
+    instrumentid = Column(Integer, ForeignKey('instruments.instrumentid'))
+    isdisabled = Column(Integer)
+
+    @property
+    def serialize(self):
+        return serialize_class(self, self.__class__)
 
 class period(Base):
     __tablename__ = 'periods'
@@ -475,15 +563,6 @@ def getannouncement(session,announcementid):
             raise Exception('Could not find announcement in database')
         else:
             return thisannouncement
-
-#add the columns for each instrument in the application configuration to the group, grouptemplate, music and location tables
-instrumentlist = getconfig('Instruments').split(",")
-log('Setting up columns for instruments in database: %s' % getconfig('Instruments'))
-for i in instrumentlist:
-    setattr(group, i, Column(Integer, default='0'))
-    setattr(grouptemplate, i, Column(Integer, default='0'))
-    setattr(music, i, Column(Integer, default='0'))
-    setattr(location, i, Column(Integer, default='1'))
 
 Base.metadata.create_all(engine)
 
@@ -575,7 +654,19 @@ def dbbuild(configfile):
         ThisDay = datetime.datetime.strptime(datetime.datetime.strftime(CampStartTime, '%Y-%m-%d'), '%Y-%m-%d')
         #start our session, then go through the loop
         session = Session()
-        loop = 'start'
+
+        #create the instrument objects, and keep the order written in the config file
+        iorder = 0
+        for i in conf.root.CampDetails['Instruments'].split(","):
+            thisinstrument = session.query(instrument).filter(instrument.instrumentname == i).first()
+            if thisinstrument is None:
+                thisinstrument = instrument(instrumentname = i, order = iorder)
+                session.add(thisinstrument)
+                log('Created instrument: %s' % i)
+                iorder = iorder + 1
+        session.commit()
+
+        #create locations in the database
         find_location = session.query(location).filter(location.locationname == 'None').first()
         if find_location is None:
             session.add(location(locationname = 'None', autoallocate = 0))
@@ -590,11 +681,17 @@ def dbbuild(configfile):
                 log('Created location: %s' % newlocation.locationname)
                 if conf.root.CampDetails.Location[x]['AutoAllocate'] is not None:
                     newlocation.autoallocate = conf.root.CampDetails.Location[x]['AutoAllocate']
+                session.add(newlocation)
+                #create instrument restrictions in the locationinstrument table for disabled instruments
                 if conf.root.CampDetails.Location[x]['DisabledInstruments'] is not None:
                     for i in conf.root.CampDetails.Location[x]['DisabledInstruments'].split(','):
-                        setattr(newlocation,i,0)
-                session.add(newlocation)
+                        thislocationinstrument = session.query(locationinstrument).join(instrument).filter(instrument.instrumentname == i).first()
+                        if thislocationinstrument is not None:
+                            thislocationinstrument = locationinstrument(instrumentname = i, isdisabled = 1) 
+                            session.add(thislocationinstrument)  
         session.commit()
+
+        loop = 'start'
         #For each day covered by the camp start and end time
         while loop == 'start':
             log('Creating initial groups for %s' % ThisDay)
@@ -636,19 +733,14 @@ def dbbuild(configfile):
                 #if we hit the camp's configured end time, then stop looping
                 if ThisStartTime > CampEndTime:
                     loop = 'stop'
-            ThisDay = ThisDay + datetime.timedelta(days=1)    
-        #create group templates
+            ThisDay = ThisDay + datetime.timedelta(days=1)  
         session.commit()
+        
+        #create group templates
         for x in range(0,len(conf.root.CampDetails.GroupTemplate)):
             find_template = session.query(grouptemplate).filter(grouptemplate.grouptemplatename == conf.root.CampDetails.GroupTemplate[x]['Name']).first()
             if find_template is None:
                 template = grouptemplate()
-                attributelist = [a for a in dir(template) if not a.startswith('_') and not callable(getattr(template,a)) and not a == 'grouptemplateid' and not a == 'metadata' and not a == 'serialize']
-                for v in attributelist:
-                    if conf.root.CampDetails.GroupTemplate[x]['%s' % v] is not None:
-                        setattr(template, v, conf.root.CampDetails.GroupTemplate[x]['%s' % v])
-                    else:
-                        setattr(template, v, 0)
                 setattr(template, 'grouptemplatename', conf.root.CampDetails.GroupTemplate[x]['Name'])
                 setattr(template, 'size', conf.root.CampDetails.GroupTemplate[x]['Size'])
                 setattr(template, 'minimumlevel', conf.root.CampDetails.GroupTemplate[x]['MinimumLevel'])
@@ -663,6 +755,10 @@ def dbbuild(configfile):
                     setattr(template, 'defaultlocationid', noneloc.locationid)
                 session.add(template)
                 session.commit()
+                for i in session.query(instrument).all():
+                    if conf.root.CampDetails.GroupTemplate[x][i.instrumentname] is not None:
+                        for x in range(0,int(conf.root.CampDetails.GroupTemplate[x][i.instrumentname])):
+                            session.add(grouptemplateinstrument(grouptemplateid == template.grouptemplateid, instrumentid == i.instrumentid))
                 log('Created grouptemplate: %s with size %s' % (template.grouptemplatename, template.size))
         session.commit()
         session.close()

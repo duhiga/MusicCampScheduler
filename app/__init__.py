@@ -2130,24 +2130,39 @@ def get_substitutes(logonid, groupid):
 
     return jsonify(substitutes = substitutes_serialized)
 
-@app.route('/user/<logonid>/getgroup/<groupid>/', methods=["GET"])
+@app.route('/user/<logonid>/getinstrumentlist/', methods=["GET"])
+def get_instrumentlist(logonid):
+
+    try:
+        session = Session()
+        thisuser = getuser(session,logonid,True)
+        log('GETINSTRUMENTLIST: user firstname:%s lastname:%s method:%s' % (thisuser.firstname, thisuser.lastname, request.method))
+    except Exception as ex:
+        session.close()
+        return str(ex)
+
+    instrumentlist = []
+    count = 0
+    for i in getconfig('Instruments').split(","):
+        instrumentlist.append({'instrumentname': i,
+                               'order': count})
+        log('INSTRUMENTLIST: Instrument at order %s is %s' % (count, i))
+        count = count + 1
+    return jsonify(instrumentlist)
+
+@app.route('/user/<logonid>/getgroupplayers/<groupid>/', methods=["GET"])
+
 def get_group(logonid, groupid):
 
     try:
         session = Session()
         thisuser = getuser(session,logonid,True)
-        log('GETGROUP: user firstname:%s lastname:%s method:%s' % (thisuser.firstname, thisuser.lastname, request.method))
+        log('GETGROUPPLAYERS: user firstname:%s lastname:%s method:%s' % (thisuser.firstname, thisuser.lastname, request.method))
     except Exception as ex:
         session.close()
         return str(ex)
 
     thisgroup = getgroup(session,groupid)
-    thislocation = getlocation(session,thisgroup.locationid)
-    thisperiod = getperiod(session,thisgroup.periodid)
-    if thisgroup.musicid is not None:
-        thismusic_serialized = getmusic(session, thisgroup.musicid).serialize
-    else:
-        thismusic_serialized = None
 
     #gets the list of players playing in the given group
     players = session.query(
@@ -2168,9 +2183,6 @@ def get_group(logonid, groupid):
                                    'instrumentname': p.instrumentname})
 
     return jsonify(group = thisgroup.serialize, 
-                   location = thislocation.serialize, 
-                   period = thisperiod.serialize, 
-                   music = thismusic_serialized,
                    players = players_serialized
                    )
 

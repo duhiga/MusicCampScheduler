@@ -175,43 +175,23 @@
                         <h3 class="modal-title">{a $ctrl.objects.group.groupname a}</h3>
                     </div>
                     <div class="modal-body">
-                        <table class="table">
-                            <tr>
-                                <td>Status</td>
-                                <td>{a $ctrl.objects.group.status a}</td>
-                            </tr>
-                            <tr>
-                                <td>Music</td>
-                                <td>{a $ctrl.objects.group.status a}</td>
-                            </tr>
-                            <tr>
-                                <td>Date</td>
-                                <td>{a $ctrl.parseDate($ctrl.objects.period.starttime) | date:'yyyy-MM-dd' a}</td>
-                            </tr>
-                            <tr>
-                                <td>Time</td>
-                                <td>{a $ctrl.parseDate($ctrl.objects.period.starttime) | date:'HH:mm' a}</td>
-                            </tr>
-                            <tr>
-                                <td>Location</td>
-                                <td>{a $ctrl.objects.location.locationname a}</td>
-                            </tr>
-                        </table>
                         <h4>Players</h4>
                         <table class="table">
-                            <tr ng-repeat="p in $ctrl.objects.players">
+                            <tr ng-repeat="p in $ctrl.objects.players | scoreOrder track by $index">
                                 <td>{a p.firstname a} {a p.lastname a}</td>
                                 <td>{a p.instrumentname a}</td>
                             </tr>
                         </table>
-</div>
+                    </div>
                     <div class="modal-footer">
                         <button class="btn" ng-click="$ctrl.close()">Close</button>
                     </div>
                 </script>
                 
-                <div ng-controller="scheduleController">
 
+                
+                <div ng-controller="scheduleController">
+                    <!-- example modal generator 
                     <div ng-controller="modalController">
                         <table class="table">
                             <tr ng-repeat="p in people">
@@ -222,7 +202,7 @@
                             </tr>
                         </table>
                     </div>
-
+                    -->
 
                     <h4>Thisuser: {a thisuser.firstname a} {a thisuser.lastname a}</h4>
 
@@ -300,9 +280,9 @@
                                     <!-- Give the user a link to the whole period details -->
                                     <a class="btn btn-default btn-block" href="/user/{a thisuser.logonid a}/period/{a p.periodid a}/">Full List</a>
 
-                                    <!-- If this is an assigned group, show a link to the group details -->
+                                    <!-- If this is an assigned group, show a button that shows a modal containing the players in the group -->
                                     <div ng-if="p.groupname && p.ismusical == 1" ng-controller="groupModalController" ng-init="init(p.groupid)">
-                                        <button class="btn btn-default btn-block" ng-click="openModal()">Group Details</button>
+                                        <button class="btn btn-default btn-block" ng-click="openModal()">View Players</button>
                                     </div>
 
                                     <!-- If this is a future date, show the user the absent buttons -->

@@ -1,0 +1,4 @@
+First Name,Last Name,arrival,departure,Preferred Instrument,Preferred Istrumet Grade,Additional Instrument 1,Additioal Istrumet 1 Grade,Additional Instrument 2,Additioal Istrumet 2 Grade,Additional Instrument 3,Additioal Istrumet 3 Grade,isannouncer,isconductor,isadmin,email
+John,Smith ,,,Bassoon,5,Percussion,3,,,,,1,1,1,john.smith@example.com
+Gregory,Swift,,,Violin,5,,,,,,,,,,gregory@helloworld.net
+Mary,Citizen,,,Oboe,5,Flute,4,Clarinet,4,,,,,,citizenm@business.com

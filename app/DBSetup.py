@@ -129,7 +129,6 @@ class music(Base):
     source = Column(Text(convert_unicode=True))
     notes = Column(Text(convert_unicode=True))
     link = Column(Text(convert_unicode=True))
-    grouptemplateid = Column(Integer, ForeignKey('grouptemplates.grouptemplateid'))
     
     @property
     def serialize(self):
@@ -479,10 +478,13 @@ def getinstrumentbyname(session,instrumentname):
     else:
         thisinstrument = session.query(instrument).filter(instrument.instrumentname == instrumentname.capitalize().replace(" ", "")).first()
         if thisinstrument is None:
-            log('GETINSTRUMENTBYNAME: Exception - Could not find instrument %s in database' % (instrumentid))
             raise Exception('Could not find instrument in database')
         else:
             return thisinstrument
+
+#returns all instruments as instrument obejcts
+def getinstruments(session):
+    session.query(instrument).all()
 
 class location(Base):
     __tablename__ = 'locations'
@@ -864,16 +866,21 @@ def importmusic(file):
             #if it's not the first iteration, it's a data row
             else:
                 thismusic = music()
+                session.add(thismusic)
+                session.flush()
                 for idx, item in enumerate(row):
-                    if headers[idx] in getconfig('Instruments').split(",") and item == '':
-                        setattr(thismusic,headers[idx],0)
+                    try:
+                        thisinstrument = getinstrumentbyname(session,headers[idx])
+                    except:
+                        thisinstrument = None
+                    if thisinstrument is not None and item != '' and item != '0':
+                        for x in range(0,int(item)):
+                            session.add(musicinstrument(instrumentid = thisinstrument.instrumentid, musicid = thismusic.musicid))
+                            log('IMPORTMUSIC: Added instrument %s to music with id %s' % (thisinstrument.instrumentname,thismusic.musicid))
                     elif item != '':
                         setattr(thismusic,headers[idx],item)
-                matchingtemplate = session.query(grouptemplate).filter(*[getattr(thismusic,i) == getattr(grouptemplate,i) for i in instrumentlist]).first()
-                if matchingtemplate is not None:
-                    log('Found a template matching this music: %s' % matchingtemplate.grouptemplatename)
-                    thismusic.grouptemplateid = matchingtemplate.grouptemplateid
-                session.add(thismusic)
+                session.flush()
+                log('IMPORTMUSIC: Successfully created music. musicid:%s musicname:%s composer:%s' % (thismusic.musicid, thismusic.musicname, thismusic.composer))
         session.commit()
         session.close()
         return ('Success')

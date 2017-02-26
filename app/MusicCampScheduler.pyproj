@@ -52,14 +52,13 @@
     <Content Include="img\asc.gif" />
     <Content Include="img\bg.gif" />
     <Content Include="img\desc.gif" />
-    <Content Include="js\angular-animate.min.js" />
-    <Content Include="js\angular-touch.min.js" />
-    <Content Include="js\angular.min.js" />
-    <Content Include="js\application.js" />
-    <Content Include="js\bootstrap.min.js" />
-    <Content Include="js\jquery-3.1.1.min.js" />
-    <Content Include="js\jquery.tablesorter.min.js" />
-    <Content Include="js\ui-bootstrap-tpls-2.5.0.min.js" />
+    <Content Include="js\main.jsx">
+      <SubType>Code</SubType>
+    </Content>
+    <Content Include="js\react-bootstrap.min.js" />
+    <Content Include="js\react-dom.min.js" />
+    <Content Include="js\react.min.js" />
+    <Content Include="js\redux.min.js" />
     <Content Include="requirements.txt" />
     <Content Include="templates\newhome.html" />
     <Content Include="templates\newmusic.html" />
@@ -68,6 +67,7 @@
     <Content Include="templates\errorpage.html" />
     <Content Include="templates\musiclibrary.html" />
     <Content Include="templates\objecteditor.html" />
+    <Content Include="templates\reacthome.html" />
     <Content Include="templates\useradmin.html" />
     <Content Include="templates\home.html" />
     <Content Include="templates\editgroup.html" />

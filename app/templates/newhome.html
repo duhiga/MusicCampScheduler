@@ -12,15 +12,13 @@
         <link rel="mask-icon" href="{{ favicon }}/safari-pinned-tab.svg" color="#5bbad5">
         <meta name="theme-color" content="#ffffff">
         <title>{{ campname }}</title>
-        <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.1/angular.min.js"> </script>
-        <script>if (!window.angular) { document.write('<script src="/js/angular.min.js"><\/script>'); }</script>
-        <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.1/angular-animate.min.js"> </script>
-        <script>if (!window.angular) { document.write('<script src="/js/angular-animate.min.js"><\/script>'); }</script>
-        <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.1/angular-touch.min.js"> </script>
-        <script>if (!window.angular) { document.write('<script src="/js/angular-touch.min.js"><\/script>'); }</script>
-        <script src="/js/ui-bootstrap-tpls-2.5.0.min.js"></script>
-        <script src="/js/application.js"></script>
-        
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.3.1/react.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.3.1/react-dom.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/redux/3.6.0/redux.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-core/5.8.34/browser.min.js"></script>
+        <script src="/js/react-bootstrap.min.js"></script>
+        <script src="/js/main.jsx"></script>
+
         <script>
             //functions dealing with setting and getting cookies
             function setCookie(cname, cvalue, exdays) {
@@ -49,7 +47,11 @@
 
 
     </head>
+
     <body height="100%">
+
+        <div id="navbar-container"></div>
+
         <div ng-app="Application">
             <div ng-controller="navController">
                 <nav class="navbar navbar-default" role="navigation">

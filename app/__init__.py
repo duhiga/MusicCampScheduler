@@ -12,17 +12,13 @@ import uuid
 import sqlalchemy
 import os
 import io
-import DBSetup
-import SMTPemail
-import config
-import tablefunctions
 from datetime import date, timedelta
-from DBSetup import *
+from .DBSetup import *
 from sqlalchemy import *
 from sqlalchemy.orm import aliased
-from config import *
-from SMTPemail import *
-from tablefunctions import *
+from .config import *
+from .SMTPemail import *
+from .tablefunctions import *
 from io import StringIO
 
 #Make the WSGI interface available at the top level so wfastcgi can get it.

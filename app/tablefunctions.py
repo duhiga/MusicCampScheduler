@@ -1,14 +1,11 @@
 import sqlalchemy
 import os
 from datetime import date, timedelta
-import DBSetup
-from DBSetup import *
+from .DBSetup import *
 from sqlalchemy import *
 from sqlalchemy.orm import aliased
-import config
-from config import *
-import SMTPemail
-from SMTPemail import *
+from .config import *
+from .SMTPemail import *
 
 #Looks up the amount of times a user has participated in an "ismusical" group during the camp
 def playcount(session,userid):

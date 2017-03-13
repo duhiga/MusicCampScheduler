@@ -12,8 +12,7 @@ from sqlalchemy.schema import Column
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
 import os
-import config
-from config import *
+from .config import *
 from sqlalchemy import *
 from sqlalchemy.orm import aliased
 

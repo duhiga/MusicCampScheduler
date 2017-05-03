@@ -15,7 +15,7 @@ web.debug.config
 *.userprefs
 venv
 *.pyc
-/app/env*/*
+*/env/*
 staticfiles
 .env
 

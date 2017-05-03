@@ -1,7 +1,0 @@
-patch
-absolute_import
-ANY
-py33
-call
-MagicMock
-Mock

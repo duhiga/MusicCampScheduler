@@ -23,7 +23,7 @@ Base = declarative_base()
 
 def serialize_class(inst, cls):
     convert = dict()
-    # add your coversions for things like datetimes 
+    # add your coversions for things like datetimes
     # and what-not that aren't serializable.
     d = dict()
     for c in cls.__table__.columns:
@@ -60,7 +60,7 @@ class user(Base):
         return serialize_class(self, self.__class__)
 
     #adds this user to a group. The group object passed in must have at least a groupid and periodid
-    def addtogroup(self,session,thisgroup,instrumentname=None):
+    def addtogroup(self, session, thisgroup, instrumentname=None):
         #check if this user plays this instrument (if an instrument was specified)
         if instrumentname is not None and session.query(instrument).filter(instrument.userid == self.userid, instrument.instrumentname == instrumentname).first() is None:
             log('ADDPLAYER: Found that player %s %s does not play instrument %s, cannot assign them to group %s' % (self.firstname,self.lastname,instrumentname,thisgroup.groupid))
@@ -485,7 +485,12 @@ for i in instrumentlist:
     setattr(music, i, Column(Integer, default='0'))
     setattr(location, i, Column(Integer, default='1'))
 
-Base.metadata.create_all(engine)
+log('Synchronising database schema...')
+try:
+    Base.metadata.create_all(engine)
+    log('Sucessfully synchronised database schema')
+except Exception as ex:
+        log('Failed to synchronise database schema with exception: %s.' % ex)
 
 #this section manages the admin user. This will be the user that the admin will use to set up the database from the webapp
 session = Session()

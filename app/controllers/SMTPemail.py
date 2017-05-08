@@ -1,5 +1,5 @@
 import smtplib
-from .config import *
+from app.config import *
 
 def send_email(recipient, subject, body):
     print('Email send requested for user %s' % recipient)

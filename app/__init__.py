@@ -16,14 +16,13 @@ from datetime import date, timedelta
 from sqlalchemy.orm import sessionmaker#, relationship, aliased
 
 """
-from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey, exists, Enum, types, UniqueConstraint, ForeignKeyConstraint, Text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects.mysql.base import MSBinary
 from sqlalchemy.schema import Column
 from sqlalchemy.dialects.postgresql import UUID
-"""
-from sqlalchemy import *
 from sqlalchemy.orm import aliased
+"""
+from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey, exists, Enum, types, UniqueConstraint, ForeignKeyConstraint, Text
 from .config import *
 
 log('Application Startup Initiated')
@@ -48,7 +47,7 @@ except Exception as ex:
 
 Session = sessionmaker(bind=engine)
 
-#this section initiates the admin user. This will be the user that the admin will use to set up the database from the webapp
+#this section manages the admin user. This will be the user that the admin will use to set up the database from the webapp
 session = Session()
 #try to find a user named 'Administrator' whos ID matches the app's configured AdminUUID
 admin = session.query(user).filter(user.logonid == getconfig('AdminUUID'), user.firstname == 'Administrator').first()
@@ -71,17 +70,11 @@ if admin is None:
 session.close()
 session.flush()
 
-
-
-
-from .views.index import index
-app.register_blueprint(index)
-
 from .mod_setup import setup
 app.register_blueprint(setup)
 
-#from .views.home import home
-#app.register_blueprint(home)
+from .mod_home import home
+app.register_blueprint(home)
 
 
 
@@ -475,13 +468,13 @@ def grouphistory(logonid):
         groups = session.query(group.groupname, group.groupid, period.periodid, period.starttime, period.endtime, groupassignment.instrumentname, group.status, location.locationname).\
                     join(groupassignment).outerjoin(period).outerjoin(location).filter(groupassignment.userid == thisuser.userid, group.groupname != 'absent').order_by(period.starttime).all()
         log(groups)
-        count = playcount(session, thisuser.userid)
+        count = playcount(session, thisuser)
 
         thisuserprimary = session.query(instrument.instrumentname).filter(instrument.userid == thisuser.userid, instrument.isprimary == 1).first().instrumentname
         total = 0
         number = 0
         for p in session.query(instrument.userid).filter(instrument.isactive == 1, instrument.isprimary == 1, instrument.instrumentname == thisuserprimary).group_by(instrument.userid).all():
-            total = total + playcount(session, p.userid)
+            total = total + playcount(session, p)
             number = number + 1
         average = "%.2f" % (float(total) / float(number))
         log('Found total number of %s players to be %s and plays by all of them totalling %s giving an average of %s' % (thisuserprimary, number, total, average))
@@ -1389,61 +1382,61 @@ def useradmin(logonid):
         session.close()
         return str(ex)
 
-    try:
-        #check if this user is a conductor, if they are not, deny them.
-        if thisuser.isadmin != 1 and thisuser.logonid != getconfig('AdminUUID'):
-            raise Exception('You are not allowed to view this page.')
-        else:
-            #get the list of people that play instruments
-            players_query = session.query(instrument.userid).filter(instrument.isactive == 1)
-            #get the userids and their associated primary instruments
-            primaryinstruments_subquery = session.query(
-                                instrument.userid.label('primaryinstruments_userid'),
-                                instrument.instrumentname.label('instrumentname')
-                            ).filter(
-                                instrument.isactive == 1, 
-                                instrument.isprimary == 1
-                            ).subquery()
+    #try:
+    #check if this user is a conductor, if they are not, deny them.
+    if thisuser.isadmin != 1 and thisuser.logonid != getconfig('AdminUUID'):
+        raise Exception('You are not allowed to view this page.')
+    else:
+        #get the list of people that play instruments
+        """players_query = session.query(instrument.userid).filter(instrument.isactive == 1)"""
+        #get the userids and their associated primary instruments
+        """primaryinstruments_subquery = session.query(
+                            instrument.userid.label('primaryinstruments_userid'),
+                            instrument.instrumentname.label('instrumentname')
+                        ).filter(
+                            instrument.isactive == 1, 
+                            instrument.isprimary == 1
+                        ).subquery()"""
 
-            #make a query that totals the nmber of times each potential user has played at camp.
-            playcounts_subquery = session.query(
-                                user.userid.label('playcounts_userid'),
-                                func.count(user.userid).label("playcount")
-                            ).group_by(
-                                user.userid
-                            ).outerjoin(groupassignment, groupassignment.userid == user.userid
-                            ).outerjoin(group, group.groupid == groupassignment.groupid
-                            ).filter(
-                                groupassignment.instrumentname != 'Conductor', 
-                                group.ismusical == 1, 
-                                group.periodid != None,
-                            ).subquery()
+        #make a query that totals the nmber of times each potential user has played at camp.
+        """playcounts_subquery = session.query(
+                            user.userid.label('playcounts_userid'),
+                            func.count(user.userid).label("playcount")
+                        ).group_by(
+                            user.userid
+                        ).outerjoin(groupassignment, groupassignment.userid == user.userid
+                        ).outerjoin(group, group.groupid == groupassignment.groupid
+                        ).filter(
+                            groupassignment.instrumentname != 'Conductor', 
+                            group.ismusical == 1, 
+                            group.periodid != None,
+                        ).subquery()"""
 
-            users = session.query(
-                                user.userid, 
-                                user.logonid, 
-                                user.isactive, 
-                                user.firstname, 
-                                user.lastname, 
-                                user.isadmin, 
-                                user.isconductor, 
-                                user.isannouncer, 
-                                user.grouprequestcount, 
-                                primaryinstruments_subquery.c.instrumentname,
-                                playcounts_subquery.c.playcount,
-                            ).outerjoin(primaryinstruments_subquery, primaryinstruments_subquery.c.primaryinstruments_userid == user.userid
-                            ).outerjoin(playcounts_subquery, playcounts_subquery.c.playcounts_userid == user.userid
-                            ).order_by(
-                                user.firstname,
-                                user.lastname
-                            ).all()
+        users = session.query(
+                            user.userid, 
+                            user.logonid, 
+                            user.isactive, 
+                            user.firstname, 
+                            user.lastname, 
+                            user.isadmin, 
+                            user.isconductor, 
+                            user.isannouncer, 
+                            user.grouprequestcount, 
+                            #primaryinstruments_subquery.c.instrumentname,
+                            #playcounts_subquery.c.playcount,
+                        #).outerjoin(primaryinstruments_subquery, primaryinstruments_subquery.c.primaryinstruments_userid == user.userid
+                        #).outerjoin(playcounts_subquery, playcounts_subquery.c.playcounts_userid == user.userid
+                        ).order_by(
+                            user.firstname,
+                            user.lastname
+                        ).all()
 
-            return render_template('useradmin.html', \
-                                thisuser=thisuser, \
-                                users=users, \
-                                campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
-                                )
-    except Exception as ex:
+        return render_template('useradmin.html', \
+                            thisuser=thisuser, \
+                            users=users, \
+                            campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
+                            )
+    """except Exception as ex:
         log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))
         message = ('Failed to execute %s with exception: %s. Try refreshing the page and trying again or contact camp administration.' % (request.method, ex))
         session.rollback()
@@ -1451,7 +1444,7 @@ def useradmin(logonid):
         if request.method == 'GET':
             return errorpage(thisuser,'Failed to display page. %s' % ex)
         else:
-            return jsonify(message = message, url = 'none')
+            return jsonify(message = message, url = 'none')"""
 
 #handles the useredit page
 @app.route('/user/<logonid>/edituser/<targetuserid>/', methods=['GET', 'POST'])

@@ -28,18 +28,28 @@ log('Importing group')
 from .group import group
 log('Importing groupassignment')
 from .groupassignment import groupassignment
+log('Importing grouplog')
+from .grouplog import grouplog
 log('Importing grouptemplate')
 from .grouptemplate import grouptemplate
+log('Importing grouptemplateinstrument')
+from .grouptemplateinstrument import grouptemplateinstrument
 log('Importing instrument')
 from .instrument import instrument
 log('Importing location')
 from .location import location
+log('Importing locationinstrument')
+from .locationinstrument import locationinstrument
 log('Importing music')
 from .music import music
+log('Importing musicinstrument')
+from .musicinstrument import musicinstrument
 log('Importing period')
 from .period import period
 log('Importing user')
 from .user import user
+log('Importing userinstrument')
+from .userinstrument import userinstrument
 
 #gets a user object from a userid, or a logodin if the logon flag is set to true
 def getuser(session,userid,logon=False):
@@ -55,6 +65,18 @@ def getuser(session,userid,logon=False):
             raise Exception('Could not find user in database')
         else:
             return thisuser
+
+#gets a userinstrument object from a instrumentid
+def getuserinstrument(session,instrumentid):
+    if instrumentid is None:
+        return None
+    else:
+        thisuserinstrument = session.query(instrument).filter(instrument.instrumentid == instrumentid).first()
+        if thisinstrument is None:
+            log('GETUSERINSTRUMENT: Exception - Could not find instrument %s in database' % (instrumentid))
+            raise Exception('Could not find instrument in database')
+        else:
+            return thisuserinstrument
 
 #gets a music object from a musicid
 def getmusic(session,musicid):
@@ -93,18 +115,6 @@ def getgrouptemplate(session,grouptemplateid):
             raise Exception('Could not find grouptemplate in database')
         else:
             return thisgrouptemplate
-
-#gets a instrument object from a instrumentid
-def getinstrument(session,instrumentid):
-    if instrumentid is None:
-        return None
-    else:
-        thisinstrument = session.query(instrument).filter(instrument.instrumentid == instrumentid).first()
-        if thisinstrument is None:
-            log('GETINSTRUMENT: Exception - Could not find instrument %s in database' % (instrumentid))
-            raise Exception('Could not find instrument in database')
-        else:
-            return thisinstrument
 
 #gets a groupassignment object from a groupassignmentid
 def getgroupassignment(session,groupassignmentid):
@@ -157,17 +167,80 @@ def getannouncement(session,announcementid):
         else:
             return thisannouncement
 
-#returns an array of instruments that can play at camp
-def getinstrumentlist(session):
-    return getconfig('Instruments').split(",")
+def getinstrument(session,instrumentid):
+    if instrumentid is None:
+        return None
+    else:
+        thisinstrument = session.query(instrument).filter(instrument.instrumentid == instrumentid).first()
+        if thisinstrument is None:
+            log('GETINSTRUMENT: Exception - Could not find instrument %s in database' % (instrumentid))
+            raise Exception('Could not find instrument in database')
+        else:
+            return thisinstrument
 
-"""
-#add the columns for each instrument in the application configuration to the group, grouptemplate, music and location tables
-instrumentlist = getconfig('Instruments').split(",")
-log('Setting up columns for instruments in database: %s' % getconfig('Instruments'))
-for i in instrumentlist:
-    setattr(group, i, Column(Integer, default='0'))
-    setattr(grouptemplate, i, Column(Integer, default='0'))
-    setattr(music, i, Column(Integer, default='0'))
-    setattr(location, i, Column(Integer, default='1'))
-"""
+def getinstrumentbyname(session,instrumentname):
+    if instrumentname is None:
+        return None
+    else:
+        thisinstrument = session.query(instrument).filter(instrument.instrumentname == instrumentname.capitalize().replace(" ", "")).first()
+        if thisinstrument is None:
+            raise Exception('Could not find instrument in database')
+        else:
+            return thisinstrument
+
+#returns all instruments as instrument obejcts
+def getinstruments(session):
+    session.query(instrument).all()
+
+#The schedule class is not a table, it's used when getting user schedules
+class periodschedule:
+
+    def __init__(self,
+                    groupname = None,
+                    starttime = None,
+                    endtime = None,
+                    locationname = None,
+                    groupid = None,
+                    ismusical = None,
+                    iseveryone = None,
+                    periodid = None,
+                    periodname = None,
+                    instrumentname = None,
+                    meal = None,
+                    groupdescription = None,
+                    composer = None,
+                    musicname = None,
+                    musicwritein = None):
+        self.groupname = groupname
+        self.starttime = starttime
+        self.endtime = endtime
+        self.locationname = locationname
+        self.groupid = groupid
+        self.ismusical = ismusical
+        self.iseveryone = iseveryone
+        self.periodid = periodid
+        self.periodname = periodname
+        self.instrumentname = instrumentname
+        self.meal = meal
+        self.groupdescription = groupdescription
+        self.composer = composer
+        self.musicname = musicname
+        self.musicwritein = musicwritein
+
+    @property
+    def serialize(self):
+        return ({'groupname': self.groupname,
+                'starttime': self.starttime,
+                'endtime': self.endtime,
+                'locationname': self.locationname,
+                'groupid': self.groupid,
+                'ismusical': self.ismusical,
+                'iseveryone': self.iseveryone,
+                'periodid': self.periodid,
+                'periodname': self.periodname,
+                'instrumentname': self.instrumentname,
+                'meal': self.meal,
+                'groupdescription': self.groupdescription,
+                'composer': self.composer,
+                'musicname': self.musicname,
+                'musicwritein': self.musicwritein})

@@ -2,7 +2,6 @@
 {% block title %}{% if thisuser.isadmin == 1 %}User Editor - {{ campname }}{% else %}Settings - {{ campname }}{% endif %}{% endblock %}
 {% block head %}
 <script>
-
     function validate(ob) {
         if (ob.val() != '') {
             return true
@@ -11,7 +10,6 @@
             return false
         }
     }
-
     //function to be used by the submit button. called by the template.
     function buildrequest() {
         var request = {};
@@ -19,7 +17,6 @@
         $('.form-attribute').each(function () {
             request[$(this).attr('id')] = $(this).val();
         });
-
         //establish an array under request to deal with a group of objects. This will:
         //1. cycle through every object with the class form-object-master and grab it's data-mapping value
         //2. cycle through this and every other object with that data-mapping and add its value to the object
@@ -41,11 +38,8 @@
         console.log(request)
         return request
     }
-
     $(document).ready(function () {
-
         $('.spin_icon_email').hide();
-
         //run when user changes the content of a isprimary dropdown to "yes". Sets all others to no.
         $(document).on("change", '[data-key=isprimary]', function (e) {
             //only run the code if it's the original event to prevent recursion (this function would go infinite otherwise)
@@ -58,7 +52,6 @@
                 });
             }
         });
-
         $(document).on("click", '#send_email', function (e) {
             if (isClicked == false) {
                 isClicked = true;
@@ -106,7 +99,6 @@
                 });
             }
         });
-
         $(document).on("click", '#reset_logon', function (e) {
             if (isClicked == false) {
                 isClicked = true;
@@ -159,9 +151,6 @@
                 });
             }
         });
-
-
-
     });
 </script>
 {% endblock %}

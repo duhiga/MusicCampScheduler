@@ -1,16 +1,14 @@
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey, exists, Enum, types, UniqueConstraint, ForeignKeyConstraint, Text
-from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.postgresql import UUID
 from .base import Base
 from app.models import serialize_class
 
-class groupassignment(Base):
-    __tablename__ = 'groupassignments'
+#this table controls if instruments are able to be placed into a location, for example - you may only have access to a piano in one room
+class locationinstrument(Base):
+    __tablename__ = 'locationinstruments'
 
-    groupassignmentid = Column(Integer, primary_key=True, unique=True)
-    userid = Column(UUID, ForeignKey('users.userid'), nullable=True, default=None)
-    groupid = Column(Integer, ForeignKey('groups.groupid'))
+    locationinstrumentid = Column(Integer, primary_key=True, unique=True)
     instrumentid = Column(Integer, ForeignKey('instruments.instrumentid'))
+    isdisabled = Column(Integer)
 
     @property
     def serialize(self):

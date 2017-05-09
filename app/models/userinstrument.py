@@ -1,16 +1,17 @@
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey, exists, Enum, types, UniqueConstraint, ForeignKeyConstraint, Text
-from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
 from .base import Base
 from app.models import serialize_class
 
-class groupassignment(Base):
-    __tablename__ = 'groupassignments'
+class userinstrument(Base):
+    __tablename__ = 'userinstruments'
 
-    groupassignmentid = Column(Integer, primary_key=True, unique=True)
-    userid = Column(UUID, ForeignKey('users.userid'), nullable=True, default=None)
-    groupid = Column(Integer, ForeignKey('groups.groupid'))
+    userinstrumentid = Column(Integer, primary_key=True, unique=True)
+    userid = Column(UUID, ForeignKey('users.userid'))
     instrumentid = Column(Integer, ForeignKey('instruments.instrumentid'))
+    level = Column(Integer)
+    isprimary = Column(Integer)
+    isactive = Column(Integer)
 
     @property
     def serialize(self):

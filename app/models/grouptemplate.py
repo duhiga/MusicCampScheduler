@@ -9,8 +9,8 @@ class grouptemplate(Base):
     grouptemplateid = Column(Integer, primary_key=True, unique=True)
     grouptemplatename = Column(String)
     size = Column(String)
-    minimumlevel = Column(Integer)
-    maximumlevel = Column(Integer)
+    defaultminimumlevel = Column(Integer)
+    delautmaximumlevel = Column(Integer)
     defaultlocationid = Column(Integer, ForeignKey('locations.locationid'))
 
     @property

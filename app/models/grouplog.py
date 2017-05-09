@@ -1,15 +1,17 @@
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey, exists, Enum, types, UniqueConstraint, ForeignKeyConstraint, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
+import datetime
 from .base import Base
 from app.models import serialize_class
 
-class instrument(Base):
-    __tablename__ = 'instruments'
+class grouplog(Base):
+    __tablename__ = 'grouplogs'
 
-    instrumentid = Column(Integer, primary_key=True, unique=True)
-    instrumentname = Column(Text(convert_unicode=True))
-    order = Column(Integer, unique=True)
+    logid = Column(Integer, primary_key=True, unique=True)
+    groupid = Column(Integer, ForeignKey('groups.groupid'))
+    timestamp = Column(DateTime, default=datetime.datetime.now())
+    message = Column(Text(convert_unicode=True))
 
     @property
     def serialize(self):

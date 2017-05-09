@@ -23,21 +23,39 @@ class user(Base):
     def serialize(self):
         return serialize_class(self, self.__class__)
 
-    #adds this user to a group. The group object passed in must have at least a groupid and periodid
-    def addtogroup(self, session, thisgroup, instrumentname=None):
-        #check if this user plays this instrument (if an instrument was specified)
-        if instrumentname is not None and session.query(instrument).filter(instrument.userid == self.userid, instrument.instrumentname == instrumentname).first() is None:
-            log('ADDPLAYER: Found that player %s %s does not play instrument %s, cannot assign them to group %s' % (self.firstname,self.lastname,instrumentname,thisgroup.groupid))
-            raise Exception('Found that player %s %s does not play instrument %s, cannot assign them to group %s' % (self.firstname,self.lastname,instrumentname,thisgroup.groupid))
-        #if the user is already in this group, don't add another groupassignment, just log it
+    def playsinstrument(self, session, thisinstrument):
+        if session.query(userinstrument).filter(userinstrument.userid == self.userid, instrument.instrumentid == thisinstrument.instrumentid).first() is not None:
+            return True
+        else:
+            return False
+
+    def isplayingingroup(self, session, thisgroup):
         if session.query(groupassignment).filter(groupassignment.userid == self.userid, groupassignment.groupid == thisgroup.groupid).first() is not None:
-            log('ADDPLAYER: Found that player %s %s is already in group %s. Made no changes to this player.' % (self.firstname,self.lastname,group.groupid))
+            return True
+        else:
+            return False
+
+    def isplayinginperiod(self, session, thisperiod):
+        if thisgroup.periodid is not None and session.query(groupassignment).join(group).filter(groupassignment.userid == self.userid, group.periodid == thisgroup.periodid).first() is not None:
+            return True
+        else:
+            return False
+
+    #adds this user to a group. The group object passed in must have at least a groupid and periodid
+    def addtogroup(self,session,thisgroup,thisinstrument=None):
+        #check if this user plays this instrument (if an instrument was specified)
+        if thisinstrument is not None and not self.playsinstrument(session, thisinstrument):
+            log('ADDPLAYER: Found that player %s %s does not play instrument %s, cannot assign them to group %s' % (self.firstname,self.lastname,thisinstrument.instrumentname,thisgroup.groupid))
+            raise Exception('Found that player %s %s does not play instrument %s, cannot assign them to group %s' % (self.firstname,self.lastname,thisinstrument.instrumentname,thisgroup.groupid))
+        #if the user is already in this group, don't add another groupassignment, just log it
+        if self.isplayingingroup(session,thisgroup):
+            log('ADDPLAYER: Found that player %s %s is already in group %s. Made no changes to this player.' % (self.firstname,self.lastname,thisgroup.groupid))
         #if the user is already playing in another group at this time, raise an exception
-        elif thisgroup.periodid is not None and session.query(groupassignment).join(group).filter(groupassignment.userid == self.userid, group.periodid == thisgroup.periodid).first() is not None:
+        if thisgroup.periodid is not None and self.isplapyinginperiod(session, getperiod(session,thisgroup.periodid)):
             log('ADDPLAYER: Found that player %s %s is already assigned to a group during this period.' % (self.firstname,self.lastname))
             raise Exception('Found that player %s %s is already assigned to a group during this period.' % (self.firstname,self.lastname))
         else:
-            playergroupassignment = groupassignment(userid = self.userid, groupid = thisgroup.groupid, instrumentname = instrumentname)
+            playergroupassignment = groupassignment(userid = self.userid, groupid = thisgroup.groupid, instrumentid = thisinstrument.instrumentid)
             session.add(playergroupassignment)
 
     #marking a user absent for a period simply assigns them to a group called "absent" during that period
@@ -50,3 +68,15 @@ class user(Base):
         absentassignment = session.query(groupassignment).join(group).filter(group.groupname == 'absent', group.periodid == thisperiod.periodid, groupassignment.userid == self.userid).first()
         if absentassignment is not None:
             session.delete(absentassignment)
+
+    #Looks up the amount of times a user has participated in an "ismusical" group during the camp
+    def playcount(self, session):
+        playcount = session.query(user.userid
+                    ).join(groupassignment, user.userid == groupassignment.userid
+                    ).join(group, groupassignment.groupid == group.groupid
+                    ).outerjoin(period
+                    ).filter(user.userid == self.userid, 
+                            group.ismusical == 1, 
+                            period.endtime <= datetime.datetime.now()
+                    ).count()
+        return playcount

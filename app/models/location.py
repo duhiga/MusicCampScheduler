@@ -13,3 +13,13 @@ class location(Base):
     @property
     def serialize(self):
         return serialize_class(self, self.__class__)
+
+    #returns true if the location is free during this period, optionally ignoring the input group
+    def isfree(self,session,thisperiod,thisgroup=None):
+        isfreequery = session.query(group).filter(group.periodid == thisperiod.periodid, group.locationid == self.locationid)
+        if thisgroup is not None:
+            isfreequery = isfreequery.filter(group.groupid != thisgroup.groupid)
+        if isfreequery.first() is None:
+            return True
+        else:
+            return False

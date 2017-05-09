@@ -12,8 +12,17 @@ class music(Base):
     source = Column(Text(convert_unicode=True))
     notes = Column(Text(convert_unicode=True))
     link = Column(Text(convert_unicode=True))
-    grouptemplateid = Column(Integer, ForeignKey('grouptemplates.grouptemplateid'))
     
     @property
     def serialize(self):
         return serialize_class(self, self.__class__)
+
+    #returns true if the music is free during this period, optionally ignoring the input group
+    def isfree(self,session,thisperiod,thisgroup=None):
+        isfreequery = session.query(group).filter(group.periodid == thisperiod.periodid, group.musicid == self.musicid)
+        if thisgroup is not None:
+            isfreequery = isfreequery.filter(group.groupid != thisgroup.groupid)
+        if isfreequery.first() is None:
+            return True
+        else:
+            return False

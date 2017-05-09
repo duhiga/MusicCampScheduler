@@ -1,15 +1,14 @@
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey, exists, Enum, types, UniqueConstraint, ForeignKeyConstraint, Text
 from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.postgresql import UUID
 from .base import Base
 from app.models import serialize_class
 
-class instrument(Base):
-    __tablename__ = 'instruments'
+class grouptemplateinstrument(Base):
+    __tablename__ = 'grouptemplateinstruments'
 
-    instrumentid = Column(Integer, primary_key=True, unique=True)
-    instrumentname = Column(Text(convert_unicode=True))
-    order = Column(Integer, unique=True)
+    grouptemplateinstrumentid = Column(Integer, primary_key=True, unique=True)
+    grouptemplateid = Column(Integer, ForeignKey('grouptemplates.grouptemplateid'))
+    instrumentid = Column(Integer, ForeignKey('instruments.instrumentid'))
 
     @property
     def serialize(self):

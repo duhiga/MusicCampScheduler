@@ -2,30 +2,7 @@
 {% block title%}Home - {{ campname }}{% endblock %}
 {% block head %}
 <script>
-
-    function openTab(evt, tabName) {
-        // Declare all variables
-        var i, tabcontent, tablinks;
-
-        // Get all elements with class="tabcontent" and hide them
-        tabcontent = document.getElementsByClassName("tabcontent");
-        for (i = 0; i < tabcontent.length; i++) {
-            tabcontent[i].style.display = "none";
-        }
-
-        // Get all elements with class="tablinks" and remove the class "active"
-        tablinks = document.getElementsByClassName("tablinks");
-        for (i = 0; i < tablinks.length; i++) {
-            tablinks[i].className = tablinks[i].className.replace(" active", "");
-        }
-
-        // Show the current tab, and add an "active" class to the link that opened the tab
-        document.getElementById(tabName).style.display = "block";
-        evt.currentTarget.className += " active";
-    }
-
     $(document).ready(function () {
-
         //every second, check if the page hasn't been opened since midnight. If it hasn't, then refresh.
         //this is to prevent users from looking at old dashboards without refreshing and missing their allocations.
         var now
@@ -39,7 +16,6 @@
                 location.reload();
             }
         }, 1 * 1000); // 1 * 1000 milsec
-
         //handler for thisuser clicking the button requesting an absence
         $(".absent_request_button").click(function () {
             $(this).prop('disabled', true).addClass('disabled');
@@ -48,14 +24,12 @@
                 type: 'POST',
                 url: '/user/{{ thisuser.logonid }}/period/' + this.id + '/absent/confirm/'
             });
-
             // handle response
             post_absent.done(function (response) {
                 console.log(response);
                 location.reload();
             });
         });
-
         //handler for thisuser clicking the button requesting to cancel an absence
         $(".absent_cancel_button").click(function () {
             $(this).prop('disabled', true).addClass('disabled');
@@ -64,14 +38,12 @@
                 type: 'POST',
                 url: '/user/{{ thisuser.logonid }}/period/' + this.id + '/absent/cancel/'
             });
-
             // handle response
             post_absent.done(function (response) {
                 console.log(response);
                 location.reload();
             });
         });
-
         //handler for the user changing the dropdown date picker
         $(document).on("change", '.date_select', function () {
             window.location.replace("/user/{{ thisuser.logonid }}/date/" + $(this).val() + "/")
@@ -82,7 +54,6 @@
             console.log(response);
             */
         });
-
     });
 </script>
 {% endblock %}
@@ -157,16 +128,8 @@
         </div>
         {% endif %}
         <div class="w3-row">
-            <div class="w3-container w3-half">
-                {% set afternoon = 0 %}
+            <div class="w3-container">
                 {% for p in schedule %}
-
-                {% if p.starttime > midday and afternoon == 0 %}
-                <br /></div>
-            
-            <div class="w3-container w3-half">
-                {% set afternoon = 1 %}
-                {% endif %}
                 <div class="w3-card-4">
                     <header class="accordion w3-container
                     {% if p.groupname =='absent' or p.starttime < thisuser.arrival or p.starttime > thisuser.departure %}

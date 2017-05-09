@@ -1,6 +1,24 @@
 from app.config import *
-log('Importing Model Classes')
 
+def serialize_class(inst, cls):
+    convert = dict()
+    # add your coversions for things like datetimes
+    # and what-not that aren't serializable.
+    d = dict()
+    for c in cls.__table__.columns:
+        v = getattr(inst, c.name)
+        if c.type in convert.keys() and v is not None:
+            try:
+                d[c.name] = convert[c.type](v)
+            except:
+                d[c.name] = "Error:  Failed to covert using ", str(convert[c.type])
+        elif v is None:
+            d[c.name] = str()
+        else:
+            d[c.name] = v
+    return d
+
+log('Importing Model Classes')
 #import all models in this folder
 log('Importing Base')
 from .base import Base
@@ -22,24 +40,6 @@ log('Importing period')
 from .period import period
 log('Importing user')
 from .user import user
-
-def serialize_class(inst, cls):
-    convert = dict()
-    # add your coversions for things like datetimes
-    # and what-not that aren't serializable.
-    d = dict()
-    for c in cls.__table__.columns:
-        v = getattr(inst, c.name)
-        if c.type in convert.keys() and v is not None:
-            try:
-                d[c.name] = convert[c.type](v)
-            except:
-                d[c.name] = "Error:  Failed to covert using ", str(convert[c.type])
-        elif v is None:
-            d[c.name] = str()
-        else:
-            d[c.name] = v
-    return d
 
 #gets a user object from a userid, or a logodin if the logon flag is set to true
 def getuser(session,userid,logon=False):
@@ -156,6 +156,10 @@ def getannouncement(session,announcementid):
             raise Exception('Could not find announcement in database')
         else:
             return thisannouncement
+
+#returns an array of instruments that can play at camp
+def getinstrumentlist(session):
+    return getconfig('Instruments').split(",")
 
 """
 #add the columns for each instrument in the application configuration to the group, grouptemplate, music and location tables

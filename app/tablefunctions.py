@@ -1,7 +1,6 @@
 import sqlalchemy
 import os
 from datetime import date, timedelta
-from app.DBSetup import *
 from sqlalchemy import *
 from sqlalchemy.orm import aliased
 from app.config import *

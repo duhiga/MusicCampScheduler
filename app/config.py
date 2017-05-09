@@ -1,5 +1,6 @@
 import untangle
 import os
+from flask import render_template
 
 def getconfig(attribute):
     try:
@@ -15,3 +16,11 @@ def getconfig(attribute):
 def log(string):
     if int(getconfig('Debug')) == 1:
         print(string)
+
+#shows an error page
+def errorpage(thisuser,message):
+    return render_template('errorpage.html', \
+                                        thisuser=thisuser, \
+                                        campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
+                                        errormessage = message
+                                        )

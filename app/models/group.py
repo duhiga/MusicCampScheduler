@@ -1,7 +1,8 @@
-from sqlalchemy import *
+from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey, exists, Enum, types, UniqueConstraint, ForeignKeyConstraint, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
 from .base import Base
+from app.models import serialize_class
 
 class group(Base):
     __tablename__ = 'groups'

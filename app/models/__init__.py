@@ -18,37 +18,21 @@ def serialize_class(inst, cls):
             d[c.name] = v
     return d
 
-log('Importing Model Classes')
 #import all models in this folder
-log('Importing Base')
 from .base import Base
-log('Importing announcement')
 from .announcement import announcement
-log('Importing group')
 from .group import group
-log('Importing groupassignment')
 from .groupassignment import groupassignment
-log('Importing grouplog')
 from .grouplog import grouplog
-log('Importing grouptemplate')
 from .grouptemplate import grouptemplate
-log('Importing grouptemplateinstrument')
 from .grouptemplateinstrument import grouptemplateinstrument
-log('Importing instrument')
 from .instrument import instrument
-log('Importing location')
 from .location import location
-log('Importing locationinstrument')
 from .locationinstrument import locationinstrument
-log('Importing music')
 from .music import music
-log('Importing musicinstrument')
 from .musicinstrument import musicinstrument
-log('Importing period')
 from .period import period
-log('Importing user')
 from .user import user
-log('Importing userinstrument')
 from .userinstrument import userinstrument
 
 #gets a user object from a userid, or a logodin if the logon flag is set to true

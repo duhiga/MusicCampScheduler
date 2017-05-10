@@ -52,21 +52,24 @@ session = Session()
 #try to find a user named 'Administrator' whos ID matches the app's configured AdminUUID
 admin = session.query(user).filter(user.logonid == getconfig('AdminUUID'), user.firstname == 'Administrator').first()
 #if we don't find one, it means that this is the first boot, or the AdminUUID has been changed
-if admin is None:
-    #try to find a user called Administrator
-    findadmin = session.query(user).filter(user.firstname == 'Administrator').first()
-    #if we find one, it means that someone has changed the AdminUUID parameter. Update this user to match it.
-    if findadmin is not None:
-        log('Found Administrator user did not match AdminUUID parameter. Updating the user details to match.')
-        findadmin.logonid = getconfig('AdminUUID')
-        session.merge(findadmin)
-    #if we don't find one, this is the first boot of the app. Create the administrator user.
-    else:
-        log('Welcome to the music camp scheduler! This is the first boot of the app. Look in your applicaiton parameters for the AdminUUID parameter, then log in to the setup page with websitename/user/AdminUUID(replace this with your admin UUID)/setup/')
-        admin = user(logonid = getconfig('AdminUUID'), userid = str(uuid.uuid4()), firstname = 'Administrator', lastname = 'A', isactive = 0, \
-            arrival = datetime.datetime.strptime(getconfig('StartTime'), '%Y-%m-%d %H:%M'), departure = datetime.datetime.strptime(getconfig('EndTime'), '%Y-%m-%d %H:%M'))
-        session.add(admin)
-    session.commit()
+try:
+    if admin is None:
+        #try to find a user called Administrator
+        findadmin = session.query(user).filter(user.firstname == 'Administrator').first()
+        #if we find one, it means that someone has changed the AdminUUID parameter. Update this user to match it.
+        if findadmin is not None:
+            log('Found Administrator user did not match AdminUUID parameter. Updating the user details to match.')
+            findadmin.logonid = getconfig('AdminUUID')
+            session.merge(findadmin)
+        #if we don't find one, this is the first boot of the app. Create the administrator user.
+        else:
+            log('Welcome to the music camp scheduler! This is the first boot of the app. Look in your applicaiton parameters for the AdminUUID parameter, then log in to the setup page with websitename/user/AdminUUID(replace this with your admin UUID)/setup/')
+            admin = user(logonid = getconfig('AdminUUID'), userid = str(uuid.uuid4()), firstname = 'Administrator', lastname = 'A', isactive = 0, \
+                arrival = datetime.datetime.strptime(getconfig('StartTime'), '%Y-%m-%d %H:%M'), departure = datetime.datetime.strptime(getconfig('EndTime'), '%Y-%m-%d %H:%M'))
+            session.add(admin)
+        session.commit()
+except Exception as ex:
+    log('Failed to validate administrator with exception: ' % ex)
 session.close()
 session.flush()
 

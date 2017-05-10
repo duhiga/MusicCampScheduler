@@ -1,7 +1,9 @@
 import sqlalchemy
+import datetime
 from datetime import date, timedelta
 from sqlalchemy import *
-from config import *
+from app.config import *
+from app.models import *
 
 #get the information needed to fill in the user's schedule table
 def getschedule(session,thisuser,date):

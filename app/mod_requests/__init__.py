@@ -364,3 +364,259 @@ def conductorgrouprequest(logonid,periodid):
 @requests.route('/user/<logonid>/grouprequest/music/<musicid>/', methods=['GET', 'POST'])
 def musicgrouprequest(logonid,musicid):
     return grouprequest(logonid,None,musicid)
+
+@requests.route('/user/<logonid>/musiclibrary/')
+def musiclibrary(logonid):
+
+    try:
+        session = Session()
+        thisuser = getuser(session,logonid,True)
+        log('MUSICLIBRARY: user firstname:%s lastname:%s method:%s' % (thisuser.firstname, thisuser.lastname, request.method))
+    except Exception as ex:
+        session.close()
+        return str(ex)
+
+    try:
+        musics = session.query(music).all()
+        grouptemplates = session.query(grouptemplate).filter(grouptemplate.size == 'S').all()
+        session.close()
+        return render_template('musiclibrary.html', \
+                                thisuser=thisuser, \
+                                musics=musics, \
+                                grouptemplates=grouptemplates, \
+                                campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
+                                )
+    except Exception as ex:
+        log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))
+        message = ('Failed to execute %s with exception: %s. Try refreshing the page and trying again or contact camp administration.' % (request.method, ex))
+        session.rollback()
+        session.close()
+        if request.method == 'GET':
+            return errorpage(thisuser,'Failed to display page. %s.' % ex)
+        else:
+            return jsonify(message = message, url = 'none')
+
+@requests.route('/user/<logonid>/musiclibrary/details/<musicid>/')
+def musicdetails(logonid,musicid):
+
+    try:
+        session = Session()
+        thisuser = getuser(session,logonid,True)
+        log('MUSICDETAILS: user firstname:%s lastname:%s method:%s' % (thisuser.firstname, thisuser.lastname, request.method))
+    except Exception as ex:
+        session.close()
+        return str(ex)
+
+    try:
+        thismusic = session.query(music).filter(music.musicid == musicid).first()
+        if thismusic is None:
+            session.close()
+            return errorpage(thisuser,'The music you selected does not exist in the database.')
+        thisuserinstruments = session.query(instrument).filter(instrument.userid == thisuser.userid, instrument.isactive == 1).all()
+        canplay = False
+        for i in thisuserinstruments:
+            for j in getconfig('Instruments').split(","):
+                if i.instrumentname == j and getattr(thismusic,j) > 0:
+                    canplay = True
+                    break
+            if canplay == True:
+                break
+        grouptemplates = session.query(grouptemplate).filter(grouptemplate.size == 'S').all()
+        playcount = session.query(group).filter(group.musicid == thismusic.musicid).count()
+        session.close()
+        return render_template('musicdetails.html', \
+                                thisuser=thisuser, \
+                                thismusic=thismusic, \
+                                grouptemplates=grouptemplates, \
+                                canplay=canplay, \
+                                campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
+                                playcount=playcount, \
+                                )
+    except Exception as ex:
+        log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))
+        message = ('Failed to execute %s with exception: %s. Try refreshing the page and trying again or contact camp administration.' % (request.method, ex))
+        session.rollback()
+        session.close()
+        if request.method == 'GET':
+            return errorpage(thisuser,'Failed to display page. %s' % ex)
+        else:
+            return jsonify(message = message, url = 'none')
+
+@requests.route('/user/<logonid>/musiclibrary/new/', methods=['GET', 'POST'])
+def newmusic(logonid):
+
+    try:
+        session = Session()
+        thisuser = getuser(session,logonid,True)
+        log('NEWMUSIC: user firstname:%s lastname:%s method:%s' % (thisuser.firstname, thisuser.lastname, request.method))
+    except Exception as ex:
+        session.close()
+        return str(ex)
+
+    try:
+        if request.method == 'GET':
+            grouptemplates = session.query(grouptemplate).all()
+            grouptemplates_serialized = [i.serialize for i in grouptemplates]
+            return render_template('newmusic.html', \
+                                    thisuser=thisuser, \
+                                    grouptemplates=grouptemplates, \
+                                    grouptemplates_serialized=grouptemplates_serialized, \
+                                    instrumentlist_string=getconfig('Instruments'), \
+                                    campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
+                                    )
+
+        if request.method == 'POST':
+            #format the packet received from the server as JSON
+            content = request.json
+            found_non_zero = False
+            for i in getconfig('Instruments').split(","):
+                if content[i] != 0 and content[i] != '' and content[i] != '0' and content[i] is not None:
+                    found_non_zero = True
+            if not found_non_zero:
+                session.rollback()
+                session.close()
+                return jsonify(message = 'You cannot submit music without instrumentation.', url = 'none')
+            thismusic = music()
+            log('New Music: Submitted by user %s %s' % (thisuser.firstname, thisuser.lastname))
+            for key,value in content.items():
+                if (value is None or value == 'null' or value == '') and key == 'composer':
+                    session.rollback()
+                    session.close()
+                    return jsonify(message = 'You must enter a composer', url = 'none')
+                if (value is None or value == 'null' or value == '') and key == 'name':
+                    session.rollback()
+                    session.close()
+                    return jsonify(message = 'You must enter a name', url = 'none')
+                log('New Music: setting %s to be %s' % (key,value))
+                setattr(thismusic,key,value)
+
+            #try to find a grouptemplate that matches this instrumentation
+            matchingtemplate = session.query(grouptemplate).filter(*[getattr(thismusic,i) == getattr(grouptemplate,i) for i in instrumentlist]).first()
+            if matchingtemplate is not None:
+                log('New Music: Found a template matching this music: %s' % matchingtemplate.grouptemplatename)
+                thismusic.grouptemplateid = matchingtemplate.grouptemplateid
+            
+            session.add(thismusic)
+            session.commit()
+            log('New Music: Successfully created')
+            url = ('/user/' + str(thisuser.logonid) + '/musiclibrary/')
+            session.close()
+            flash(u'New Music Accepted', 'success')
+            return jsonify(message = 'none', url = url)
+
+    except Exception as ex:
+        log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))
+        message = ('Failed to execute %s with exception: %s. Try refreshing the page and trying again or contact camp administration.' % (request.method, ex))
+        session.rollback()
+        session.close()
+        if request.method == 'GET':
+            return errorpage(thisuser,'Failed to display page. %s' % ex)
+        else:
+            return jsonify(message = message, url = 'none')
+
+#Handles the conductor instrumentation page.
+@requests.route('/user/<logonid>/instrumentation/<periodid>/', methods=['GET', 'POST'])
+def instrumentation(logonid,periodid):
+
+    try:
+        session = Session()
+        thisuser = getuser(session,logonid,True)
+        log('INSTRUMENTATION: user firstname:%s lastname:%s method:%s' % (thisuser.firstname, thisuser.lastname, request.method))
+    except Exception as ex:
+        session.close()
+        return str(ex)
+
+    try:
+        #check if this user is a conductor, if they are not, deny them.
+        if thisuser.isconductor != 1:
+            return ('You are not allowed to view this page.')
+        else:
+            #gets the data associated with this period
+            thisperiod = session.query(period).filter(period.periodid == periodid).first()
+            if thisperiod is None:
+                return ('Could not find the period requested.')
+
+            #The below runs when a user visits the instrumentation page
+            if request.method == 'GET':
+
+                #Get a list of the locations that are not being used in the period selected
+                locations_used_query = session.query(location.locationid).join(group).join(period).filter(period.periodid == periodid)
+                locations = session.query(location).filter(~location.locationid.in_(locations_used_query)).all()
+                #Get a list of the available music not being used in the period selected
+                musics_used_query = session.query(music.musicid).join(group).join(period).filter(period.periodid == periodid)
+                musics = session.query(music).filter(~music.musicid.in_(musics_used_query)).all()
+                musics_serialized = [i.serialize for i in musics]
+                #get a list of conductors to fill the dropdown on the page
+                everyone_playing_in_periodquery = session.query(user.userid).join(groupassignment).join(group).join(period).filter(period.periodid == thisperiod.periodid)
+                conductors = session.query(user).join(instrument, user.userid == instrument.userid).filter(instrument.instrumentname == 'Conductor', instrument.isactive == 1).filter(~user.userid.in_(everyone_playing_in_periodquery)).all()
+                #get the list of instruments from the config file
+                instrumentlist = getconfig('Instruments').split(",")
+                #find all large group templates and serialize them to prepare to inject into the javascript
+                grouptemplates = session.query(grouptemplate).filter(grouptemplate.size == 'L').all()
+                grouptemplates_serialized = [i.serialize for i in grouptemplates]
+                session.close()
+                return render_template('instrumentation.html', \
+                                    thisuser=thisuser, \
+                                    grouptemplates = grouptemplates, \
+                                    conductors=conductors, \
+                                    grouptemplates_serialized=grouptemplates_serialized, \
+                                    campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
+                                    thisperiod=thisperiod, \
+                                    locations=locations, \
+                                    maximumlevel=int(getconfig('MaximumLevel')), \
+                                    musics=musics, \
+                                    musics_serialized=musics_serialized, \
+                                    instrumentlist_string=getconfig('Instruments'), \
+                                    )
+
+            #The below runs when a user presses "Submit" on the instrumentation page. It creates a group object with the configuraiton selected by 
+            #the user, and creates groupassignments if needed
+            if request.method == 'POST':
+                #format the packet received from the server as JSON
+                content = request.json
+                session = Session()
+                log('Grouprequest received. Whole content of JSON returned is: %s' % content)
+                #establish the 'grouprequest' group object. This will be built up from the JSON packet, and then added to the database
+                grouprequest = group(ismusical = 1, requesteduserid = thisuser.userid, periodid = thisperiod.periodid, status = "Queued", requesttime = datetime.datetime.now())
+                #check if a group already exists for this period with the same name
+                namecheck = session.query(group).filter(group.groupname == content['groupname'], group.periodid == thisperiod.periodid).first()
+                if namecheck is not None:
+                    raise Exception('Could not create instrumentation, there is already a group named %s in this period.' % namecheck.groupname)
+                #for each player object in the players array in the JSON packet
+                for key, value in content.items():
+                    if (key == 'groupname' or key == 'maximumlevel' or key == 'mininumlevel') and value == '':
+                        raise Exception('Could not create instrumentation, you must enter a groupname, music, maximumlevel and mininumlevel')
+                    if value != '' and value is not None and value != 'null' and value != 'None':
+                        setattr(grouprequest, key, value)
+                    else:
+                        setattr(grouprequest, key, None)
+                #create the group and the groupassinments configured above in the database
+                session.add(grouprequest)
+                #if the user plays the "conductor" instrument (i.e. they are actually a conductor) assign them to this group
+                if content['conductoruserid'] is not None and content['conductoruserid'] != 'null' and content['conductoruserid'] != '':
+                    userconductor = session.query(user).join(instrument, user.userid == instrument.userid).filter(user.userid == content['conductoruserid'], instrument.instrumentname == "Conductor", instrument.isactive == 1, user.isactive == 1, user.arrival <= thisperiod.starttime, user.departure >= thisperiod.endtime).first()
+                    if userconductor is not None:
+                        userplayinginperiod = session.query(user.userid).join(groupassignment).join(group).join(period).filter(period.periodid == thisperiod.periodid, user.userid == content['conductoruserid']).first()
+                        if userplayinginperiod is None:
+                            grouprequest.addplayer(session,getuser(session,content['conductoruserid']),'Conductor')
+                        else:
+                            raise Exception('Could not create instrumentation, %s is already assigned to a group during this period.' % userconductor.firstname)
+                    else:
+                        raise Exception('The user requested as the conductor is not set up to be a conductor in the database.')
+                session.commit()
+                #send the URL for the group that was just created to the user, and send them to that page
+                url = ('/user/' + str(thisuser.logonid) + '/group/' + str(grouprequest.groupid) + '/')
+                log('Sending user to URL: %s' % url)
+                session.close()
+                flash(u'Instrumentation Accepted', 'success')
+                return jsonify(message = 'none', url = url)
+
+    except Exception as ex:
+        log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))
+        message = ('Failed to execute %s with exception: %s. Try refreshing the page and trying again or contact camp administration.' % (request.method, ex))
+        session.rollback()
+        session.close()
+        if request.method == 'GET':
+            return errorpage(thisuser,'Failed to display page. %s' % ex)
+        else:
+            return jsonify(message = message, url = 'none')

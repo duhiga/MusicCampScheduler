@@ -166,9 +166,10 @@ def getinstrumentbyname(session,instrumentname):
     if instrumentname is None:
         return None
     else:
-        thisinstrument = session.query(instrument).filter(instrument.instrumentname == instrumentname.capitalize().replace(" ", "")).first()
+        thisinstrument = session.query(instrument).filter(instrument.instrumentname == instrumentname).first()
         if thisinstrument is None:
-            raise Exception('Could not find instrument in database')
+            
+            raise Exception('Could not find instrument %s in database' % instrumentname)
         else:
             return thisinstrument
 

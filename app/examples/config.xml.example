@@ -16,7 +16,6 @@
     SMTP_Password="SMTP Password"
     DATABASE_URL="postgresql://user:password@localhost:5432/postgres"
     SecretKey="Something Secret"
-    Instruments="Conductor,Piccolo,Flute,Oboe,Coranglais,Clarinet,Bassoon,Horn,Trumpet,Trombone,Tuba,Percussion,Piano,Guitar,Saxophone,Violin,Viola,Cello,Doublebass"
     SupportEmailAddress="username@gmail.com"
     StartTime="2016-12-28 18:00"
     EndTime="2017-01-05 07:45"
@@ -32,6 +31,29 @@
     Website_URL="https://appname.herokuapp.com"
     Favicon_URL="https://wherever.your.favicon.is"
     >
+    <!-- Fill in the each instrument object with the instruments that you'd like in drop-down
+        pickers, and the order. The example below is score order. Abbreviations are comma seperated. 
+        The first abbrev. will appear on smaller screens, and the rest will be searchable when the 
+        user searches. -->
+    <Instrument Name="Conductor" Order="1" Abbreviations="cond"></Instrument>
+    <Instrument Name="Piccolo" Order="2" Abbreviations="picc,pic"></Instrument>
+    <Instrument Name="Flute" Order="3" Abbreviations="fl"></Instrument>
+    <Instrument Name="Oboe" Order="4" Abbreviations="ob"></Instrument>
+    <Instrument Name="Clarinet" Order="5" Abbreviations="cl,clt"></Instrument>
+    <Instrument Name="Bassoon" Order="6" Abbreviations="bn,bsn,fag"></Instrument>
+    <Instrument Name="Horn" Order="7" Abbreviations="hn,cor"></Instrument>
+    <Instrument Name="Trumpet" Order="8" Abbreviations="tpt"></Instrument>
+    <Instrument Name="Trombone" Order="9" Abbreviations="tbn"></Instrument>
+    <Instrument Name="Tuba" Order="10" Abbreviations="tba"></Instrument>
+    <Instrument Name="Percussion" Order="11" Abbreviations="perc"></Instrument>
+    <Instrument Name="Piano" Order="12" Abbreviations="pf,pno"></Instrument>
+    <Instrument Name="Guitar" Order="13" Abbreviations="gtr"></Instrument>
+    <Instrument Name="Saxophone" Order="14" Abbreviations="sax"></Instrument>
+    <Instrument Name="Recorder" Order="15" Abbreviations="rec"></Instrument>
+    <Instrument Name="Violin" Order="16" Abbreviations="vn,vln"></Instrument>
+    <Instrument Name="Viola" Order="17" Abbreviations="va,vla"></Instrument>
+    <Instrument Name="Cello" Order="18" Abbreviations="vc,vlc,cell"></Instrument>
+    <Instrument Name="Double Bass" Order="19" Abbreviations="db,bass"></Instrument>
     <!-- Fill in the each period object with period names and times. Note the time format, ensure you enter it in the 
          format HH:mm (in 24 hour time). Each of these periods will recur every day that is covered by your start and 
          end time. -->

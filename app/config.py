@@ -1,6 +1,6 @@
 import untangle
 import os
-from flask import render_template
+from flask import render_template, jsonify
 
 def getconfig(attribute):
     try:

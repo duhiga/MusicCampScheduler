@@ -37,7 +37,8 @@ def dbbuild(configfile):
                 )
             if conf.root.CampDetails.Instrument[x]['Abbreviations'] is not None:
                 newinstrument.abbreviations = conf.root.CampDetails.Instrument[x]['Abbreviations'].split(",")
-        session.add(newinstrument)
+            session.add(newinstrument)
+            log('Created instrument %s' % newinstrument.instrumentname)
     session.commit()
 
     #create locations in the database
@@ -162,7 +163,7 @@ def importusers(file):
             thisuser.logonid = str(uuid.uuid4())
             thisuser.isactive = 1
             thisuser.grouprequestcount = 0
-            thisuser.firstname = row[0]
+            thisuser.firstname = row[0].replace(" ","")
             thisuser.lastname = row[1][:1] #[:1] means just get the first letter
             if row[12] is not '':
                 thisuser.isannouncer = row[12]

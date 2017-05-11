@@ -223,3 +223,51 @@ def periodpage(logonid,periodid):
             return errorpage(thisuser,'Failed to display page. %s' % ex)
         else:
             return jsonify(message = message, url = 'none')
+
+@lists.route('/user/<logonid>/grouphistory/')
+def grouphistory(logonid):
+
+    try:
+        session = Session()
+        thisuser = getuser(session,logonid,True)
+        log('GROUPHISTORY: user firstname:%s lastname:%s method:%s' % (thisuser.firstname, thisuser.lastname, request.method))
+    except Exception as ex:
+        session.close()
+        return str(ex)
+
+    try:
+        now = datetime.datetime.now() #get the time now
+        groups = session.query(group.groupname, group.groupid, period.periodid, period.starttime, period.endtime, groupassignment.instrumentname, group.status, location.locationname).\
+                    join(groupassignment).outerjoin(period).outerjoin(location).filter(groupassignment.userid == thisuser.userid, group.groupname != 'absent').order_by(period.starttime).all()
+        log(groups)
+        count = playcount(session, thisuser)
+
+        thisuserprimary = session.query(instrument.instrumentname).filter(instrument.userid == thisuser.userid, instrument.isprimary == 1).first().instrumentname
+        total = 0
+        number = 0
+        for p in session.query(instrument.userid).filter(instrument.isactive == 1, instrument.isprimary == 1, instrument.instrumentname == thisuserprimary).group_by(instrument.userid).all():
+            total = total + playcount(session, p)
+            number = number + 1
+        average = "%.2f" % (float(total) / float(number))
+        log('Found total number of %s players to be %s and plays by all of them totalling %s giving an average of %s' % (thisuserprimary, number, total, average))
+
+
+        session.close()
+        return render_template('grouphistory.html', \
+                                thisuser=thisuser, \
+                                groups = groups, \
+                                campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
+                                now=now, \
+                                playcount=count, \
+                                average=average, \
+                                thisuserprimary=thisuserprimary, \
+                                )
+    except Exception as ex:
+        log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))
+        message = ('Failed to execute %s with exception: %s. Try refreshing the page and trying again or contact camp administration.' % (request.method, ex))
+        session.rollback()
+        session.close()
+        if request.method == 'GET':
+            return errorpage(thisuser,'Failed to display page. %s' % ex)
+        else:
+            return jsonify(message = message, url = 'none')

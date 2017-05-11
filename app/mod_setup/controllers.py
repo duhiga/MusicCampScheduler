@@ -17,7 +17,6 @@ def allowed_file(filename):
 
 #Database Build section. The below configures periods and groups depending on how the config.xml is configured.
 def dbbuild(configfile):
-    #try:
     log('Initiating initial database build from config file')
     conf = untangle.parse(configfile)
     #Grab the camp start and end times from the config file
@@ -28,15 +27,17 @@ def dbbuild(configfile):
     #start our session, then go through the loop
     session = Session()
 
-    #create the instrument objects, and keep the order written in the config file
-    iorder = 0
-    for i in conf.root.CampDetails['Instruments'].split(","):
-        thisinstrument = session.query(instrument).filter(instrument.instrumentname == i).first()
-        if thisinstrument is None:
-            thisinstrument = instrument(instrumentname = i, order = iorder)
-            session.add(thisinstrument)
-            log('Created instrument: %s' % i)
-            iorder = iorder + 1
+    #Create the instrument objects from the file
+    for x in range(0,len(conf.root.CampDetails.Instrument)):
+        find_instrument = session.query(instrument).filter(instrument.instrumentname == conf.root.CampDetails.Instrument[x]['Name']).first()
+        if find_instrument is None:
+            newinstrument = instrument(
+                instrumentname = conf.root.CampDetails.Instrument[x]['Name'],
+                order = conf.root.CampDetails.Instrument[x]['Order'],
+                )
+            if conf.root.CampDetails.Instrument[x]['Abbreviations'] is not None:
+                newinstrument.abbreviations = conf.root.CampDetails.Instrument[x]['Abbreviations'].split(",")
+        session.add(newinstrument)
     session.commit()
 
     #create locations in the database
@@ -48,8 +49,8 @@ def dbbuild(configfile):
         find_location = session.query(location).filter(location.locationname == conf.root.CampDetails.Location[x]['Name']).first()
         if find_location is None:
             newlocation = location(
-                locationname=conf.root.CampDetails.Location[x]['Name'],
-                capacity=conf.root.CampDetails.Location[x]['Capacity']
+                locationname = conf.root.CampDetails.Location[x]['Name'],
+                capacity = conf.root.CampDetails.Location[x]['Capacity']
                 )
             log('Created location: %s' % newlocation.locationname)
             if conf.root.CampDetails.Location[x]['AutoAllocate'] is not None:
@@ -87,7 +88,6 @@ def dbbuild(configfile):
                 for x in range(0,len(conf.root.CampDetails.PublicEvent)):
                     find_event = session.query(group).filter(group.groupname == conf.root.CampDetails.PublicEvent[x]['Name'],group.periodid == find_period.periodid,group.iseveryone == 1,group.ismusical == 0).first()
                     if find_event is None and find_period.periodname == conf.root.CampDetails.PublicEvent[x]['Period']:
-                        log('right before locationname search')
                         find_location = session.query(location).filter(location.locationname == conf.root.CampDetails.PublicEvent[x]['Location']).first()
                         if find_location is None:
                             log('User input a location that does not exist when configuring event %s' % conf.root.CampDetails.PublicEvent[x]['Name'])
@@ -204,11 +204,6 @@ def importusers(file):
     userscount = session.query(user).count()
     session.close()
     return ('Success')
-    """except Exception as ex:
-        session.rollback()
-        session.close()
-        log('IMPORTUSERS: Failed to import with exception: %s.' % ex)
-        return ('Failed to import with exception: %s.' % ex)"""
 
 def importmusic(file):
     try:

@@ -100,6 +100,29 @@ def getgrouptemplate(session,grouptemplateid):
         else:
             return thisgrouptemplate
 
+def getgrouptemplatesbyuser(session,user,size=None)
+    if user is None:
+        return None
+    else:
+        gtquery = session.query(grouptemplate
+                ).join(grouptemplateinstrument
+                ).join(userinstrument, userinstrument.instrumentid == grouptemplateinstrument.instrumentid
+                ).join(user, userinstrument.userid == user.userid)
+                ).filter(user.userid == user.userid)
+        if size = None
+            return gtquery.all()
+        else:
+            return gtquery.filter(grouptemplate.size == size).all()
+        except Exception as ex:
+            log('GETGROUPTEMPLATE: Exception - failed to find templates by user')
+            raise Exception('Could not retrieve templates by this user')
+
+def getgrouptemplates(session, size = None):
+    if size is None:
+        return session.query(grouptemplate).all()
+    else:
+        session.query(grouptemplate).filter(grouptemplate.size == size).all()
+
 #gets a groupassignment object from a groupassignmentid
 def getgroupassignment(session,groupassignmentid):
     if groupassignmentid is None:
@@ -214,18 +237,32 @@ class periodschedule:
 
     @property
     def serialize(self):
-        return ({'groupname': self.groupname,
-                'starttime': self.starttime,
-                'endtime': self.endtime,
-                'locationname': self.locationname,
-                'groupid': self.groupid,
-                'ismusical': self.ismusical,
-                'iseveryone': self.iseveryone,
-                'periodid': self.periodid,
-                'periodname': self.periodname,
-                'instrumentname': self.instrumentname,
-                'meal': self.meal,
-                'groupdescription': self.groupdescription,
-                'composer': self.composer,
-                'musicname': self.musicname,
-                'musicwritein': self.musicwritein})
+        return serialize_class(self, self.__class__)
+
+#The player class is not a table, it's used when retrieving players
+class player:
+
+    def __init__(self,
+                    firstname = None,
+                    lastname = None,
+                    instrumentname = None,
+                    level = None,
+                    isprimary = None):
+        self.firstname = firstname
+        self.lastname = lastname
+        self.instrumentname = instrumentname
+        self.level = level
+        self.isprimary = isprimary
+
+    @property
+    def serialize(self):
+        return serialize_class(self, self.__class__)
+
+def converttoplayer(o)
+    return player(
+        firstname = o.firstname
+        lastname = o.lastname
+        instrumentname = o.instrumentname
+        level = o.level
+        isprimary = o.isprimary
+    )

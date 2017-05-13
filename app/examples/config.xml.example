@@ -76,17 +76,21 @@
     <!-- Templates that users can pick from when requesting groups go here. Note that
          1. Everything is case sensitive, and
          2. You don't need to put every instrument name in, just the ones that are used in the group
-         3. Sizes: S = everyone can request this group. L = Only conductors can request this group -->
+         3. Sizes: S = everyone can request this group. L = Only conductors can request this group 
+         4. Instrument names must not have a space in them. If needed, use abbreviations (see above for set up of instrument abbreviations) -->
     <GroupTemplate Name="Beginner Orchestra" Size="L" MinimumLevel="3" MaximumLevel="4" DefaultLocation="Rec Room" Conductor="1" Flute="2" Oboe="2" Clarinet="2" Bassoon="2"
-      Horn="2" Trumpet="2" Trombone="2" Percussion="1" Violin="8" Viola="4" Cello="4" Doublebass="2"></GroupTemplate>
-    <GroupTemplate Name="Full Orchestra" Size="L" MinimumLevel="4" MaximumLevel="5" DefaultLocation="Rec Room" Conductor="1" Flute="2" Oboe="2" Clarinet="3" Bassoon="2"
-      Horn="4" Trumpet="2" Trombone="2" Tuba="1" Percussion="2" Violin="8" Viola="4" Cello="4" Doublebass="2"></GroupTemplate>
-    <GroupTemplate Name="Chamber Orchestra" Size="L" MinimumLevel="4" MaximumLevel="5" DefaultLocation="Green Room" Conductor="1" Violin="10" Viola="4" Cello="6" Doublebass="2"></GroupTemplate>
+      Horn="2" Trumpet="2" Trombone="2" Percussion="1" Violin="8" Viola="4" Cello="4" bass="2"></GroupTemplate>
+    <GroupTemplate Name="Full Orchestra" Size="L" MinimumLevel="5" MaximumLevel="5" DefaultLocation="Rec Room" Conductor="1" Flute="2" Oboe="2" Clarinet="3" Bassoon="2"
+      Horn="4" Trumpet="2" Trombone="2" Tuba="1" Percussion="2" Violin="8" Viola="4" Cello="4" bass="2"></GroupTemplate>
+    <GroupTemplate Name="Chamber Orchestra" Size="L" MinimumLevel="4" MaximumLevel="5" DefaultLocation="Class Room" Conductor="1" Violin="10" Viola="4" Cello="6" bass="2"></GroupTemplate>
     <GroupTemplate Name="String Quartet" Size="S" Violin="2" Viola="1" Cello="1"></GroupTemplate>
-    <GroupTemplate Name="String Quintet" Size="S" Violin="2" Viola="1" Cello="1" Doublebass="1"></GroupTemplate>
+    <GroupTemplate Name="String Quintet" Size="S" Violin="2" Viola="1" Cello="1" bass="1"></GroupTemplate>
     <GroupTemplate Name="Wind Quintet" Size="S" Flute="1" Oboe="1" Clarinet="1" Bassoon="1" Horn="1"></GroupTemplate>
     <GroupTemplate Name="Brass Quintet" Size="S" Trumpet="2" Trombone="1" Tuba="1" Horn="1"></GroupTemplate>
     <GroupTemplate Name="Brass Quintet (Doubled)" Size="S" Trumpet="4" Trombone="2" Tuba="2" Horn="2"></GroupTemplate>
+    <GroupTemplate Name="String Trio" Size="S" Violin="1" Viola="1" Cello="1"></GroupTemplate>
+    <GroupTemplate Name="String Sextet" Size="S" Violin="2" Viola="2" Cello="2"></GroupTemplate>
+    <GroupTemplate Name="String Octet" Size="S" Violin="4" Viola="2" Cello="2"></GroupTemplate>
     <!-- Public events occur every day at the specified time. They appear on all user's home pages at that time unless they are in a specific group.-->
     <PublicEvent Name="Drinks" Period="Surgery" Location="Eclipse"></PublicEvent>
     <PublicEvent Name="Beginners" Period="Noisy Scrubs" Location="Rec Room"></PublicEvent>

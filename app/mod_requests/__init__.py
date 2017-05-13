@@ -70,17 +70,6 @@ def grouprequest(logonid,periodid=None,musicid=None):
         #The below runs when a user visits the grouprequest page
         if request.method == 'GET':
         
-            #if this is the conductorpage, the user will need a list of the locations that are not being used in the period selected
-            if conductorpage == True:
-                locations_used_query = session.query(location.locationid).join(group).join(period).filter(period.periodid == periodid)
-                locations = session.query(location).filter(~location.locationid.in_(locations_used_query)).all()
-                musics_used_query = session.query(music.musicid).join(group).join(period).filter(period.periodid == periodid)
-                musics = session.query(music).filter(~music.musicid.in_(musics_used_query)).all()
-            else: 
-                locations = None
-                musics = session.query(music).filter(or_(*[(getattr(music,getattr(i,'instrumentname')) > 0) for i in session.query(instrument.instrumentname).filter(instrument.userid == thisuser.userid, instrument.isactive == 1)])).all()
-        
-            musics_serialized = [i.serialize for i in musics]
             #checks if the requested music exists and sets it up for the page
             if musicid is not None:
                 requestedmusic = session.query(music).filter(music.musicid == musicid).first()
@@ -89,56 +78,64 @@ def grouprequest(logonid,periodid=None,musicid=None):
             else:
                 requestedmusic = None
 
-            if conductorpage == True:
-                #Finds all players who aren't already playing in this period
-                playersPlayingInPeriod = session.query(user.userid).join(groupassignment).join(group).filter(group.periodid == periodid)
-                playersdump = session.query(user.userid,user.firstname,user.lastname,instrument.instrumentname,instrument.level,instrument.isprimary).\
-                    join(instrument).filter(~user.userid.in_(playersPlayingInPeriod), user.isactive == 1, user.arrival <= thisperiod.starttime, user.departure >= thisperiod.endtime).all()
-            else:
-                #find all the instruments that everyone plays and serialize them to prepare to inject into the javascript
-                playersdump = session.query(user.userid,user.firstname,user.lastname,instrument.instrumentname,instrument.level,instrument.isprimary).\
-                    join(instrument).filter(user.userid != thisuser.userid, user.isactive == 1, instrument.isactive == 1).all()
-            playersdump_serialized = []
-            for p in playersdump:
-                playersdump_serialized.append({'userid': p.userid, 'firstname': p.firstname, 'lastname': p.lastname,
-                                                'instrumentname': p.instrumentname, 'level': p.level, 'isprimary': p.isprimary})
-
-            #find all group templates and serialize them to prepare to inject into the javascript
-            allgrouptemplates = session.query(grouptemplate).filter(grouptemplate.size == 'S').all()
-        
             #if we are not on the conductorpage, filter the group templates so the user only sees templates that are covered by their instruments
             if conductorpage == False:
-                grouptemplates = []
-                for t in allgrouptemplates:
-                            found = False
-                            for i in thisuserinstruments:
-                                if getattr(t, i.instrumentname) > 0 and found == False:
-                                    grouptemplates.append(t)
-                                    found = True
+                grouptemplates = getgrouptemplatesbyuser(session, thisuser)
             #if we are on the conductorpage, show the user all the grouptemplates
             else:
-                grouptemplates = allgrouptemplates
+                grouptemplates = getgrouptemplates(session,'S')
 
             #serialize the grouptemplates so the JS can read them properly
             grouptemplates_serialized = [i.serialize for i in grouptemplates]
-            session.close()
-            return render_template('grouprequest.html', \
+            if conductorpage = True:
+                musics = thisperiod.getfreemusics(session)
+                playersdump = thisperiod.getfreeplayers(session)
+                getgrouptemplates(session,'S')
+                render = render_template('grouprequest.html', \
                                 thisuser=thisuser, \
                                 thisuserinstruments=thisuserinstruments, \
                                 thisuserinstruments_serialized=thisuserinstruments_serialized, \
                                 playerlimit = int(getconfig('GroupRequestPlayerLimit')), \
                                 grouptemplates = grouptemplates, \
-                                grouptemplates_serialized=grouptemplates_serialized, \
+                                grouptemplates_serialized=[i.serialize for i in grouptemplates], \
                                 campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
                                 instrumentlist_string=getconfig('Instruments'), \
-                                playersdump_serialized=playersdump_serialized, \
+                                playersdump_serialized=[i.serialize for i in playersdump], \
                                 conductorpage=conductorpage, \
                                 thisperiod=thisperiod, \
-                                locations=locations, \
+                                locations=thisperiod.getfreelocations(session), \
                                 musics=musics, \
-                                musics_serialized=musics_serialized, \
+                                musics_serialized=[i.serialize for i in musics], \
                                 requestedmusic=requestedmusic, \
                                 )
+            else:
+                musics = session.query(music
+                                    ).join(musicinstrument, music.musicid == musicinstrument.musicid
+                                    ).join(userinstrument, userinstrument.instrumentid == musicinstrument.instrumentid
+                                    ).filter(user.userid == thisuser.userid, userinstrument.isactive == 1
+                                    ).all()
+                playersdump = playersdump_query.filter(user.userid != thisuser.userid).all()
+                getgrouptemplatesbyuser(session, thisuser, 'S')
+                render = render_template('grouprequest.html', \
+                                thisuser=thisuser, \
+                                thisuserinstruments=thisuserinstruments, \
+                                thisuserinstruments_serialized=thisuserinstruments_serialized, \
+                                playerlimit = int(getconfig('GroupRequestPlayerLimit')), \
+                                grouptemplates = grouptemplates, \
+                                grouptemplates_serialized=[i.serialize for i in grouptemplates], \
+                                campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
+                                instrumentlist_string=getconfig('Instruments'), \
+                                playersdump_serialized=[i.serialize for i in playersdump], \
+                                conductorpage=conductorpage, \
+                                thisperiod=thisperiod, \
+                                locations=None, \
+                                musics=musics, \
+                                musics_serialized=[i.serialize for i in musics], \
+                                requestedmusic=requestedmusic, \
+                                )
+            
+            session.close()
+            return render
 
         #The below runs when a user presses "Submit" on the grouprequest page. It creates a group object with the configuraiton selected by 
         #the user, and creates groupassignments for all players they selected (and the user themselves)
@@ -539,18 +536,13 @@ def instrumentation(logonid,periodid):
             #The below runs when a user visits the instrumentation page
             if request.method == 'GET':
 
-                #Get a list of the locations that are not being used in the period selected
-                locations_used_query = session.query(location.locationid).join(group).join(period).filter(period.periodid == periodid)
-                locations = session.query(location).filter(~location.locationid.in_(locations_used_query)).all()
-                #Get a list of the available music not being used in the period selected
-                musics_used_query = session.query(music.musicid).join(group).join(period).filter(period.periodid == periodid)
-                musics = session.query(music).filter(~music.musicid.in_(musics_used_query)).all()
+                locations = thisperiod.getfreelocations(session)
+                musics = thisperiod.getfreemusics(session)
                 musics_serialized = [i.serialize for i in musics]
                 #get a list of conductors to fill the dropdown on the page
-                everyone_playing_in_periodquery = session.query(user.userid).join(groupassignment).join(group).join(period).filter(period.periodid == thisperiod.periodid)
-                conductors = session.query(user).join(instrument, user.userid == instrument.userid).filter(instrument.instrumentname == 'Conductor', instrument.isactive == 1).filter(~user.userid.in_(everyone_playing_in_periodquery)).all()
+                conductors = thisperiod.getfreeconductors(session)
                 #get the list of instruments from the config file
-                instrumentlist = getconfig('Instruments').split(",")
+                instrumentlist = getinstruments(session)
                 #find all large group templates and serialize them to prepare to inject into the javascript
                 grouptemplates = session.query(grouptemplate).filter(grouptemplate.size == 'L').all()
                 grouptemplates_serialized = [i.serialize for i in grouptemplates]
@@ -560,13 +552,12 @@ def instrumentation(logonid,periodid):
                                     grouptemplates = grouptemplates, \
                                     conductors=conductors, \
                                     grouptemplates_serialized=grouptemplates_serialized, \
-                                    campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
+                                    campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=instrumentlist, supportemailaddress=getconfig('SupportEmailAddress'), \
                                     thisperiod=thisperiod, \
                                     locations=locations, \
                                     maximumlevel=int(getconfig('MaximumLevel')), \
                                     musics=musics, \
                                     musics_serialized=musics_serialized, \
-                                    instrumentlist_string=getconfig('Instruments'), \
                                     )
 
             #The below runs when a user presses "Submit" on the instrumentation page. It creates a group object with the configuraiton selected by 

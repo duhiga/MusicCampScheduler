@@ -41,30 +41,68 @@ def dbbuild(configfile):
             log('Created instrument %s' % newinstrument.instrumentname)
     session.commit()
 
-    #create locations in the database
+    #create a location for "none" in the database
     find_location = session.query(location).filter(location.locationname == 'None').first()
     if find_location is None:
         session.add(location(locationname = 'None', autoallocate = 0))
         log('Created location: None')
+
+    #create a location for each specified in the config file
     for x in range(0,len(conf.root.CampDetails.Location)):
-        find_location = session.query(location).filter(location.locationname == conf.root.CampDetails.Location[x]['Name']).first()
-        if find_location is None:
-            newlocation = location(
+        thislocation = session.query(location).filter(location.locationname == conf.root.CampDetails.Location[x]['Name']).first()
+        if thislocation is None:
+            thislocation = location(
                 locationname = conf.root.CampDetails.Location[x]['Name'],
                 capacity = conf.root.CampDetails.Location[x]['Capacity']
                 )
-            log('Created location: %s' % newlocation.locationname)
+            session.add(thislocation)
+            session.flush()
+            log('Created location: %s' % thislocation.locationname)
             if conf.root.CampDetails.Location[x]['AutoAllocate'] is not None:
-                newlocation.autoallocate = conf.root.CampDetails.Location[x]['AutoAllocate']
-            session.add(newlocation)
+                thislocation.autoallocate = conf.root.CampDetails.Location[x]['AutoAllocate']
             #create instrument restrictions in the locationinstrument table for disabled instruments
             if conf.root.CampDetails.Location[x]['DisabledInstruments'] is not None:
                 for i in conf.root.CampDetails.Location[x]['DisabledInstruments'].split(','):
-                    thislocationinstrument = session.query(locationinstrument).join(instrument).filter(instrument.instrumentname == i).first()
-                    if thislocationinstrument is not None:
-                        thislocationinstrument = locationinstrument(instrumentname = i, isdisabled = 1) 
-                        session.add(thislocationinstrument)  
+                    thislocationinstrument = session.query(locationinstrument).join(instrument).filter(instrument.instrumentname == i, locationinstrument.locationid == thislocation.locationid).first()
+                    if thislocationinstrument is None:
+                        thislocationinstrument = locationinstrument(instrumentid = getinstrumentbyname(session,i).instrumentid, isdisabled = 1) 
+                        session.add(thislocationinstrument)
+                        session.flush()
+                        log('Disabled instrument %s in location %s' % (i, thislocation.locationname))
     session.commit()
+
+    #create group templates
+    for x in range(0,len(conf.root.CampDetails.GroupTemplate)):
+        find_template = session.query(grouptemplate).filter(grouptemplate.grouptemplatename == conf.root.CampDetails.GroupTemplate[x]['Name']).first()
+        if find_template is None:
+            template = grouptemplate()
+            setattr(template, 'grouptemplatename', conf.root.CampDetails.GroupTemplate[x]['Name'])
+            setattr(template, 'size', conf.root.CampDetails.GroupTemplate[x]['Size'])
+            setattr(template, 'minimumlevel', conf.root.CampDetails.GroupTemplate[x]['MinimumLevel'])
+            setattr(template, 'maximumlevel', conf.root.CampDetails.GroupTemplate[x]['MaximumLevel'])
+            if conf.root.CampDetails.GroupTemplate[x]['DefaultLocation'] is not None:
+                defaultloc = session.query(location).filter(location.locationname == conf.root.CampDetails.GroupTemplate[x]['DefaultLocation']).first()
+                log('Found group default location for %s to be %s' % (template.grouptemplatename, defaultloc.locationname))
+                setattr(template, 'defaultlocationid', defaultloc.locationid)
+            else:
+                noneloc = session.query(location).filter(location.locationname == 'None').first()
+                log('No default location set for template %s. Setting default location to be %s' % (template.grouptemplatename, noneloc.locationname))
+                setattr(template, 'defaultlocationid', noneloc.locationid)
+            session.add(template)
+            session.flush()
+            for i in session.query(instrument).all():
+                attr = None
+                if conf.root.CampDetails.GroupTemplate[x][i.instrumentname] is not None:
+                    attr = i.instrumentname
+                else:
+                    for a in i.abbreviations:
+                        if conf.root.CampDetails.GroupTemplate[x][a] is not None:
+                            attr = a
+                if attr is not None:
+                    for q in range(0,int(conf.root.CampDetails.GroupTemplate[x][attr])):
+                        session.add(grouptemplateinstrument(grouptemplateid = template.grouptemplateid, instrumentid = i.instrumentid))
+                        log('Added instrument %s to grouptemplate %s' % (i.instrumentname, template.grouptemplatename))
+            log('Created grouptemplate: %s with size %s' % (template.grouptemplatename, template.size))
 
     loop = 'start'
     #For each day covered by the camp start and end time
@@ -109,31 +147,7 @@ def dbbuild(configfile):
                 loop = 'stop'
         ThisDay = ThisDay + datetime.timedelta(days=1)  
     session.commit()
-        
-    #create group templates
-    for x in range(0,len(conf.root.CampDetails.GroupTemplate)):
-        find_template = session.query(grouptemplate).filter(grouptemplate.grouptemplatename == conf.root.CampDetails.GroupTemplate[x]['Name']).first()
-        if find_template is None:
-            template = grouptemplate()
-            setattr(template, 'grouptemplatename', conf.root.CampDetails.GroupTemplate[x]['Name'])
-            setattr(template, 'size', conf.root.CampDetails.GroupTemplate[x]['Size'])
-            setattr(template, 'minimumlevel', conf.root.CampDetails.GroupTemplate[x]['MinimumLevel'])
-            setattr(template, 'maximumlevel', conf.root.CampDetails.GroupTemplate[x]['MaximumLevel'])
-            if conf.root.CampDetails.GroupTemplate[x]['DefaultLocation'] is not None:
-                defaultloc = session.query(location).filter(location.locationname == conf.root.CampDetails.GroupTemplate[x]['DefaultLocation']).first()
-                log('Found group default location for %s to be %s' % (template.grouptemplatename, defaultloc.locationname))
-                setattr(template, 'defaultlocationid', defaultloc.locationid)
-            else:
-                noneloc = session.query(location).filter(location.locationname == 'None').first()
-                log('No default location set for template %s. Setting default location to be %s' % (template.grouptemplatename, noneloc.locationname))
-                setattr(template, 'defaultlocationid', noneloc.locationid)
-            session.add(template)
-            session.flush()
-            for i in session.query(instrument).all():
-                if conf.root.CampDetails.GroupTemplate[x][i.instrumentname] is not None:
-                    for x in range(0,int(conf.root.CampDetails.GroupTemplate[x][i.instrumentname])):
-                        session.add(grouptemplateinstrument(grouptemplateid = template.grouptemplateid, instrumentid = i.instrumentid))
-            log('Created grouptemplate: %s with size %s' % (template.grouptemplatename, template.size))
+    
     session.commit()
     session.close()
     log('Finished database build')

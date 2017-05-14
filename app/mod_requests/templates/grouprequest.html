@@ -18,9 +18,6 @@
         }
     }
 
-    inst = '{{instrumentlist}}';
-    var instrumentlist = inst.split(',');
-
     /* this script handles all thisuser interaction in the group request page. Upon page load, it downloads all players
     in the camp including the instruments they play, all templates as stated by the config.xml, and the instruments
     this thisuser plays. it uses all of this data to populate drop-down boxes, depending on what the thisuser selects. */
@@ -58,9 +55,10 @@
     $(document).ready(function () {
 
         //these first few variables set up the rest of the script
-        var players = {{ playersdump_serialized|tojson }};
+        var players = {{ players|tojson }};
         console.log("Players:");
         console.log(players);
+        console.log(players[0].userid)
 
         var grouptemplates = {{ grouptemplates_serialized|tojson }};
         console.log("Grouptemplates:");
@@ -74,7 +72,9 @@
         console.log("Music Database:");
         console.log(musics);
 
-        var instrumentlist_string = '{{ instrumentlist_string }}';
+        var instruments = {{ instruments_serialized|tojson }};
+        console.log("Instruments:");
+        console.log(instruments);
 
         var isClicked = false;
 
@@ -91,9 +91,9 @@
             $('#playersTable tr:last').after('\
                     <tr>\
                         <td>\
-                            <select class="form-object-master instrument_dropdown form-validate w3-select w3-border" data-key="instrumentname" data-mapping="' + rowId + '">\
+                            <select class="form-object-master instrument_dropdown form-validate w3-select w3-border" data-key="instrumentid" data-mapping="' + rowId + '">\
                                 <option value=""></option>\
-                                {% for i in instrumentlist %}<option value="{{ i }}">{{ i }}</option>{% endfor %}\
+                                {% for i in instruments %}<option value="{{ i.instrumentid }}">{{ i.instrumentname }}</option>{% endfor %}\
                             </select>\
                         </td>\
                         <td>\
@@ -250,12 +250,13 @@
                         });
                     }
                 }
+
                 console.log('Applying template now')
                 //for each instrument type in the group template
                 $.each(selectedTemplate, function(key, value) {
                     console.log('Testing ' + key + ' with value ' + value)
                     //make sure it's an instrument type and not other associated metadata
-                    if ((instrumentlist_string.split(',').indexOf(key) > -1) && value > 0) {
+                    if ((instruments.indexOf(key) > -1) && value > 0) {
                         console.log(key + ": "+String(value));
                         //if the current instrument we're looking at is the same as the one that we selected for the user, decrement it because we already have one player
                         if (key == $("[data-mapping=0][data-key='instrumentname']").val()) {
@@ -268,7 +269,6 @@
                         }
                     }
                 });
-
                 if ($('#musicid').val() == '') {
                     $('.instrument_dropdown').prop("disabled", false);
                     $('.instrument_dropdown').removeClass("w3-text-gray");
@@ -476,7 +476,7 @@
                                         <select class="form-object-master instrument_dropdown form-validate w3-select w3-border" data-key="instrumentname" data-mapping="1">
                                             <option value=""></option>
                                             {% for i in instrumentlist %}
-                                            <option value="{{ i }}">{{ i }}</option>
+                                            <option value="{{ i }}">{{ i.instrumentname }}</option>
                                             {% endfor %}
                                         </select>
                                     </td>

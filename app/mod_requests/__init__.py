@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request
+from flask import Blueprint, render_template, request, flash
 from app import Session
 from app.models import *
 import sqlalchemy
@@ -21,23 +21,14 @@ def grouprequest(logonid,periodid=None,musicid=None):
         session.close()
         return str(ex)
     try:
-        today = datetime.datetime.combine(datetime.date.today(), datetime.time.min) #get today's date
-        intwodays = today + datetime.timedelta(days=2)
-        now = datetime.datetime.now() #get the time now
+        
         #if this camper is inactive, has not arrived at camp yet, or is departing before the end of tomorrow
         if (thisuser.isactive != 1) and periodid is None:
             session.close()
             return errorpage(thisuser,'Your account is currently set to inactive. Inactive users cannot request groups. Is this is a mistake, navigate to your settings and set yourself to active.')
-        if (thisuser.departure < intwodays) and periodid is None:
+        if (thisuser.departure < today(2)) and periodid is None:
             session.close()
             return errorpage(thisuser,"You are set to depart camp in less than one days' time, so you cannot request a group. If this is incorrect, you can change your departure time in your settings.")
-        #find the instruments this user plays
-        thisuserinstruments = session.query(instrument
-											).outerjoin(userinstrument
-											).filter(userinstrument.userid == thisuser.userid, 
-												userinstrument.isactive == 1
-											).all()
-        thisuserinstruments_serialized = [i.serialize for i in thisuserinstruments]
 
         #check if this user is really a conductor and actually requested a conductorpage for a specific period
         if thisuser.isconductor == 1 and periodid is not None:
@@ -45,9 +36,6 @@ def grouprequest(logonid,periodid=None,musicid=None):
             thisperiod = session.query(period).filter(period.periodid == periodid).first()
             if thisperiod is None:
                 return ('Did not find period in database. Something has gone wrong.')
-        elif thisuserinstruments is None:
-            session.close()
-            return errorpage(thisuser,'Failed to display page. %s' % ex)
         else:
             conductorpage = False
             thisperiod = None
@@ -60,8 +48,8 @@ def grouprequest(logonid,periodid=None,musicid=None):
             log('GROUPREQUEST: User has requested %s groups' % thisuser.grouprequestcount)
             log('GROUPREQUEST: Maximum allowance is %s plus an extra %s per day' % (getconfig('BonusGroupRequests'), getconfig('DailyGroupRequestLimit')))
             log('GROUPREQUEST: User arrived at camp at %s.' % thisuser.arrival)
-            log('GROUPREQUEST: User is allowed total %s requests.' % (((now - thisuser.arrival).days + 2) * float(getconfig('DailyGroupRequestLimit')) + float(getconfig('BonusGroupRequests'))))
-            if thisuser.grouprequestcount >= (((now - thisuser.arrival).days + 2) * float(getconfig('DailyGroupRequestLimit')) + float(getconfig('BonusGroupRequests'))):
+            log('GROUPREQUEST: User is allowed total %s requests.' % (((now() - thisuser.arrival).days + 2) * float(getconfig('DailyGroupRequestLimit')) + float(getconfig('BonusGroupRequests'))))
+            if thisuser.grouprequestcount >= (((now() - thisuser.arrival).days + 2) * float(getconfig('DailyGroupRequestLimit')) + float(getconfig('BonusGroupRequests'))):
                 log('GROUPREQUEST: This user is denied access to request another group.')
                 session.close()
                 return errorpage(thisuser,"You have requested %s groups throughout the camp, and you're allowed %s per day (as well as %s welcome bonus requests!). You've reached your limit for today. Come back tomorrow!" % \
@@ -74,64 +62,49 @@ def grouprequest(logonid,periodid=None,musicid=None):
             if musicid is not None:
                 requestedmusic = session.query(music).filter(music.musicid == musicid).first()
                 if requestedmusic is None:
-                    return errorpage(thisuser,"You have requested music that could not be found in the database. Talk to the administrator." % (thisuser.grouprequestcount, getconfig('DailyGroupRequestLimit'), (now - datetime.datetime.strptime(getconfig('StartTime'), '%Y-%m-%d %H:%M')).days))
+                    return errorpage(thisuser,"You have requested music that could not be found in the database. Talk to the administrator.")
             else:
                 requestedmusic = None
 
-            #if we are not on the conductorpage, filter the group templates so the user only sees templates that are covered by their instruments
-            if conductorpage == False:
-                grouptemplates = getgrouptemplatesbyuser(session, thisuser)
-            #if we are on the conductorpage, show the user all the grouptemplates
-            else:
-                grouptemplates = getgrouptemplates(session,'S')
-
-            #serialize the grouptemplates so the JS can read them properly
-            grouptemplates_serialized = [i.serialize for i in grouptemplates]
-            if conductorpage = True:
+            if conductorpage:
                 musics = thisperiod.getfreemusics(session)
-                playersdump = thisperiod.getfreeplayers(session)
-                getgrouptemplates(session,'S')
-                render = render_template('grouprequest.html', \
-                                thisuser=thisuser, \
-                                thisuserinstruments=thisuserinstruments, \
-                                thisuserinstruments_serialized=thisuserinstruments_serialized, \
-                                playerlimit = int(getconfig('GroupRequestPlayerLimit')), \
-                                grouptemplates = grouptemplates, \
-                                grouptemplates_serialized=[i.serialize for i in grouptemplates], \
-                                campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
-                                instrumentlist_string=getconfig('Instruments'), \
-                                playersdump_serialized=[i.serialize for i in playersdump], \
-                                conductorpage=conductorpage, \
-                                thisperiod=thisperiod, \
-                                locations=thisperiod.getfreelocations(session), \
-                                musics=musics, \
-                                musics_serialized=[i.serialize for i in musics], \
-                                requestedmusic=requestedmusic, \
+                grouptemplates = getgrouptemplates(session,'S')
+                render = render_template('grouprequest.html',
+                                thisuser=thisuser,
+                                thisuserinstruments=thisuser.getinstruments(session),
+                                thisuserinstruments_serialized=[i.serialize for i in thisuser.getinstruments(session)],
+                                playerlimit = int(getconfig('GroupRequestPlayerLimit')),
+                                grouptemplates = grouptemplates,
+                                grouptemplates_serialized=[i.serialize for i in grouptemplates],
+                                campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instruments=getinstruments(session), supportemailaddress=getconfig('SupportEmailAddress'),
+                                instruments_serialized=[i.serialize for i in getinstruments(session)],
+                                players=json.dumps([ob.__dict__ for ob in thisperiod.getfreeplayers(session)]),
+                                conductorpage=True,
+                                thisperiod=thisperiod,
+                                locations=thisperiod.getfreelocations(session),
+                                musics=musics,
+                                musics_serialized=[i.serialize for i in musics],
+                                requestedmusic=requestedmusic,
                                 )
             else:
-                musics = session.query(music
-                                    ).join(musicinstrument, music.musicid == musicinstrument.musicid
-                                    ).join(userinstrument, userinstrument.instrumentid == musicinstrument.instrumentid
-                                    ).filter(user.userid == thisuser.userid, userinstrument.isactive == 1
-                                    ).all()
-                playersdump = playersdump_query.filter(user.userid != thisuser.userid).all()
-                getgrouptemplatesbyuser(session, thisuser, 'S')
-                render = render_template('grouprequest.html', \
-                                thisuser=thisuser, \
-                                thisuserinstruments=thisuserinstruments, \
-                                thisuserinstruments_serialized=thisuserinstruments_serialized, \
-                                playerlimit = int(getconfig('GroupRequestPlayerLimit')), \
-                                grouptemplates = grouptemplates, \
-                                grouptemplates_serialized=[i.serialize for i in grouptemplates], \
-                                campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
-                                instrumentlist_string=getconfig('Instruments'), \
-                                playersdump_serialized=[i.serialize for i in playersdump], \
-                                conductorpage=conductorpage, \
-                                thisperiod=thisperiod, \
-                                locations=None, \
-                                musics=musics, \
-                                musics_serialized=[i.serialize for i in musics], \
-                                requestedmusic=requestedmusic, \
+                musics = getmusic(session)
+                grouptemplates = getgrouptemplates(session, 'S', thisuser)
+                render = render_template('grouprequest.html',
+                                thisuser=thisuser,
+                                thisuserinstruments=thisuser.getinstruments(session),
+                                thisuserinstruments_serialized=[i.serialize for i in thisuser.getinstruments(session)],
+                                playerlimit = int(getconfig('GroupRequestPlayerLimit')),
+                                grouptemplates = grouptemplates,
+                                grouptemplates_serialized=[i.serialize for i in grouptemplates],
+                                campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instruments=getinstruments(session), supportemailaddress=getconfig('SupportEmailAddress'),
+                                instruments_serialized=[i.serialize for i in getinstruments(session)],
+                                players=json.dumps([ob.__dict__ for ob in getplayers(session)]),
+                                conductorpage=False,
+                                thisperiod=thisperiod,
+                                locations=None,
+                                musics=musics,
+                                musics_serialized=[i.serialize for i in musics],
+                                requestedmusic=requestedmusic,
                                 )
             
             session.close()
@@ -156,7 +129,7 @@ def grouprequest(logonid,periodid=None,musicid=None):
                 return jsonify(message = 'You must have at least one player in the group', url = 'none')
             #establish the 'grouprequest' group object. This will be built up from the JSON packet, and then added to the database
             #a minimumlevel and maximumlevel of 0 indicates that they will be automatically be picked on group confirmation
-            grouprequest = group(ismusical = 1, requesteduserid = thisuser.userid, requesttime = datetime.datetime.now(), minimumlevel = 0, maximumlevel = 0)
+            grouprequest = group(ismusical = 1, requesteduserid = thisuser.userid, requesttime = now(), minimumlevel = 0, maximumlevel = 0)
             if content['musicid'] is not None and content['musicid'] != '':
                 grouprequest.musicid = content['musicid']
             else:
@@ -568,7 +541,11 @@ def instrumentation(logonid,periodid):
                 session = Session()
                 log('Grouprequest received. Whole content of JSON returned is: %s' % content)
                 #establish the 'grouprequest' group object. This will be built up from the JSON packet, and then added to the database
-                grouprequest = group(ismusical = 1, requesteduserid = thisuser.userid, periodid = thisperiod.periodid, status = "Queued", requesttime = datetime.datetime.now())
+                grouprequest = group(ismusical = 1, 
+                                    requesteduserid = thisuser.userid, 
+                                    periodid = thisperiod.periodid, 
+                                    status = "Queued", 
+                                    requesttime = now())
                 #check if a group already exists for this period with the same name
                 namecheck = session.query(group).filter(group.groupname == content['groupname'], group.periodid == thisperiod.periodid).first()
                 if namecheck is not None:

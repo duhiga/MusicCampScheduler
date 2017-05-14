@@ -3,6 +3,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
 from .base import Base
 from app.models import serialize_class
+from app.config import now
 
 class group(Base):
     __tablename__ = 'groups'
@@ -11,7 +12,7 @@ class group(Base):
     groupname = Column(String)
     groupdescription = Column(String)
     locationid = Column(Integer, ForeignKey('locations.locationid'))
-    requesttime = Column(DateTime)
+    requesttime = Column(DateTime, default=now())
     requesteduserid = Column(UUID, ForeignKey('users.userid'))
     periodid = Column(Integer, ForeignKey('periods.periodid'))
     minimumlevel = Column(Integer, default='0')
@@ -170,7 +171,7 @@ class group(Base):
                         ).join(user
                         ).filter(
                             groupassignment.groupid == self.groupid,
-                            user.departure < datetime.datetime.now(),
+                            user.departure < now(),
                             user.isactive != 1
                         ).all()
         for p in oldplayers:

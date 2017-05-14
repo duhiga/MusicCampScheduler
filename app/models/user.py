@@ -1,7 +1,8 @@
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey, exists, Enum, types, UniqueConstraint, ForeignKeyConstraint, Text
 from sqlalchemy.dialects.postgresql import UUID
 from .base import Base
-from app.models import serialize_class
+from app.models import serialize_class, instrument, groupassignment, group, period, userinstrument, getperiod
+from app.config import *
 
 class user(Base):
     __tablename__ = 'users'
@@ -24,19 +25,29 @@ class user(Base):
         return serialize_class(self, self.__class__)
 
     def playsinstrument(self, session, thisinstrument):
-        if session.query(userinstrument).filter(userinstrument.userid == self.userid, instrument.instrumentid == thisinstrument.instrumentid).first() is not None:
+        if session.query(userinstrument
+                    ).filter(userinstrument.userid == self.userid, 
+                        instrument.instrumentid == thisinstrument.instrumentid
+                    ).first() is not None:
             return True
         else:
             return False
 
     def isplayingingroup(self, session, thisgroup):
-        if session.query(groupassignment).filter(groupassignment.userid == self.userid, groupassignment.groupid == thisgroup.groupid).first() is not None:
+        if session.query(groupassignment
+                    ).filter(groupassignment.userid == self.userid, 
+                        groupassignment.groupid == thisgroup.groupid
+                    ).first() is not None:
             return True
         else:
             return False
 
     def isplayinginperiod(self, session, thisperiod):
-        if thisgroup.periodid is not None and session.query(groupassignment).join(group).filter(groupassignment.userid == self.userid, group.periodid == thisgroup.periodid).first() is not None:
+        if thisperiod.periodid is not None and session.query(groupassignment
+                    ).join(group
+                    ).filter(groupassignment.userid == self.userid, 
+                        group.periodid == thisperiod.periodid
+                    ).first() is not None:
             return True
         else:
             return False
@@ -55,28 +66,45 @@ class user(Base):
             log('ADDPLAYER: Found that player %s %s is already assigned to a group during this period.' % (self.firstname,self.lastname))
             raise Exception('Found that player %s %s is already assigned to a group during this period.' % (self.firstname,self.lastname))
         else:
-            playergroupassignment = groupassignment(userid = self.userid, groupid = thisgroup.groupid, instrumentid = thisinstrument.instrumentid)
+            playergroupassignment = groupassignment(userid = self.userid, 
+                        groupid = thisgroup.groupid, 
+                        instrumentid = thisinstrument.instrumentid)
             session.add(playergroupassignment)
+            return True
 
     #marking a user absent for a period simply assigns them to a group called "absent" during that period
     def markabsent(self,session,thisperiod):
-        absentgroup = session.query(group.groupid).join(period).filter(group.groupname == 'absent', period.periodid == thisperiod.periodid).first()
+        absentgroup = session.query(group.groupid
+                    ).join(period
+                    ).filter(group.groupname == 'absent', 
+                        period.periodid == thisperiod.periodid
+                    ).first()
         self.addtogroup(session,absentgroup)
 
     #marking a user present searches for an absent listing for them, and removes it
     def markpresent(self,session,thisperiod):
-        absentassignment = session.query(groupassignment).join(group).filter(group.groupname == 'absent', group.periodid == thisperiod.periodid, groupassignment.userid == self.userid).first()
+        absentassignment = session.query(groupassignment
+                    ).join(group
+                    ).filter(group.groupname == 'absent', 
+                        group.periodid == thisperiod.periodid, 
+                        groupassignment.userid == self.userid
+                    ).first()
         if absentassignment is not None:
             session.delete(absentassignment)
 
     #Looks up the amount of times a user has participated in an "ismusical" group during the camp
     def playcount(self, session):
-        playcount = session.query(user.userid
+        return session.query(user.userid
                     ).join(groupassignment, user.userid == groupassignment.userid
                     ).join(group, groupassignment.groupid == group.groupid
                     ).outerjoin(period
                     ).filter(user.userid == self.userid, 
                             group.ismusical == 1, 
-                            period.endtime <= datetime.datetime.now()
+                            period.endtime <= now()
                     ).count()
-        return playcount
+    
+    def getinstruments(self, session):
+        return session.query(userinstrument
+                    ).join(user
+                    ).filter(user.userid == self.userid
+                    ).all()

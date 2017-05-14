@@ -78,7 +78,7 @@ def homepage(logonid,inputdate='n'):
                             today=today, \
                             campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
                             currentannouncement=announcementcontent, \
-                            now = datetime.datetime.now(), \
+                            now = now(), \
                             midday=midday, \
                             unscheduled=unscheduled, \
                             )

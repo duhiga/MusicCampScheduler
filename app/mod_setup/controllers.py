@@ -131,7 +131,7 @@ def dbbuild(configfile):
                         if find_location is None:
                             log('User input a location that does not exist when configuring event %s' % conf.root.CampDetails.PublicEvent[x]['Name'])
                         else:
-                            find_event = group(groupname = conf.root.CampDetails.PublicEvent[x]['Name'],periodid = find_period.periodid,iseveryone = 1,ismusical = 0,locationid = find_location.locationid,status="Confirmed",requesttime=datetime.datetime.now())
+                            find_event = group(groupname = conf.root.CampDetails.PublicEvent[x]['Name'],periodid = find_period.periodid,iseveryone = 1,ismusical = 0,locationid = find_location.locationid,status="Confirmed",requesttime=now())
                             if conf.root.CampDetails.PublicEvent[x]['Description'] is not None:
                                 find_event.groupdescription = conf.root.CampDetails.PublicEvent[x]['Description']
                             session.add(find_event)
@@ -139,7 +139,7 @@ def dbbuild(configfile):
                 #if no absentgroup exists in the database, create it
                 find_absent_group = session.query(group).filter(group.groupname == 'absent',group.periodid == find_period.periodid).first()
                 if find_absent_group is None:
-                    find_absent_group = group(groupname = 'absent',periodid = find_period.periodid,ismusical=0,status="Confirmed",requesttime=datetime.datetime.now(),minimumlevel=0,maximumlevel=0)
+                    find_absent_group = group(groupname = 'absent',periodid = find_period.periodid,ismusical=0,status="Confirmed",requesttime=now(),minimumlevel=0,maximumlevel=0)
                     session.add(find_absent_group)
                     log('Created group: placeholder for absentees at %s' % (find_period.starttime))
             #if we hit the camp's configured end time, then stop looping

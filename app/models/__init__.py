@@ -1,4 +1,5 @@
 from app.config import *
+import json
 
 def serialize_class(inst, cls):
     convert = dict()
@@ -17,23 +18,6 @@ def serialize_class(inst, cls):
         else:
             d[c.name] = v
     return d
-
-#import all models in this folder
-from .base import Base
-from .announcement import announcement
-from .group import group
-from .groupassignment import groupassignment
-from .grouplog import grouplog
-from .grouptemplate import grouptemplate
-from .grouptemplateinstrument import grouptemplateinstrument
-from .instrument import instrument
-from .location import location
-from .locationinstrument import locationinstrument
-from .music import music
-from .musicinstrument import musicinstrument
-from .period import period
-from .user import user
-from .userinstrument import userinstrument
 
 #gets a user object from a userid, or a logodin if the logon flag is set to true
 def getuser(session,userid,logon=False):
@@ -56,37 +40,37 @@ def getuserinstrument(session,instrumentid):
         return None
     else:
         thisuserinstrument = session.query(instrument).filter(instrument.instrumentid == instrumentid).first()
-        if thisinstrument is None:
+        if thisuserinstrument is None:
             log('GETUSERINSTRUMENT: Exception - Could not find instrument %s in database' % (instrumentid))
             raise Exception('Could not find instrument in database')
         else:
             return thisuserinstrument
 
 #gets a music object from a musicid
-def getmusic(session,musicid):
-    if musicid is None:
-        return None
+def getmusic(session,musicid=None):
+    music_query = session.query(music)
+    if musicid is not None:
+        thismusic = music_query.filter(music.musicid == musicid).first()
     else:
-        thismusic = session.query(music).filter(music.musicid == musicid).first()
-        if thismusic is None:
-            log('GETMUSIC: Exception - Could not find music %s in database' % (musicid))
-            raise Exception('Could not find music in database')
-        else:
-            return thismusic
+        thismusic = music_query.all()
+    if thismusic is None:
+        log('GETMUSIC: Exception - Could not find music in database' % (musicid))
+        raise Exception('Could not find music in database')
+    else:
+        return thismusic
 
 #gets a group object from a groupid
-def getgroup(session,groupid):
-    if groupid is None:
-        return None
+def getgroup(session,groupid=None):
+    group_query = session.query(group)
+    if groupid is not None:
+        thisgroup = group_query.filter(group.groupid == groupid).first()
     else:
-        thisgroup = session.query(group).filter(group.groupid == groupid).first()
-        if thisgroup is None:
-            log('GETGROUP: Exception - Could not find group %s in database' % (groupid))
-            raise Exception('Could not find group in database')
-        else:
-            return thisgroup
-
-
+        thisgroup = group_query.all()
+    if thisgroup is None:
+        log('GETgroup: Exception - Could not find group in database' % (groupid))
+        raise Exception('Could not find group in database')
+    else:
+        return thisgroup
 
 #gets a grouptemplate object from a grouptemplateid
 def getgrouptemplate(session,grouptemplateid):
@@ -100,28 +84,24 @@ def getgrouptemplate(session,grouptemplateid):
         else:
             return thisgrouptemplate
 
-def getgrouptemplatesbyuser(session,user,size=None)
-    if user is None:
-        return None
-    else:
-        gtquery = session.query(grouptemplate
-                ).join(grouptemplateinstrument
-                ).join(userinstrument, userinstrument.instrumentid == grouptemplateinstrument.instrumentid
-                ).join(user, userinstrument.userid == user.userid)
-                ).filter(user.userid == user.userid)
-        if size = None
-            return gtquery.all()
-        else:
-            return gtquery.filter(grouptemplate.size == size).all()
-        except Exception as ex:
-            log('GETGROUPTEMPLATE: Exception - failed to find templates by user')
-            raise Exception('Could not retrieve templates by this user')
-
-def getgrouptemplates(session, size = None):
-    if size is None:
-        return session.query(grouptemplate).all()
-    else:
-        session.query(grouptemplate).filter(grouptemplate.size == size).all()
+#retrieves a list of group templates. By default retrieves all group templates.
+#size: optional parameter restricting the retrieved templates to a single size, either small or large
+#user: optional parameter restricting the retrieved templates to those a specified user can actually play in
+def getgrouptemplates(session,size=None,thisuser=None):
+    try:
+        gtquery = session.query(grouptemplate)
+        if thisuser is not None:
+            gtquery = gtquery.join(grouptemplateinstrument
+                    ).join(instrument
+                    ).outerjoin(userinstrument
+                    ).join(user
+                    ).filter(user.userid == user.userid)
+        if size is not None:
+                gtquery = gtquery.filter(grouptemplate.size == size)
+        return gtquery.all()
+    except Exception as ex:
+        log('GETGROUPTEMPLATE: Exception - failed to find templates')
+        raise Exception('Could not retrieve templates')
 
 #gets a groupassignment object from a groupassignmentid
 def getgroupassignment(session,groupassignmentid):
@@ -198,10 +178,61 @@ def getinstrumentbyname(session,instrumentname):
 
 #returns all instruments as instrument obejcts
 def getinstruments(session):
-    session.query(instrument).all()
+    return session.query(instrument).all()
+
+def getgroupname(session,thisgroup):
+    log('GETGROUPNAME: Generating a name for requested group')
+    instrumentlist = getconfig('Instruments').split(",")
+
+    #if this group's instrumentation matches a grouptempplate, then give it the name of that template
+    templatematch = session.query(grouptemplate).filter(*[getattr(grouptemplate,i) == getattr(thisgroup,i) for i in instrumentlist]).first()
+    if templatematch is not None:
+        log('GETGROUPNAME: Found that this group instrumentation matches the template %s' % templatematch.grouptemplatename)
+        name = templatematch.grouptemplatename
+
+    #if we don't get a match, then we find how many players there are in this group, and give it a more generic name
+    else:
+        count = 0
+        for i in instrumentlist:
+            value = getattr(thisgroup, i)
+            log('GETGROUPNAME: Instrument %s is value %s' % (i, value))
+            if value is not None:
+                count = count + int(getattr(thisgroup, i))
+        log('GETGROUPNAME: Found %s instruments in group.' % value)
+        if count == 1:
+            name = 'Solo'
+        elif count == 2:
+            name = 'Duet'
+        elif count == 3:
+            name = 'Trio'
+        elif count == 4:
+            name = 'Quartet'
+        elif count == 5:
+            name = 'Quintet'
+        elif count == 6:
+            name = 'Sextet'
+        elif count == 7:
+            name = 'Septet'
+        elif count == 8:
+            name = 'Octet'
+        elif count == 9:
+            name = 'Nonet'
+        elif count == 10:
+            name = 'Dectet'
+        else:
+            name = 'Custom Group'
+
+    if thisgroup.musicid is not None:
+        log('GETGROUPNAME: Found that this groups musicid is %s' % thisgroup.musicid)
+        composer = session.query(music).filter(music.musicid == thisgroup.musicid).first().composer
+        log('GETGROUPNAME: Found composer matching this music to be %s' % composer)
+        name = composer + ' ' + name
+        
+    log('GETGROUPNAME: Full name of group returned is %s' % name)
+    return name
 
 #The schedule class is not a table, it's used when getting user schedules
-class periodschedule:
+class periodschedule(object):
 
     def __init__(self,
                     groupname = None,
@@ -235,34 +266,65 @@ class periodschedule:
         self.musicname = musicname
         self.musicwritein = musicwritein
 
-    @property
-    def serialize(self):
-        return serialize_class(self, self.__class__)
-
 #The player class is not a table, it's used when retrieving players
-class player:
+class player(object):
 
     def __init__(self,
+                    userid = None,
                     firstname = None,
                     lastname = None,
                     instrumentname = None,
                     level = None,
                     isprimary = None):
+        self.userid = userid
         self.firstname = firstname
         self.lastname = lastname
         self.instrumentname = instrumentname
         self.level = level
         self.isprimary = isprimary
 
-    @property
-    def serialize(self):
-        return serialize_class(self, self.__class__)
-
-def converttoplayer(o)
+#converts a SQLAlchemy object from a row retrieved to a player class
+def converttoplayer(o):
     return player(
-        firstname = o.firstname
-        lastname = o.lastname
-        instrumentname = o.instrumentname
-        level = o.level
+        userid = o.userid,
+        firstname = o.firstname,
+        lastname = o.lastname,
+        instrumentname = o.instrumentname,
+        level = o.level,
         isprimary = o.isprimary
     )
+
+def getplayers(session):
+        playersdump = session.query(user.userid,
+                        user.firstname,
+                        user.lastname,
+                        instrument.instrumentname,
+                        userinstrument.level,
+                        userinstrument.isprimary
+                    ).join(userinstrument
+                    ).join(instrument
+                    ).filter(user.isactive == 1, 
+                        userinstrument.isactive == 1,
+                        user.departure >= today(1)
+                    ).all()
+        players = []
+        for p in playersdump:
+            players.append(converttoplayer(p))
+        return players
+
+#import all models in this folder
+from .base import Base
+from .announcement import announcement
+from .group import group
+from .groupassignment import groupassignment
+from .grouplog import grouplog
+from .grouptemplate import grouptemplate
+from .grouptemplateinstrument import grouptemplateinstrument
+from .instrument import instrument
+from .location import location
+from .locationinstrument import locationinstrument
+from .music import music
+from .musicinstrument import musicinstrument
+from .period import period
+from .userinstrument import userinstrument
+from .user import user

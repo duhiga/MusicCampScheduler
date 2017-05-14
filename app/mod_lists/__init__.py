@@ -236,7 +236,6 @@ def grouphistory(logonid):
         return str(ex)
 
     try:
-        now = datetime.datetime.now() #get the time now
         groups = session.query(group.groupname, group.groupid, period.periodid, period.starttime, period.endtime, groupassignment.instrumentname, group.status, location.locationname).\
                     join(groupassignment).outerjoin(period).outerjoin(location).filter(groupassignment.userid == thisuser.userid, group.groupname != 'absent').order_by(period.starttime).all()
         log(groups)
@@ -257,7 +256,7 @@ def grouphistory(logonid):
                                 thisuser=thisuser, \
                                 groups = groups, \
                                 campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
-                                now=now, \
+                                now=now(), \
                                 playcount=count, \
                                 average=average, \
                                 thisuserprimary=thisuserprimary, \

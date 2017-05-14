@@ -4,13 +4,14 @@ from sqlalchemy.dialects.postgresql import UUID
 import datetime
 from .base import Base
 from app.models import serialize_class
+from app.config import now
 
 class grouplog(Base):
     __tablename__ = 'grouplogs'
 
     logid = Column(Integer, primary_key=True, unique=True)
     groupid = Column(Integer, ForeignKey('groups.groupid'))
-    timestamp = Column(DateTime, default=datetime.datetime.now())
+    timestamp = Column(DateTime, default=now())
     message = Column(Text(convert_unicode=True))
 
     @property

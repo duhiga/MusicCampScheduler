@@ -5,57 +5,6 @@ from sqlalchemy import *
 from app import Session
 from app.models import *
 
-def getgroupname(session,thisgroup):
-    log('GETGROUPNAME: Generating a name for requested group')
-    instrumentlist = getconfig('Instruments').split(",")
-
-    #if this group's instrumentation matches a grouptempplate, then give it the name of that template
-    templatematch = session.query(grouptemplate).filter(*[getattr(grouptemplate,i) == getattr(thisgroup,i) for i in instrumentlist]).first()
-    if templatematch is not None:
-        log('GETGROUPNAME: Found that this group instrumentation matches the template %s' % templatematch.grouptemplatename)
-        name = templatematch.grouptemplatename
-
-    #if we don't get a match, then we find how many players there are in this group, and give it a more generic name
-    else:
-        count = 0
-        for i in instrumentlist:
-            value = getattr(thisgroup, i)
-            log('GETGROUPNAME: Instrument %s is value %s' % (i, value))
-            if value is not None:
-                count = count + int(getattr(thisgroup, i))
-        log('GETGROUPNAME: Found %s instruments in group.' % value)
-        if count == 1:
-            name = 'Solo'
-        elif count == 2:
-            name = 'Duet'
-        elif count == 3:
-            name = 'Trio'
-        elif count == 4:
-            name = 'Quartet'
-        elif count == 5:
-            name = 'Quintet'
-        elif count == 6:
-            name = 'Sextet'
-        elif count == 7:
-            name = 'Septet'
-        elif count == 8:
-            name = 'Octet'
-        elif count == 9:
-            name = 'Nonet'
-        elif count == 10:
-            name = 'Dectet'
-        else:
-            name = 'Custom Group'
-
-    if thisgroup.musicid is not None:
-        log('GETGROUPNAME: Found that this groups musicid is %s' % thisgroup.musicid)
-        composer = session.query(music).filter(music.musicid == thisgroup.musicid).first().composer
-        log('GETGROUPNAME: Found composer matching this music to be %s' % composer)
-        name = composer + ' ' + name
-        
-    log('GETGROUPNAME: Full name of group returned is %s' % name)
-    return name
-
 #iterates through the empty slots in a group and finds players to potentially fill them. returns a list of players.
 def autofill(session,thisgroup,thisperiod,primary_only=0):
     #get the minimum level of this group

@@ -184,7 +184,6 @@ def editgroup(logonid,groupid,periodid=None):
                     setattr(thisgroup,key,value)
             if groupid == None:
                 session.add(thisgroup)
-                thisgroup.requesttime = datetime.datetime.now()
                 session.commit()
 
             if content['locationid'] is not None and content['locationid'] != '':
@@ -322,7 +321,7 @@ def announcementpage(logonid):
             #if this is a user that just pressed submit
             if request.method == 'POST':
                 #create a new announcement object with the submitted content, and send it
-                newannouncement = announcement(content = request.json['content'], creationtime = datetime.datetime.now())
+                newannouncement = announcement(content = request.json['content'], creationtime = now())
                 session.add(newannouncement)
                 session.commit()
                 url = ('/user/' + str(thisuser.logonid) + '/')
@@ -382,13 +381,13 @@ def groupscheduler(logonid):
                                 ).all()
                 log("GROUPSCHEDULER: Found %s queued groups to show the user" % len(groups))
                 #find all periods after now so the admin can choose which they want to fill with groups
-                periods = session.query(period).filter(period.starttime > datetime.datetime.now()).all()
+                periods = session.query(period).filter(period.starttime > now()).all()
                 session.close()
                 return render_template('groupscheduler.html', \
                                         groups=groups, \
                                         periods=periods, \
                                         thisuser=thisuser, \
-                                        now=datetime.datetime.now(), \
+                                        now=now(), \
                                         campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
                                         )
         if request.method == 'POST':
@@ -438,7 +437,7 @@ def groupscheduler(logonid):
                     requesteduser = getuser(session,g.requesteduserid)
                     if g.periodid is None and \
                             g.totalallocatedplayers == 0 and \
-                            (requesteduser.isactive != 1 or requesteduser.departure < datetime.datetime.now()):
+                            (requesteduser.isactive != 1 or requesteduser.departure < now()):
                         log('FILLALL: Group name:%s id:%s is an orphan group and will now be deleted' % (g.groupname,g.groupid))
                         g.delete(session)
                     #then, check if any of the players in this group are already playing in this period
@@ -556,7 +555,7 @@ def publiceventpage(logonid,periodid):
                 if request.json['locationid'] == '' or request.json['groupname'] == '':
                     raise Exception('Submission failed. You must submit both an event name and location.')
                 event = group(periodid = periodid, iseveryone = 1, groupname =  request.json['groupname'], requesteduserid = thisuser.userid,\
-                    ismusical = 0, locationid = request.json['locationid'], status = "Confirmed", requesttime = datetime.datetime.now())
+                    ismusical = 0, locationid = request.json['locationid'], status = "Confirmed", requesttime = now())
                 if request.json['groupdescription'] and request.json['groupdescription'] != '':
                     event.groupdescription = request.json['groupdescription']
                 session.add(event)

@@ -13,11 +13,6 @@ def getconfig(attribute):
         attr = config.root.CampDetails[attribute]
     return attr
 
-#sets up debugging
-def log(string):
-    if int(getconfig('Debug')) == 1:
-        print(string)
-
 #returns today plus or minus a delta number of days
 def today(delta=None):
     if delta is not None:
@@ -41,3 +36,12 @@ def errorpage(thisuser,message):
             supportemailaddress=getconfig('SupportEmailAddress'), \
             errormessage = message
             )
+
+#other components use this function to print to the log file or console
+def log(string):
+    if int(getconfig('Debug')) == 1:
+        try:
+            with open(getconfig('LogFileName'), "a+") as configfile:
+                configfile.write(now().strftime('%Y-%m-%d %H:%M:%S') + ' | ' + string + '\n')
+        except:
+            print(now().strftime('%Y-%m-%d %H:%M:%S') + ' | ' + string)

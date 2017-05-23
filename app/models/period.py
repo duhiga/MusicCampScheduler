@@ -56,6 +56,7 @@ class period(Base):
         playersdump = session.query(user.userid,
                         user.firstname,
                         user.lastname,
+                        instrument.instrumentid,
                         instrument.instrumentname,
                         userinstrument.level,
                         userinstrument.isprimary

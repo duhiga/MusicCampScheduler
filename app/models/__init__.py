@@ -93,11 +93,11 @@ def getgrouptemplates(session,size=None,thisuser=None):
         if thisuser is not None:
             gtquery = gtquery.join(grouptemplateinstrument
                     ).join(instrument
-                    ).outerjoin(userinstrument
+                    ).join(userinstrument
                     ).join(user
-                    ).filter(user.userid == user.userid)
+                    ).filter(user.userid == thisuser.userid)
         if size is not None:
-                gtquery = gtquery.filter(grouptemplate.size == size)
+            gtquery = gtquery.filter(grouptemplate.size == size)
         return gtquery.all()
     except Exception as ex:
         log('GETGROUPTEMPLATE: Exception - failed to find templates')
@@ -273,12 +273,14 @@ class player(object):
                     userid = None,
                     firstname = None,
                     lastname = None,
+                    instrumentid = None,
                     instrumentname = None,
                     level = None,
                     isprimary = None):
         self.userid = userid
         self.firstname = firstname
         self.lastname = lastname
+        self.instrumentid = instrumentid
         self.instrumentname = instrumentname
         self.level = level
         self.isprimary = isprimary
@@ -289,6 +291,7 @@ def converttoplayer(o):
         userid = o.userid,
         firstname = o.firstname,
         lastname = o.lastname,
+        instrumentid = o.instrumentid,
         instrumentname = o.instrumentname,
         level = o.level,
         isprimary = o.isprimary
@@ -298,6 +301,7 @@ def getplayers(session):
         playersdump = session.query(user.userid,
                         user.firstname,
                         user.lastname,
+                        instrument.instrumentid,
                         instrument.instrumentname,
                         userinstrument.level,
                         userinstrument.isprimary

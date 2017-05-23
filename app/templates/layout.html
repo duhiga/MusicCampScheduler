@@ -59,7 +59,7 @@
 
         var isClicked = false;
 
-        function sendtoserver(request, method, url) {
+        function sendtoserver(request, method, url, callback) {
 
             //this function handles AJAX sending to the server
             $.ajax({
@@ -93,8 +93,7 @@
                     if (data.url == 'none' && data.message == 'none') {
                         toast('Changes Saved','success');
                     }
-
-                    return data;
+                    if (callback) {callback(data);} else return data;
                 },
                 error: function(xhr, textStatus, errorThrown) {
                     console.log('Server returned ' + textStatus)

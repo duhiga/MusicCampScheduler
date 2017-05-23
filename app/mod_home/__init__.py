@@ -35,7 +35,6 @@ def homepage(logonid,inputdate='n'):
             announcementcontent = ''
         #get impontant datetimes
         today = datetime.datetime.combine(datetime.date.today(), datetime.time.min) #get today's date
-        log('HOME: Today is %s' % today.strftime('%Y-%m-%d %H:%M'))
         campstarttime = datetime.datetime.strptime(getconfig('StartTime'), '%Y-%m-%d %H:%M')
         campendtime = datetime.datetime.strptime(getconfig('EndTime'), '%Y-%m-%d %H:%M')
         #if the suer has submitted a date, convert it to a datetime and use it as the display date

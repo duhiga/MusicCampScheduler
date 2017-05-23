@@ -65,14 +65,11 @@ def grouprequest(logonid,periodid=None,musicid=None):
                     return errorpage(thisuser,"You have requested music that could not be found in the database. Talk to the administrator.")
             else:
                 requestedmusic = None
-
             if conductorpage:
                 musics = thisperiod.getfreemusics(session)
-                grouptemplates = getgrouptemplates(session,'S')
+                grouptemplates = getgrouptemplates(session, 'S')
                 render = render_template('grouprequest.html',
                                 thisuser=thisuser,
-                                thisuserinstruments=thisuser.getinstruments(session),
-                                thisuserinstruments_serialized=[i.serialize for i in thisuser.getinstruments(session)],
                                 playerlimit = int(getconfig('GroupRequestPlayerLimit')),
                                 grouptemplates = grouptemplates,
                                 grouptemplates_serialized=[i.serialize for i in grouptemplates],
@@ -89,9 +86,13 @@ def grouprequest(logonid,periodid=None,musicid=None):
             else:
                 musics = getmusic(session)
                 grouptemplates = getgrouptemplates(session, 'S', thisuser)
+                thisuserinstruments = session.query(userinstrument.instrumentid, instrument.instrumentname
+                                            ).join(instrument
+                                            ).filter(userinstrument.userid == thisuser.userid
+                                            ).all()
                 render = render_template('grouprequest.html',
                                 thisuser=thisuser,
-                                thisuserinstruments=thisuser.getinstruments(session),
+                                thisuserinstruments=thisuserinstruments,
                                 thisuserinstruments_serialized=[i.serialize for i in thisuser.getinstruments(session)],
                                 playerlimit = int(getconfig('GroupRequestPlayerLimit')),
                                 grouptemplates = grouptemplates,

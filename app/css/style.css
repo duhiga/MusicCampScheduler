@@ -10,6 +10,8 @@ body {
     padding-top: 60px;
     padding-bottom: 60px;
 }
+
+.pointer {cursor: pointer;}
 table {border-collapse: collapse;}
 .zebra-table tr:nth-child(odd) {background: #eee;}
 .border-table td, th {border: 1px solid #999;}

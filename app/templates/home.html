@@ -121,7 +121,7 @@
             <div id="home_protip_welcome" class="w3-panel w3-blue protip" hidden="hidden">
                 <span class="w3-closebtn protip_close">&times;</span>
                 <h3>Welcome</h3>
-                <p">Welcome to {{campname}}! This page always shows your schedule for today. You can check out the music library and request to play specific music, by clicking the <i class="fa fa-book"></i>book icon at the top of your screen. You can request custom groups by using the <i class="fa fa-music"></i>music icon at the top of your screen. You'll see more tips like this around the place, just click the &times; in the top right to make them go away for good.</p>
+                <p>Welcome to {{campname}}! This page always shows your schedule for today. You can check out the music library and request to play specific music, by clicking the <i class="fa fa-book"></i>book icon at the top of your screen. You can request custom groups by using the <i class="fa fa-music"></i>music icon at the top of your screen. You'll see more tips like this around the place, just click the &times; in the top right to make them go away for good.</p>
             </div>
         </div>
     </div>
@@ -168,7 +168,7 @@
                 {% set afternoon = 1 %}
                 {% endif %}
                 <div class="w3-card-4">
-                    <header class="accordion w3-container
+                    <header class="pointer accordion w3-container
                     {% if p.groupname =='absent' or p.starttime < thisuser.arrival or p.starttime > thisuser.departure %}
                     w3-dark-gray
                     {% elif p.groupname and p.ismusical == 1 %}

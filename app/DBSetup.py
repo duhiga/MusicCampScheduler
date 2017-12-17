@@ -569,7 +569,6 @@ def dbbuild(configfile):
                     for x in range(0,len(conf.root.CampDetails.PublicEvent)):
                         find_event = session.query(group).filter(group.groupname == conf.root.CampDetails.PublicEvent[x]['Name'],group.periodid == find_period.periodid,group.iseveryone == 1,group.ismusical == 0).first()
                         if find_event is None and find_period.periodname == conf.root.CampDetails.PublicEvent[x]['Period']:
-                            log('right before locationname search')
                             find_location = session.query(location).filter(location.locationname == conf.root.CampDetails.PublicEvent[x]['Location']).first()
                             if find_location is None:
                                 log('User input a location that does not exist when configuring event %s' % conf.root.CampDetails.PublicEvent[x]['Name'])

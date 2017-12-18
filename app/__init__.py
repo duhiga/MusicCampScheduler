@@ -807,8 +807,12 @@ def grouprequest(logonid,periodid=None,musicid=None):
             log('GROUPREQUEST: User has requested %s groups' % thisuser.grouprequestcount)
             log('GROUPREQUEST: Maximum allowance is %s plus an extra %s per day' % (getconfig('BonusGroupRequests'), getconfig('DailyGroupRequestLimit')))
             log('GROUPREQUEST: User arrived at camp at %s.' % thisuser.arrival)
-            log('GROUPREQUEST: User is allowed total %s requests.' % (((now - thisuser.arrival).days + 2) * float(getconfig('DailyGroupRequestLimit')) + float(getconfig('BonusGroupRequests'))))
-            if thisuser.grouprequestcount >= (((now - thisuser.arrival).days + 2) * float(getconfig('DailyGroupRequestLimit')) + float(getconfig('BonusGroupRequests'))):
+            if (now - thisuser.arrival).days < 0:
+                allowedRequests = float(getconfig('BonusGroupRequests'))
+            else:
+                allowedRequests = float((now - thisuser.arrival).days + 2) * float(getconfig('DailyGroupRequestLimit')) + float(getconfig('BonusGroupRequests'))
+            log('GROUPREQUEST: User is allowed total %s requests.' % (allowedRequests))
+            if thisuser.grouprequestcount >= allowedRequests:
                 log('GROUPREQUEST: This user is denied access to request another group.')
                 session.close()
                 return errorpage(thisuser,"You have requested %s groups throughout the camp, and you're allowed %s per day (as well as %s welcome bonus requests!). You've reached your limit for today. Come back tomorrow!" % \

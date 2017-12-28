@@ -97,7 +97,7 @@ def getuser(session,userid,logon=False):
         else:
             thisuser = session.query(user).filter(user.userid == userid).first()
         if thisuser is None:
-            log('GETUSER: Exception - Could not find user:%s logon:%s in database' % (userid,logon))
+            log('GETUSER: Could not find user:%s logon:%s in database' % (userid,logon))
             raise Exception('Could not find user in database')
         else:
             return thisuser

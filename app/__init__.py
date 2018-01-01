@@ -468,7 +468,6 @@ def editgroup(logonid,groupid,periodid=None):
             for p in content['objects']:
                 if p['userid'] != '' and p['userid'] is not None:
                     foundfilled = True
-                    log('Attempting to find user %s' % p['userid'])
                     playeruser = session.query(user).filter(user.userid == p['userid']).first()
                     #if the player is already playing in something, we have a clash and we have to exit completely. This may happen if multiple people are creating groups at the same time.
                     currentassignment = session.query(groupassignment.instrumentname, group.groupname, group.groupid).join(group).filter(groupassignment.userid == p['userid']).filter(group.periodid == thisperiod.periodid).first()

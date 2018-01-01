@@ -645,7 +645,7 @@ def importusers(file):
                 thisuser.isactive = 1
                 thisuser.grouprequestcount = 0
                 thisuser.firstname = row[0]
-                thisuser.lastname = row[1][:1] #[:1] means just get the first letter
+                thisuser.lastname = row[1][:2] #[:2] means just get the first two letters
                 if row[12] is not '':
                     thisuser.isannouncer = row[12]
                 if row[13] is not '':

@@ -282,15 +282,15 @@
                                 <!-- If if the user is currently not assigned to a group, show them a button where they can mark themselves as absent -->
                                 {% if not p.groupname or p.iseveryone %}
                                 <div class="w3-half w3-hide-medium">
-                                    <button id={{ p.periodid }} data-periodname="{{ p.periodname }}" class="absent_request_button w3-btn-block w3-hover-black w3-white w3-border w3-round-large">Mark Me Absent</button>
+                                    <button id="{{ p.periodid }}" data-periodname="{{ p.periodname }}" class="absent_request_button w3-btn-block w3-hover-black w3-white w3-border w3-round-large">Mark Me Absent</button>
                                 </div>
-                                <button id={{ p.periodid }} data-periodname="{{ p.periodname }}" class="absent_request_button w3-btn-block w3-hover-black w3-white w3-border w3-round-large w3-hide-small w3-hide-large">Mark Me Absent</button>
+                                <button id="{{ p.periodid }}" data-periodname="{{ p.periodname }}" class="absent_request_button w3-btn-block w3-hover-black w3-white w3-border w3-round-large w3-hide-small w3-hide-large">Mark Me Absent</button>
                                 <!-- If they are currently absent, show the a button to mark themselves as present -->
                                 {% elif p.groupname == "absent" %}
                                 <div class="w3-half w3-hide-medium">
-                                    <button id={{ p.periodid }} data-periodname="{{ p.periodname }}" class="absent_cancel_button w3-btn-block w3-hover-black w3-white w3-border w3-round-large">Mark Me Present</button>
+                                    <button id="{{ p.periodid }}" data-periodname="{{ p.periodname }}" class="absent_cancel_button w3-btn-block w3-hover-black w3-white w3-border w3-round-large">Mark Me Present</button>
                                 </div>
-                                <button id={{ p.periodid }} data-periodname="{{ p.periodname }}" class="absent_cancel_button w3-btn-block w3-hover-black w3-white w3-border w3-round-large w3-hide-small w3-hide-large">Mark Me Present</button>
+                                <button id="{{ p.periodid }}" data-periodname="{{ p.periodname }}" class="absent_cancel_button w3-btn-block w3-hover-black w3-white w3-border w3-round-large w3-hide-small w3-hide-large">Mark Me Present</button>
                                 {% endif %}
                                 {% endif %}
                                 <!-- Is this user is an conductor, they can request small groups or create instrumentation -->

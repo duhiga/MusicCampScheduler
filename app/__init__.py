@@ -184,14 +184,10 @@ def mark_absent(logonid,periodid,command):
         message = ('Failed to execute %s with exception: %s. Try refreshing the page and trying again or contact camp administration.' % (request.method, ex))
         session.rollback()
         session.close()
-        if request.method == 'GET':
-            return render_template('errorpage.html', \
-                                        thisuser=thisuser, \
-                                        campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
-                                        errormessage = 'Failed to display page. %s' % ex
-                                        )
     else:
-        return jsonify(message = message, url = 'none')
+        session.commit()
+        session.close()
+        return jsonify(message = 'success', url = 'none')
 
 #The group page displays all the people in a given group, along with possible substitutes
 @app.route('/user/<logonid>/group/<groupid>/')

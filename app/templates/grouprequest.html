@@ -139,7 +139,7 @@
             var listItems = "<option value=''>(No Preference)</option>";
             for (var i = 0; i < players.length; i++) {
                 if (players[i].instrumentname == selectedinstrument) {
-                    listItems += "<option value='" + players[i].userid + "'>" + {% if conductorpage %}'Level ' + players[i].grade + ' - ' +{% endif %} players[i].firstname + " " + players[i].lastname + "</option>";
+                    listItems += "<option value='" + players[i].userid + "'>" + {% if conductorpage %}'Level ' + players[i].level + ' - ' +{% endif %} players[i].firstname + " " + players[i].lastname + "</option>";
                 };
             };
             $(".player_dropdown[data-mapping=" + $(this).data('mapping') + "]").html(listItems);

@@ -370,7 +370,7 @@
                         <tr>
                             <th>Instrument</th>
                             {% if thisuser.isadmin == 1 %}
-                            <th>Grade</th>
+                            <th>Level</th>
                             {% endif %}
                             <th>Primary</th>
                             <th>Active</th>
@@ -397,9 +397,9 @@
                             </td>
                             {% if thisuser.isadmin == 1 %}
                             <td>
-                                <select data-key="grade" data-mapping="{{t.instrumentid}}" class="w3-select w3-border">
+                                <select data-key="level" data-mapping="{{t.instrumentid}}" class="w3-select w3-border">
                                     {% for n in range(maximumlevel + 1) %}
-                                    {% if n == t.grade %}
+                                    {% if n == t.level %}
                                     <option value="{{ n }}" selected="selected">{{ n }}</option>
                                     {% else %}
                                     <option value="{{ n }}">{{ n }}</option>

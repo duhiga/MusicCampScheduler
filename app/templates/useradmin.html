@@ -106,7 +106,7 @@
                                                     {% if u.instrumentname %}{{u.instrumentname}}{% endif %}
                                                     ">
                     <td><input type="checkbox" value="{{ u.userid }}" data-key="userid" data-mapping="{{ u.userid }}" class="checkbox form-object-master form-validate"></td>
-                    <td><a href="/user/{{ thisuser.logonid }}/edituser/{{ u.userid }}/">{{ u.firstname }}</a></td>
+                    <td><a href="/user/{{ thisuser.logonid }}/edituser/{{ u.userid }}/">{{ u.firstname }}&nbsp;</a></td>
                     <td><a href="/user/{{ thisuser.logonid }}/edituser/{{ u.userid }}/">{{ u.lastname }}</a></td>
                     <td class="w3-hide-small w3-hide-medium">{% if u.isactive == 1 %}Yes{% else %}No{% endif %}</td>
                     <td class="w3-hide-small">{% if u.instrumentname %}{{u.instrumentname}}{% else %}&nbsp;{% endif %}</td>

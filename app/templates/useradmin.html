@@ -106,8 +106,8 @@
                                                     {% if u.instrumentname %}{{u.instrumentname}}{% endif %}
                                                     ">
                     <td><input type="checkbox" value="{{ u.userid }}" data-key="userid" data-mapping="{{ u.userid }}" class="checkbox form-object-master form-validate"></td>
-                    <td><a href="/user/{{ thisuser.logonid }}/edituser/{{ u.userid }}/">{% if u.firstname != "" %}&nbsp;{% else %}{{ u.firstname }}{% endif %}</a></td>
-                    <td><a href="/user/{{ thisuser.logonid }}/edituser/{{ u.userid }}/">{% if u.lastname != "" %}&nbsp;{% else %}{{ u.lastname }}{% endif %}</a></td>
+                    <td><a href="/user/{{ thisuser.logonid }}/edituser/{{ u.userid }}/">{% if u.firstname == "" %}&nbsp;{% else %}{{ u.firstname }}{% endif %}</a></td>
+                    <td><a href="/user/{{ thisuser.logonid }}/edituser/{{ u.userid }}/">{% if u.lastname == "" %}&nbsp;{% else %}{{ u.lastname }}{% endif %}</a></td>
                     <td class="w3-hide-small w3-hide-medium">{% if u.isactive == 1 %}Yes{% else %}No{% endif %}</td>
                     <td class="w3-hide-small">{% if u.instrumentname %}{{u.instrumentname}}{% else %}&nbsp;{% endif %}</td>
                     <th class="w3-hide-small w3-hide-medium">{{u.grouprequestcount}}</th>

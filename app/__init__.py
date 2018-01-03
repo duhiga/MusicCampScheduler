@@ -1749,7 +1749,7 @@ A small rundown of how to use the web app:\n
 -You can request groups in a few ways. The best way is to visit the music library by clicking the book icon in your top bar, select music you'd like to play, and click the request button there. When you're on the group requset page, fill in your desired information, and press submit. Leaving blanks for other player names is fine and encouraged, you'll be matched up with other players at the end of the day.\n
 If you have any questions, please reply to this email or contact us on %s.\n
 Thanks!\n
-%s %s
+%s
 %s""" % (targetuser.firstname, \
                 getconfig('Name'), \
                 getconfig('EmailIntroSentence'), \
@@ -1757,7 +1757,6 @@ Thanks!\n
                 targetuser.logonid, \
                 getconfig('SupportEmailAddress'), \
                 thisuser.firstname, \
-                thisuser.lastname, \
                 getconfig('Name')\
                 )
                 message = send_email(targetuser.email, subject, body)

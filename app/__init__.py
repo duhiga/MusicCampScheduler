@@ -728,11 +728,13 @@ def newmusic(logonid):
                 setattr(thismusic,key,value)
 
             #try to find a grouptemplate that matches this instrumentation
-            matchingtemplate = session.query(grouptemplate).filter(*[getattr(thismusic,i) == getattr(grouptemplate,i) for i in instrumentlist]).first()
+            matchingtemplate = session.query(grouptemplate)
+            for i in instrumentlist:
+                matchingtemplate = matchingtemplate.filter(getattr(thismusic,i) == getattr(grouptemplate,i))
+            matchingtemplate = matchingtemplate.first()
             if matchingtemplate is not None:
                 log('New Music: Found a template matching this music: %s' % matchingtemplate.grouptemplatename)
                 thismusic.grouptemplateid = matchingtemplate.grouptemplateid
-            
             session.add(thismusic)
             session.commit()
             log('New Music: Successfully created')

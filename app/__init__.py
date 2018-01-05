@@ -963,17 +963,23 @@ def grouprequest(logonid,periodid=None,musicid=None):
             musicstatus = None
             if (content['musicid'] != '' and content['musicid'] != 'null' and content['musicid'] != None):
                 log('MATCHMAKING: Found that user has requested the music to be %s' % content['musicid'])
-                matchinggroups = session.query(group).filter(group.musicid == content['musicid'], group.ismusical == 1, group.periodid == None).order_by(group.requesttime).all()
+                matchinggroups = session.query(group).filter(group.musicid == content['musicid'], group.ismusical == 1, group.periodid == None, group.iseveryone == 0).order_by(group.requesttime).all()
                 musicstatus = 'musicid'
                 musicvalue = content['musicid']
             elif (content['musicwritein'] != '' and content['musicwritein'] != 'null' and content['musicwritein'] != None):
                 log('MATCHMAKING: Found that user has written in %s for their music' % content['musicwritein'])
-                matchinggroups = session.query(group).filter(group.musicwritein == content['musicwritein'], group.ismusical == 1, group.periodid == None, *[getattr(grouprequest,i) == getattr(group,i) for i in instrumentlist]).order_by(group.requesttime).all()
+                matchinggroups = session.query(group).filter(group.musicwritein == content['musicwritein'], group.iseveryone == 0, group.ismusical == 1, group.periodid == None)
+                for i in instrumentlist:
+                    matchinggroups = matchinggroups.filter(getattr(grouprequest,i) == getattr(group,i))
+                matchinggroups = matchinggroups.order_by(group.requesttime).all()
                 musicstatus = 'musicwritein'
                 musicvalue = content['musicwritein']
             else:
                 log('MATCHMAKING: User did not specify any music in their request')
-                matchinggroups = session.query(group).filter(group.iseveryone == None, group.ismusical == 1, group.periodid == None, *[getattr(grouprequest,i) == getattr(group,i) for i in instrumentlist]).order_by(group.requesttime).all()
+                matchinggroups = session.query(group).filter(group.iseveryone == 0, group.ismusical == 1, group.periodid == None)
+                for i in instrumentlist:
+                    matchinggroups = matchinggroups.filter(getattr(grouprequest,i) == getattr(group,i))
+                matchinggroups = matchinggroups.order_by(group.requesttime).all()
             Match = False
             #if we found at least one matching group
             if matchinggroups is not None:

@@ -170,7 +170,7 @@ def autofill(session,thisgroup,thisperiod,primary_only=0):
                             ).outerjoin(group, group.groupid == groupassignment.groupid
                             ).filter(
                                 user.userid.in_(possible_players_query),
-                                group.ismusical == 1,           
+                                group.ismusical == 1,
                                 group.periodid != None,
                                 group.groupid != thisgroup.groupid,
                                 #grab all groups that share a musicid with this group

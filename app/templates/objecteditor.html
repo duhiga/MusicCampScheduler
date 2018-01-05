@@ -42,10 +42,10 @@
         </div>
     </div>
     <div class="w3-container">
-        {% for key, value in object_dict.iteritems() %}
+        {% for key, value in object_dict.items() %}
         {% if key == table + 'name' %}
         {% set name = key %}
-        {% for key, value in object_dict.iteritems() %}
+        {% for key, value in object_dict.items() %}
         {% if key == table + 'id' %}
         {% set id = key %}
         {% for o in objects %}
@@ -53,7 +53,7 @@
         <div id="{{ o[name] }}" class="w3-accordion-content w3-card-4 panel">
             <input type="hidden" data-key="{{ id }}" data-mapping="{{ o[id] }}" class="master" value="{{ o[id] }}">
             <table>
-                {% for key, value in object_dict.iteritems() %}
+                {% for key, value in object_dict.items() %}
                 <tr>
                     {% if key != table + 'id' %}
                     <th>{{ key }}</th>
@@ -77,7 +77,7 @@
         <div id="new" class="w3-accordion-content w3-card-4 panel">
             <input type="hidden" data-key="{{ table }}id" data-mapping="new" class="master" value="new">
             <table>
-                {% for key, value in object_dict.iteritems() %}
+                {% for key, value in object_dict.items() %}
                 <tr>
                     {% if key != table + 'id' %}
                     <th>{{ key }}</th>

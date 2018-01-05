@@ -963,12 +963,12 @@ def grouprequest(logonid,periodid=None,musicid=None):
             musicstatus = None
             if (content['musicid'] != '' and content['musicid'] != 'null' and content['musicid'] != None):
                 log('MATCHMAKING: Found that user has requested the music to be %s' % content['musicid'])
-                matchinggroups = session.query(group).filter(or_(group.musicid == content['musicid'], group.musicwritein == content['musicwritein']), group.iseveryone == None, group.ismusical == 1, group.periodid == None, *[getattr(grouprequest,i) == getattr(group,i) for i in instrumentlist]).order_by(group.requesttime).all()
+                matchinggroups = session.query(group).filter(group.musicid == content['musicid'], group.ismusical == 1, group.periodid == None).order_by(group.requesttime).all()
                 musicstatus = 'musicid'
                 musicvalue = content['musicid']
             elif (content['musicwritein'] != '' and content['musicwritein'] != 'null' and content['musicwritein'] != None):
                 log('MATCHMAKING: Found that user has written in %s for their music' % content['musicwritein'])
-                matchinggroups = session.query(group).filter(group.musicwritein == content['musicwritein'], group.iseveryone == None, group.ismusical == 1, group.periodid == None, *[getattr(grouprequest,i) == getattr(group,i) for i in instrumentlist]).order_by(group.requesttime).all()
+                matchinggroups = session.query(group).filter(group.musicwritein == content['musicwritein'], group.ismusical == 1, group.periodid == None, *[getattr(grouprequest,i) == getattr(group,i) for i in instrumentlist]).order_by(group.requesttime).all()
                 musicstatus = 'musicwritein'
                 musicvalue = content['musicwritein']
             else:
@@ -982,8 +982,8 @@ def grouprequest(logonid,periodid=None,musicid=None):
                 
                     log("MATCHMAKING: Instrumentation and music match found, requested by %s at time %s" % (m.requesteduserid, m.requesttime))
                     #check if this group is a suitable level
-                    groupmin = getgrouplevel(session,m,'min')
-                    groupmax = getgrouplevel(session,m,'max')
+                    groupmin = m.getminlevel(session)
+                    groupmax = m.getmaxlevel(session)
                     #for each specific player in the request, check if there's a free spot in the matching group
                     #for each player in the group request
                     clash = False

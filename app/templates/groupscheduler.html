@@ -27,7 +27,7 @@
                 console.log(request);
                 $.ajax({
                     type: 'POST',
-                    url: '/user/{{thisuser.logonid}}/groupqueue/',
+                    url: '/user/{{thisuser.logonid}}/groupscheduler/',
                     contentType: 'application/json;charset=UTF-8',
                     data: JSON.stringify(request, null),
                     success: function (data, textStatus) {

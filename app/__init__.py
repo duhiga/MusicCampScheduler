@@ -1203,7 +1203,11 @@ def groupscheduler(logonid):
                                 ).outerjoin(music
                                 ).filter(
                                     group.groupname != 'absent',
-                                    group.iseveryone != 1
+                                    group.iseveryone != 1,
+                                    or_(
+                                    period.starttime > datetime.datetime.now(),
+                                    period.starttime == None
+                                    )
                                 ).order_by(
                                     group.status.desc(),
                                     group.periodid.nullslast(),

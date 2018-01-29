@@ -660,14 +660,19 @@ def musicdetails(logonid,musicid):
                 break
         grouptemplates = session.query(grouptemplate).filter(grouptemplate.size == 'S').all()
         playcount = session.query(group).filter(group.musicid == thismusic.musicid).count()
+        grouphistory = session.query(group.groupname, group.status, group.groupid, period.starttime
+            ).join(period, group.periodid == period.periodid
+            ).filter(group.musicid == thismusic.musicid).all()
         session.close()
         return render_template('musicdetails.html', \
                                 thisuser=thisuser, \
+                                now=datetime.datetime.now(), \
                                 thismusic=thismusic, \
                                 grouptemplates=grouptemplates, \
                                 canplay=canplay, \
                                 campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
                                 playcount=playcount, \
+                                grouphistory=grouphistory
                                 )
     except Exception as ex:
         log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))

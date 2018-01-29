@@ -1,18 +1,19 @@
-{% extends "layout.html" %}
-{% block title%}Music Library - {{ campname }}{% endblock %}
-{% block breadcrumbs %}
-<li class="w3-hide-small"><a href="/user/{{ thisuser.logonid }}/musiclibrary/" class="w3-hover-white">Music Library</a></li>
-<li class="w3-hide-small"><a href="#" class="w3-hover-white">Music Details</a></li>
-{% endblock %}
-{% block content %}
+{% extends "layout.html" %} {% block title%}Music Library - {{ campname }}{% endblock %} {% block breadcrumbs %}
+<li class="w3-hide-small">
+    <a href="/user/{{ thisuser.logonid }}/musiclibrary/" class="w3-hover-white">Music Library</a>
+</li>
+<li class="w3-hide-small">
+    <a href="#" class="w3-hover-white">Music Details</a>
+</li>
+{% endblock %} {% block content %}
 <div class="w3-row">
-    <div class="w3-container">
-
+    <div class="w3-half w3-container">
         <h2>Music Details</h2>
         <div id="musicdetails_protip_source" class="w3-panel w3-blue protip" hidden="hidden">
             <span class="w3-closebtn protip_close">&times;</span>
             <h3>Pro Tip!</h3>
-            <p">The "Source" below tells you where to find the music. If it's someone's name - ask them. If it's not someone's name, check the camp's physical library for the parts or ask a librarian.</p>
+            <p>The "Source" below tells you where to find the music. If it's someone's name - ask them. If it's not someone's
+                name, check the camp's physical library for the parts or ask a librarian.</p>
         </div>
         <p>
             <table class="w3-table">
@@ -31,28 +32,19 @@
                 <tr>
                     <th>Instrumentation</th>
                     <td>
-                        {% if thismusic.grouptemplateid != None %}
-                        {% for t in grouptemplates %}
-                        {% if thismusic.grouptemplateid == t.grouptemplateid %}
-                        {{t.grouptemplatename}}
-                        {% endif %}
-                        {% endfor %}
-                        {% else %}
-                        {% for i in instrumentlist %}
-                        {% if thismusic[i] > 0 %}
-                        {{i}}:{{thismusic[i]}}
-                        {% endif %}
-                        {% endfor %}
-                        {% endif %}
+                        {% if thismusic.grouptemplateid != None %} {% for t in grouptemplates %} {% if thismusic.grouptemplateid == t.grouptemplateid
+                        %} {{t.grouptemplatename}} {% endif %} {% endfor %} {% else %} {% for i in instrumentlist %} {% if
+                        thismusic[i] > 0 %} {{i}}:{{thismusic[i]}} {% endif %} {% endfor %} {% endif %}
                     </td>
                 </tr>
                 {% if thismusic.link != None %}
                 <tr>
                     <th>Sheet Music</th>
-                    <td><a href="{{ thismusic.link }}">{{ thismusic.link }}</a></td>
+                    <td>
+                        <a href="{{ thismusic.link }}">{{ thismusic.link }}</a>
+                    </td>
                 </tr>
-                {% endif %}
-                {% if thismusic.notes != None %}
+                {% endif %} {% if thismusic.notes != None %}
                 <tr>
                     <th>Notes</th>
                     <td>{{ thismusic.notes }}</td>
@@ -64,12 +56,55 @@
                 </tr>
             </table>
         </p>
+    </div>
+    <div class="w3-half w3-container">
+        <h2>Music History</h2>
+        <p>
+            <table class="w3-table">
+                <tr>
+                    <th>Time</th>
+                    <th>Group</th>
+                    <th>Status</th>
+                </tr>
+                {% for g in grouphistory %}
+                    <tr>
+                        <td>{{g.starttime.strftime('%d %b %H:%M')}}</td>
+                        <td>
+                            <a href="/user/{{ thisuser.logonid }}/group/{{ g.groupid }}/">{{g.groupname}}</a>
+                        </td>
+                        <td style="text-align:center">
+                            {% if g.status == "Confirmed" %}
+                                {% if g.starttime < now %} 
+                                    <div class="tooltip">
+                                        <i class="fa fa-check-circle"></i>
+                                        <span class="tooltiptext tooltiptop">Complete</span>
+                                    </div>
+                                {% else %}
+                                <div class="tooltip">
+                                    <i class="fa fa-check"></i>
+                                    <span class="tooltiptext tooltiptop">Confirmed</span>
+                                </div>
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </table>
+        </p>
+    </div>
+</div>
+<div class="w3-row">
+    <div class="w3-container">
         {% if canplay == True %}
-        <a class="w3-btn-block w3-green w3-border w3-round" href="/user/{{ thisuser.logonid }}/grouprequest/music/{{ thismusic.musicid }}"><i class="fa fa-music"></i> Request to play this work</a>
+        <a class="w3-btn-block w3-green w3-border w3-round" href="/user/{{ thisuser.logonid }}/grouprequest/music/{{ thismusic.musicid }}">
+            <i class="fa fa-music"></i> Request to play this work</a>
         {% endif %}
-            </div>
-    
-        </div>
-        
+    </div>
+
+</div>
+
+
+</div>
+
 
 {% endblock %}

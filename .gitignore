@@ -221,3 +221,6 @@ GeneratedArtifacts/
 _Pvt_Extensions/
 ModelManifest.xml
 /MusicCampScheduler/web.config
+
+# the dockerfile containing sensitive information
+/postgresql/Dockerfile

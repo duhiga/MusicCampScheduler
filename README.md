@@ -16,4 +16,14 @@
 <li>Go to an admin user's dashboard (Not the Adminsitrator user, that user can only do database setup and nothing else) and make sure all the periods and configuration was successfully uploaded. Using the site as an admin is fairly intuitive, you create groups from scratch using the homepage "+Full Group", or go to the group scheduling page to automate scheduling for all user requests.</li>
 <li>Go back to the useradmin page and check everyone's boxes with the very top checkbox. Send email invites, and you should be all good. If you do this a few days before camp starts, it gives everyone a chance to upload any extra music they are bringing, and make a few group requests so you can schedule day 1.</li>
 </ol>
+<p>A general how-to, using Docker:</p>
+<ol>
+<li>Install Docker</li>
+<li>Pull this repo into a folder</li>
+<li>Create your own .env file with appropriate variables. You can use the .env.example file as a base.</li>
+<li>navigate to the root directory of this repo
+<li>run: docker-compose build</li>
+<li>run: docker-compose up -d</li>
+<li>follow the directions from the above heroku example starting after "Start the app"</li>
+</ol>
 <p>Enjoy! Feel free to ping me on github if you're planning on using this app. I'll be rebuilding it this year to make it a single page app and add tonnes more features, but it's usable now and works pretty well.</p>

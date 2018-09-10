@@ -8,6 +8,7 @@
           -AutoAssign limits are used when automatically assigning players to groups. The autoassign algorythm picks players
             according to the lowest level already contained in the group, plus and minus these limits. 
             -->
+  <!-- Note: this file is used in place of environment variables if you are not running an enviornment that supports them -->
   <CampDetails
     Name="Music Camp (Appears on all dashboards)"
     TZ="UTC"

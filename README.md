@@ -22,8 +22,13 @@
 <li>Pull this repo into a folder</li>
 <li>Create your own .env file with appropriate variables. You can use the .env.example file as a base.</li>
 <li>navigate to the root directory of this repo
-<li>run: docker-compose build</li>
-<li>run: docker-compose up -d</li>
+<li>run: 
+    <code>
+        LOGSPOUT_COMMAND="syslog+tls://logsN.papertrailapp.com:XXXXX"
+        docker-compose build
+        docker-compose up -d
+    </code>
+</li>
 <li>follow the directions from the above heroku example starting after "Start the app"</li>
 </ol>
 <p>Enjoy! Feel free to ping me on github if you're planning on using this app. I'll be rebuilding it this year to make it a single page app and add tonnes more features, but it's usable now and works pretty well.</p>

@@ -18,7 +18,9 @@ venv
 */env/*
 staticfiles
 .env
-
+/env/*
+/.vscode/*
+/nginx/musiccampscheduler.conf
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/

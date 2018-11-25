@@ -1,18 +1,54 @@
 version: '2'
  
 services:
-  web:
+  web1:
     restart: always
     env_file: .env
     build: 
-      context: .
-    ports:
-      - 127.0.0.1:5000:5000
+      context: ./webapp
     working_dir: /usr/src/app
-    command: gunicorn -w 2 -b :5000 app:app
+    command: gunicorn -w 2 -b :80 app:app
     depends_on:
       - postgres
+      - logspout
+  web2:
+    restart: always
+    env_file: .env
+    build: 
+      context: ./webapp
+    working_dir: /usr/src/app
+    command: gunicorn -w 2 -b :80 app:app
+    depends_on:
+      - postgres
+      - logspout
+  web3:
+    restart: always
+    env_file: .env
+    build: 
+      context: ./webapp
+    working_dir: /usr/src/app
+    command: gunicorn -w 2 -b :80 app:app
+    depends_on:
+      - postgres
+      - logspout
   postgres:
     restart: always
     image: postgres:latest
-    env_file: .env
+    env_file: ./webapp/.env
+    depends_on:
+      - logspout
+  nginx:
+    restart: always
+    build: 
+      context: ./nginx
+    depends_on:
+      - logspout
+  logspout:
+    image: gliderlabs/logspout
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - SYSLOG_HOSTNAME="${HOSTNAME}"
+    command:
+      ${LOGSPOUT_COMMAND}

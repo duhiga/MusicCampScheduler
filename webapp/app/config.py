@@ -1,5 +1,6 @@
 import untangle
 import os
+import sys
 
 def getconfig(attribute):
     try:
@@ -11,7 +12,11 @@ def getconfig(attribute):
         attr = config.root.CampDetails[attribute]
     return attr
 
-#sets up debugging
+#sets up logging
 def log(string):
+    print(string)
+    #sys.stdout.write(string + '\n')
+
+def debuglog(string):
     if int(getconfig('Debug')) == 1:
         print(string)

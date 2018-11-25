@@ -52,14 +52,14 @@ def getschedule(session, thisuser, date):
 
 
 def getgroupname(session, thisgroup):
-    log('GETGROUPNAME: Generating a name for requested group')
+    debuglog('GETGROUPNAME: Generating a name for requested group')
     instrumentlist = getconfig('Instruments').split(",")
 
     # if this group's instrumentation matches a grouptempplate, then give it the name of that template
     templatematch = session.query(grouptemplate).filter(
         *[getattr(grouptemplate, i) == getattr(thisgroup, i) for i in instrumentlist]).first()
     if templatematch is not None:
-        log('GETGROUPNAME: Found that this group instrumentation matches the template %s' %
+        debuglog('GETGROUPNAME: Found that this group instrumentation matches the template %s' %
             templatematch.grouptemplatename)
         name = templatematch.grouptemplatename
 
@@ -68,10 +68,10 @@ def getgroupname(session, thisgroup):
         count = 0
         for i in instrumentlist:
             value = getattr(thisgroup, i)
-            log('GETGROUPNAME: Instrument %s is value %s' % (i, value))
+            debuglog('GETGROUPNAME: Instrument %s is value %s' % (i, value))
             if value is not None:
                 count = count + int(getattr(thisgroup, i))
-        log('GETGROUPNAME: Found %s instruments in group.' % value)
+        debuglog('GETGROUPNAME: Found %s instruments in group.' % value)
         if count == 1:
             name = 'Solo'
         elif count == 2:
@@ -96,14 +96,14 @@ def getgroupname(session, thisgroup):
             name = 'Custom Group'
 
     if thisgroup.musicid is not None:
-        log('GETGROUPNAME: Found that this groups musicid is %s' %
+        debuglog('GETGROUPNAME: Found that this groups musicid is %s' %
             thisgroup.musicid)
         composer = session.query(music).filter(
             music.musicid == thisgroup.musicid).first().composer
-        log('GETGROUPNAME: Found composer matching this music to be %s' % composer)
+        debuglog('GETGROUPNAME: Found composer matching this music to be %s' % composer)
         name = composer + ' ' + name
 
-    log('GETGROUPNAME: Full name of group returned is %s' % name)
+    debuglog('GETGROUPNAME: Full name of group returned is %s' % name)
     return name
 
 # iterates through the empty slots in a group and finds players to potentially fill them. returns a list of players.
@@ -119,15 +119,15 @@ def autofill(session, thisgroup, thisperiod, primary_only=0):
     final_list = []
     for i in getconfig('Instruments').split(","):
         if int(getattr(thisgroup, i)) > 0:
-            log('AUTOFILL: Group has configured %s total players for instrument %s' % (
+            debuglog('AUTOFILL: Group has configured %s total players for instrument %s' % (
                 getattr(thisgroup, i), i))
             currentinstrumentplayers = session.query(user).join(groupassignment).filter(
                 groupassignment.groupid == thisgroup.groupid, groupassignment.instrumentname == i).all()
             requiredplayers = int(getattr(thisgroup, i)) - \
                 len(currentinstrumentplayers)
-            log('AUTOFILL: Found %s current players for instrument %s' %
+            debuglog('AUTOFILL: Found %s current players for instrument %s' %
                 (len(currentinstrumentplayers), i))
-            log('AUTOFILL: We need to autofill %s extra players for instrument %s' % (
+            debuglog('AUTOFILL: We need to autofill %s extra players for instrument %s' % (
                 requiredplayers, i))
             if requiredplayers > 0:
                 # get the userids of everyone that's already playing in something this period
@@ -159,7 +159,7 @@ def autofill(session, thisgroup, thisperiod, primary_only=0):
                     instrument.isprimary >= int(primary_only)
                 )
 
-                log('AUTOFILL: Found %s possible players of a requested %s for instrument %s.' % (
+                debuglog('AUTOFILL: Found %s possible players of a requested %s for instrument %s.' % (
                     len(possible_players_query.all()), requiredplayers, i))
                 # if we found at least one possible player
                 if len(possible_players_query.all()) > 0:
@@ -259,10 +259,10 @@ def autofill(session, thisgroup, thisperiod, primary_only=0):
                         playcounts_subquery.c.playcount.nullsfirst()
                     ).limit(requiredplayers
                             ).all()
-                    log('AUTOFILL: Players in final list with playcounts:')
+                    debuglog('AUTOFILL: Players in final list with playcounts:')
                     for pl in instrument_list:
-                        log('AUTOFILL: Found %s %s to play %s with totals - isprimary:%s musiccount:%s groupcount:%s playcount:%s ' %
+                        debuglog('AUTOFILL: Found %s %s to play %s with totals - isprimary:%s musiccount:%s groupcount:%s playcount:%s ' %
                             (pl.firstname, pl.lastname, pl.isprimary, pl.isprimary, pl.musiccount, pl.groupcount, pl.playcount))
                         final_list.append(pl)
-    log('AUTOFILL: Completed autofill selections')
+    debuglog('AUTOFILL: Completed autofill selections')
     return final_list

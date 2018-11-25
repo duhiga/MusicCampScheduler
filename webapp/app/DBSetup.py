@@ -187,7 +187,7 @@ class group(Base):
 
     #this function obtains the min level, depending on if it's explicitly set, or has players already assigned
     def getminlevel(self,session):
-        log('GETMINLEVEL: Finding group minimum level')
+        debuglog('GETMINLEVEL: Finding group minimum level')
         #if the group is set to "auto", i.e. blank or 0, find the minimum level of all the players currently playing in the group
         if self.minimumlevel is None or self.minimumlevel == '' or self.minimumlevel == '0' or self.minimumlevel == 0:
             minimumlevelob = session.query(user.firstname, user.lastname, instrument.instrumentname, instrument.level).join(groupassignment).join(group).\
@@ -195,7 +195,7 @@ class group(Base):
                 filter(group.groupid == self.groupid).order_by(instrument.level).first()
             #if we find at least one player in this group, set the minimumlevel to be this players level minus the autoassignlimitlow
             if minimumlevelob is not None:
-                log('GETMINLEVEL: Found minimum level in group %s to be %s %s playing %s with level %s' % (self.groupid, minimumlevelob.firstname, minimumlevelob.lastname, minimumlevelob.instrumentname, minimumlevelob.level))
+                debuglog('GETMINLEVEL: Found minimum level in group %s to be %s %s playing %s with level %s' % (self.groupid, minimumlevelob.firstname, minimumlevelob.lastname, minimumlevelob.instrumentname, minimumlevelob.level))
                 level = int(minimumlevelob.level) - int(getconfig('AutoAssignLimitLow'))
                 if level < 1:
                     level = 1
@@ -205,12 +205,12 @@ class group(Base):
         #if this group's minimum level is explicitly set, use that setting
         else:
             level = self.minimumlevel
-        log('GETMINLEVEL: Found minimum level of group %s to be %s' % (self.groupid,level))
+        debuglog('GETMINLEVEL: Found minimum level of group %s to be %s' % (self.groupid,level))
         return int(level)
 
     #this function obtains the max level, depending on if it's explicitly set, or has players already assigned
     def getmaxlevel(self,session):
-        log('GETMINLEVEL: Finding group minimum level')
+        debuglog('GETMINLEVEL: Finding group minimum level')
         #if the group is set to "auto", i.e. blank or 0, find the maximum level of all the players currently playing in the group
         if self.maximumlevel is None or self.maximumlevel == '' or self.maximumlevel == '0' or self.maximumlevel == 0:
             minimumlevelob = session.query(user.firstname, user.lastname, instrument.instrumentname, instrument.level).join(groupassignment).join(group).\
@@ -218,7 +218,7 @@ class group(Base):
                 filter(group.groupid == self.groupid).order_by(instrument.level).first()
             #if we find at least one player in this group, set the maximumlevel to be this players level plus the autoassignlimithigh
             if minimumlevelob is not None:
-                log('GETMAXLEVEL: Found minimum level in group %s to be %s %s playing %s with level %s' % (self.groupid, minimumlevelob.firstname, minimumlevelob.lastname, minimumlevelob.instrumentname, minimumlevelob.level))
+                debuglog('GETMAXLEVEL: Found minimum level in group %s to be %s %s playing %s with level %s' % (self.groupid, minimumlevelob.firstname, minimumlevelob.lastname, minimumlevelob.instrumentname, minimumlevelob.level))
                 level = int(minimumlevelob.level) + int(getconfig('AutoAssignLimitHigh'))
                 if level > int(getconfig('AutoAssignLimitHigh')):
                     level = getconfig('MaximumLevel')
@@ -228,7 +228,7 @@ class group(Base):
         #if this group's maximum level is explicitly set, use that setting
         else:
             level = self.maximumlevel
-        log('GETMAXLEVEL: Found maximum level of group %s to be %s' % (self.groupid,level))
+        debuglog('GETMAXLEVEL: Found maximum level of group %s to be %s' % (self.groupid,level))
         return int(level)
 
     #deletes the group

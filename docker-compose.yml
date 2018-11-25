@@ -2,53 +2,65 @@ version: '2'
  
 services:
   web1:
+    container_name: web1
     restart: always
-    env_file: .env
+    env_file: ./config/.env
     build: 
       context: ./webapp
     working_dir: /usr/src/app
     command: gunicorn -w 2 -b :80 app:app
     depends_on:
       - postgres
+      - nginx
       - logspout
   web2:
+    container_name: web2
     restart: always
-    env_file: .env
+    env_file: ./config/.env
     build: 
       context: ./webapp
     working_dir: /usr/src/app
     command: gunicorn -w 2 -b :80 app:app
     depends_on:
       - postgres
+      - nginx
+      - web1
       - logspout
   web3:
+    container_name: web3
     restart: always
-    env_file: .env
+    env_file: ./config/.env
     build: 
       context: ./webapp
     working_dir: /usr/src/app
     command: gunicorn -w 2 -b :80 app:app
     depends_on:
       - postgres
+      - nginx
+      - web1
       - logspout
   postgres:
+    container_name: postgres
     restart: always
     image: postgres:latest
-    env_file: ./webapp/.env
+    env_file: ./config/.env
     depends_on:
       - logspout
   nginx:
+    container_name: nginx
     restart: always
     build: 
       context: ./nginx
+    ports:
+      - 80:80
+      - 443:443
     depends_on:
       - logspout
   logspout:
-    image: gliderlabs/logspout
+    container_name: logspout
+    image: gliderlabs/logspout:latest
     restart: always
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-    environment:
-      - SYSLOG_HOSTNAME="${HOSTNAME}"
     command:
-      ${LOGSPOUT_COMMAND}
+      ${PaperTrailURL}

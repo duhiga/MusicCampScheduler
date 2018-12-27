@@ -8,7 +8,7 @@ def getconfig(attribute):
         attr = os.environ[attribute]
     except:
         #if not, use the config file in the local store
-        config = untangle.parse('config.xml')
+        config = untangle.parse("config/config.xml")
         attr = config.root.CampDetails[attribute]
     return attr
 

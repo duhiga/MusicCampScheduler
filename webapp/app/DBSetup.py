@@ -67,7 +67,7 @@ class user(Base):
             raise Exception('Found that player %s %s does not play instrument %s, cannot assign them to group %s' % (self.firstname,self.lastname,instrumentname,thisgroup.groupid))
         #if the user is already in this group, don't add another groupassignment, just log it
         if session.query(groupassignment).filter(groupassignment.userid == self.userid, groupassignment.groupid == thisgroup.groupid).first() is not None:
-            log('ADDPLAYER: Found that player %s %s is already in group %s. Made no changes to this player.' % (self.firstname,self.lastname,group.groupid))
+            log('ADDPLAYER: Found that player %s %s is already in group %s. Made no changes to this player.' % (self.firstname,self.lastname,thisgroup.groupid))
         #if the user is already playing in another group at this time, raise an exception
         elif thisgroup.periodid is not None and session.query(groupassignment).join(group).filter(groupassignment.userid == self.userid, group.periodid == thisgroup.periodid).first() is not None:
             log('ADDPLAYER: Found that player %s %s is already assigned to a group during this period.' % (self.firstname,self.lastname))

@@ -1,42 +1,33 @@
 version: '2'
- 
+
 services:
   web1:
     container_name: web1
+    ports:
+      - 127.0.0.1:8080:80
     restart: always
     env_file: ./config/.env
     build: 
       context: ./webapp
     working_dir: /usr/src/app
-    command: gunicorn -w 2 -b :80 app:app
+    command: gunicorn -w 4 -b :80 app:app
     depends_on:
       - postgres
-      - nginx
+      #- nginx
       - logspout
   web2:
     container_name: web2
+    ports:
+      - 127.0.0.1:8081:80
     restart: always
     env_file: ./config/.env
     build: 
       context: ./webapp
     working_dir: /usr/src/app
-    command: gunicorn -w 2 -b :80 app:app
+    command: gunicorn -w 4 -b :80 app:app
     depends_on:
       - postgres
-      - nginx
-      - web1
-      - logspout
-  web3:
-    container_name: web3
-    restart: always
-    env_file: ./config/.env
-    build: 
-      context: ./webapp
-    working_dir: /usr/src/app
-    command: gunicorn -w 2 -b :80 app:app
-    depends_on:
-      - postgres
-      - nginx
+      #- nginx
       - web1
       - logspout
   postgres:
@@ -46,16 +37,15 @@ services:
     env_file: ./config/.env
     depends_on:
       - logspout
-  nginx:
-    container_name: nginx
-    restart: always
-    build: 
-      context: ./nginx
-    ports:
-      - 80:80
-      - 443:443
-    depends_on:
-      - logspout
+  #nginx:
+    #container_name: nginx
+    #restart: always
+    #build: 
+      #context: ./nginx
+    #ports:
+      #- 127.0.0.1:8080:80
+    #depends_on:
+      #- logspout
   logspout:
     container_name: logspout
     image: gliderlabs/logspout:latest

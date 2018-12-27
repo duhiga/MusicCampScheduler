@@ -28,7 +28,7 @@ def getschedule(session, thisuser, date):
         # try to find a group assignment for the user
         g = session.query(group.groupname, period.starttime, period.endtime, location.locationname, group.groupid, group.ismusical, group.iseveryone, music.musicid,
                           period.periodid, period.periodname, groupassignment.instrumentname, period.meal, group.groupdescription, music.composer, music.musicname, group.musicwritein, group.status).\
-            join(period).join(groupassignment).join(user).join(instrument).outerjoin(location).outerjoin(music).\
+            join(period).join(groupassignment).join(user).outerjoin(instrument).outerjoin(location).outerjoin(music).\
             filter(user.userid == thisuser.userid, group.periodid ==
                    p.periodid).first()
         if g is not None:

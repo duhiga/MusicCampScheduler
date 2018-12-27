@@ -15,7 +15,7 @@
     SMTP_Server="smtp.gmail.com"
     SMTP_User="username@gmail.com"
     SMTP_Password="SMTP Password"
-    DATABASE_URL="postgresql://user:password@localhost:5432/postgres"
+    DATABASE_URL="postgresql://user:password@postgres:5432/postgres"
     SecretKey="Something Secret"
     Instruments="Conductor,Piccolo,Flute,Oboe,Coranglais,Clarinet,Bassoon,Horn,Trumpet,Trombone,Tuba,Percussion,Piano,Guitar,Saxophone,Violin,Viola,Cello,Doublebass"
     SupportEmailAddress="username@gmail.com"

@@ -7,9 +7,9 @@
             "request": "launch",
             "stopOnEntry": false,
             "pythonPath": "${config:python.pythonPath}",
-            "program": "${workspaceRoot}/runVSCode.py",
+            "program": "${workspaceRoot}/webapp/runVSCode.py",
             "env": {
-                "FLASK_APP": "${workspaceRoot}/app/__init__.py"
+                "FLASK_APP": "${workspaceRoot}/webapp/app/__init__.py"
             },
             "args": [
                 "run",

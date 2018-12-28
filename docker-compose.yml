@@ -53,4 +53,4 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     command:
-      ${PaperTrailURL}
+      syslog+tls://logsN.papertrailapp.com:XXXXX

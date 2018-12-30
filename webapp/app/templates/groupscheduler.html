@@ -189,14 +189,14 @@
                                     {% endif %}
                                 </td>
                                 <td style="text-align:center">
-                                    {% if g.status == "Confirmed" %}
-                                    {% if g.starttime < now %}
-                                    <div class="tooltip"><i class="fa fa-check-circle"></i><span class="tooltiptext tooltiptop">Complete</span></div>
+                                    {% if g.status == "Confirmed" and g.starttime != None %}
+                                        {% if g.starttime < now %}
+                                        <div class="tooltip"><i class="fa fa-check-circle"></i><span class="tooltiptext tooltiptop">Complete</span></div>
+                                        {% else %}
+                                        <div class="tooltip"><i class="fa fa-check"></i><span class="tooltiptext tooltiptop">Confirmed</span></div>
+                                        {% endif %}
                                     {% else %}
-                                    <div class="tooltip"><i class="fa fa-check"></i><span class="tooltiptext tooltiptop">Confirmed</span></div>
-                                    {% endif %}
-                                    {% else %}
-                                    <div class="tooltip"><i class="fa fa-ellipsis-h"></i><span class="tooltiptext tooltiptop">Queued</span></div>
+                                        <div class="tooltip"><i class="fa fa-ellipsis-h"></i><span class="tooltiptext tooltiptop">Queued</span></div>
                                     {% endif %}
                                 </td>
                                 <td style="text-align:center">

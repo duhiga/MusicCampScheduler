@@ -1210,8 +1210,8 @@ def groupscheduler(logonid):
                                     group.groupname != 'absent',
                                     group.iseveryone != 1,
                                     or_(
-                                    period.starttime > datetime.datetime.now(),
-                                    period.starttime == None
+                                    period.starttime == None,
+                                    period.starttime > datetime.datetime.now()
                                     )
                                 ).order_by(
                                     group.status.desc(),

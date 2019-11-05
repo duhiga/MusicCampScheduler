@@ -3,7 +3,7 @@
 <p>This app runs the music camp scheduler site. The original target audience for this site is around 100 people for a camp around 1 week long. The intended model for the music camp is that people are allocated into groups like orchestras, bands, quartets, etc over several periods in a day. People can mark themselves as "absent" at least one day in advance and will not be allocated  to groups in the session. People can also request groups by saying they'd like to play a piece of music, or generate a custom group with their own instrumentation. Once running, the website must be maintained by an adminstrator, and conductors to confirm groups and allocate players.</p>
 <p>A general how-to, using Heroku:</p>
 <ol>
-<li>Create a Heroku account</li>
+<li>Create a Heroku account </li>
 <li>Make a new web application and point it to this repository</li>
 <li>Create a postgresql instance on your Heroku account, and link this app to it, selecting the python interpreter</li>
 <li>Create environment variables in Heroku for each attribute in the top section config.xml.example, and edit their values to match your needs</li>

@@ -8,6 +8,7 @@
             "stopOnEntry": false,
             "pythonPath": "${config:python.pythonPath}",
             "program": "${workspaceRoot}/webapp/runVSCode.py",
+            "console": "internalConsole",
             "env": {
                 "FLASK_APP": "${workspaceRoot}/webapp/app/__init__.py"
             },
@@ -15,12 +16,7 @@
                 "run",
                 "--no-debugger",
                 "--no-reload"
-            ],
-            "debugOptions": [
-                "WaitOnAbnormalExit",
-                "WaitOnNormalExit",
-                "RedirectOutput"
             ]
-        }        
+        }
     ]
 }

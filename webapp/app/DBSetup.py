@@ -646,38 +646,38 @@ def importusers(file):
                 thisuser.grouprequestcount = 0
                 thisuser.firstname = row[0]
                 thisuser.lastname = row[1][:2] #[:2] means just get the first two letters
-                if row[12] is not '':
+                if row[12] != '':
                     thisuser.isannouncer = row[12]
-                if row[13] is not '':
+                if row[13] != '':
                     thisuser.isconductor = row[13]
-                if row[14] is not '':
+                if row[14] != '':
                     thisuser.isadmin = row[14]
-                if row[2] is not '':
+                if row[2] != '':
                     thisuser.arrival = row[2]
-                if row[2] is '':
+                if row[2] == '':
                     thisuser.arrival = CampStartTime
-                if row[3] is not '':
+                if row[3] != '':
                     thisuser.departure = row[3]
-                if row[3] is '':
+                if row[3] == '':
                     thisuser.departure = CampEndTime
-                if row[15] is not '':
+                if row[15] != '':
                     thisuser.email = row[15]
                 session.add(thisuser)
                 log('Created user: %s %s' % (thisuser.firstname, thisuser.lastname))
                 session.commit()
-                if row[4] is not '':
+                if row[4] != '':
                     instrument1 = instrument(userid = thisuser.userid, instrumentname = row[4].capitalize().replace(" ", ""), level = row[5], isprimary = 1, isactive = 1)
                     session.add(instrument1)
                     log('Created instrument listing: %s at level %s for %s' % (instrument1.instrumentname, instrument1.level, thisuser.firstname))
-                if row[6] is not '':
+                if row[6] != '':
                     instrument2 = instrument(userid = thisuser.userid, instrumentname = row[6].capitalize().replace(" ", ""), level = row[7], isprimary = 0, isactive = 1)
                     session.add(instrument2)
                     log('Created instrument listing: %s at level %s for %s' % (instrument2.instrumentname, instrument2.level, thisuser.firstname))
-                if row[8] is not '':
+                if row[8] != '':
                     instrument3 = instrument(userid = thisuser.userid, instrumentname = row[8].capitalize().replace(" ", ""), level = row[9], isprimary = 0, isactive = 1)
                     session.add(instrument3)
                     log('Created instrument listing: %s at level %s for %s' % (instrument3.instrumentname, instrument3.level, thisuser.firstname))
-                if row[10] is not '':
+                if row[10] != '':
                     instrument4 = instrument(userid = thisuser.userid, instrumentname = row[10].capitalize().replace(" ", ""), level = row[11], isprimary = 0, isactive = 1)
                     session.add(instrument4)
                     log('Created instrument listing: %s at level %s for %s' % (instrument4.instrumentname, instrument4.level, thisuser.firstname))

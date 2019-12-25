@@ -155,17 +155,12 @@
             </div>
         </div>
         {% endif %}
+        {% set afternoon = 0 %}
         <div class="w3-row">
             <div class="w3-container w3-half">
-                {% set afternoon = 0 %}
+                
                 {% for p in schedule %}
-
-                {% if p.starttime > midday and afternoon == 0 %}
-                <br /></div>
-            
-            <div class="w3-container w3-half">
-                {% set afternoon = 1 %}
-                {% endif %}
+        
                 <div class="w3-card-4">
                     <header class="pointer accordion w3-container
                     {% if p.groupname =='absent' or p.starttime < thisuser.arrival or p.starttime > thisuser.departure or p.status == 'Queued' %}
@@ -323,7 +318,12 @@
                         </div>
                     </div>
                 </div>
+                {% if p.starttime == midday %}
+                <!-- If it's midday, make another column-->
+                    </br></div><div class="w3-container w3-half">
+                {% endif %}
                 {% endfor %}
+                
             </div>
         </div>
         {% endblock %}

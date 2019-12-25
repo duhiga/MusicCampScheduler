@@ -1450,7 +1450,7 @@ def periodpage(logonid,periodid):
                 groupassignment.instrumentname, 
                 location.locationname, 
                 groupassignment.groupid
-            ).join(groupassignment
+            ).join(groupassignment, user.userid == groupassignment.userid
             ).join(group
             ).join(period
             ).outerjoin(location

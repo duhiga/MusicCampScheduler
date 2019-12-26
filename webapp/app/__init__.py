@@ -1754,22 +1754,17 @@ def sendlinkemail(logonid):
             elif targetuser.email is None or targetuser.email == '':
                 errors = errors + ('Could not find email for user %s %s\n' % (targetuser.firstname, targetuser.lastname))
             else:
-                subject = ('Your link to the %s Scheduler' % getconfig('Name'))
+                subject = ('Your %s Daily Schedule' % getconfig('Name'))
                 body = """Hi %s, welcome to %s!\n
-%s\n
 Your homepage, containing your daily schedule, is here:\n
 %s/user/%s/ \n
 WARNING: DO NOT GIVE THIS LINK, OR ANY LINK ON THIS WEBSITE TO ANYONE ELSE. It is yours, and yours alone and contains your connection credentials.\n
-A small rundown of how to use the web app:\n
--Visit this page each day to see your schedule. Click or tap each item to see times, locations, and the instrument you're playing. Don't forget to refresh the page each day, your phone may not refresh the page if you minimise it and come back to it later.
--If you're going to be absent for a session or meal, plesae notify us at least one day before by navigating to a future date with the "Next" button, selecting your desired period, then selecting "Mark Me as Absent".
--You can request groups in a few ways. The best way is to visit the music library by clicking the book icon in your top bar, select music you'd like to play, and click the request button there. When you're on the group requset page, fill in your desired information, and press submit. Leaving blanks for other player names is fine and encouraged, you'll be matched up with other players at the end of the day.\n
+If you're new to camp please stay after the first dinner and we'll walk you through how to use this website, including how to make your first group request.\n
 If you have any questions, please reply to this email or contact us on %s.\n
 Thanks!\n
 %s
 %s""" % (targetuser.firstname, \
                 getconfig('Name'), \
-                getconfig('EmailIntroSentence'), \
                 getconfig('Website_URL'), \
                 targetuser.logonid, \
                 getconfig('SupportEmailAddress'), \

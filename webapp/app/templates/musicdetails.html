@@ -56,6 +56,13 @@
                 </tr>
             </table>
         </p>
+        <div class="w3-row">
+                {% if canplay == True %}
+                <a class="w3-btn-block w3-green w3-border w3-round" href="/user/{{ thisuser.logonid }}/grouprequest/music/{{ thismusic.musicid }}">
+                    <i class="fa fa-music"></i> Request to play this work</a>
+                {% endif %}
+        
+        </div>
     </div>
     <div class="w3-half w3-container">
         <h2>Music History</h2>
@@ -93,15 +100,7 @@
         </p>
     </div>
 </div>
-<div class="w3-row">
-    <div class="w3-container">
-        {% if canplay == True %}
-        <a class="w3-btn-block w3-green w3-border w3-round" href="/user/{{ thisuser.logonid }}/grouprequest/music/{{ thismusic.musicid }}">
-            <i class="fa fa-music"></i> Request to play this work</a>
-        {% endif %}
-    </div>
 
-</div>
 
 
 </div>

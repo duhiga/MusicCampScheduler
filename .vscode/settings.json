@@ -1,4 +1,4 @@
 {
 	"python.linting.pylintEnabled": false,
-	"python.pythonPath": "/home/alex/Dev/MusicCampScheduler/env/bin/python3",
+	"python.pythonPath": "env\\Scripts\\python.exe",
 }

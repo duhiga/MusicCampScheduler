@@ -222,6 +222,9 @@ However, delay the fade out process for 2.5 seconds */
     #navcontents {
         padding-left:10px;
     }
+    .w3-animate-left {
+        animation: none;
+    }
 }
 
 .no-decoration {

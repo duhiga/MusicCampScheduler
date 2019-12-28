@@ -111,7 +111,7 @@ class music(Base):
     source = Column(Text(convert_unicode=True))
     notes = Column(Text(convert_unicode=True))
     link = Column(Text(convert_unicode=True))
-    grouptemplateid = Column(Integer, ForeignKey('grouptemplates.grouptemplateid'))
+    grouptemplateid = Column(Integer, ForeignKey('grouptemplates.grouptemplateid', ondelete='SET NULL'))
     
     @property
     def serialize(self):
@@ -136,10 +136,10 @@ class group(Base):
     groupid = Column(Integer, primary_key=True, unique=True)
     groupname = Column(String)
     groupdescription = Column(String)
-    locationid = Column(Integer, ForeignKey('locations.locationid'))
+    locationid = Column(Integer, ForeignKey('locations.locationid', ondelete='SET NULL'))
     requesttime = Column(DateTime)
-    requesteduserid = Column(UUID, ForeignKey('users.userid'))
-    periodid = Column(Integer, ForeignKey('periods.periodid'))
+    requesteduserid = Column(UUID, ForeignKey('users.userid', ondelete='SET NULL'))
+    periodid = Column(Integer, ForeignKey('periods.periodid', ondelete='CASCADE'))
     minimumlevel = Column(Integer, default='0')
     maximumlevel = Column(Integer, default='0')
     musicid = Column(Integer, ForeignKey('musics.musicid',ondelete='SET NULL'), nullable=True)
@@ -337,7 +337,7 @@ class grouptemplate(Base):
     size = Column(String)
     minimumlevel = Column(Integer)
     maximumlevel = Column(Integer)
-    defaultlocationid = Column(Integer, ForeignKey('locations.locationid'))
+    defaultlocationid = Column(Integer, ForeignKey('locations.locationid', ondelete='SET NULL'))
 
     @property
     def serialize(self):
@@ -359,7 +359,7 @@ class instrument(Base):
     __tablename__ = 'instruments'
 
     instrumentid = Column(Integer, primary_key=True, unique=True)
-    userid = Column(UUID, ForeignKey('users.userid'))
+    userid = Column(UUID, ForeignKey('users.userid', ondelete='CASCADE'))
     instrumentname = Column(String)
     level = Column(Integer)
     isprimary = Column(Integer)
@@ -385,8 +385,8 @@ class groupassignment(Base):
     __tablename__ = 'groupassignments'
 
     groupassignmentid = Column(Integer, primary_key=True, unique=True)
-    userid = Column(UUID, ForeignKey('users.userid'))
-    groupid = Column(Integer, ForeignKey('groups.groupid'))
+    userid = Column(UUID, ForeignKey('users.userid', ondelete='CASCADE'))
+    groupid = Column(Integer, ForeignKey('groups.groupid', ondelete='CASCADE'))
     instrumentname = Column(String)
 
     @property

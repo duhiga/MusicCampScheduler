@@ -6,7 +6,7 @@ services:
     ports:
       - 127.0.0.1:8080:80
     restart: always
-    env_file: ./config/.env
+    env_file: ./.env
     build: 
       context: ./webapp
     working_dir: /usr/src/app
@@ -35,7 +35,7 @@ services:
     container_name: postgres
     restart: always
     image: postgres:latest
-    env_file: ./config/.env
+    env_file: ./.env
     depends_on:
       - logspout
   #nginx:
@@ -54,4 +54,4 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     command:
-      syslog+tls://logsN.papertrailapp.com:XXXXX
+      syslog+tls://logs${papertrailLogNumber}.papertrailapp.com:${papertrailPortNumber}

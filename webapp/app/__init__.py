@@ -327,7 +327,7 @@ def editgroup(logonid,groupid,periodid=None):
             for p in periodlist:
                 if thisgroupplayers_query.first() is None or ((currentperiod and p.periodid == currentperiod.periodid) \
                         or (len(session.query(user.userid).join(groupassignment).join(group).join(period).filter(group.periodid == p.periodid, or_(user.userid.in_(thisgroupplayers_query))).all()) == 0\
-                        and p.starttime > lastarrival and p.starttime < firstdeparture)):
+                        and p.starttime >= lastarrival and p.starttime <= firstdeparture)):
                     periods.append(p)
 
             #if there was no selected period by the user, select the first period

@@ -21,6 +21,19 @@
 <li class="w3-hide-small"><a href="/user/{{ thisuser.logonid }}/date/{{thisperiod.starttime.strftime('%Y-%m-%d')}}/" class="w3-hover-white">{{ thisperiod.starttime.strftime('%d %b') }}</a></li>
 <li class="w3-hide-small"><a href="#" class="w3-hover-white">{{ thisperiod.periodname }}</a></li>
 {% endblock %}
+{% block navbar %}
+    {% if thisuser.isadmin == 1 %}
+    <li class="w3-opennav w3-right">
+        <a href="/user/{{ thisuser.logonid }}/group/new/period/{{ thisperiod.periodid }}/edit/" class="w3-hover-white w3-theme-l1"><i class="fa fa-plus"></i></a>
+    </li>
+    {% endif %}
+{% endblock %}
+{% block sidenav %}
+    {% if thisuser.isadmin == 1 %}
+        <h4><b>Tools</b></h4>
+        <a href="/user/{{ thisuser.logonid }}/group/new/period/{{ thisperiod.periodid }}/edit/" class="w3-hover-black"><i class="fa fa-plus"></i> Create New Group</a>
+    {% endif %}
+{% endblock %}
 {% block content %}
 <div class="w3-row">
     <div class="w3-container">

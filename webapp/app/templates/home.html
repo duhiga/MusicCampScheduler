@@ -165,7 +165,7 @@
                     <header class="pointer accordion w3-container
                     {% if p.groupname =='absent' or p.starttime < thisuser.arrival or p.starttime > thisuser.departure or p.status == 'Queued' %}
                     w3-dark-gray
-                    {% elif p.groupname and p.ismusical == 1 %}
+                    {% elif p.groupname and p.instrumentname %}
                     w3-purple
                     {% elif p.iseveryone == 1 and p.meal == 1 %}
                     w3-blue
@@ -245,22 +245,22 @@
                                     <td>{{p.locationname}}</td>
                                 </tr>
                                 {% endif %}
-                                {% if p.groupname and p.ismusical == 1 %}
+                                {% if p.groupname and p.instrumentname != None and p.instrumentname %}
                                 <tr>
                                     <th>Instrument</th>
                                     <td>{{p.instrumentname}}</td>
                                 </tr>
-                                {% if p.musicname != None %}
+                                {% endif %}
+                                {% if p.groupname and p.musicname != None and p.musicname|length > 0 %}
                                 <tr>
-                                    <th>Music</th>
+                                    <th>Music id</th>
                                     <td><a href="/user/{{ thisuser.logonid }}/musiclibrary/details/{{ p.musicid }}/"><i class="fa fa-book"></i>{{ p.composer }}: {{ p.musicname }}</a></td>
                                 </tr>
-                                {% elif p.musicwritein != '' and p.musicwritein != None %}
+                                {% elif p.groupname and p.musicwritein != '' and p.musicwritein != None and p.musicwritein|length > 0  %}
                                 <tr>
                                     <th>Music</th>
                                     <td>{{p.musicwritein}}</td>
                                 </tr>
-                                {% endif %}
                                 {% endif %}
                             </table>
                             {% endif %}

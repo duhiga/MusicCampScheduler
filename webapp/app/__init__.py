@@ -1013,7 +1013,7 @@ def grouprequest(logonid,periodid=None,musicid=None):
                                     break
                             #find out if this group's level is unsuitable for this player on this instrument and make a clash if they are
                             playerinstrument = session.query(instrument).filter(instrument.userid == p['userid'], instrument.instrumentname == p['instrumentname']).first()
-                            if groupmin < playerinstrument.level < groupmax:
+                            if groupmin > playerinstrument.level or groupmax < playerinstrument.level :
                                 debuglog('MATCHMAKING: Found group not suitable, the current players are of unsuitable level. Current min: %s, Current max: %s, this players level: %s.' % (groupmin,groupmax,playerinstrument.level))
                                 clash = True
                                 break

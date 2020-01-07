@@ -228,7 +228,7 @@ class group(Base):
     def getmaxlevel(self,session):
         debuglog('GETMAXLEVEL: finding maximum level of group %s' % (self.groupid))
         #if the group is set to "auto", i.e. blank or 0, find the minimum level of all the players currently playing in the group
-        if self.minimumlevel is None or self.minimumlevel == '' or self.minimumlevel == '0' or self.minimumlevel == 0:
+        if self.maximumlevel is None or self.maximumlevel == '' or self.maximumlevel == '0' or self.maximumlevel == 0:
             averageLevel = self.getAverageLevel(session)
             #if we find at least one player in this group, set the minimumlevel to be the average level, rounded up
             if averageLevel is not None:
@@ -241,7 +241,7 @@ class group(Base):
                 level = 0
         #if this group's minimum level is explicitly set, use that setting
         else:
-            level = self.minimumlevel
+            level = self.maximumlevel
         debuglog('GETMAXLEVEL: Found maximum level of group %s to be %s' % (self.groupid,level))
         return int(level)
 
@@ -253,10 +253,6 @@ class group(Base):
         session.commit()
         session.delete(self)
         session.commit()
-
-    #get groupassignment listings for all players in this group
-    def getplayers(self,session):
-        return session.query(groupassignment).filter(groupassignment.groupid == thisgroup.groupid).all()
 
     #checks if the group can be confirmed, and confirms the group
     def confirm(self, session):

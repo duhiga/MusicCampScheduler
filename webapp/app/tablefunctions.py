@@ -60,7 +60,7 @@ def getgroupname(session, thisgroup):
         *[getattr(grouptemplate, i) == getattr(thisgroup, i) for i in instrumentlist]).first()
     if templatematch is not None:
         debuglog('GETGROUPNAME: Found that this group instrumentation matches the template %s' %
-            templatematch.grouptemplatename)
+                 templatematch.grouptemplatename)
         name = templatematch.grouptemplatename
 
     # if we don't get a match, then we find how many players there are in this group, and give it a more generic name
@@ -97,10 +97,11 @@ def getgroupname(session, thisgroup):
 
     if thisgroup.musicid is not None:
         debuglog('GETGROUPNAME: Found that this groups musicid is %s' %
-            thisgroup.musicid)
+                 thisgroup.musicid)
         composer = session.query(music).filter(
             music.musicid == thisgroup.musicid).first().composer
-        debuglog('GETGROUPNAME: Found composer matching this music to be %s' % composer)
+        debuglog(
+            'GETGROUPNAME: Found composer matching this music to be %s' % composer)
         name = composer + ' ' + name
 
     debuglog('GETGROUPNAME: Full name of group returned is %s' % name)
@@ -126,7 +127,7 @@ def autofill(session, thisgroup, thisperiod, primary_only=0):
             requiredplayers = int(getattr(thisgroup, i)) - \
                 len(currentinstrumentplayers)
             debuglog('AUTOFILL: Found %s current players for instrument %s' %
-                (len(currentinstrumentplayers), i))
+                     (len(currentinstrumentplayers), i))
             debuglog('AUTOFILL: We need to autofill %s extra players for instrument %s' % (
                 requiredplayers, i))
             if requiredplayers > 0:
@@ -172,12 +173,15 @@ def autofill(session, thisgroup, thisperiod, primary_only=0):
                         user.userid
                     ).outerjoin(groupassignment, groupassignment.userid == user.userid
                                 ).outerjoin(group, group.groupid == groupassignment.groupid
-                                            ).filter(
+                                            ).outerjoin(instrument, and_(groupassignment.instrumentname == instrument.instrumentname, user.userid == instrument.userid)
+                                                        ).filter(
                         user.userid.in_(possible_players_query),
                         groupassignment.instrumentname != 'Conductor',
                         group.ismusical == 1,
                         group.periodid != None,
-                        group.groupid != thisgroup.groupid
+                        group.groupid != thisgroup.groupid,
+                        # if we are autofilling primary instruments, only include playcount of primaries
+                        instrument.isprimary >= int(primary_only)
                     ).subquery()
 
                     # if this group has assigned music
@@ -190,11 +194,13 @@ def autofill(session, thisgroup, thisperiod, primary_only=0):
                             user.userid
                         ).outerjoin(groupassignment, groupassignment.userid == user.userid
                                     ).outerjoin(group, group.groupid == groupassignment.groupid
-                                                ).filter(
+                                                ).outerjoin(instrument, and_(groupassignment.instrumentname == instrument.instrumentname, user.userid == instrument.userid)
+                                                            ).filter(
                             user.userid.in_(possible_players_query),
                             group.ismusical == 1,
                             group.periodid != None,
                             group.groupid != thisgroup.groupid,
+                            instrument.isprimary >= int(primary_only),
                             # grab all groups that share a musicid with this group
                             group.musicid == thisgroup.musicid
                         ).subquery()
@@ -212,16 +218,17 @@ def autofill(session, thisgroup, thisperiod, primary_only=0):
                     groupcounts_subquery = session.query(
                         user.userid.label('groupcounts_userid'),
                         func.count(user.userid).label("groupcount")
-                    ).group_by(
-                        user.userid
-                    ).outerjoin(groupassignment, groupassignment.userid == user.userid
-                                ).outerjoin(group, group.groupid == groupassignment.groupid
-                                            ).filter(
+                    ).group_by(user.userid
+                               ).outerjoin(groupassignment, groupassignment.userid == user.userid
+                                           ).outerjoin(group, group.groupid == groupassignment.groupid
+                                                       ).outerjoin(instrument, and_(groupassignment.instrumentname == instrument.instrumentname, user.userid == instrument.userid)
+                                                                   ).filter(
                         user.userid.in_(possible_players_query),
                         groupassignment.instrumentname != 'Conductor',
                         group.ismusical == 1,
                         group.periodid != None,
                         group.groupid != thisgroup.groupid,
+                        instrument.isprimary >= int(primary_only),
                         # grab all groups that share a name with this group, or have the same instrumentation of this group
                         or_(
                             group.groupname == thisgroup.groupname,
@@ -257,12 +264,11 @@ def autofill(session, thisgroup, thisperiod, primary_only=0):
                         groupcounts_subquery.c.groupcount.nullsfirst(),
                         # then order by their total playcounts
                         playcounts_subquery.c.playcount.nullsfirst()
-                    ).limit(requiredplayers
-                            ).all()
+                    ).limit(requiredplayers).all()
                     debuglog('AUTOFILL: Players in final list with playcounts:')
                     for pl in instrument_list:
                         debuglog('AUTOFILL: Found %s %s to play %s with totals - isprimary:%s musiccount:%s groupcount:%s playcount:%s ' %
-                            (pl.firstname, pl.lastname, pl.isprimary, pl.isprimary, pl.musiccount, pl.groupcount, pl.playcount))
+                                 (pl.firstname, pl.lastname, pl.isprimary, pl.isprimary, pl.musiccount, pl.groupcount, pl.playcount))
                         final_list.append(pl)
     debuglog('AUTOFILL: Completed autofill selections')
     return final_list

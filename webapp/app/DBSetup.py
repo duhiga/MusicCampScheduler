@@ -188,14 +188,16 @@ class group(Base):
 
     def getAverageLevel(self,session):
         debuglog('GETAVERAGELEVEL: Getting average level of group %s' % (self.groupid))
-        session.query(user.firstname, user.lastname, instrument.instrumentname, instrument.level).join(groupassignment).join(group).\
-                join(instrument, and_(groupassignment.instrumentname == instrument.instrumentname, user.userid == instrument.userid)).\
-                filter(group.groupid == self.groupid).order_by(instrument.level).first()
-        #func.avg(instrument.level).label('averageLevel')
-        levelob = session.query(func.avg(instrument.level).label('averageLevel')).\
-            join(user, user.userid == instrument.userid).\
-            join(groupassignment, and_(groupassignment.instrumentname == instrument.instrumentname, user.userid == groupassignment.userid)).\
-            filter(groupassignment.groupid == self.groupid).first()
+        levelob = session.query(
+            func.avg(instrument.level
+            ).label('averageLevel')
+            ).join(user, user.userid == instrument.userid
+            ).join(
+                groupassignment,
+                and_(
+                    groupassignment.instrumentname == instrument.instrumentname,
+                    user.userid == groupassignment.userid)
+            ).filter(groupassignment.groupid == self.groupid).first()
         debuglog('GETAVERAGELEVEL: Found average level of group %s to be %s' % (self.groupid,levelob.averageLevel))
         return levelob.averageLevel
 

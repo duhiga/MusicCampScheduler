@@ -205,6 +205,7 @@ def grouppage(logonid,groupid):
         thisgroup = getgroup(session,groupid)
         thislocation = getlocation(session,thisgroup.locationid)
         thisperiod = getperiod(session,thisgroup.periodid)
+        thisgrouprequestor = getuser(session,thisgroup.requesteduserid)
         if thisgroup.musicid is not None:
             thismusic = getmusic(session, thisgroup.musicid)
         else:
@@ -254,6 +255,7 @@ def grouppage(logonid,groupid):
                             thisuser=thisuser, \
                             thislocation=thislocation, \
                             thismusic=thismusic, \
+                            thisgrouprequestor=thisgrouprequestor, \
                             )
     
     except Exception as ex:

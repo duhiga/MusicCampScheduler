@@ -112,6 +112,14 @@
                     </td>
                 </tr>
                 {% endif %}
+                {% if thisgrouprequestor %}
+                <tr>
+                    <th>Created By</th>
+                    <td>
+                        {{ thisgrouprequestor.firstname }} {{ thisgrouprequestor.lastname }}
+                    </td>
+                </tr>
+                {% endif %}
             </table>
             {% if thisgroup.iseveryone != 1 %}
             <h2>Players</h2>

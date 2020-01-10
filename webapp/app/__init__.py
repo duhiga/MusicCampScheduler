@@ -306,13 +306,6 @@ def editgroup(logonid,groupid,periodid=None):
 
             #print out the list of players and remove any that have already left camp
             thisgroupplayers = session.query(user.userid, user.firstname, user.lastname, groupassignment.instrumentname, user.departure).join(groupassignment).join(group).filter(group.groupid == thisgroup.groupid).order_by(groupassignment.instrumentname).all()
-            if thisgroupplayers is not None:
-                for p in thisgroupplayers:
-                    if p.departure <= tomorrow:
-                        a = session.query(groupassignment).filter(groupassignment.userid == p.userid, groupassignment.groupid == thisgroup.groupid).first()
-                        debuglog('GROUPEDIT: Found user %s %s with departure before tomorrow, removing them from this group.' % (p.firstname, p.lastname))
-                        session.delete(a)
-                session.commit()
 
             #find all periods from now until the end of time to display to the user, then removes any periods that the people in this group cannot play in
             thisgroupplayers_query = session.query(user.userid).join(groupassignment).join(group).filter(group.groupid == thisgroup.groupid).order_by(groupassignment.instrumentname)

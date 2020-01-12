@@ -55,6 +55,7 @@ class user(Base):
     isconductor = Column(Integer)
     isadmin = Column(Integer)
     isactive = Column(Integer)
+    dietaryrequirements = Column(String)
 
     @property
     def serialize(self):
@@ -674,6 +675,8 @@ def importusers(file):
                     thisuser.departure = CampEndTime
                 if row[15] != '':
                     thisuser.email = row[15]
+                if row[16] != '':
+                    thisuser.dietaryrequirements = row[16]
                 session.add(thisuser)
                 log('Created user: %s %s' % (thisuser.firstname, thisuser.lastname))
                 session.commit()

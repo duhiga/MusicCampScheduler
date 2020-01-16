@@ -1,0 +1,31 @@
+{% extends "layout.html" %} {% block title%}Catering - {{ campname }}{% endblock %} {% block breadcrumbs %}
+<li class="w3-hide-small">
+    <a href="/user/{{ thisuser.logonid }}/catering/" class="w3-hover-white">Catering</a>
+</li>
+<li class="w3-hide-small">
+    <a href="#" class="w3-hover-white">Catering</a>
+</li>
+{% endblock %} {% block content %}
+<div class="w3-row">
+    <div class="w3-container">
+            <h2>Catering</h2>
+    </div>
+</div>
+<div class="w3-row">
+    {% for meal in meals %}
+    <div class="w3-container w3-half">
+        <div class="w3-card">
+            {{ meal.name }}
+            {{ meal.starttime.strftime('%d %b') }}
+            {{ meal.endtime }}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+
+
+</div>
+
+
+{% endblock %}

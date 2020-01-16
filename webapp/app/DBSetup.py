@@ -10,6 +10,7 @@ from sqlalchemy.orm import sessionmaker, relationship, aliased
 from sqlalchemy.dialects.mysql.base import MSBinary
 from sqlalchemy.schema import Column
 from sqlalchemy.dialects.postgresql import UUID
+import enum
 import uuid
 import os
 from .config import *
@@ -55,7 +56,8 @@ class user(Base):
     isconductor = Column(Integer)
     isadmin = Column(Integer)
     isactive = Column(Integer)
-    dietaryrequirements = Column(String)
+    dietaryrequirements = Column(String, default='None Specified')
+    agecatagory = Column(String, default='Adult')
 
     @property
     def serialize(self):
@@ -111,7 +113,7 @@ class music(Base):
     composer = Column(Text(convert_unicode=True))
     musicname = Column(Text(convert_unicode=True))
     source = Column(Text(convert_unicode=True))
-    notes = Column(Text(convert_unicode=True))
+    description = Column(Text(convert_unicode=True))
     link = Column(Text(convert_unicode=True))
     grouptemplateid = Column(Integer, ForeignKey('grouptemplates.grouptemplateid', ondelete='SET NULL'))
     
@@ -648,10 +650,8 @@ def importusers(file):
         reader = csv.reader(file, delimiter=',')
         rownum = 0
         for row in reader:
-            # Save header row.
-            if rownum == 0:
-                header = row
-            else:
+            # if this isn't the header row, extract the data
+            if rownum != 0:
                 thisuser = user()
                 thisuser.userid = str(uuid.uuid4())
                 thisuser.logonid = str(uuid.uuid4())
@@ -676,7 +676,9 @@ def importusers(file):
                 if row[15] != '':
                     thisuser.email = row[15]
                 if row[16] != '':
-                    thisuser.dietaryrequirements = row[16]
+                    thisuser.agecatagory = row[16]
+                if row[17] != '':
+                    thisuser.dietaryrequirements = row[17]
                 session.add(thisuser)
                 log('Created user: %s %s' % (thisuser.firstname, thisuser.lastname))
                 session.commit()
@@ -698,7 +700,6 @@ def importusers(file):
                     log('Created instrument listing: %s at level %s for %s' % (instrument4.instrumentname, instrument4.level, thisuser.firstname))
             rownum += 1
         session.commit()
-        userscount = session.query(user).count()
         session.close()
         return ('Success')
     except Exception as ex:

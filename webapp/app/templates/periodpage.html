@@ -80,34 +80,54 @@
             <thead>
                 <tr class="dark-row">
                     <th>Name</th>
-                    <th><div class="w3-hide-small no-print">Instrument</div><div class="w3-hide-medium w3-hide-large">Inst.</div></th>
-                    <th>Group</th>
-                    <th><div class="w3-hide-small no-print">Location</div><div class="w3-hide-medium w3-hide-large">Loc.</div></th>
+                    {% if thisperiod.meal == 1 %}
+                        <th>Age</th>
+                        <th>Diet</th>
+                    {% else %}
+                        <th><div class="w3-hide-small no-print">Instrument</div><div class="w3-hide-medium w3-hide-large">Inst.</div></th>
+                        <th>Group</th>
+                        <th><div class="w3-hide-small no-print">Location</div><div class="w3-hide-medium w3-hide-large">Loc.</div></th>
+                    {% endif %}
                 </tr>
             </thead>
             <tbody class="zebra-table">
                 {% for p in players %}
                 <tr>
                     <td>{{ p.firstname }} {{ p.lastname }}</td>
-                    <td>{{ p.instrumentname }}</td>
-                    <td><a href="/user/{{ thisuser.logonid }}/group/{{ p.groupid }}/">{{ p.groupname }}</a></td>
-                    <td>{{ p.locationname }}</td>
+                    {% if thisperiod.meal == 1 %}
+                        <td>Age</td>
+                        <td>Diet</td>
+                    {% else %}
+                        <td>{{ p.instrumentname }}</td>
+                        <td><a href="/user/{{ thisuser.logonid }}/group/{{ p.groupid }}/">{{ p.groupname }}</a></td>
+                        <td>{{ p.locationname }}</td>
+                    {% endif %}
                 </tr>
                 {% endfor %}
                 {% for p in unallocatedplayers %}
                 <tr>
                     <td>{{ p.firstname }} {{ p.lastname }}</td>
-                    <td>{{ p.instrumentname }}</td>
-                    <td>{{ p.groupname }}</td>
-                    <td>{{ p.locationname }}</td>
+                    {% if thisperiod.meal == 1 %}
+                        <td>{{ p.agecategory }}</td>
+                        <td>{{ p.dietaryrequirements }}</td>
+                    {% else %}
+                        <td>{{ p.instrumentname }}</td>
+                        <td>{{ p.groupname }}</td>
+                        <td>{{ p.locationname }}</td>
+                    {% endif %}
                 </tr>
                 {% endfor %}
                 {% for p in nonplayers %}
                 <tr>
                     <td>{{ p.firstname }} {{ p.lastname }}</td>
-                    <td>{{ p.instrumentname }}</td>
-                    <td>{{ p.groupname }}</td>
-                    <td>{{ p.locationname }}</td>
+                    {% if thisperiod.meal == 1 %}
+                        <td>{{ p.agecategory }}</td>
+                        <td>{{ p.dietaryrequirements }}</td>
+                    {% else %}
+                        <td>{{ p.instrumentname }}</td>
+                        <td>{{ p.groupname }}</td>
+                        <td>{{ p.locationname }}</td>
+                    {% endif %}
                 </tr>
                 {% endfor %}
             </tbody>

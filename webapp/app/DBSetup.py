@@ -56,8 +56,8 @@ class user(Base):
     isconductor = Column(Integer)
     isadmin = Column(Integer)
     isactive = Column(Integer)
-    dietaryrequirements = Column(String, default='None Specified')
-    agecatagory = Column(String, default='Adult')
+    dietaryrequirements = Column(String, default='Normal')
+    agecategory = Column(String, default='Adult')
 
     @property
     def serialize(self):
@@ -676,7 +676,7 @@ def importusers(file):
                 if row[15] != '':
                     thisuser.email = row[15]
                 if row[16] != '':
-                    thisuser.agecatagory = row[16]
+                    thisuser.agecategory = row[16]
                 if row[17] != '':
                     thisuser.dietaryrequirements = row[17]
                 session.add(thisuser)

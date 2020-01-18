@@ -1438,6 +1438,8 @@ def periodpage(logonid,periodid):
                 user.userid, 
                 user.firstname, 
                 user.lastname, 
+                user.dietaryrequirements,
+                user.agecategory,
                 period.starttime, 
                 period.endtime, 
                 group.groupname,
@@ -1463,9 +1465,9 @@ def periodpage(logonid,periodid):
             join(groupassignment).join(group).join(period).\
             filter(user.isactive == 1, user.arrival <= thisperiod.starttime, user.departure >= thisperiod.starttime, group.periodid == thisperiod.periodid, group.status == 'Confirmed')
         #find all other players to be displayed to the user
-        unallocatedplayers = session.query(user.userid, user.firstname, user.lastname, instrument.instrumentname).join(instrument).filter(~user.userid.in_(players_in_groups_query), user.isactive == 1, user.arrival <= thisperiod.starttime, user.departure >= thisperiod.starttime, instrument.isprimary == 1).all()
+        unallocatedplayers = session.query(user.userid, user.firstname, user.lastname, user.dietaryrequirements, user.agecategory,instrument.instrumentname).join(instrument).filter(~user.userid.in_(players_in_groups_query), user.isactive == 1, user.arrival <= thisperiod.starttime, user.departure >= thisperiod.starttime, instrument.isprimary == 1).all()
         unallocatedplayers_query = session.query(user.userid).join(instrument).filter(~user.userid.in_(players_in_groups_query), user.isactive == 1, user.arrival <= thisperiod.starttime, user.departure >= thisperiod.starttime, instrument.isprimary == 1)
-        nonplayers = session.query(user.userid, user.firstname, user.lastname, sqlalchemy.sql.expression.literal_column("'Non Player'").label("instrumentname")).filter(~user.userid.in_(players_in_groups_query), ~user.userid.in_(unallocatedplayers_query), user.isactive == 1, user.arrival <= thisperiod.starttime, user.departure >= thisperiod.starttime).all()
+        nonplayers = session.query(user.userid, user.firstname, user.lastname, user.dietaryrequirements,user.agecategory, sqlalchemy.sql.expression.literal_column("'Non Player'").label("instrumentname")).filter(~user.userid.in_(players_in_groups_query), ~user.userid.in_(unallocatedplayers_query), user.isactive == 1, user.arrival <= thisperiod.starttime, user.departure >= thisperiod.starttime).all()
         thisperiod = session.query(period).filter(period.periodid == periodid).first()
         session.close()
         return render_template('periodpage.html', \
@@ -2085,7 +2087,7 @@ def cateringpage(logonid):
         return str(ex)
     start = datetime.datetime.strptime(getconfig('StartTime').split(' ')[0], '%Y-%m-%d')
     end = datetime.datetime.strptime(getconfig('EndTime').split(' ')[0], '%Y-%m-%d')
-    campdays = [end + datetime.timedelta(days=x) for x in range(0, (end-start).days)]
+    campdays = [start + datetime.timedelta(days=x) for x in range(0, (end-start).days)]
     try:
         days = []
         for day in campdays:
@@ -2097,6 +2099,7 @@ def cateringpage(logonid):
             for thisperiod in mealperiods:
                 meal = {
                     'name':thisperiod.periodname,
+                    'periodid': thisperiod.periodid,
                     'starttime':thisperiod.starttime,
                     'endtime':thisperiod.endtime,
                 }
@@ -2109,24 +2112,27 @@ def cateringpage(logonid):
                         )
                 #find the users that are present and not marked absent
                 meal['totals'] = session.query(
-                            user.agecatagory,
+                            user.agecategory,
                             user.dietaryrequirements,
-                            func.count(user.agecatagory + user.dietaryrequirements)
+                            func.count(user.agecategory + user.dietaryrequirements).label("count")
                         ).filter(
                             user.arrival <= thisperiod.starttime, 
                             user.departure >= thisperiod.endtime, 
                             user.isactive == 1,
                             ~user.userid.in_(absentusers_subquery)
-                        ).group_by(user.agecatagory, user.dietaryrequirements
-                        ).order_by(user.agecatagory, user.dietaryrequirements
+                        ).group_by(user.agecategory, user.dietaryrequirements
+                        ).order_by(user.agecategory, user.dietaryrequirements
                         ).all()
+                meal['total'] = 0
+                for catagory in meal['totals']:
+                    meal['total'] = int(meal['total']) + int(catagory.count)
                 meals.append(meal)
             thisday['meals'] = meals
             days.append(thisday)
         session.close()
         return render_template('cateringpage.html', \
                                 thisuser=thisuser, \
-                                meals=meals, \
+                                days=days, \
                                 campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress')
                                 )
     except Exception as ex:

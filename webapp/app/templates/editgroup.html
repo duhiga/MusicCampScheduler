@@ -438,6 +438,10 @@
                 <td id="total_players"></td>
             </tr>
         </table>
+        {% if thismusic.description and thismusic.description != '' %}
+        <h2>Music Description</h2>
+        <p>{{ thismusic.description }}</p>
+        {% endif %}
         <h2>Players</h2>
         <table class="border-table" id="table_players">
             <tr>

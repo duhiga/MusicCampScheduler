@@ -800,7 +800,6 @@ def grouprequest(logonid,periodid=None,musicid=None):
         if conductorpage == False:
             if thisuser.grouprequestcount == 0 or thisuser.grouprequestcount == None or thisuser.grouprequestcount == '':
                 thisuser.grouprequestcount = 0
-                alreadyrequestedratio = 0
             debuglog('GROUPREQUEST: User has requested %s groups' % thisuser.grouprequestcount)
             debuglog('GROUPREQUEST: Maximum allowance is %s plus an extra %s per day' % (getconfig('BonusGroupRequests'), getconfig('DailyGroupRequestLimit')))
             debuglog('GROUPREQUEST: User arrived at camp at %s.' % thisuser.arrival)
@@ -1439,6 +1438,8 @@ def periodpage(logonid,periodid):
                 user.userid, 
                 user.firstname, 
                 user.lastname, 
+                user.dietaryrequirements,
+                user.agecategory,
                 period.starttime, 
                 period.endtime, 
                 group.groupname,
@@ -1464,9 +1465,9 @@ def periodpage(logonid,periodid):
             join(groupassignment).join(group).join(period).\
             filter(user.isactive == 1, user.arrival <= thisperiod.starttime, user.departure >= thisperiod.starttime, group.periodid == thisperiod.periodid, group.status == 'Confirmed')
         #find all other players to be displayed to the user
-        unallocatedplayers = session.query(user.userid, user.firstname, user.lastname, instrument.instrumentname).join(instrument).filter(~user.userid.in_(players_in_groups_query), user.isactive == 1, user.arrival <= thisperiod.starttime, user.departure >= thisperiod.starttime, instrument.isprimary == 1).all()
+        unallocatedplayers = session.query(user.userid, user.firstname, user.lastname, user.dietaryrequirements, user.agecategory,instrument.instrumentname).join(instrument).filter(~user.userid.in_(players_in_groups_query), user.isactive == 1, user.arrival <= thisperiod.starttime, user.departure >= thisperiod.starttime, instrument.isprimary == 1).all()
         unallocatedplayers_query = session.query(user.userid).join(instrument).filter(~user.userid.in_(players_in_groups_query), user.isactive == 1, user.arrival <= thisperiod.starttime, user.departure >= thisperiod.starttime, instrument.isprimary == 1)
-        nonplayers = session.query(user.userid, user.firstname, user.lastname, sqlalchemy.sql.expression.literal_column("'Non Player'").label("instrumentname")).filter(~user.userid.in_(players_in_groups_query), ~user.userid.in_(unallocatedplayers_query), user.isactive == 1, user.arrival <= thisperiod.starttime, user.departure >= thisperiod.starttime).all()
+        nonplayers = session.query(user.userid, user.firstname, user.lastname, user.dietaryrequirements,user.agecategory, sqlalchemy.sql.expression.literal_column("'Non Player'").label("instrumentname")).filter(~user.userid.in_(players_in_groups_query), ~user.userid.in_(unallocatedplayers_query), user.isactive == 1, user.arrival <= thisperiod.starttime, user.departure >= thisperiod.starttime).all()
         thisperiod = session.query(period).filter(period.periodid == periodid).first()
         session.close()
         return render_template('periodpage.html', \
@@ -1505,8 +1506,6 @@ def useradmin(logonid):
         if thisuser.isadmin != 1 and thisuser.logonid != getconfig('AdminUUID'):
             raise Exception('You are not allowed to view this page.')
         else:
-            #get the list of people that play instruments
-            players_query = session.query(instrument.userid).filter(instrument.isactive == 1)
             #get the userids and their associated primary instruments
             primaryinstruments_subquery = session.query(
                                 instrument.userid.label('primaryinstruments_userid'),
@@ -2074,6 +2073,78 @@ def objecteditor(logonid, input, objectid=None):
             return errorpage(thisuser,'Failed to display page. %s' % ex)
         else:
             return jsonify(message = message, url = 'none')
+
+#The catering page displays all periods flagged as a meal, along with numbers and dietary requirements
+@app.route('/user/<logonid>/catering/')
+def cateringpage(logonid):
+
+    try:
+        session = Session()
+        thisuser = getuser(session,logonid,True)
+        log('CATERINGPAGE: user firstname:%s lastname:%s method:%s' % (thisuser.firstname, thisuser.lastname, request.method))
+    except Exception as ex:
+        session.close()
+        return str(ex)
+    start = datetime.datetime.strptime(getconfig('StartTime').split(' ')[0], '%Y-%m-%d')
+    end = datetime.datetime.strptime(getconfig('EndTime').split(' ')[0], '%Y-%m-%d')
+    campdays = [start + datetime.timedelta(days=x) for x in range(0, (end-start).days)]
+    try:
+        days = []
+        for day in campdays:
+            thisday = {}
+            thisday['date'] = day
+            meals = []
+            nextday = day + timedelta(days=1)
+            mealperiods = session.query(period).filter(period.meal == 1, period.starttime >= day, period.starttime < nextday).all()
+            for thisperiod in mealperiods:
+                meal = {
+                    'name':thisperiod.periodname,
+                    'periodid': thisperiod.periodid,
+                    'starttime':thisperiod.starttime,
+                    'endtime':thisperiod.endtime,
+                }
+                absentusers_subquery = session.query(user.userid
+                    ).join(groupassignment
+                    ).join(group
+                    ).filter(
+                        group.groupname == 'absent',
+                        group.periodid == thisperiod.periodid
+                        )
+                #find the users that are present and not marked absent
+                meal['totals'] = session.query(
+                            user.agecategory,
+                            user.dietaryrequirements,
+                            func.count(user.agecategory + user.dietaryrequirements).label("count")
+                        ).filter(
+                            user.arrival <= thisperiod.starttime, 
+                            user.departure >= thisperiod.endtime, 
+                            user.isactive == 1,
+                            ~user.userid.in_(absentusers_subquery)
+                        ).group_by(user.agecategory, user.dietaryrequirements
+                        ).order_by(user.agecategory, user.dietaryrequirements
+                        ).all()
+                meal['total'] = 0
+                for catagory in meal['totals']:
+                    meal['total'] = int(meal['total']) + int(catagory.count)
+                meals.append(meal)
+            thisday['meals'] = meals
+            days.append(thisday)
+        session.close()
+        return render_template('cateringpage.html', \
+                                thisuser=thisuser, \
+                                days=days, \
+                                campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress')
+                                )
+    except Exception as ex:
+        log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))
+        message = ('Failed to execute %s with exception: %s. Try refreshing the page and trying again or contact camp administration.' % (request.method, ex))
+        session.rollback()
+        session.close()
+        if request.method == 'GET':
+            return errorpage(thisuser,'Failed to display page. %s' % ex)
+        else:
+            return jsonify(message = message, url = 'none')
+
 
 @app.route('/js/<path:path>')
 def send_js(path):

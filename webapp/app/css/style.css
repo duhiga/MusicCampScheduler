@@ -329,3 +329,7 @@ However, delay the fade out process for 2.5 seconds */
     border-style: solid;
     border-color: transparent transparent transparent black;
 }
+
+.top-padded {
+    padding-top: 10px;
+}

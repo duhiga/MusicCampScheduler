@@ -1,0 +1,62 @@
+{% extends "layout.html" %} {% block title%}Catering - {{ campname }}{% endblock %} {% block breadcrumbs %}
+<li class="w3-hide-small">
+    <a href="/user/{{ thisuser.logonid }}/catering/" class="w3-hover-white">Catering</a>
+</li>
+<li class="w3-hide-small">
+    <a href="#" class="w3-hover-white">Catering</a>
+</li>
+{% endblock %} {% block content %}
+<div class="w3-row">
+    <div class="w3-container">
+            <h2>Catering</h2>
+    </div>
+</div>
+<div class="w3-row">
+    <div class="w3-container">
+        {% for day in days %} 
+        <div class="w3-row top-padded">
+            <div class="w3-card-4">
+                <header class="pointer accordion w3-container w3-blue">
+                    <h5>
+                        {{ day.date.strftime('%d %b') }}
+                        <i class="fa fa-caret-down w3-right"></i>
+                    </h5>
+                </header>
+                <div class="w3-accordion-content panel">
+                    {% for meal in day.meals %}
+                    <div class="w3-container w3-third top-padded">
+                        <div class="w3-card-4">
+                            <div class="w3-container">
+                                <h5>
+                                    <a class="w3-btn-block w3-hover-black w3-white w3-border w3-round-large" href="/user/{{ thisuser.logonid }}/period/{{ meal.periodid }}/">{{ meal.name }}</a>
+                                </h5>
+                                <table class="w3-table">
+                                    <tr>
+                                        <th>Age</th>
+                                        <th>Diet</th>
+                                        <th>Count</th>
+                                    </tr>
+                                    {% for total in meal.totals %}
+                                    <tr>
+                                        <td>{{ total.agecategory }}</td>
+                                        <td>{{ total.dietaryrequirements }}</td>
+                                        <td>{{ total.count }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </table>
+                                <h5>
+                                    Total: {{ meal.total }}
+                                </h5>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+
+{% endblock %}

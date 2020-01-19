@@ -352,15 +352,15 @@ def editgroup(logonid,groupid,periodid=None):
                 #Finds all players who are already playing in this period (except in this specific group)
                 playersPlayingInPeriod = session.query(user.userid).join(groupassignment).join(group).filter(group.groupid != thisgroup.groupid).filter(group.periodid == selectedperiod.periodid)
                 #finds all players who are available to play in this group (they aren't already playing in other groups)
-                playersdump = session.query(user.userid,user.firstname,user.lastname,instrument.instrumentname,instrument.level,instrument.isprimary).\
+                playersdump = session.query(user.userid,user.firstname,user.lastname,user.agecategory,instrument.instrumentname,instrument.level,instrument.isprimary).\
                             join(instrument).filter(~user.userid.in_(playersPlayingInPeriod), user.isactive == 1, user.arrival <= selectedperiod.starttime, user.departure >= selectedperiod.endtime, instrument.isactive == 1).all()
             else:
-                playersdump = session.query(user.userid,user.firstname,user.lastname,instrument.instrumentname,instrument.level,instrument.isprimary).\
+                playersdump = session.query(user.userid,user.firstname,user.lastname,user.agecategory,instrument.instrumentname,instrument.level,instrument.isprimary).\
                             join(instrument).filter(user.isactive == 1, instrument.isactive == 1).all()
             playersdump_serialized = []
             for p in playersdump:
                 playersdump_serialized.append({'userid': p.userid, 'firstname': p.firstname, 'lastname': p.lastname,
-                    'instrumentname': p.instrumentname, 'level': p.level, 'isprimary': p.isprimary})
+                    'agecategory': p.agecategory, 'instrumentname': p.instrumentname, 'level': p.level, 'isprimary': p.isprimary})
 
             #Get a list of the available music not being used in the period selected
             if selectedperiod is not None:

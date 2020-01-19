@@ -491,8 +491,8 @@ class period(Base):
                     ).order_by(user.agecategory, user.dietaryrequirements
                     ).all()
             mealstats['total'] = 0
-            for catagory in mealstats['totals']:
-                mealstats['total'] = int(mealstats['total']) + int(catagory.count)
+            for category in mealstats['totals']:
+                mealstats['total'] = int(mealstats['total']) + int(category.count)
             return mealstats
 
 #gets a period object from a periodid

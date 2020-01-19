@@ -333,3 +333,14 @@ However, delay the fade out process for 2.5 seconds */
 .top-padded {
     padding-top: 10px;
 }
+
+.flex-container {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+}
+.flex-container * {
+    margin-left: 5px;
+    margin-right: 5px;
+}

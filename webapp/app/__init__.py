@@ -1468,6 +1468,8 @@ def periodpage(logonid,periodid):
         unallocatedplayers_query = session.query(user.userid).join(instrument).filter(~user.userid.in_(players_in_groups_query), user.isactive == 1, user.arrival <= thisperiod.starttime, user.departure >= thisperiod.starttime, instrument.isprimary == 1)
         nonplayers = session.query(user.userid, user.firstname, user.lastname, user.dietaryrequirements,user.agecategory, sqlalchemy.sql.expression.literal_column("'Non Player'").label("instrumentname")).filter(~user.userid.in_(players_in_groups_query), ~user.userid.in_(unallocatedplayers_query), user.isactive == 1, user.arrival <= thisperiod.starttime, user.departure >= thisperiod.starttime).all()
         thisperiod = session.query(period).filter(period.periodid == periodid).first()
+        nextperiod = session.query(period).filter(period.starttime > thisperiod.starttime).order_by(period.starttime).first()
+        previousperiod = session.query(period).filter(period.starttime < thisperiod.starttime).order_by(desc(period.starttime)).first()
         mealstats = thisperiod.getmealstats(session)
         session.close()
         return render_template('periodpage.html', \
@@ -1479,6 +1481,8 @@ def periodpage(logonid,periodid):
                                 thisuser=thisuser, \
                                 thisperiod=thisperiod, \
                                 mealstats=mealstats, \
+                                previousperiod=previousperiod, \
+                                nextperiod=nextperiod, \
                                 )
     except Exception as ex:
         log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))

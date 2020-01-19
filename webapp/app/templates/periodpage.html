@@ -41,11 +41,15 @@
 {% block content %}
 <div class="w3-row">
     <div class="w3-container">
-        <h2>{{ thisperiod.periodname }}</h2>
+        <div class="flex-container">
+            <a class="w3-btn w3-hover-black w3-white w3-border w3-round-large" href="/user/{{ thisuser.logonid }}/period/{{ previousperiod.periodid }}/"><i class="fa fa-chevron-left"></i></a>
+            <h2>{{ thisperiod.periodname }}</h2>
+            <a class="w3-btn w3-hover-black w3-white w3-border w3-round-large" href="/user/{{ thisuser.logonid }}/period/{{ nextperiod.periodid }}/"><i class="fa fa-chevron-right"></i></a>
+        </div>
         <table class="w3-table">
             <tr>
                 <th>Date</th>
-                <td>{{thisperiod.starttime.strftime('%A %d %b')}}</td>
+                <td><a href="/user/{{ thisuser.logonid }}/date/{{ thisperiod.starttime.strftime('%Y-%m-%d') }}/">{{thisperiod.starttime.strftime('%A %d %b')}}</a></td>
             </tr>
             <tr>
                 <th>Time</th>
@@ -75,7 +79,7 @@
                     {% endif %}
                 </table>
                 {% if thisperiod.meal == 1 %}
-                <h5>Catering Details</h5>
+                <h5><a href="/user/{{ thisuser.logonid }}/catering/">Catering Details</a></h5>
                 <table class="w3-table tablesorter">
                     <thead>
                         <th>Age</th>

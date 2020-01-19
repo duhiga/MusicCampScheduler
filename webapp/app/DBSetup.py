@@ -460,6 +460,41 @@ class period(Base):
     def serialize(self):
         return serialize_class(self, self.__class__)
 
+    def getmealstats(self, session):
+        if (self.meal != 1):
+            return null
+        else:
+            mealstats = {
+                'name':self.periodname,
+                'periodid': self.periodid,
+                'starttime':self.starttime,
+                'endtime':self.endtime,
+            }
+            absentusers_subquery = session.query(user.userid
+                ).join(groupassignment
+                ).join(group
+                ).filter(
+                    group.groupname == 'absent',
+                    group.periodid == self.periodid
+                    )
+            #find the users that are present and not marked absent
+            mealstats['totals'] = session.query(
+                        user.agecategory,
+                        user.dietaryrequirements,
+                        func.count(user.agecategory + user.dietaryrequirements).label("count")
+                    ).filter(
+                        user.arrival <= self.starttime, 
+                        user.departure >= self.endtime, 
+                        user.isactive == 1,
+                        ~user.userid.in_(absentusers_subquery)
+                    ).group_by(user.agecategory, user.dietaryrequirements
+                    ).order_by(user.agecategory, user.dietaryrequirements
+                    ).all()
+            mealstats['total'] = 0
+            for catagory in mealstats['totals']:
+                mealstats['total'] = int(mealstats['total']) + int(catagory.count)
+            return mealstats
+
 #gets a period object from a periodid
 def getperiod(session,periodid):
     if periodid is None:

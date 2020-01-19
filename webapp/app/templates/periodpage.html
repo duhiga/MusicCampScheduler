@@ -4,6 +4,9 @@
 <script>
     $(document).ready(function () {
         $(function () {
+            {% if thisperiod.meal == 1 %}
+                $(".tablesorter").tablesorter({});
+            {% else %}
             $(".tablesorter").tablesorter({
                 emptyTo: 'bottom',
                 sortList: [[3, 1], [1, 0], [0, 0]],
@@ -13,6 +16,7 @@
                     },
                 },
             });
+            {% endif %}
         });
     });
 </script>
@@ -63,11 +67,32 @@
                         <th>Location</th>
                         <td>{{e.locationname}}</td>
                     </tr>
+                    {% if thisperiod.meal != 1 %}
                     <tr>
                         <th>Attendees</th>
                         <td>{{ players|length + unallocatedplayers|length + nonplayers|length }}</td>
                     </tr>
+                    {% endif %}
                 </table>
+                {% if thisperiod.meal == 1 %}
+                <h5>Catering Details</h5>
+                <table class="w3-table tablesorter">
+                    <thead>
+                        <th>Age</th>
+                        <th>Diet</th>
+                        <th>Count</th>
+                    </thead>
+                    <tbody>
+                        {% for total in mealstats.totals %}
+                        <tr>
+                            <td>{{ total.agecategory }}</td>
+                            <td>{{ total.dietaryrequirements }}</td>
+                            <td>{{ total.count }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% endif %}
                 {% if e.groupdescription != None %}
                 <br />{{ e.groupdescription }}
                 {% endif %}

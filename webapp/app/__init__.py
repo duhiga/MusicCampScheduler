@@ -1411,7 +1411,6 @@ def publiceventpage(logonid,periodid):
 #this page is the full report for any given period
 @app.route('/user/<logonid>/period/<periodid>/')
 def periodpage(logonid,periodid):
-
     try:
         session = Session()
         thisuser = getuser(session,logonid,True)
@@ -1469,6 +1468,7 @@ def periodpage(logonid,periodid):
         unallocatedplayers_query = session.query(user.userid).join(instrument).filter(~user.userid.in_(players_in_groups_query), user.isactive == 1, user.arrival <= thisperiod.starttime, user.departure >= thisperiod.starttime, instrument.isprimary == 1)
         nonplayers = session.query(user.userid, user.firstname, user.lastname, user.dietaryrequirements,user.agecategory, sqlalchemy.sql.expression.literal_column("'Non Player'").label("instrumentname")).filter(~user.userid.in_(players_in_groups_query), ~user.userid.in_(unallocatedplayers_query), user.isactive == 1, user.arrival <= thisperiod.starttime, user.departure >= thisperiod.starttime).all()
         thisperiod = session.query(period).filter(period.periodid == periodid).first()
+        mealstats = thisperiod.getmealstats(session)
         session.close()
         return render_template('periodpage.html', \
                                 players=players, \
@@ -1478,6 +1478,7 @@ def periodpage(logonid,periodid):
                                 campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=(getconfig('Instruments') + ',Non Player').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
                                 thisuser=thisuser, \
                                 thisperiod=thisperiod, \
+                                mealstats=mealstats, \
                                 )
     except Exception as ex:
         log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))
@@ -2097,36 +2098,7 @@ def cateringpage(logonid):
             nextday = day + timedelta(days=1)
             mealperiods = session.query(period).filter(period.meal == 1, period.starttime >= day, period.starttime < nextday).all()
             for thisperiod in mealperiods:
-                meal = {
-                    'name':thisperiod.periodname,
-                    'periodid': thisperiod.periodid,
-                    'starttime':thisperiod.starttime,
-                    'endtime':thisperiod.endtime,
-                }
-                absentusers_subquery = session.query(user.userid
-                    ).join(groupassignment
-                    ).join(group
-                    ).filter(
-                        group.groupname == 'absent',
-                        group.periodid == thisperiod.periodid
-                        )
-                #find the users that are present and not marked absent
-                meal['totals'] = session.query(
-                            user.agecategory,
-                            user.dietaryrequirements,
-                            func.count(user.agecategory + user.dietaryrequirements).label("count")
-                        ).filter(
-                            user.arrival <= thisperiod.starttime, 
-                            user.departure >= thisperiod.endtime, 
-                            user.isactive == 1,
-                            ~user.userid.in_(absentusers_subquery)
-                        ).group_by(user.agecategory, user.dietaryrequirements
-                        ).order_by(user.agecategory, user.dietaryrequirements
-                        ).all()
-                meal['total'] = 0
-                for catagory in meal['totals']:
-                    meal['total'] = int(meal['total']) + int(catagory.count)
-                meals.append(meal)
+                meals.append(thisperiod.getmealstats(session))
             thisday['meals'] = meals
             days.append(thisday)
         session.close()

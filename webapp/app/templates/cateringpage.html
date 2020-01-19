@@ -1,11 +1,23 @@
-{% extends "layout.html" %} {% block title%}Catering - {{ campname }}{% endblock %} {% block breadcrumbs %}
+{% extends "layout.html" %} 
+{% block title%}Catering - {{ campname }}{% endblock %}
+{% block head %}
+<script>
+    $(document).ready(function () {
+        $(function () {
+            $(".tablesorter").tablesorter({});
+        });
+    });
+</script>
+{% endblock %}
+{% block breadcrumbs %}
 <li class="w3-hide-small">
     <a href="/user/{{ thisuser.logonid }}/catering/" class="w3-hover-white">Catering</a>
 </li>
 <li class="w3-hide-small">
     <a href="#" class="w3-hover-white">Catering</a>
 </li>
-{% endblock %} {% block content %}
+{% endblock %} 
+{% block content %}
 <div class="w3-row">
     <div class="w3-container">
             <h2>Catering</h2>
@@ -30,19 +42,23 @@
                                 <h5>
                                     <a class="w3-btn-block w3-hover-black w3-white w3-border w3-round-large" href="/user/{{ thisuser.logonid }}/period/{{ meal.periodid }}/">{{ meal.name }}</a>
                                 </h5>
-                                <table class="w3-table">
-                                    <tr>
-                                        <th>Age</th>
-                                        <th>Diet</th>
-                                        <th>Count</th>
-                                    </tr>
-                                    {% for total in meal.totals %}
-                                    <tr>
-                                        <td>{{ total.agecategory }}</td>
-                                        <td>{{ total.dietaryrequirements }}</td>
-                                        <td>{{ total.count }}</td>
-                                    </tr>
+                                <table class="w3-table tablesorter">
+                                    <thead>
+                                        <tr>
+                                            <th>Age</th>
+                                            <th>Diet</th>
+                                            <th>Count</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for total in meal.totals %}
+                                            <tr>
+                                                <td>{{ total.agecategory }}</td>
+                                                <td>{{ total.dietaryrequirements }}</td>
+                                                <td>{{ total.count }}</td>
+                                            </tr>
                                     {% endfor %}
+                                    </tbody>
                                 </table>
                                 <h5>
                                     Total: {{ meal.total }}

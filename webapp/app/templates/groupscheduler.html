@@ -146,7 +146,7 @@
                         {% endfor %}
                     </select>
                     <button class="w3-btn w3-white w3-hover-black w3-border w3-round-large" id="fillall">
-                        <div class="auto_schedule_text">Auto-Schedule</div><div class="auto_schedule_spinicon"><i class="fa fa-circle-o-notch fa-spin"></i></div>
+                        <div class="auto_schedule_text">Auto-Schedule</div><div class="auto_schedule_spinicon"><i class="fa fa-circle-notch fa-spin"></i></div>
                     </button>
                 </p>
 
@@ -203,7 +203,7 @@
                                     {% if not g.starttime or g.starttime > now %}
                                     <button class="w3-btn w3-white w3-hover-black w3-border w3-round-large reset" style="width: 100%" id="{{ g.groupid }}">
                                         <i class="fa fa-minus-square reset_icon" data-pairing="{{ g.groupid }}"></i>
-                                        <i class="fa fa-circle-o-notch fa-spin reset_spin" data-pairing="{{ g.groupid }}"></i>
+                                        <i class="fa fa-circle-notch fa-spin reset_spin" data-pairing="{{ g.groupid }}"></i>
                                     </button>
                                     {% endif %}
                                 </td>

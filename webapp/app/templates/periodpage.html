@@ -71,15 +71,13 @@
                         <th>Location</th>
                         <td>{{e.locationname}}</td>
                     </tr>
-                    {% if thisperiod.meal != 1 %}
                     <tr>
                         <th>Attendees</th>
                         <td>{{ players|length + unallocatedplayers|length + nonplayers|length }}</td>
                     </tr>
-                    {% endif %}
                 </table>
                 {% if thisperiod.meal == 1 %}
-                <h5><a href="/user/{{ thisuser.logonid }}/catering/">Catering Details</a></h5>
+                <h5><a href="/user/{{ thisuser.logonid }}/catering/">Catering</a></h5>
                 <table class="w3-table tablesorter">
                     <thead>
                         <th>Age</th>

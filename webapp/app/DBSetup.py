@@ -484,7 +484,7 @@ class period(Base):
                         func.count(user.agecategory + user.dietaryrequirements).label("count")
                     ).filter(
                         user.arrival <= self.starttime, 
-                        user.departure >= self.endtime, 
+                        user.departure >= self.starttime, 
                         user.isactive == 1,
                         ~user.userid.in_(absentusers_subquery)
                     ).group_by(user.agecategory, user.dietaryrequirements

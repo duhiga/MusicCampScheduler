@@ -2092,7 +2092,7 @@ def cateringpage(logonid):
         return str(ex)
     start = datetime.datetime.strptime(getconfig('StartTime').split(' ')[0], '%Y-%m-%d')
     end = datetime.datetime.strptime(getconfig('EndTime').split(' ')[0], '%Y-%m-%d')
-    campdays = [start + datetime.timedelta(days=x) for x in range(0, (end-start).days)]
+    campdays = [start + datetime.timedelta(days=x) for x in range(0, (end-start).days + 1)]
     try:
         days = []
         for day in campdays:

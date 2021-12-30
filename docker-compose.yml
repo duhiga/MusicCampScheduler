@@ -34,7 +34,7 @@ services:
   postgres:
     container_name: postgres
     restart: always
-    image: postgres:latest
+    image: postgres:9.6.24-alpine3.15
     env_file: ./.env
     depends_on:
       - logspout

@@ -30,6 +30,10 @@
                     <td>{{ thismusic.source }}</td>
                 </tr>
                 <tr>
+                    <th>Description</th>
+                    <td>{{ thismusic.description }}</td>
+                </tr>
+                <tr>
                     <th>Instrumentation</th>
                     <td>
                         {% if thismusic.grouptemplateid != None %} {% for t in grouptemplates %} {% if thismusic.grouptemplateid == t.grouptemplateid

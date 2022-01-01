@@ -1928,7 +1928,7 @@ def setup(logonid):
                     log('SETUP: File received named %s' % filename)
 
                     file_string = file_bytes.getvalue()
-                    file_text = file_string.decode('UTF-8')
+                    file_text = file_string.decode('utf-8')
                     csv = StringIO(file_text)
 
                     if filename == 'config.xml':

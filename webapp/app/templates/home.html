@@ -239,7 +239,7 @@
                                 <th>Time</th>
                                 <td>{{ p.starttime.strftime('%H:%M') }} - {{ p.endtime.strftime('%H:%M') }}</td>
                             </tr>
-                            {% if (p.ismusical == 1 or p.iseveryone == 1) and p.groupname != 'absent' %}
+                            {% if (p.ismusical == 0 or p.ismusical == 1 or p.iseveryone == 1) and p.groupname != 'absent' %}
                             <tr>
                                 <th>Location</th>
                                 <td>{{p.locationname}}</td>

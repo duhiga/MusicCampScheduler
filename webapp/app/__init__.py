@@ -994,6 +994,7 @@ def grouprequest(logonid,periodid=None,musicid=None):
                     #for each specific player in the request, check if there's a free spot in the matching group
                     #for each player in the group request
                     clash = False
+                    instrumentsThatFit = {}
                     for p in content['objects']:
                         #if it's a named player, not a blank drop-down
                         if p['userid'] != 'null' and p['userid'] != '':
@@ -1001,7 +1002,12 @@ def grouprequest(logonid,periodid=None,musicid=None):
                             instrumentclash = session.query(groupassignment).filter(groupassignment.instrumentname == p['instrumentname'], groupassignment.groupid == m.groupid).all()
                             #if the list of players already matches the group instrumentation for this instrument, this match fails and break out
                             if instrumentclash is not None and instrumentclash != []:
-                                if len(instrumentclash) >= getattr(m, p['instrumentname']):
+                                #find the number of slots already taken up by this instrument in the group
+                                slotsTaken = len(instrumentclash)
+                                #find the number of slots we need to fill this request
+                                slotsNeeded = sum(o['instrumentname'] == p['instrumentname'] for o in content['objects'])
+                                #if these are greater than the maximum number in the group, this is a clash
+                                if slotsTaken + slotsNeeded > getattr(m, p['instrumentname']):
                                     debuglog('MATCHMAKING: Found group not suitable, does not have an open slot for this player.')
                                     clash = True
                                     break

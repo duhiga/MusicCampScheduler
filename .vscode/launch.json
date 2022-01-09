@@ -12,6 +12,7 @@
             "env": {
                 "FLASK_APP": "${workspaceRoot}/webapp/app/__init__.py"
             },
+            "envFile": "${workspaceRoot}/.env",
             "args": [
                 "run",
                 "--no-debugger",

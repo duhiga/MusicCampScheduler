@@ -1,6 +1,0 @@
-FROM nginx
-RUN apt-get update
-RUN apt-get install nginx-extras -y
-RUN unlink /etc/nginx/sites-enabled/default
-RUN rm /etc/nginx/conf.d/default.conf
-COPY musiccampscheduler.conf /etc/nginx/sites-enabled/

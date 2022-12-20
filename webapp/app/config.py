@@ -1,6 +1,6 @@
-import untangle
 import os
 import sys
+import untangle
 
 def getconfig(attribute):
     try:

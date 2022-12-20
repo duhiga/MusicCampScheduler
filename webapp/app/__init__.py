@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, redirect, jsonify, make_response, json, request, url_for, send_from_directory, flash
 from collections import namedtuple
-from werkzeug import secure_filename
+from werkzeug.utils import secure_filename
 import sys
 import types
 import time

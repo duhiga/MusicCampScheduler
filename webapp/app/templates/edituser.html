@@ -221,6 +221,16 @@
                 <h2>{% if thisuser.isadmin == 1 %}User{% else %}Your{% endif %} Settings</h2>
             </header>
             <div class="w3-container">
+                {% if thisuser.isadmin == 1 %}
+                <div>
+                    <p>
+                        Show the user the below QR code to link them to their dashboard:
+                    </p>
+                </div>
+                <div>
+                    <img style='display:block; width:100%;' id='DashboardURL' src="data:image/png;base64,{{ img_data }}"/>
+                </div>
+                {% endif %}
                 <p>Note: You will only be assigned a group if you are set to Active, and the group plays between your arrival and departure times.</p>
                 <table class="w3-table border-table">
                     <tbody>

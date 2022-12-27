@@ -11,7 +11,7 @@ import untangle
 import uuid
 import sqlalchemy
 import os
-import io
+from io import BytesIO
 from datetime import date, timedelta
 from .DBSetup import *
 from sqlalchemy import *
@@ -20,6 +20,8 @@ from .config import *
 from .SMTPemail import *
 from .tablefunctions import *
 from io import StringIO
+import qrcode
+import base64
 
 #Make the WSGI interface available at the top level so wfastcgi can get it.
 app = Flask(__name__)
@@ -1606,11 +1608,26 @@ def edituser(logonid, targetuserid):
         targetuserinstruments = session.query(instrument).filter(instrument.userid == targetuser.userid).all()
         periods = session.query(period).order_by(period.starttime).all()
         #if this is a user requesting the page
+
+        qr = qrcode.QRCode(
+            version=1,
+            box_size=10,
+            border=5)
+
+        qr.add_data(f"{getconfig('Website_URL')}/user/{targetuser.logonid}/")
+        qr.make(fit=True)
+        dashboardQRCode = qr.make_image(fill='black', back_color='white')
+        buffer = BytesIO()
+        dashboardQRCode.save(buffer, format="png")
+        buffer.seek(0)
+        image_memory = base64.b64encode(buffer.getvalue())
+
         if request.method == 'GET':
             session.close()
             return render_template('edituser.html', \
                                     thisuser=thisuser, \
                                     targetuser=targetuser, \
+                                    img_data = image_memory.decode('utf-8'), \
                                     targetuserinstruments=targetuserinstruments, \
                                     campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
                                     periods=periods, \

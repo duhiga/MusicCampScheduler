@@ -3,7 +3,7 @@ from .config import *
 
 def send_email(recipient, subject, body):
     print('Email send requested for user %s' % recipient)
-    FROM = getconfig('Name')
+    FROM = getconfig('SMTP_EMAIL_FROM')
     TO = recipient if type(recipient) is list else [recipient]
     SUBJECT = subject
     TEXT = body

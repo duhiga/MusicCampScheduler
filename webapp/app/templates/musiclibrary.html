@@ -73,7 +73,11 @@
                         {% else %}
                         {% for i in instrumentlist %}
                         {% if m[i] > 0 %}
+                        {% if i == 'Viola' %}
+                        Va: {{m[i]}}
+                        {% else %}
                         {{i[0:2]}}: {{m[i]}}
+                        {% endif %}
                         {% endif %}
                         {% endfor %}
                         {% endif %}

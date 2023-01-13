@@ -15,11 +15,12 @@
 <li class="w3-hide-small"><a href="#" class="w3-hover-white">Group History</a></li>
 {% endblock %}
 {% block content %}
+{% if thisuserprimary %}
 <div class="w3-row">
     <div class="w3-container">
         <h2>Group History</h2>
         <p>Number of times you have played so far this camp: {{ playcount }}</p>
-        <p>Average number for {{ thisuserprimary }} players: {{ average }}</p>
+        <p>Average number for {{ thisuserprimary.instrumentname }} players: {{ average }}</p>
         <table style="width:100%" class="tablesorter">
             <thead>
                 <tr>
@@ -66,4 +67,11 @@
         </table>
     </div>
 </div>
-        {% endblock %}
+{% else %}
+<div class="w3-row">
+    <div class="w3-container">
+        <p>You have no primary instrument, so your group history cannot be shown.</p>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

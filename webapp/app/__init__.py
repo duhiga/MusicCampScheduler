@@ -569,16 +569,17 @@ def grouphistory(logonid):
         debuglog(groups)
         count = playcount(session, thisuser.userid)
 
-        thisuserprimary = session.query(instrument.instrumentname).filter(instrument.userid == thisuser.userid, instrument.isprimary == 1).first().instrumentname
+        thisuserprimary = session.query(instrument.instrumentname).filter(instrument.userid == thisuser.userid, instrument.isprimary == 1).first()
         total = 0
         number = 0
-        for p in session.query(instrument.userid).filter(instrument.isactive == 1, instrument.isprimary == 1, instrument.instrumentname == thisuserprimary).group_by(instrument.userid).all():
-            total = total + playcount(session, p.userid)
-            number = number + 1
-        average = "%.2f" % (float(total) / float(number))
-        debuglog('Found total number of %s players to be %s and plays by all of them totalling %s giving an average of %s' % (thisuserprimary, number, total, average))
-
-
+        if thisuserprimary:
+            for p in session.query(instrument.userid).filter(instrument.isactive == 1, instrument.isprimary == 1, instrument.instrumentname == thisuserprimary).group_by(instrument.userid).all():
+                total = total + playcount(session, p.userid)
+                number = number + 1
+            average = "%.2f" % (float(total) / float(number))
+            debuglog('Found total number of %s players to be %s and plays by all of them totalling %s giving an average of %s' % (thisuserprimary, number, total, average))
+        else:
+            average = None
         session.close()
         return render_template('grouphistory.html', \
                                 thisuser=thisuser, \

@@ -83,6 +83,10 @@ class user(Base):
     #marking a user absent for a period simply assigns them to a group called "absent" during that period
     def markabsent(self,session,thisperiod):
         absentgroup = session.query(group.groupid, group.periodid).join(period).filter(group.groupname == 'absent', period.periodid == thisperiod.periodid).first()
+        if absentgroup is None:
+            absentgroup = group(groupname = "absent", periodid = thisperiod.periodid)
+            session.add(absentgroup)
+            session.commit()
         self.addtogroup(session,absentgroup)
 
     #marking a user present searches for an absent listing for them, and removes it

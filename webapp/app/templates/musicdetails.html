@@ -29,6 +29,12 @@
                     <th>Source</th>
                     <td>{{ thismusic.source }}</td>
                 </tr>
+                {% if thismusic.description != None %}
+                <tr>
+                    <th>Music Location</th>
+                    <td>{{ thismusic.description }}</td>
+                </tr>
+                {% endif %}
                 <tr>
                     <th>Instrumentation</th>
                     <td>
@@ -44,12 +50,7 @@
                         <a href="{{ thismusic.link }}">{{ thismusic.link }}</a>
                     </td>
                 </tr>
-                {% endif %} {% if thismusic.description != None %}
-                <tr>
-                    <th>Description</th>
-                    <td>{{ thismusic.description }}</td>
-                </tr>
-                {% endif %}
+                {% endif %} 
                 <tr>
                     <th>Times Requested this Camp</th>
                     <td>{{ playcount }}</td>

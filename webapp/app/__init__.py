@@ -1783,6 +1783,7 @@ Your homepage, containing your daily schedule, is here:\n
 %s/user/%s/ \n
 WARNING: DO NOT GIVE THIS LINK, OR ANY LINK ON THIS WEBSITE TO ANYONE ELSE. It is yours, and yours alone and contains your connection credentials.\n
 If you're new to camp please stay after the first dinner and we'll walk you through how to use this website, including how to make your first group request.\n
+If you made a chamber music request in your camp applicaiton form, these have alreday been added to the website. Please check your group history page to double check before making any new requests.\n
 If you have any questions, please reply to this email or contact us on %s.\n
 Thanks!\n
 %s

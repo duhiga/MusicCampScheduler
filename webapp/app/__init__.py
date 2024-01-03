@@ -19,6 +19,7 @@ from sqlalchemy.orm import aliased
 from .config import *
 from .SMTPemail import *
 from .tablefunctions import *
+from .syncLibrary import *
 from io import StringIO
 import qrcode
 import base64
@@ -621,6 +622,34 @@ def musiclibrary(logonid):
                                 grouptemplates=grouptemplates, \
                                 campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
                                 )
+    except Exception as ex:
+        log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))
+        message = ('Failed to execute %s with exception: %s. Try refreshing the page and trying again or contact camp administration.' % (request.method, ex))
+        session.rollback()
+        session.close()
+        if request.method == 'GET':
+            return errorpage(thisuser,'Failed to display page. %s.' % ex)
+        else:
+            return jsonify(message = message, url = 'none')
+
+#If the user clicked on the pull library button, import the library then return them to the library page
+@app.route('/user/<logonid>/musiclibrary/sync/<synctype>')
+def syncToGoogleSheets(logonid, synctype):
+    try:
+        session = Session()
+        thisuser = getuser(session,logonid,True)
+        log('MUSICLIBRARY: user firstname:%s lastname:%s method:%s' % (thisuser.firstname, thisuser.lastname, request.method))
+        if thisuser.isadmin != 1:
+            session.close()
+            return 'You do not have permission to view this page'
+        else:
+            if synctype == "pull":
+                pullLibrary(getconfig('MusicLibraryURL'), 'key.json', session)
+            if synctype == "push":
+                pushLibrary(getconfig('MusicLibraryURL'), 'key.json', session)
+            session.commit()
+            session.close()
+            return musiclibrary(logonid)
     except Exception as ex:
         log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))
         message = ('Failed to execute %s with exception: %s. Try refreshing the page and trying again or contact camp administration.' % (request.method, ex))

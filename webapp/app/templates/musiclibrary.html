@@ -42,6 +42,13 @@
 {% block content %}
 <div class="w3-row">
     <div class="w3-container">
+        <a class="w3-btn w3-green w3-border w3-round" href="/user/{{ thisuser.logonid }}/musiclibrary/sync/push">PUSH Music Library TO Google Sheets</a>
+        &nbsp;
+        <a class="w3-btn w3-green w3-border w3-round" href="/user/{{ thisuser.logonid }}/musiclibrary/sync/pull">PULL Music Library FROM Google Sheets</a>
+    </div>
+</div>
+<div class="w3-row">
+    <div class="w3-container">
         <p>Click on a work name for more details and to make a request to play it! You can search for composers, work names or instrumentation, or click on the column headers to sort.</p>
         <p><input type="text" placeholder="Type to search..." style="overflow: hidden; padding-right: .5em;" class="w3-input w3-border" id="search" value=""></p>
         <table style="width:100%" class="tablesorter w3-hoverable border-table">

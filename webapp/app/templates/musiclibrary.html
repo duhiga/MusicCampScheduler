@@ -40,6 +40,7 @@
 <a href="/user/{{ thisuser.logonid }}/musiclibrary/new/" class="w3-hover-black"><i class="fa fa-plus"></i> Create New Entry</a>
 {% endblock %}
 {% block content %}
+{% if thisuser.isadmin == 1 %}
 <div class="w3-row">
     <div class="w3-container">
         <a class="w3-btn w3-green w3-border w3-round" href="/user/{{ thisuser.logonid }}/musiclibrary/sync/push">PUSH Music Library TO Google Sheets</a>
@@ -47,6 +48,7 @@
         <a class="w3-btn w3-green w3-border w3-round" href="/user/{{ thisuser.logonid }}/musiclibrary/sync/pull">PULL Music Library FROM Google Sheets</a>
     </div>
 </div>
+{% endif %}
 <div class="w3-row">
     <div class="w3-container">
         <p>Click on a work name for more details and to make a request to play it! You can search for composers, work names or instrumentation, or click on the column headers to sort.</p>

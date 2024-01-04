@@ -114,12 +114,15 @@ class music(Base):
     __tablename__ = 'musics'
 
     musicid = Column(Integer, primary_key=True, unique=True)
+    isactive = Column(Integer, default='1')
     composer = Column(Text(convert_unicode=True))
     musicname = Column(Text(convert_unicode=True))
+    arrangement = Column(Text(convert_unicode=True))
     source = Column(Text(convert_unicode=True))
-    description = Column(Text(convert_unicode=True))
+    boxid = Column(Text(convert_unicode=True))
+    catalogdetail = Column(Text(convert_unicode=True))
+    notes = Column(Text(convert_unicode=True))
     link = Column(Text(convert_unicode=True))
-    grouptemplateid = Column(Integer, ForeignKey('grouptemplates.grouptemplateid', ondelete='SET NULL'))
     
     @property
     def serialize(self):
@@ -746,40 +749,3 @@ def importusers(file):
         session.close()
         log('IMPORTUSERS: Failed to import with exception: %s.' % ex)
         return ('Failed to import with exception: %s.' % ex)
-
-def importmusic(file):
-    try:
-        session = Session()
-        reader = csv.reader(file, delimiter=',')
-        headers = []
-        headerfound = False
-        for row in reader:
-            #if this is the first iteration, the headers should be here
-            if not headerfound:
-                for column in row:
-                    headers.append(column)
-                log('IMPORTMUSIC: Headers for this import:')
-                log(headers)
-                headerfound = True
-            #if it's not the first iteration, it's a data row
-            else:
-                thismusic = music()
-                for idx, item in enumerate(row):
-                    if headers[idx] in getconfig('Instruments').split(",") and item == '':
-                        setattr(thismusic,headers[idx],0)
-                    elif item != '':
-                        setattr(thismusic,headers[idx],item)
-                matchingtemplate = session.query(grouptemplate).filter(*[getattr(thismusic,i) == getattr(grouptemplate,i) for i in instrumentlist]).first()
-                if matchingtemplate is not None:
-                    log('Found a template matching this music: %s' % matchingtemplate.grouptemplatename)
-                    thismusic.grouptemplateid = matchingtemplate.grouptemplateid
-                session.add(thismusic)
-        session.commit()
-        session.close()
-        return ('Success')
-    except Exception as ex:
-        session.rollback()
-        session.close()
-        log('IMPORTMUSIC: Failed to import with exception: %s.' % ex)
-        return ('Failed to import with exception: %s.' % ex)
-

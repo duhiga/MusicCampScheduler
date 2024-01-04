@@ -368,9 +368,9 @@ def editgroup(logonid,groupid,periodid=None):
             #Get a list of the available music not being used in the period selected
             if selectedperiod is not None:
                 musics_used_query = session.query(music.musicid).join(group).join(period).filter(period.periodid == selectedperiod.periodid, group.groupid != thisgroup.groupid)
-                musics = session.query(music).filter(~music.musicid.in_(musics_used_query)).all()
+                musics = session.query(music).filter(~music.musicid.in_(musics_used_query), music.isactive == 1).all()
             else:
-                musics = session.query(music).all()
+                musics = session.query(music).filter(music.isactive == 1).all()
             musics_serialized = [i.serialize for i in musics]
 
             #get a list of the locations not being used in this period
@@ -613,7 +613,7 @@ def musiclibrary(logonid):
         return str(ex)
 
     try:
-        musics = session.query(music).all()
+        musics = session.query(music).filter(music.isactive == 1).all()
         grouptemplates = session.query(grouptemplate).filter(grouptemplate.size == 'S').all()
         session.close()
         return render_template('musiclibrary.html', \
@@ -643,10 +643,7 @@ def syncToGoogleSheets(logonid, synctype):
             session.close()
             return 'You do not have permission to view this page'
         else:
-            if synctype == "pull":
-                pullLibrary(getconfig('MusicLibraryURL'), 'key.json', session)
-            if synctype == "push":
-                pushLibrary(getconfig('MusicLibraryURL'), 'key.json', session)
+            syncLibrary(getconfig('MusicLibraryURL'), 'key.json', session)
             session.commit()
             session.close()
             return musiclibrary(logonid)
@@ -854,10 +851,10 @@ def grouprequest(logonid,periodid=None,musicid=None):
                 locations_used_query = session.query(location.locationid).join(group).join(period).filter(period.periodid == periodid)
                 locations = session.query(location).filter(~location.locationid.in_(locations_used_query)).all()
                 musics_used_query = session.query(music.musicid).join(group).join(period).filter(period.periodid == periodid)
-                musics = session.query(music).filter(~music.musicid.in_(musics_used_query)).all()
+                musics = session.query(music).filter(~music.musicid.in_(musics_used_query), music.isactive == 1).all()
             else: 
                 locations = None
-                musics = session.query(music).filter(or_(*[(getattr(music,getattr(i,'instrumentname')) > 0) for i in session.query(instrument.instrumentname).filter(instrument.userid == thisuser.userid, instrument.isactive == 1)])).all()
+                musics = session.query(music).filter(or_(*[(getattr(music,getattr(i,'instrumentname')) > 0) for i in session.query(instrument.instrumentname).filter(instrument.userid == thisuser.userid, instrument.isactive == 1)]), music.isactive == 1).all()
         
             musics_serialized = [i.serialize for i in musics]
             #checks if the requested music exists and sets it up for the page
@@ -1873,7 +1870,7 @@ def instrumentation(logonid,periodid):
                 locations = session.query(location).filter(~location.locationid.in_(locations_used_query)).all()
                 #Get a list of the available music not being used in the period selected
                 musics_used_query = session.query(music.musicid).join(group).join(period).filter(period.periodid == periodid)
-                musics = session.query(music).filter(~music.musicid.in_(musics_used_query)).all()
+                musics = session.query(music).filter(~music.musicid.in_(musics_used_query), music.isactive == 1).all()
                 musics_serialized = [i.serialize for i in musics]
                 #get a list of conductors to fill the dropdown on the page
                 everyone_playing_in_periodquery = session.query(user.userid).join(groupassignment).join(group).join(period).filter(period.periodid == thisperiod.periodid)
@@ -1989,8 +1986,6 @@ def setup(logonid):
                         message = dbbuild(file_text)
                     if filename == 'campers.csv':
                             message = importusers(csv)
-                    if filename == 'musiclibrary.csv':
-                            message = importmusic(csv)
                     if message == 'Success':
                         flash(message,'success')
                     else:

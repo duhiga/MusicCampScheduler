@@ -43,9 +43,7 @@
 {% if thisuser.isadmin == 1 %}
 <div class="w3-row">
     <div class="w3-container">
-        <a class="w3-btn w3-green w3-border w3-round" href="/user/{{ thisuser.logonid }}/musiclibrary/sync/push">PUSH Music Library TO Google Sheets</a>
-        &nbsp;
-        <a class="w3-btn w3-green w3-border w3-round" href="/user/{{ thisuser.logonid }}/musiclibrary/sync/pull">PULL Music Library FROM Google Sheets</a>
+        <a class="w3-btn w3-green w3-border w3-round" href="/user/{{ thisuser.logonid }}/musiclibrary/sync/push">Sync Music Library to Google Sheet</a>
     </div>
 </div>
 {% endif %}
@@ -65,7 +63,7 @@
             <tbody>
                 {% if musics != None %}
                 {% for m in musics %}
-                <tr class="searchable" data-search="{{m.composer}} {{m.musicname}} {{m.source}} {% for i in instrumentlist %}{% if m[i] > 0 %}{{i}} {% endif %}{% endfor %} {% for t in grouptemplates %}{% if m.grouptemplateid == t.grouptemplateid %}{{t.grouptemplatename}}{% endif %}{% endfor %}">
+                <tr class="searchable" data-search="{{m.composer}} {{m.arrangement}} {{m.musicname}} {{m.source}} {% for i in instrumentlist %}{% if m[i] > 0 %}{{i}} {% endif %}{% endfor %}">
                     <td><a href="/user/{{ thisuser.logonid }}/musiclibrary/details/{{ m.musicid }}">{{ m.composer }}</a></td>
                     <td>
                         <a href="/user/{{ thisuser.logonid }}/musiclibrary/details/{{ m.musicid }}">
@@ -73,22 +71,18 @@
                         </a>
                     </td>
                     <td>
-                        {% if m.grouptemplateid != None %}
-                        {% for t in grouptemplates %}
-                        {% if m.grouptemplateid == t.grouptemplateid %}
-                        {{t.grouptemplatename}}
-                        {% endif %}
-                        {% endfor %}
+                        {% if m.arrangement %}
+                            {{m.arrangement}}
                         {% else %}
-                        {% for i in instrumentlist %}
-                        {% if m[i] > 0 %}
-                        {% if i == 'Viola' %}
-                        Va: {{m[i]}}
-                        {% else %}
-                        {{i[0:2]}}: {{m[i]}}
-                        {% endif %}
-                        {% endif %}
-                        {% endfor %}
+                            {% for i in instrumentlist %}
+                                {% if m[i] > 0 %}
+                                    {% if i == 'Viola' %}
+                                        Va: {{m[i]}}
+                                    {% else %}
+                                        {{i[0:2]}}: {{m[i]}}
+                                    {% endif %}
+                                {% endif %}
+                            {% endfor %}
                         {% endif %}
                     </td>
                     <td class="w3-hide-small">

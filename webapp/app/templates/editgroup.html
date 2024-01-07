@@ -437,6 +437,14 @@
                 <th>Total Players:</th>
                 <td id="total_players"></td>
             </tr>
+            <tr>
+                <th>Version</th>
+                <td id="version">
+                    {% if thisgroup.requesttime != None %}
+                    {{ thisgroup.version }}
+                    {% endif %}
+                </td>
+            </tr>
         </table>
         {% if thismusic.description and thismusic.description != '' %}
         <h2>Music Description</h2>

@@ -516,7 +516,7 @@ def editgroup(logonid,groupid,periodid=None):
                         session.close()
                         flash(u'Changes Partially Saved','message')
                         return jsonify(message = 'Your group is not confirmed because there are empty instrument slots or your location is blank. Your other changes have been saved.', url = url)
-            thisgroup += 1
+            thisgroup.version += 1
             session.merge(thisgroup)
             session.commit()
             if content['submittype'] == 'autofill':

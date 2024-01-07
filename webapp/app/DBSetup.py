@@ -158,6 +158,8 @@ class group(Base):
     ismusical = Column(Integer, default='0')
     iseveryone = Column(Integer, default='0')
     status = Column(String)
+    lastchecked = Column(DateTime, default=func.current_date())
+    version = Column(Integer, default=0)
     log = Column(Text(convert_unicode=True))
 
     @property
@@ -332,8 +334,10 @@ class group(Base):
                         ).join(user
                         ).filter(
                             groupassignment.groupid == self.groupid,
+                            or_(
                             user.departure < datetime.datetime.now(),
                             user.isactive != 1
+                            )
                         ).all()
         for p in oldplayers:
             session.delete(p)

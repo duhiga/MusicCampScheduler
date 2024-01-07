@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, jsonify, make_response, json, request, url_for, send_from_directory, flash
+from flask import Flask, render_template, request, redirect, jsonify, make_response, json, request, url_for, send_from_directory, flash, after_this_request
 from collections import namedtuple
 from werkzeug.utils import secure_filename
 import sys
@@ -12,7 +12,7 @@ import uuid
 import sqlalchemy
 import os
 from io import BytesIO
-from datetime import date, timedelta
+import datetime
 from .DBSetup import *
 from sqlalchemy import *
 from sqlalchemy.orm import aliased
@@ -516,6 +516,7 @@ def editgroup(logonid,groupid,periodid=None):
                         session.close()
                         flash(u'Changes Partially Saved','message')
                         return jsonify(message = 'Your group is not confirmed because there are empty instrument slots or your location is blank. Your other changes have been saved.', url = url)
+            thisgroup += 1
             session.merge(thisgroup)
             session.commit()
             if content['submittype'] == 'autofill':
@@ -633,7 +634,7 @@ def musiclibrary(logonid):
             return jsonify(message = message, url = 'none')
 
 #If the user clicked on the pull library button, import the library then return them to the library page
-@app.route('/user/<logonid>/musiclibrary/sync/<synctype>')
+@app.route('/user/<logonid>/musiclibrary/sync')
 def syncToGoogleSheets(logonid, synctype):
     try:
         session = Session()
@@ -646,6 +647,7 @@ def syncToGoogleSheets(logonid, synctype):
             syncLibrary(getconfig('MusicLibraryURL'), 'key.json', session)
             session.commit()
             session.close()
+            flash(u'Sync Successful', 'success')
             return musiclibrary(logonid)
     except Exception as ex:
         log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))
@@ -1023,7 +1025,6 @@ def grouprequest(logonid,periodid=None,musicid=None):
                     #for each specific player in the request, check if there's a free spot in the matching group
                     #for each player in the group request
                     clash = False
-                    instrumentsThatFit = {}
                     for p in content['objects']:
                         #if it's a named player, not a blank drop-down
                         if p['userid'] != 'null' and p['userid'] != '':
@@ -1101,6 +1102,7 @@ def grouprequest(logonid,periodid=None,musicid=None):
         
             #create the group and the groupassinments configured above in the database
             session.merge(thisuser)
+            grouprequest.version += 1
             session.commit()
             #send the URL for the group that was just created to the user, and send them to that page
             url = ('/user/' + str(thisuser.logonid) + '/group/' + str(grouprequest.groupid) + '/')
@@ -1222,6 +1224,35 @@ def groupscheduler(logonid):
                 session.close()
                 return 'You do not have permission to view this page'
             else:
+                #find the current date
+                currentdate = datetime.datetime.combine(datetime.date.today(), datetime.time.min)
+                
+                #check if any groups have assigned players that have already left camp
+                outOfDateGroups = session.query(group
+                                ).outerjoin(period
+                                ).outerjoin(user
+                                ).outerjoin(music
+                                ).filter(
+                                    group.groupname != 'absent',
+                                    group.iseveryone != 1,
+                                    or_(
+                                    period.starttime == None,
+                                    period.starttime > datetime.datetime.now(),
+                                    ),
+                                    group.lastchecked < currentdate
+                                ).all()
+                if len(outOfDateGroups) > 0:
+                    for g in outOfDateGroups:
+                        g.purgeoldplayers(session)
+                    session.commit()
+                    for g in outOfDateGroups:
+                        groupassigmentcount = session.query(groupassignment).filter(groupassignment.groupid == g.groupid).count()
+                        if groupassigmentcount <= 0:
+                            g.delete(session)
+                        else:
+                            g.lastchecked = datetime.datetime.now()
+                    session.commit()
+
                 groups = session.query(*[c for c in group.__table__.c]
                                 ).add_columns(
                                     period.periodid,
@@ -1247,10 +1278,16 @@ def groupscheduler(logonid):
                                     group.periodid.nullslast(),
                                     group.requesttime
                                 ).all()
+
                 debuglog("GROUPSCHEDULER: Found %s queued groups to show the user" % len(groups))
                 #find all periods after now so the admin can choose which they want to fill with groups
                 periods = session.query(period).filter(period.starttime > datetime.datetime.now()).all()
-                session.close()
+
+                @after_this_request
+                def close_session(response):
+                    session.close()
+                    return response
+                
                 return render_template('groupscheduler.html', \
                                         groups=groups, \
                                         periods=periods, \

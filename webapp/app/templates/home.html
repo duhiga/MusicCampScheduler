@@ -313,7 +313,7 @@
                             <a class="w3-btn-block w3-hover-black w3-white w3-border w3-round-large w3-hide-small w3-hide-large"
                                 href="/user/{{ thisuser.logonid }}/period/{{ p.periodid }}/">Full List</a>
                             <!-- If this is an assigned group, show a link to the group details -->
-                            {% if p.groupname and p.ismusical == 1 and p.status != 'Queued' %}
+                            {% if p.groupname and p.ismusical == 1 and p.status == 'Confirmed' %}
                             <div class="w3-half w3-hide-medium">
                                 <a class="w3-btn-block w3-hover-black w3-white w3-border w3-round-large"
                                     href="/user/{{ thisuser.logonid }}/group/{{ p.groupid }}/">Group List</a>

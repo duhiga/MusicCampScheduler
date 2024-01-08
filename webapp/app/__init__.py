@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, jsonify, make_response, json, request, url_for, send_from_directory, flash
+from flask import Flask, render_template, request, redirect, jsonify, make_response, json, request, url_for, send_from_directory, flash, after_this_request
 from collections import namedtuple
 from werkzeug.utils import secure_filename
 import sys
@@ -12,7 +12,7 @@ import uuid
 import sqlalchemy
 import os
 from io import BytesIO
-from datetime import date, timedelta
+import datetime
 from .DBSetup import *
 from sqlalchemy import *
 from sqlalchemy.orm import aliased
@@ -351,26 +351,50 @@ def editgroup(logonid,groupid,periodid=None):
             for p in thisgroupplayers:
                     thisgroupplayers_serialized.append({'userid': p.userid, 'firstname': p.firstname, 'lastname': p.lastname,
                     'instrumentname': p.instrumentname})
+            
             if selectedperiod is not None:
                 #Finds all players who are already playing in this period (except in this specific group)
                 playersPlayingInPeriod = session.query(user.userid).join(groupassignment).join(group).filter(group.groupid != thisgroup.groupid).filter(group.periodid == selectedperiod.periodid)
                 #finds all players who are available to play in this group (they aren't already playing in other groups)
                 playersdump = session.query(user.userid,user.firstname,user.lastname,user.agecategory,instrument.instrumentname,instrument.level,instrument.isprimary).\
-                            join(instrument).filter(~user.userid.in_(playersPlayingInPeriod), user.isactive == 1, user.arrival <= selectedperiod.starttime, user.departure >= selectedperiod.endtime, instrument.isactive == 1).all()
+                            join(instrument).filter(~user.userid.in_(playersPlayingInPeriod), user.isactive == 1, user.arrival <= selectedperiod.starttime, user.departure >= selectedperiod.endtime, instrument.isactive == 1)
             else:
                 playersdump = session.query(user.userid,user.firstname,user.lastname,user.agecategory,instrument.instrumentname,instrument.level,instrument.isprimary).\
-                            join(instrument).filter(user.isactive == 1, instrument.isactive == 1).all()
+                            join(instrument).filter(user.isactive == 1, instrument.isactive == 1)
+            
+            #if this group has music selected, get the playcounts for the music for each potential player to show to the user
+            if thisgroup.musicid is not None:
+                # get a count of the amount of times that each potential player has played in this group
+                musiccounts_subquery = session.query(
+                    user.userid.label('musiccounts_userid'),
+                    func.count(user.userid).label("musiccount")
+                ).group_by(
+                    user.userid
+                ).outerjoin(groupassignment, groupassignment.userid == user.userid
+                            ).outerjoin(group, group.groupid == groupassignment.groupid
+                                        ).outerjoin(instrument, and_(groupassignment.instrumentname == instrument.instrumentname, user.userid == instrument.userid)
+                                                    ).filter(
+                    group.ismusical == 1,
+                    group.periodid != None,
+                    group.groupid != thisgroup.groupid,
+                    # grab all groups that share a musicid with this group
+                    group.musicid == thisgroup.musicid
+                ).subquery()
+                playersdump = playersdump.outerjoin(musiccounts_subquery, musiccounts_subquery.c.musiccounts_userid == user.userid).add_columns(musiccounts_subquery)
+            
+            playersdump = playersdump.all()
+            
             playersdump_serialized = []
             for p in playersdump:
                 playersdump_serialized.append({'userid': p.userid, 'firstname': p.firstname, 'lastname': p.lastname,
-                    'agecategory': p.agecategory, 'instrumentname': p.instrumentname, 'level': p.level, 'isprimary': p.isprimary})
+                    'agecategory': p.agecategory, 'instrumentname': p.instrumentname, 'level': p.level, 'isprimary': p.isprimary, 'musiccount': p.musiccount if hasattr(p, 'musiccount') else 0})
 
             #Get a list of the available music not being used in the period selected
             if selectedperiod is not None:
                 musics_used_query = session.query(music.musicid).join(group).join(period).filter(period.periodid == selectedperiod.periodid, group.groupid != thisgroup.groupid)
-                musics = session.query(music).filter(~music.musicid.in_(musics_used_query)).all()
+                musics = session.query(music).filter(~music.musicid.in_(musics_used_query), music.isactive == 1).all()
             else:
-                musics = session.query(music).all()
+                musics = session.query(music).filter(music.isactive == 1).all()
             musics_serialized = [i.serialize for i in musics]
 
             #get a list of the locations not being used in this period
@@ -384,6 +408,10 @@ def editgroup(logonid,groupid,periodid=None):
             #find all group templates to show in a dropdown
             grouptemplates = session.query(grouptemplate).all()
             grouptemplates_serialized = [i.serialize for i in grouptemplates]
+
+            
+
+
 
             template = render_template('editgroup.html', \
                                 currentperiod=currentperiod, \
@@ -516,6 +544,7 @@ def editgroup(logonid,groupid,periodid=None):
                         session.close()
                         flash(u'Changes Partially Saved','message')
                         return jsonify(message = 'Your group is not confirmed because there are empty instrument slots or your location is blank. Your other changes have been saved.', url = url)
+            thisgroup.version += 1
             session.merge(thisgroup)
             session.commit()
             if content['submittype'] == 'autofill':
@@ -613,7 +642,7 @@ def musiclibrary(logonid):
         return str(ex)
 
     try:
-        musics = session.query(music).all()
+        musics = session.query(music).filter(music.isactive == 1).all()
         grouptemplates = session.query(grouptemplate).filter(grouptemplate.size == 'S').all()
         session.close()
         return render_template('musiclibrary.html', \
@@ -633,7 +662,7 @@ def musiclibrary(logonid):
             return jsonify(message = message, url = 'none')
 
 #If the user clicked on the pull library button, import the library then return them to the library page
-@app.route('/user/<logonid>/musiclibrary/sync/<synctype>')
+@app.route('/user/<logonid>/musiclibrary/sync')
 def syncToGoogleSheets(logonid, synctype):
     try:
         session = Session()
@@ -643,12 +672,10 @@ def syncToGoogleSheets(logonid, synctype):
             session.close()
             return 'You do not have permission to view this page'
         else:
-            if synctype == "pull":
-                pullLibrary(getconfig('MusicLibraryURL'), 'key.json', session)
-            if synctype == "push":
-                pushLibrary(getconfig('MusicLibraryURL'), 'key.json', session)
+            syncLibrary(getconfig('MusicLibraryURL'), 'key.json', session)
             session.commit()
             session.close()
+            flash(u'Sync Successful', 'success')
             return musiclibrary(logonid)
     except Exception as ex:
         log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))
@@ -854,10 +881,10 @@ def grouprequest(logonid,periodid=None,musicid=None):
                 locations_used_query = session.query(location.locationid).join(group).join(period).filter(period.periodid == periodid)
                 locations = session.query(location).filter(~location.locationid.in_(locations_used_query)).all()
                 musics_used_query = session.query(music.musicid).join(group).join(period).filter(period.periodid == periodid)
-                musics = session.query(music).filter(~music.musicid.in_(musics_used_query)).all()
+                musics = session.query(music).filter(~music.musicid.in_(musics_used_query), music.isactive == 1).all()
             else: 
                 locations = None
-                musics = session.query(music).filter(or_(*[(getattr(music,getattr(i,'instrumentname')) > 0) for i in session.query(instrument.instrumentname).filter(instrument.userid == thisuser.userid, instrument.isactive == 1)])).all()
+                musics = session.query(music).filter(or_(*[(getattr(music,getattr(i,'instrumentname')) > 0) for i in session.query(instrument.instrumentname).filter(instrument.userid == thisuser.userid, instrument.isactive == 1)]), music.isactive == 1).all()
         
             musics_serialized = [i.serialize for i in musics]
             #checks if the requested music exists and sets it up for the page
@@ -1026,7 +1053,6 @@ def grouprequest(logonid,periodid=None,musicid=None):
                     #for each specific player in the request, check if there's a free spot in the matching group
                     #for each player in the group request
                     clash = False
-                    instrumentsThatFit = {}
                     for p in content['objects']:
                         #if it's a named player, not a blank drop-down
                         if p['userid'] != 'null' and p['userid'] != '':
@@ -1104,6 +1130,7 @@ def grouprequest(logonid,periodid=None,musicid=None):
         
             #create the group and the groupassinments configured above in the database
             session.merge(thisuser)
+            grouprequest.version += 1
             session.commit()
             #send the URL for the group that was just created to the user, and send them to that page
             url = ('/user/' + str(thisuser.logonid) + '/group/' + str(grouprequest.groupid) + '/')
@@ -1225,6 +1252,35 @@ def groupscheduler(logonid):
                 session.close()
                 return 'You do not have permission to view this page'
             else:
+                #find the current date
+                currentdate = datetime.datetime.combine(datetime.date.today(), datetime.time.min)
+                
+                #check if any groups have assigned players that have already left camp
+                outOfDateGroups = session.query(group
+                                ).outerjoin(period
+                                ).outerjoin(user
+                                ).outerjoin(music
+                                ).filter(
+                                    group.groupname != 'absent',
+                                    group.iseveryone != 1,
+                                    or_(
+                                    period.starttime == None,
+                                    period.starttime > datetime.datetime.now(),
+                                    ),
+                                    group.lastchecked < currentdate
+                                ).all()
+                if len(outOfDateGroups) > 0:
+                    for g in outOfDateGroups:
+                        g.purgeoldplayers(session)
+                    session.commit()
+                    for g in outOfDateGroups:
+                        groupassigmentcount = session.query(groupassignment).filter(groupassignment.groupid == g.groupid).count()
+                        if groupassigmentcount <= 0:
+                            g.delete(session)
+                        else:
+                            g.lastchecked = datetime.datetime.now()
+                    session.commit()
+
                 groups = session.query(*[c for c in group.__table__.c]
                                 ).add_columns(
                                     period.periodid,
@@ -1250,10 +1306,16 @@ def groupscheduler(logonid):
                                     group.periodid.nullslast(),
                                     group.requesttime
                                 ).all()
+
                 debuglog("GROUPSCHEDULER: Found %s queued groups to show the user" % len(groups))
                 #find all periods after now so the admin can choose which they want to fill with groups
                 periods = session.query(period).filter(period.starttime > datetime.datetime.now()).all()
-                session.close()
+
+                @after_this_request
+                def close_session(response):
+                    session.close()
+                    return response
+                
                 return render_template('groupscheduler.html', \
                                         groups=groups, \
                                         periods=periods, \
@@ -1873,7 +1935,7 @@ def instrumentation(logonid,periodid):
                 locations = session.query(location).filter(~location.locationid.in_(locations_used_query)).all()
                 #Get a list of the available music not being used in the period selected
                 musics_used_query = session.query(music.musicid).join(group).join(period).filter(period.periodid == periodid)
-                musics = session.query(music).filter(~music.musicid.in_(musics_used_query)).all()
+                musics = session.query(music).filter(~music.musicid.in_(musics_used_query), music.isactive == 1).all()
                 musics_serialized = [i.serialize for i in musics]
                 #get a list of conductors to fill the dropdown on the page
                 everyone_playing_in_periodquery = session.query(user.userid).join(groupassignment).join(group).join(period).filter(period.periodid == thisperiod.periodid)

@@ -114,12 +114,15 @@ class music(Base):
     __tablename__ = 'musics'
 
     musicid = Column(Integer, primary_key=True, unique=True)
+    isactive = Column(Integer, default='1')
     composer = Column(Text(convert_unicode=True))
     musicname = Column(Text(convert_unicode=True))
+    arrangement = Column(Text(convert_unicode=True))
     source = Column(Text(convert_unicode=True))
-    description = Column(Text(convert_unicode=True))
+    boxid = Column(Text(convert_unicode=True))
+    catalogdetail = Column(Text(convert_unicode=True))
+    notes = Column(Text(convert_unicode=True))
     link = Column(Text(convert_unicode=True))
-    grouptemplateid = Column(Integer, ForeignKey('grouptemplates.grouptemplateid', ondelete='SET NULL'))
     
     @property
     def serialize(self):
@@ -155,6 +158,8 @@ class group(Base):
     ismusical = Column(Integer, default='0')
     iseveryone = Column(Integer, default='0')
     status = Column(String)
+    lastchecked = Column(DateTime, default=func.current_date())
+    version = Column(Integer, default=0)
     log = Column(Text(convert_unicode=True))
 
     @property
@@ -329,8 +334,10 @@ class group(Base):
                         ).join(user
                         ).filter(
                             groupassignment.groupid == self.groupid,
+                            or_(
                             user.departure < datetime.datetime.now(),
                             user.isactive != 1
+                            )
                         ).all()
         for p in oldplayers:
             session.delete(p)
@@ -782,4 +789,3 @@ def importmusic(file):
         session.close()
         log('IMPORTMUSIC: Failed to import with exception: %s.' % ex)
         return ('Failed to import with exception: %s.' % ex)
-

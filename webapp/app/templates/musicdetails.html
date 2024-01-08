@@ -29,10 +29,22 @@
                     <th>Source</th>
                     <td>{{ thismusic.source }}</td>
                 </tr>
-                {% if thismusic.description != None %}
+                {% if thismusic.boxid != None %}
                 <tr>
-                    <th>Music Location</th>
-                    <td>{{ thismusic.description }}</td>
+                    <th>Box ID</th>
+                    <td>{{ thismusic.boxid }}</td>
+                </tr>
+                {% endif %}
+                {% if thismusic.catalogdetail != None %}
+                <tr>
+                    <th>Catalog Detail</th>
+                    <td>{{ thismusic.catalogdetail }}</td>
+                </tr>
+                {% endif %}
+                {% if thismusic.arrangement != None %}
+                <tr>
+                    <th>Arrangement</th>
+                    <td>{{ thismusic.arrangement }}</td>
                 </tr>
                 {% endif %}
                 <tr>

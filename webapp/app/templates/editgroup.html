@@ -58,7 +58,13 @@
             sel.append($("<option>").attr('value',""));
             for (var i = 0; i < playersdump.length; i++) {
                 if (playersdump[i].instrumentname == instrument) {
-                    sel.append($("<option>").attr('value',playersdump[i].userid).text(playersdump[i].agecategory.substring(0,1) + playersdump[i].level + ' - ' + playersdump[i].firstname + ' ' + playersdump[i].lastname));
+                    sel.append($("<option>").attr('value',playersdump[i].userid).text(
+                        playersdump[i].agecategory.substring(0,1) + 
+                        playersdump[i].level + ' - ' + 
+                        playersdump[i].firstname + ' ' + 
+                        playersdump[i].lastname +
+                        (playersdump[i].musiccount > 0 ? ' (' + playersdump[i].musiccount + ')' : '')
+                        ));
                 }
             }
             $('<input type="hidden" class="hidden_instrument_name" data-key="instrumentname" value="' + instrument + '" data-mapping="' + uid + '">').appendTo(cell);
@@ -437,13 +443,21 @@
                 <th>Total Players:</th>
                 <td id="total_players"></td>
             </tr>
+            <tr>
+                <th>Version</th>
+                <td id="version">
+                    {% if thisgroup.requesttime != None %}
+                    {{ thisgroup.version }}
+                    {% endif %}
+                </td>
+            </tr>
         </table>
         {% if thismusic.description and thismusic.description != '' %}
         <h2>Music Description</h2>
         <p>{{ thismusic.description }}</p>
         {% endif %}
         <h2>Players</h2>
-        <p>Names below are in the format {age classification}{level} - {firstname}{lastname}</p>
+        <p>Names below are in the format {age classification}{level} - {firstname}{lastname} ({number of times player has played this music})</p>
         <table class="border-table" id="table_players">
             <tr>
                 <th>Instrument</th>

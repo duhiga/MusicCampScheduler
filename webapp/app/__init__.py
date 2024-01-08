@@ -351,19 +351,43 @@ def editgroup(logonid,groupid,periodid=None):
             for p in thisgroupplayers:
                     thisgroupplayers_serialized.append({'userid': p.userid, 'firstname': p.firstname, 'lastname': p.lastname,
                     'instrumentname': p.instrumentname})
+            
             if selectedperiod is not None:
                 #Finds all players who are already playing in this period (except in this specific group)
                 playersPlayingInPeriod = session.query(user.userid).join(groupassignment).join(group).filter(group.groupid != thisgroup.groupid).filter(group.periodid == selectedperiod.periodid)
                 #finds all players who are available to play in this group (they aren't already playing in other groups)
                 playersdump = session.query(user.userid,user.firstname,user.lastname,user.agecategory,instrument.instrumentname,instrument.level,instrument.isprimary).\
-                            join(instrument).filter(~user.userid.in_(playersPlayingInPeriod), user.isactive == 1, user.arrival <= selectedperiod.starttime, user.departure >= selectedperiod.endtime, instrument.isactive == 1).all()
+                            join(instrument).filter(~user.userid.in_(playersPlayingInPeriod), user.isactive == 1, user.arrival <= selectedperiod.starttime, user.departure >= selectedperiod.endtime, instrument.isactive == 1)
             else:
                 playersdump = session.query(user.userid,user.firstname,user.lastname,user.agecategory,instrument.instrumentname,instrument.level,instrument.isprimary).\
-                            join(instrument).filter(user.isactive == 1, instrument.isactive == 1).all()
+                            join(instrument).filter(user.isactive == 1, instrument.isactive == 1)
+            
+            #if this group has music selected, get the playcounts for the music for each potential player to show to the user
+            if thisgroup.musicid is not None:
+                # get a count of the amount of times that each potential player has played in this group
+                musiccounts_subquery = session.query(
+                    user.userid.label('musiccounts_userid'),
+                    func.count(user.userid).label("musiccount")
+                ).group_by(
+                    user.userid
+                ).outerjoin(groupassignment, groupassignment.userid == user.userid
+                            ).outerjoin(group, group.groupid == groupassignment.groupid
+                                        ).outerjoin(instrument, and_(groupassignment.instrumentname == instrument.instrumentname, user.userid == instrument.userid)
+                                                    ).filter(
+                    group.ismusical == 1,
+                    group.periodid != None,
+                    group.groupid != thisgroup.groupid,
+                    # grab all groups that share a musicid with this group
+                    group.musicid == thisgroup.musicid
+                ).subquery()
+                playersdump = playersdump.outerjoin(musiccounts_subquery, musiccounts_subquery.c.musiccounts_userid == user.userid).add_columns(musiccounts_subquery)
+            
+            playersdump = playersdump.all()
+            
             playersdump_serialized = []
             for p in playersdump:
                 playersdump_serialized.append({'userid': p.userid, 'firstname': p.firstname, 'lastname': p.lastname,
-                    'agecategory': p.agecategory, 'instrumentname': p.instrumentname, 'level': p.level, 'isprimary': p.isprimary})
+                    'agecategory': p.agecategory, 'instrumentname': p.instrumentname, 'level': p.level, 'isprimary': p.isprimary, 'musiccount': p.musiccount if hasattr(p, 'musiccount') else 0})
 
             #Get a list of the available music not being used in the period selected
             if selectedperiod is not None:
@@ -384,6 +408,10 @@ def editgroup(logonid,groupid,periodid=None):
             #find all group templates to show in a dropdown
             grouptemplates = session.query(grouptemplate).all()
             grouptemplates_serialized = [i.serialize for i in grouptemplates]
+
+            
+
+
 
             template = render_template('editgroup.html', \
                                 currentperiod=currentperiod, \
@@ -2023,6 +2051,8 @@ def setup(logonid):
                         message = dbbuild(file_text)
                     if filename == 'campers.csv':
                             message = importusers(csv)
+                    if filename == 'musiclibrary.csv':
+                            message = importmusic(csv)
                     if message == 'Success':
                         flash(message,'success')
                     else:

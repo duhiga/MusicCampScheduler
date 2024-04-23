@@ -10,7 +10,7 @@ Flask==2.2.5
 google-auth==2.25.2
 google-auth-oauthlib==1.2.0
 gspread==5.12.4
-gunicorn==19.6.0
+gunicorn==22.0.0
 idna==3.6
 isort==5.11.3
 itsdangerous==2.1.2

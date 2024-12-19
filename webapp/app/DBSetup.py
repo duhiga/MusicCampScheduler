@@ -118,7 +118,7 @@ class music(Base):
     composer = Column(Text(convert_unicode=True))
     musicname = Column(Text(convert_unicode=True))
     arrangement = Column(Text(convert_unicode=True))
-    source = Column(Text(convert_unicode=True))
+    location = Column(Text(convert_unicode=True))
     boxid = Column(Text(convert_unicode=True))
     catalogdetail = Column(Text(convert_unicode=True))
     notes = Column(Text(convert_unicode=True))

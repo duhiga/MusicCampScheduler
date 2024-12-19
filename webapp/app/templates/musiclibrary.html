@@ -57,13 +57,13 @@
                     <th>Composer</th>
                     <th>Name</th>
                     <th><div class="w3-hide-small">Instrumentation</div><div class="w3-hide-medium w3-hide-large">Inst.</div></th>
-                    <th class="w3-hide-small">Source</th>
+                    <th class="w3-hide-small">Location</th>
                 </tr>
             </thead>
             <tbody>
                 {% if musics != None %}
                 {% for m in musics %}
-                <tr class="searchable" data-search="{{m.composer}} {{m.arrangement}} {{m.musicname}} {{m.source}} {% for i in instrumentlist %}{% if m[i] > 0 %}{{i}} {% endif %}{% endfor %}">
+                <tr class="searchable" data-search="{{m.composer}} {{m.arrangement}} {{m.musicname}} {{m.location}} {% for i in instrumentlist %}{% if m[i] > 0 %}{{i}} {% endif %}{% endfor %}">
                     <td><a href="/user/{{ thisuser.logonid }}/musiclibrary/details/{{ m.musicid }}">{{ m.composer }}</a></td>
                     <td>
                         <a href="/user/{{ thisuser.logonid }}/musiclibrary/details/{{ m.musicid }}">
@@ -86,7 +86,7 @@
                         {% endif %}
                     </td>
                     <td class="w3-hide-small">
-                        {{ m.source }}
+                        {{ m.location }}
                     </td>
                 </tr>
                 {% endfor %}

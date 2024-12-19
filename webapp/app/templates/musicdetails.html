@@ -12,7 +12,7 @@
         <div id="musicdetails_protip_source" class="w3-panel w3-blue protip" hidden="hidden">
             <span class="w3-closebtn protip_close">&times;</span>
             <h3>Pro Tip!</h3>
-            <p>The "Source" below tells you where to find the music. If it's someone's name - ask them. If it's not someone's
+            <p>The "Location" below tells you where to find the music. If it's someone's name - ask them. If it's not someone's
                 name, check the camp's physical library for the parts or ask a librarian.</p>
         </div>
         <p>
@@ -26,8 +26,8 @@
                     <td>{{ thismusic.musicname }}</td>
                 </tr>
                 <tr>
-                    <th>Source</th>
-                    <td>{{ thismusic.source }}</td>
+                    <th>Location</th>
+                    <td>{{ thismusic.location }}</td>
                 </tr>
                 {% if thismusic.boxid != None %}
                 <tr>

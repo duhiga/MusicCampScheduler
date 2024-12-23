@@ -50,11 +50,16 @@
                 <tr>
                     <th>Instrumentation</th>
                     <td>
-                        {% if thismusic.grouptemplateid != None %} {% for t in grouptemplates %} {% if thismusic.grouptemplateid == t.grouptemplateid
-                        %} {{t.grouptemplatename}} {% endif %} {% endfor %} {% else %} {% for i in instrumentlist %} {% if
+                        {% if thismusic.grouptemplateid != None %} {% for i in instrumentlist %} {% if
                         thismusic[i] > 0 %} {{i}}:{{thismusic[i]}} {% endif %} {% endfor %} {% endif %}
                     </td>
                 </tr>
+                {% if thismusic.notes != None %}
+                <tr>
+                    <th>Notes</th>
+                    <td>{{ thismusic.notes }}</td>
+                </tr>
+                {% endif %}
                 {% if thismusic.link != None %}
                 <tr>
                     <th>Sheet Music</th>

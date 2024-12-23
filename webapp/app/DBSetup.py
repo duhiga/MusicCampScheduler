@@ -712,11 +712,11 @@ def importusers(file):
                 if row[14] != '':
                     thisuser.isadmin = row[14]
                 if row[2] != '':
-                    thisuser.arrival = row[2]
+                    thisuser.arrival =  datetime.datetime.strptime(row[2], "%d/%m/%Y %H:%M")
                 if row[2] == '':
                     thisuser.arrival = CampStartTime
                 if row[3] != '':
-                    thisuser.departure = row[3]
+                    thisuser.departure =  datetime.datetime.strptime(row[3], "%d/%m/%Y %H:%M")
                 if row[3] == '':
                     thisuser.departure = CampEndTime
                 if row[15] != '':

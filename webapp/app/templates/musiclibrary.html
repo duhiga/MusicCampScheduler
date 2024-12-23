@@ -40,7 +40,7 @@
 <a href="/user/{{ thisuser.logonid }}/musiclibrary/new/" class="w3-hover-black"><i class="fa fa-plus"></i> Create New Entry</a>
 {% endblock %}
 {% block content %}
-{% if thisuser.isadmin == 1 %}
+{% if thisuser.isconductor == 1 %}
 <div class="w3-row">
     <div class="w3-container">
         <a class="w3-btn w3-green w3-border w3-round" href="/user/{{ thisuser.logonid }}/musiclibrary/sync">Sync Music Library to Google Sheet</a>

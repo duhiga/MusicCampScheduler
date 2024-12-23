@@ -663,12 +663,12 @@ def musiclibrary(logonid):
 
 #If the user clicked on the pull library button, import the library then return them to the library page
 @app.route('/user/<logonid>/musiclibrary/sync')
-def syncToGoogleSheets(logonid, synctype):
+def syncToGoogleSheets(logonid):
     try:
         session = Session()
         thisuser = getuser(session,logonid,True)
         log('MUSICLIBRARY: user firstname:%s lastname:%s method:%s' % (thisuser.firstname, thisuser.lastname, request.method))
-        if thisuser.isadmin != 1:
+        if thisuser.isconductor != 1:
             session.close()
             return 'You do not have permission to view this page'
         else:

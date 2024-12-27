@@ -50,6 +50,7 @@ def syncLibrary(google_sheet_url, google_account_key_name, session):
                 session.add(new_record)
         else:
             new_record = music()
+            data_dict['musicid'] = (session.query(func.max(music.musicid)).scalar()) + 1
             updateRecord(new_record, data_dict)
             session.add(new_record)
     

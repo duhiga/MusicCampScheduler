@@ -355,8 +355,6 @@
         <a href="/user/{{ thisuser.logonid }}/musiclibrary/" class="w3-hover-black"><i class="fa fa-book"></i> Music Library</a>
         {% endif %}
         <a href="/user/{{ thisuser.logonid }}/grouphistory/" class="w3-hover-black"><i class="fa fa-history"></i> Group History</a>
-        <a href="/user/{{ thisuser.logonid }}/settings/" class="w3-hover-black"><i class="fa fa-cogs"></i> Settings</a>
-        <a href="/user/{{ thisuser.logonid }}/catering/" class="w3-hover-black"><i class="fa fa-utensils"></i> Catering</a>
         <a href="mailto:{{ supportemailaddress }}" class="w3-hover-black"><i class="fa fa-envelope"></i> Contact Support</a>
         {% if thisuser.isannouncer == 1 %}
         <h4><b>Announcer</b></h4>
@@ -366,6 +364,7 @@
         <h4><b>Admin</b></h4>
         <a href="/user/{{ thisuser.logonid }}/groupscheduler/" class="w3-hover-black"><i class="fa fa-ellipsis-h"></i> Group Scheduler</a>
         <a href="/user/{{ thisuser.logonid }}/useradmin/" class="w3-hover-black"><i class="fa fa-universal-access"></i> User Administration</a>
+        <a href="/user/{{ thisuser.logonid }}/catering/" class="w3-hover-black"><i class="fa fa-utensils"></i> Catering</a>
         <a class="accordion" href="javascript:void(0)">
             Database Editor <i class="fa fa-caret-down w3-right"></i>
         </a>

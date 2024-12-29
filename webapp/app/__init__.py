@@ -835,10 +835,10 @@ def grouprequest(logonid,periodid=None,musicid=None):
         #if this camper is inactive, has not arrived at camp yet, or is departing before the end of tomorrow
         if (thisuser.isactive != 1) and periodid is None:
             session.close()
-            return errorpage(thisuser,'Your account is currently set to inactive. Inactive users cannot request groups. Is this is a mistake, navigate to your settings and set yourself to active.')
+            return errorpage(thisuser,'Your account is currently set to inactive. Inactive users cannot request groups. Is this is a mistake, contact your administrator.')
         if (thisuser.departure < intwodays) and periodid is None:
             session.close()
-            return errorpage(thisuser,"You are set to depart camp in less than one days' time, so you cannot request a group. If this is incorrect, you can change your departure time in your settings.")
+            return errorpage(thisuser,"You are set to depart camp in less than one days' time, so you cannot request a group. If this is incorrect, contact your administrator.")
         #find the instruments this user plays
         thisuserinstruments = session.query(instrument).filter(instrument.userid == thisuser.userid, instrument.isactive == 1).all()
         thisuserinstruments_serialized = [i.serialize for i in thisuserinstruments]
@@ -1682,40 +1682,33 @@ def edituser(logonid, targetuserid):
         return str(ex)
 
     try:
-        if thisuser.isadmin != 1 and targetuserid is None:
+        if thisuser.isadmin != 1:
             session.close()
             return errorpage(thisuser,'You do not have permission to view this page.')
         if targetuserid is not None:
-            if targetuserid == 'self':
-                targetuser = session.query(user).filter(user.userid == thisuser.userid).first()
-            else:
-                targetuser = session.query(user).filter(user.userid == targetuserid).first()
+            targetuser = session.query(user).filter(user.userid == targetuserid).first()
             if targetuser is None:
                     session.close()
                     return errorpage(thisuser,'Could not find requested user in database.')
-            elif thisuser.isadmin != 1 and (thisuser.userid != targetuser.userid):
-                session.close()
-                return errorpage(thisuser,'You do not have permission to view this page.')
-        else:
-            targetuser = user()
-        targetuserinstruments = session.query(instrument).filter(instrument.userid == targetuser.userid).all()
-        periods = session.query(period).order_by(period.starttime).all()
-        #if this is a user requesting the page
-
-        qr = qrcode.QRCode(
-            version=1,
-            box_size=10,
-            border=5)
-
-        qr.add_data(f"{getconfig('Website_URL')}/user/{targetuser.logonid}/")
-        qr.make(fit=True)
-        dashboardQRCode = qr.make_image(fill='black', back_color='white')
-        buffer = BytesIO()
-        dashboardQRCode.save(buffer, format="png")
-        buffer.seek(0)
-        image_memory = base64.b64encode(buffer.getvalue())
+            targetuserinstruments = session.query(instrument).filter(instrument.userid == targetuser.userid).all()
+            periods = session.query(period).order_by(period.starttime).all()
 
         if request.method == 'GET':
+            #if this is a user requesting the page
+
+            qr = qrcode.QRCode(
+                version=1,
+                box_size=10,
+                border=5)
+
+            qr.add_data(f"{getconfig('Website_URL')}/user/{targetuser.logonid}/")
+            qr.make(fit=True)
+            dashboardQRCode = qr.make_image(fill='black', back_color='white')
+            buffer = BytesIO()
+            dashboardQRCode.save(buffer, format="png")
+            buffer.seek(0)
+            image_memory = base64.b64encode(buffer.getvalue())
+
             session.close()
             return render_template('edituser.html', \
                                     thisuser=thisuser, \
@@ -1727,12 +1720,11 @@ def edituser(logonid, targetuserid):
                                     maximumlevel=int(getconfig('MaximumLevel')), \
                                     )
         
-        #if this is a user that just pressed submit
-        if request.method == 'POST':
-            #format the packet received from the server as JSON
-            content = request.json
+            #if this is a user that just pressed submit
+            if request.method == 'POST':
+                #format the packet received from the server as JSON
+                content = request.json
 
-            if thisuser.isadmin == 1:
                 #is this user doesn't have an ID yet, they are new and we must set them up
                 if targetuser.userid is None:
                     #assign them a userid from a randomly generated uuid
@@ -1753,77 +1745,64 @@ def edituser(logonid, targetuserid):
                     session.close()
                     return jsonify(message = 'You cannot save a user without a firstname and lastname.', url = 'none')
 
-            if content['arrival'] >= content['departure']:
-                        session.rollback()
-                        session.close()
-                        return jsonify(message = 'Your departure time must be after your arrival time.', url = 'none')
-            
-            #add the content in the packet to this group's attributes
-            for key,value in content.items():
-                if (thisuser.isadmin != 1 and thisuser.isadmin != '1') and key != 'arrival' and key != 'departure' and key != 'isactive' and key != 'submittype' and key != 'objects':
-                    session.rollback()
-                    session.close()
-                    return jsonify(message = 'Users are not allowed to edit this attribute. The page should not have given you this option.', url = 'none')
-                elif not isinstance(value, list) and value is not None and value != 'null' and value != '' and value != 'None' and value != 'HIDDEN':
-                    debuglog('Setting %s to be %s' % (key, value))
-                    setattr(targetuser,key,value)
-            session.merge(targetuser)
-            session.commit()
-            newinstrument = False
-            #for each instrument object in the receiving packet
-            for i in content['objects']:
-                if i['instrumentid'] == 'new' and thisuser.isadmin == 1:
-                    thisinstrument = instrument(userid = targetuser.userid)
-                    session.add(thisinstrument)
-                    debuglog('Added new instrument for user %s' % targetuser.firstname)
-                    newinstrument = True
-                elif i['instrumentid'] != 'new':
-                    thisinstrument = session.query(instrument).filter(instrument.instrumentid == i['instrumentid']).first()
-                    if thisinstrument is None:
-                        session.rollback()
-                        session.close()
-                        return jsonify(message = 'Instrument listing not found, could not modify the listing.', url = 'none')
-                    if thisuser.isadmin != 1 and thisinstrument.userid != thisuser.userid:
-                        session.rollback()
-                        session.close()
-                        return jsonify(message = 'You cannot change an instrument listing for another user.', url = 'none')
-                else:
-                    session.rollback()
-                    session.close()
-                    return jsonify(message = 'You have submitted illegal parameters for your instrument. No changes have been made to your instrument listings.', url = 'none')
-                for key,value in i.items():
-                    if key != 'instrumentid':
-                        if thisuser.isadmin != 1 and key != 'isactive' and key != 'isprimary':
+                if content['arrival'] >= content['departure']:
                             session.rollback()
                             session.close()
-                            return jsonify(message = 'You have submitted illegal parameters for your instrument. No changes have been made to your instrument listings.', url = 'none')
-                        elif value != 'None':
-                            setattr(thisinstrument,key,value)
-                session.merge(thisinstrument)
-            session.commit()
-
-            if content['submittype'] == 'submit':
-                url = '/user/' + str(thisuser.logonid) + '/'
-                message = 'none'
-                flash(u'Changes Saved', 'success')
-            elif content['submittype'] == 'save':
-                if targetuserid is None:
-                    url = ('/user/' + str(thisuser.logonid) + '/edituser/' + str(targetuser.userid) + '/')
-                    message = 'none'
-                    flash(u'New User Successfully Created', 'success')
-                else:
-                    if newinstrument == True:
-                        url = 'refresh'
-                        flash(u'New Instrument Successfully Added', 'success')
+                            return jsonify(message = 'Your departure time must be after your arrival time.', url = 'none')
+                
+                #add the content in the packet to this group's attributes
+                for key,value in content.items():
+                    if not isinstance(value, list) and value is not None and value != 'null' and value != '' and value != 'None' and value != 'HIDDEN':
+                        debuglog('Setting %s to be %s' % (key, value))
+                        setattr(targetuser,key,value)
+                session.merge(targetuser)
+                session.commit()
+                newinstrument = False
+                #for each instrument object in the receiving packet
+                for i in content['objects']:
+                    if i['instrumentid'] == 'new':
+                        thisinstrument = instrument(userid = targetuser.userid)
+                        session.add(thisinstrument)
+                        debuglog('Added new instrument for user %s' % targetuser.firstname)
+                        newinstrument = True
+                    elif i['instrumentid'] != 'new':
+                        thisinstrument = session.query(instrument).filter(instrument.instrumentid == i['instrumentid']).first()
+                        if thisinstrument is None:
+                            session.rollback()
+                            session.close()
+                            return jsonify(message = 'Instrument listing not found, could not modify the listing.', url = 'none')
                     else:
-                        url = 'none'
+                        session.rollback()
+                        session.close()
+                        return jsonify(message = 'You have submitted illegal parameters for your instrument. No changes have been made to your instrument listings.', url = 'none')
+                    for key,value in i.items():
+                        if key != 'instrumentid' and value != 'None':
+                            setattr(thisinstrument,key,value)
+                    session.merge(thisinstrument)
+                session.commit()
+
+                if content['submittype'] == 'submit':
+                    url = '/user/' + str(thisuser.logonid) + '/'
                     message = 'none'
-            else:
-                url = 'none'
-                message = 'Incomplete request. Request failed.'
-            session.close()
-            #send the user back to their home
-            return jsonify(message = message, url = url)
+                    flash(u'Changes Saved', 'success')
+                elif content['submittype'] == 'save':
+                    if targetuserid is None:
+                        url = ('/user/' + str(thisuser.logonid) + '/edituser/' + str(targetuser.userid) + '/')
+                        message = 'none'
+                        flash(u'New User Successfully Created', 'success')
+                    else:
+                        if newinstrument == True:
+                            url = 'refresh'
+                            flash(u'New Instrument Successfully Added', 'success')
+                        else:
+                            url = 'none'
+                        message = 'none'
+                else:
+                    url = 'none'
+                    message = 'Incomplete request. Request failed.'
+                session.close()
+                #send the user back to their home
+                return jsonify(message = message, url = url)
     except Exception as ex:
         log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))
         message = ('Failed to execute %s with exception: %s. Try refreshing the page and trying again or contact camp administration.' % (request.method, ex))
@@ -1837,10 +1816,6 @@ def edituser(logonid, targetuserid):
 @app.route('/user/<logonid>/newuser/', methods=['GET', 'POST'])
 def newuser(logonid):
     return edituser(logonid,None)
-
-@app.route('/user/<logonid>/settings/', methods=['GET', 'POST'])
-def settings(logonid):
-    return edituser(logonid,'self')
 
 #sends bulk emails to an array of users sent with the request
 @app.route('/user/<logonid>/email/', methods=['POST'])

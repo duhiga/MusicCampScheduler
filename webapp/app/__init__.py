@@ -794,6 +794,7 @@ def newmusic(logonid):
             if matchingtemplate is not None:
                 debuglog('New Music: Found a template matching this music: %s' % matchingtemplate.grouptemplatename)
                 thismusic.grouptemplateid = matchingtemplate.grouptemplateid
+            thismusic.musicid = (session.query(func.max(music.musicid)).scalar()) + 1
             session.add(thismusic)
             session.commit()
             debuglog('New Music: Successfully created')

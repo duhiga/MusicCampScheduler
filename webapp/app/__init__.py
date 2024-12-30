@@ -1720,89 +1720,89 @@ def edituser(logonid, targetuserid):
                                     maximumlevel=int(getconfig('MaximumLevel')), \
                                     )
         
-            #if this is a user that just pressed submit
-            if request.method == 'POST':
-                #format the packet received from the server as JSON
-                content = request.json
+        #if this is a user that just pressed submit
+        if request.method == 'POST':
+            #format the packet received from the server as JSON
+            content = request.json
 
-                #is this user doesn't have an ID yet, they are new and we must set them up
-                if targetuser.userid is None:
-                    #assign them a userid from a randomly generated uuid
-                    targetuser.userid = str(uuid.uuid4())
-                    targetuser.logonid = str(uuid.uuid4())
-                    session.add(targetuser)
+            #is this user doesn't have an ID yet, they are new and we must set them up
+            if targetuser.userid is None:
+                #assign them a userid from a randomly generated uuid
+                targetuser.userid = str(uuid.uuid4())
+                targetuser.logonid = str(uuid.uuid4())
+                session.add(targetuser)
 
-                elif content['submittype'] == 'reset':
-                    targetuser.logonid = str(uuid.uuid4())
-                    session.merge(targetuser)
-                    session.commit()
-                    session.close()
-                    return jsonify(message = 'User logon reset.', url = 'none', success='true')
-
-                if content['firstname'] == '' or content['firstname'] == 'null' or content['firstname'] == 'None' or \
-                            content['lastname'] == '' or content['lastname'] == 'null' or content['lastname'] == 'None':
-                    session.rollback()
-                    session.close()
-                    return jsonify(message = 'You cannot save a user without a firstname and lastname.', url = 'none')
-
-                if content['arrival'] >= content['departure']:
-                            session.rollback()
-                            session.close()
-                            return jsonify(message = 'Your departure time must be after your arrival time.', url = 'none')
-                
-                #add the content in the packet to this group's attributes
-                for key,value in content.items():
-                    if not isinstance(value, list) and value is not None and value != 'null' and value != '' and value != 'None' and value != 'HIDDEN':
-                        debuglog('Setting %s to be %s' % (key, value))
-                        setattr(targetuser,key,value)
+            elif content['submittype'] == 'reset':
+                targetuser.logonid = str(uuid.uuid4())
                 session.merge(targetuser)
                 session.commit()
-                newinstrument = False
-                #for each instrument object in the receiving packet
-                for i in content['objects']:
-                    if i['instrumentid'] == 'new':
-                        thisinstrument = instrument(userid = targetuser.userid)
-                        session.add(thisinstrument)
-                        debuglog('Added new instrument for user %s' % targetuser.firstname)
-                        newinstrument = True
-                    elif i['instrumentid'] != 'new':
-                        thisinstrument = session.query(instrument).filter(instrument.instrumentid == i['instrumentid']).first()
-                        if thisinstrument is None:
-                            session.rollback()
-                            session.close()
-                            return jsonify(message = 'Instrument listing not found, could not modify the listing.', url = 'none')
-                    else:
+                session.close()
+                return jsonify(message = 'User logon reset.', url = 'none', success='true')
+
+            if content['firstname'] == '' or content['firstname'] == 'null' or content['firstname'] == 'None' or \
+                        content['lastname'] == '' or content['lastname'] == 'null' or content['lastname'] == 'None':
+                session.rollback()
+                session.close()
+                return jsonify(message = 'You cannot save a user without a firstname and lastname.', url = 'none')
+
+            if content['arrival'] >= content['departure']:
                         session.rollback()
                         session.close()
-                        return jsonify(message = 'You have submitted illegal parameters for your instrument. No changes have been made to your instrument listings.', url = 'none')
-                    for key,value in i.items():
-                        if key != 'instrumentid' and value != 'None':
-                            setattr(thisinstrument,key,value)
-                    session.merge(thisinstrument)
-                session.commit()
-
-                if content['submittype'] == 'submit':
-                    url = '/user/' + str(thisuser.logonid) + '/'
-                    message = 'none'
-                    flash(u'Changes Saved', 'success')
-                elif content['submittype'] == 'save':
-                    if targetuserid is None:
-                        url = ('/user/' + str(thisuser.logonid) + '/edituser/' + str(targetuser.userid) + '/')
-                        message = 'none'
-                        flash(u'New User Successfully Created', 'success')
-                    else:
-                        if newinstrument == True:
-                            url = 'refresh'
-                            flash(u'New Instrument Successfully Added', 'success')
-                        else:
-                            url = 'none'
-                        message = 'none'
+                        return jsonify(message = 'Your departure time must be after your arrival time.', url = 'none')
+            
+            #add the content in the packet to this group's attributes
+            for key,value in content.items():
+                if not isinstance(value, list) and value is not None and value != 'null' and value != '' and value != 'None' and value != 'HIDDEN':
+                    debuglog('Setting %s to be %s' % (key, value))
+                    setattr(targetuser,key,value)
+            session.merge(targetuser)
+            session.commit()
+            newinstrument = False
+            #for each instrument object in the receiving packet
+            for i in content['objects']:
+                if i['instrumentid'] == 'new':
+                    thisinstrument = instrument(userid = targetuser.userid)
+                    session.add(thisinstrument)
+                    debuglog('Added new instrument for user %s' % targetuser.firstname)
+                    newinstrument = True
+                elif i['instrumentid'] != 'new':
+                    thisinstrument = session.query(instrument).filter(instrument.instrumentid == i['instrumentid']).first()
+                    if thisinstrument is None:
+                        session.rollback()
+                        session.close()
+                        return jsonify(message = 'Instrument listing not found, could not modify the listing.', url = 'none')
                 else:
-                    url = 'none'
-                    message = 'Incomplete request. Request failed.'
-                session.close()
-                #send the user back to their home
-                return jsonify(message = message, url = url)
+                    session.rollback()
+                    session.close()
+                    return jsonify(message = 'You have submitted illegal parameters for your instrument. No changes have been made to your instrument listings.', url = 'none')
+                for key,value in i.items():
+                    if key != 'instrumentid' and value != 'None':
+                        setattr(thisinstrument,key,value)
+                session.merge(thisinstrument)
+            session.commit()
+
+            if content['submittype'] == 'submit':
+                url = '/user/' + str(thisuser.logonid) + '/useradmin'
+                message = 'none'
+                flash(u'Changes Saved', 'success')
+            elif content['submittype'] == 'save':
+                if targetuserid is None:
+                    url = ('/user/' + str(thisuser.logonid) + '/edituser/' + str(targetuser.userid) + '/')
+                    message = 'none'
+                    flash(u'New User Successfully Created', 'success')
+                else:
+                    if newinstrument == True:
+                        url = 'refresh'
+                        flash(u'New Instrument Successfully Added', 'success')
+                    else:
+                        url = 'none'
+                    message = 'none'
+            else:
+                url = 'none'
+                message = 'Incomplete request. Request failed.'
+            session.close()
+            #send the user back to their home
+            return jsonify(message = message, url = url)
     except Exception as ex:
         log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))
         message = ('Failed to execute %s with exception: %s. Try refreshing the page and trying again or contact camp administration.' % (request.method, ex))

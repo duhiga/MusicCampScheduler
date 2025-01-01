@@ -1691,29 +1691,36 @@ def edituser(logonid, targetuserid):
                     session.close()
                     return errorpage(thisuser,'Could not find requested user in database.')
             targetuserinstruments = session.query(instrument).filter(instrument.userid == targetuser.userid).all()
-            periods = session.query(period).order_by(period.starttime).all()
+        else:
+            targetuser = None
+            targetuserinstruments = []
+        periods = session.query(period).order_by(period.starttime).all()
 
         if request.method == 'GET':
             #if this is a user requesting the page
 
-            qr = qrcode.QRCode(
-                version=1,
-                box_size=10,
-                border=5)
+            if (targetuser is not None):
+                qr = qrcode.QRCode(
+                    version=1,
+                    box_size=10,
+                    border=5)
 
-            qr.add_data(f"{getconfig('Website_URL')}/user/{targetuser.logonid}/")
-            qr.make(fit=True)
-            dashboardQRCode = qr.make_image(fill='black', back_color='white')
-            buffer = BytesIO()
-            dashboardQRCode.save(buffer, format="png")
-            buffer.seek(0)
-            image_memory = base64.b64encode(buffer.getvalue())
+                qr.add_data(f"{getconfig('Website_URL')}/user/{targetuser.logonid}/")
+                qr.make(fit=True)
+                dashboardQRCode = qr.make_image(fill='black', back_color='white')
+                buffer = BytesIO()
+                dashboardQRCode.save(buffer, format="png")
+                buffer.seek(0)
+                image_memory = base64.b64encode(buffer.getvalue())
+                img_data = image_memory.decode('utf-8')
+            else:
+                img_data = None
 
             session.close()
             return render_template('edituser.html', \
                                     thisuser=thisuser, \
                                     targetuser=targetuser, \
-                                    img_data = image_memory.decode('utf-8'), \
+                                    img_data = img_data, \
                                     targetuserinstruments=targetuserinstruments, \
                                     campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
                                     periods=periods, \
@@ -1726,10 +1733,9 @@ def edituser(logonid, targetuserid):
             content = request.json
 
             #is this user doesn't have an ID yet, they are new and we must set them up
-            if targetuser.userid is None:
+            if targetuser is None:
                 #assign them a userid from a randomly generated uuid
-                targetuser.userid = str(uuid.uuid4())
-                targetuser.logonid = str(uuid.uuid4())
+                targetuser = user(userid = str(uuid.uuid4()), logonid = str(uuid.uuid4()))
                 session.add(targetuser)
 
             elif content['submittype'] == 'reset':

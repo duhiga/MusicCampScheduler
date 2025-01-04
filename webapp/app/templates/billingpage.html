@@ -1,0 +1,73 @@
+{% extends "layout.html" %}
+{% block title%}Catering - {{ campname }}{% endblock %}
+{% block head %}
+<script>
+    $(document).ready(function () {
+        $(function () {
+            $(".tablesorter").tablesorter({});
+        });
+    });
+</script>
+{% endblock %}
+{% block breadcrumbs %}
+<li class="w3-hide-small">
+    <a href="/user/{{ thisuser.logonid }}/billing/" class="w3-hover-white">Catering</a>
+</li>
+<li class="w3-hide-small">
+    <a href="#" class="w3-hover-white">Billing</a>
+</li>
+{% endblock %}
+{% block content %}
+<div class="w3-row">
+    <div class="w3-container">
+        <h2>Billing</h2>
+    </div>
+</div>
+<div class="w3-row">
+    <div class="w3-container">
+        {% for meal in mealNames %}
+        <h2>{{ meal }}</h2>
+        <div class="w3-row top-padded">
+            <table class="w3-table tablesorter">
+                <thead>
+                    <tr>
+                        <th></th>
+                        {% for day in days %}
+                        <th>
+                            {{ day.date.strftime('%d %b') }}
+                        </th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ageCategory in ageCategories %}
+                    <tr>
+                        <th>
+                            {{ ageCategory }}
+                        </th>
+                        {% for day in days %}
+                        <td>
+                            {% set mealResult = day.meals | find_by_name(meal) %}
+                            {% if mealResult %}
+                            {% set ageCategoryResult = mealResult.totals.byAgeCategory | find_by_name_tuple(ageCategory) %}
+                            {% if ageCategoryResult %}
+                            {{ ageCategoryResult.count }}
+                            {% else %}
+                            0
+                            {% endif %}
+                            {% else %}
+                            0
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+
+{% endblock %}

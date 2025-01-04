@@ -2219,6 +2219,60 @@ def cateringpage(logonid):
         else:
             return jsonify(message = message, url = 'none')
 
+@app.template_filter('find_by_name')
+def find_by_name(array, target_name):
+    return next((obj for obj in array if obj["name"] == target_name), None)
+
+@app.template_filter('find_by_name_tuple')
+def find_by_name(array, target_name):
+    return next((obj for obj in array if obj[0] == target_name), None)
+
+#The billing page displays all attendance at periods flagged as a meal in a table, sorted by user age catagory
+@app.route('/user/<logonid>/billing/')
+def billingpage(logonid):
+
+    try:
+        session = Session()
+        thisuser = getuser(session,logonid,True)
+        log('CATERINGPAGE: user firstname:%s lastname:%s method:%s' % (thisuser.firstname, thisuser.lastname, request.method))
+    except Exception as ex:
+        session.close()
+        return str(ex)
+    start = datetime.datetime.strptime(getconfig('StartTime').split(' ')[0], '%Y-%m-%d')
+    end = datetime.datetime.strptime(getconfig('EndTime').split(' ')[0], '%Y-%m-%d')
+    campdays = [start + datetime.timedelta(days=x) for x in range(0, (end-start).days + 1)]
+    try:
+        ageCategories = [category[0] for category in session.query(distinct(user.agecategory)).all()]
+        mealNames = [mealName[0] for mealName in session.query(distinct(period.periodname)).filter(period.meal == 1).all()]
+        days = []
+        for day in campdays:
+            thisday = {}
+            thisday['date'] = day
+            meals = []
+            nextday = day + timedelta(days=1)
+            mealperiods = session.query(period).filter(period.meal == 1, period.starttime >= day, period.starttime < nextday).all()
+            for thisperiod in mealperiods:
+                meals.append(thisperiod.getmealstats(session))
+            thisday['meals'] = meals
+            days.append(thisday)
+        session.close()
+        return render_template('billingpage.html', \
+                                thisuser=thisuser, \
+                                days=days, \
+                                ageCategories=ageCategories, \
+                                mealNames=mealNames, \
+                                campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress')
+                                )
+    except Exception as ex:
+        log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))
+        message = ('Failed to execute %s with exception: %s. Try refreshing the page and trying again or contact camp administration.' % (request.method, ex))
+        session.rollback()
+        session.close()
+        if request.method == 'GET':
+            return errorpage(thisuser,'Failed to display page. %s' % ex)
+        else:
+            return jsonify(message = message, url = 'none')
+
 
 @app.route('/js/<path:path>')
 def send_js(path):

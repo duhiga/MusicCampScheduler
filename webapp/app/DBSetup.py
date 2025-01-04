@@ -489,7 +489,8 @@ class period(Base):
                     group.periodid == self.periodid
                     )
             #find the users that are present and not marked absent
-            mealstats['totals'] = session.query(
+            mealstats['totals'] = {
+                'byDietaryRequirement': session.query(
                         user.agecategory,
                         user.dietaryrequirements,
                         func.count(user.agecategory + user.dietaryrequirements).label("count")
@@ -500,9 +501,21 @@ class period(Base):
                         ~user.userid.in_(absentusers_subquery)
                     ).group_by(user.agecategory, user.dietaryrequirements
                     ).order_by(user.agecategory, user.dietaryrequirements
+                    ).all(),
+                'byAgeCategory': session.query(
+                        user.agecategory.label("name"),
+                        func.count(user.agecategory).label("count")
+                    ).filter(
+                        user.arrival <= self.starttime, 
+                        user.departure >= self.starttime, 
+                        user.isactive == 1,
+                        ~user.userid.in_(absentusers_subquery)
+                    ).group_by(user.agecategory
+                    ).order_by(user.agecategory
                     ).all()
+            }
             mealstats['total'] = 0
-            for category in mealstats['totals']:
+            for category in mealstats['totals']['byAgeCategory']:
                 mealstats['total'] = int(mealstats['total']) + int(category.count)
             return mealstats
 

@@ -85,7 +85,7 @@
                         <th>Count</th>
                     </thead>
                     <tbody>
-                        {% for total in mealstats.totals %}
+                        {% for total in mealstats.totals.byDietaryRequirement %}
                         <tr>
                             <td>{{ total.agecategory }}</td>
                             <td>{{ total.dietaryrequirements }}</td>

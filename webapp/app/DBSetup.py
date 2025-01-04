@@ -471,7 +471,7 @@ class period(Base):
     def serialize(self):
         return serialize_class(self, self.__class__)
 
-    def getmealstats(self, session, getNumbers = False):
+    def getmealstats(self, session):
         if (self.meal != 1):
             return null
         else:
@@ -489,35 +489,34 @@ class period(Base):
                     group.periodid == self.periodid
                     )
             #find the users that are present and not marked absent
-            if getNumbers:
-                mealstats['totals'] = {
-                    'byDietaryRequirement': session.query(
-                            user.agecategory,
-                            user.dietaryrequirements,
-                            func.count(user.agecategory + user.dietaryrequirements).label("count")
-                        ).filter(
-                            user.arrival <= self.starttime, 
-                            user.departure >= self.starttime, 
-                            user.isactive == 1,
-                            ~user.userid.in_(absentusers_subquery)
-                        ).group_by(user.agecategory, user.dietaryrequirements
-                        ).order_by(user.agecategory, user.dietaryrequirements
-                        ).all(),
-                    'byAgeCategory': session.query(
-                            user.agecategory,
-                            func.count(user.agecategory).label("count")
-                        ).filter(
-                            user.arrival <= self.starttime, 
-                            user.departure >= self.starttime, 
-                            user.isactive == 1,
-                            ~user.userid.in_(absentusers_subquery)
-                        ).group_by(user.agecategory
-                        ).order_by(user.agecategory
-                        ).all()
-                }
-                mealstats['total'] = 0
-                for category in mealstats['totals']['byAgeCategory']:
-                    mealstats['total'] = int(mealstats['total']) + int(category.count)
+            mealstats['totals'] = {
+                'byDietaryRequirement': session.query(
+                        user.agecategory,
+                        user.dietaryrequirements,
+                        func.count(user.agecategory + user.dietaryrequirements).label("count")
+                    ).filter(
+                        user.arrival <= self.starttime, 
+                        user.departure >= self.starttime, 
+                        user.isactive == 1,
+                        ~user.userid.in_(absentusers_subquery)
+                    ).group_by(user.agecategory, user.dietaryrequirements
+                    ).order_by(user.agecategory, user.dietaryrequirements
+                    ).all(),
+                'byAgeCategory': session.query(
+                        user.agecategory.label("name"),
+                        func.count(user.agecategory).label("count")
+                    ).filter(
+                        user.arrival <= self.starttime, 
+                        user.departure >= self.starttime, 
+                        user.isactive == 1,
+                        ~user.userid.in_(absentusers_subquery)
+                    ).group_by(user.agecategory
+                    ).order_by(user.agecategory
+                    ).all()
+            }
+            mealstats['total'] = 0
+            for category in mealstats['totals']['byAgeCategory']:
+                mealstats['total'] = int(mealstats['total']) + int(category.count)
             return mealstats
 
 #gets a period object from a periodid

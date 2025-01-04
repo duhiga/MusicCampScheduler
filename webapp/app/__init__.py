@@ -2200,7 +2200,7 @@ def cateringpage(logonid):
             nextday = day + timedelta(days=1)
             mealperiods = session.query(period).filter(period.meal == 1, period.starttime >= day, period.starttime < nextday).all()
             for thisperiod in mealperiods:
-                meals.append(thisperiod.getmealstats(session, True))
+                meals.append(thisperiod.getmealstats(session))
             thisday['meals'] = meals
             days.append(thisday)
         session.close()
@@ -2223,6 +2223,10 @@ def cateringpage(logonid):
 def find_by_name(array, target_name):
     return next((obj for obj in array if obj["name"] == target_name), None)
 
+@app.template_filter('find_by_name_tuple')
+def find_by_name(array, target_name):
+    return next((obj for obj in array if obj[0] == target_name), None)
+
 #The billing page displays all attendance at periods flagged as a meal in a table, sorted by user age catagory
 @app.route('/user/<logonid>/billing/')
 def billingpage(logonid):
@@ -2239,7 +2243,7 @@ def billingpage(logonid):
     campdays = [start + datetime.timedelta(days=x) for x in range(0, (end-start).days + 1)]
     try:
         ageCategories = [category[0] for category in session.query(distinct(user.agecategory)).all()]
-        mealNames = [mealName[0] for mealName in session.query((distinct(period.periodname)).filter(period.meal == 1, period.starttime >= day, period.starttime < nextday)).all()]
+        mealNames = [mealName[0] for mealName in session.query(distinct(period.periodname)).filter(period.meal == 1).all()]
         days = []
         for day in campdays:
             thisday = {}
@@ -2248,7 +2252,7 @@ def billingpage(logonid):
             nextday = day + timedelta(days=1)
             mealperiods = session.query(period).filter(period.meal == 1, period.starttime >= day, period.starttime < nextday).all()
             for thisperiod in mealperiods:
-                meals.append(thisperiod.getmealstats(session, True))
+                meals.append(thisperiod.getmealstats(session))
             thisday['meals'] = meals
             days.append(thisday)
         session.close()

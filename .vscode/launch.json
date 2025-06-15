@@ -3,7 +3,7 @@
     "configurations": [
         {
             "name": "Flask",
-            "type": "python",
+            "type": "debugpy",
             "request": "launch",
             "stopOnEntry": false,
             "python": "${command:python.interpreterPath}",

@@ -16,6 +16,7 @@ web.debug.config
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 venv
+.venv
 env
 .env
 *.pyc

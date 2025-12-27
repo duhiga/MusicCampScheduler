@@ -672,7 +672,7 @@ def syncToGoogleSheets(logonid):
             session.close()
             return 'You do not have permission to view this page'
         else:
-            syncLibrary(getconfig('MusicLibraryURL'), 'key.json', session)
+            syncLibrary(getconfig('MusicLibrarySheetKey'), 'key.json', session)
             session.commit()
             session.close()
             flash(u'Sync Successful', 'success')

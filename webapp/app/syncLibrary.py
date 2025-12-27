@@ -12,7 +12,7 @@ def updateRecord(record, data_dict):
         if (value != ''):
             setattr(record, key, value)
 
-def syncLibrary(google_sheet_url, google_account_key_name, session):
+def syncLibrary(google_sheet_id, google_account_key_name, session):
 
     log('SYNCLIBRARY: Connecting to MusicLibrary google sheet')
     # Authenticate with Google Sheets using the service account key
@@ -20,7 +20,8 @@ def syncLibrary(google_sheet_url, google_account_key_name, session):
     gc = gspread.service_account(filename=google_account_key_path)
 
     # Open the Google Sheet by URL
-    sh = gc.open_by_url(google_sheet_url)
+    # sh = gc.open_by_url(google_sheet_url)
+    sh = gc.open_by_key(google_sheet_id)
 
     # Select the first (and only) worksheet
     worksheet = sh.get_worksheet(0)
@@ -50,7 +51,8 @@ def syncLibrary(google_sheet_url, google_account_key_name, session):
                 session.add(new_record)
         else:
             new_record = music()
-            data_dict['musicid'] = (session.query(func.max(music.musicid)).scalar()) + 1
+            max_id = session.query(func.max(music.musicid)).scalar() or 0
+            data_dict['musicid'] = max_id + 1
             updateRecord(new_record, data_dict)
             session.add(new_record)
     

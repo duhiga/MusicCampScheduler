@@ -60,7 +60,7 @@ def syncLibrary(google_sheet_id, google_account_key_name, session):
 
     log('SYNCLIBRARY: Exporting database to google sheet')
 
-    musics_data = session.query(music).all()
+    musics_data = session.query(music).order_by(music.id).all()
 
     # Clear existing data in the sheet
     worksheet.clear()

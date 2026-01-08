@@ -388,7 +388,7 @@ def editgroup(logonid,groupid,periodid=None):
                 musics_used_query = session.query(music.musicid).join(group).join(period).filter(period.periodid == selectedperiod.periodid, group.groupid != thisgroup.groupid)
                 musics = session.query(music).filter(~music.musicid.in_(musics_used_query), music.isactive == 1).all()
             else:
-                musics = session.query(music).filter(music.isactive == 1).all()
+                musics = session.query(music).filter(music.isactive == 1).order_by(music.composer).all()
             musics_serialized = [i.serialize for i in musics]
 
             #get a list of the locations not being used in this period

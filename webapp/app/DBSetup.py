@@ -6,7 +6,7 @@ import datetime
 import csv
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey, exists, Enum, types, UniqueConstraint, ForeignKeyConstraint, Text, func
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, relationship, aliased
+from sqlalchemy.orm import sessionmaker, relationship, aliased, sessionmaker, scoped_session
 from sqlalchemy.dialects.mysql.base import MSBinary
 from sqlalchemy.schema import Column
 from sqlalchemy.dialects.postgresql import UUID
@@ -17,11 +17,15 @@ from .config import *
 from sqlalchemy import *
 from sqlalchemy.orm import aliased
 import math
+from .errors import *
+
 
 engine = create_engine(getconfig('DATABASE_URL'))
-Session = sessionmaker()
-Session.configure(bind=engine)
+Session = scoped_session(sessionmaker(bind=engine))
 Base = declarative_base()
+
+def shutdown_session(exception=None):
+    Session.remove()
 
 def serialize_class(inst, cls):
     convert = dict()
@@ -105,8 +109,7 @@ def getuser(session,userid,logon=False):
         else:
             thisuser = session.query(user).filter(user.userid == userid).first()
         if thisuser is None:
-            log('GETUSER: Could not find user:%s logon:%s in database' % (userid,logon))
-            raise Exception('Could not find user in database')
+            raise NotFoundError('Could not find user in database')
         else:
             return thisuser
 
@@ -135,8 +138,7 @@ def getmusic(session,musicid):
     else:
         thismusic = session.query(music).filter(music.musicid == musicid).first()
         if thismusic is None:
-            log('GETMUSIC: Exception - Could not find music %s in database' % (musicid))
-            raise Exception('Could not find music in database')
+            raise NotFoundError('Could not find music in database')
         else:
             return thismusic
 
@@ -350,8 +352,7 @@ def getgroup(session,groupid):
     else:
         thisgroup = session.query(group).filter(group.groupid == groupid).first()
         if thisgroup is None:
-            log('GETGROUP: Exception - Could not find group %s in database' % (groupid))
-            raise Exception('Could not find group in database')
+            raise NotFoundError('Could not find group in database')
         else:
             return thisgroup
 
@@ -376,8 +377,7 @@ def getgrouptemplate(session,grouptemplateid):
     else:
         thisgrouptemplate = session.query(grouptemplate).filter(grouptemplate.grouptemplateid == grouptemplateid).first()
         if thisgrouptemplate is None:
-            log('GETGROUPTEMPLATE: Exception - Could not find grouptemplate %s in database' % (grouptemplateid))
-            raise Exception('Could not find grouptemplate in database')
+            raise NotFoundError('Could not find grouptemplate in database')
         else:
             return thisgrouptemplate
 
@@ -402,8 +402,7 @@ def getinstrument(session,instrumentid):
     else:
         thisinstrument = session.query(instrument).filter(instrument.instrumentid == instrumentid).first()
         if thisinstrument is None:
-            log('GETINSTRUMENT: Exception - Could not find instrument %s in database' % (instrumentid))
-            raise Exception('Could not find instrument in database')
+            raise NotFoundError('Could not find instrument in database')
         else:
             return thisinstrument
 
@@ -426,7 +425,6 @@ def getgroupassignment(session,groupassignmentid):
     else:
         thisgroupassignment = session.query(groupassignment).filter(groupassignment.groupassignmentid == groupassignmentid).first()
         if thisgroupassignment is None:
-            log('GETGROUPASSIGNMENT: Exception - Could not find groupassignment %s in database' % (groupassignmentid))
             raise Exception('Could not find groupassignment in database')
         else:
             return thisgroupassignment
@@ -453,8 +451,7 @@ def getlocation(session,locationid):
         else:
             thislocation = session.query(location).filter(location.locationid == locationid).first()
             if thislocation is None:
-                log('GETLOCATION: Exception - Could not find location %s in database' % (locationid))
-                raise Exception('Could not find location in database')
+                raise NotFoundError('Could not find location in database')
             else:
                 return thislocation
 
@@ -526,8 +523,7 @@ def getperiod(session,periodid):
     else:
         thisperiod = session.query(period).filter(period.periodid == periodid).first()
         if thisperiod is None:
-            log('GETPERIOD: Exception - Could not find period %s in database' % (periodid))
-            raise Exception('Could not find period in database')
+            raise NotFoundError('Could not find period in database')
         else:
             return thisperiod
 
@@ -545,8 +541,7 @@ def getannouncement(session,announcementid):
     else:
         thisannouncement = session.query(announcement).filter(announcement.announcementid == announcementid).first()
         if thisannouncement is None:
-            log('GETANNOUNCEMENT: Exception - Could not find announcement %s in database' % (announcementid))
-            raise Exception('Could not find announcement in database')
+            raise NotFoundError('Could not find announcement in database')
         else:
             return thisannouncement
 
@@ -586,7 +581,7 @@ if admin is None:
             arrival = datetime.datetime.strptime(getconfig('StartTime'), '%Y-%m-%d %H:%M'), departure = datetime.datetime.strptime(getconfig('EndTime'), '%Y-%m-%d %H:%M'))
         session.add(admin)
     session.commit()
-session.close()
+
 session.flush()
 
 #Database Build section. The below configures periods and groups depending on how the config.xml is configured.
@@ -690,13 +685,13 @@ def dbbuild(configfile):
                 session.commit()
                 log('Created grouptemplate: %s with size %s' % (template.grouptemplatename, template.size))
         session.commit()
-        session.close()
+        
         log('Finished database build')
         return 'Success'
     
     except Exception as ex:
         session.rollback()
-        session.close()
+        
         return ('Failed to import with exception: %s.' % ex)
 
 def importusers(file):
@@ -759,11 +754,11 @@ def importusers(file):
                     log('Created instrument listing: %s at level %s for %s' % (instrument4.instrumentname, instrument4.level, thisuser.firstname))
             rownum += 1
         session.commit()
-        session.close()
+        
         return ('Success')
     except Exception as ex:
         session.rollback()
-        session.close()
+        
         log('IMPORTUSERS: Failed to import with exception: %s.' % ex)
         return ('Failed to import with exception: %s.' % ex)
 
@@ -795,10 +790,10 @@ def importmusic(file):
                     thismusic.grouptemplateid = matchingtemplate.grouptemplateid
                 session.add(thismusic)
         session.commit()
-        session.close()
+        
         return ('Success')
     except Exception as ex:
         session.rollback()
-        session.close()
+        
         log('IMPORTMUSIC: Failed to import with exception: %s.' % ex)
         return ('Failed to import with exception: %s.' % ex)

@@ -15,7 +15,7 @@ from io import BytesIO
 import datetime
 from .DBSetup import *
 from sqlalchemy import *
-from sqlalchemy.orm import aliased
+from sqlalchemy.orm import aliased, sessionmaker, scoped_session
 from .config import *
 from .SMTPemail import *
 from .tablefunctions import *
@@ -23,6 +23,7 @@ from .syncLibrary import *
 from io import StringIO
 import qrcode
 import base64
+from .errors import *
 
 #Make the WSGI interface available at the top level so wfastcgi can get it.
 app = Flask(__name__)
@@ -30,7 +31,10 @@ wsgi_app = app.wsgi_app
 #These are the extension types that we are accepting to be uploaded
 app.config['ALLOWED_EXTENSIONS'] = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'xml', 'csv'])
 app.secret_key = getconfig('SecretKey')
-Session = sessionmaker(bind=engine)
+Session = scoped_session(sessionmaker(bind=engine))
+
+def shutdown_session(exception=None):
+    Session.remove()
 
 #For a given file, return whether it's an allowed type or not
 def allowed_file(filename):
@@ -60,7 +64,6 @@ def home(logonid,inputdate='n'):
         thisuser = getuser(session,logonid,True)
         log('HOME: user firstname:%s lastname:%s method:%s' % (thisuser.firstname, thisuser.lastname, request.method))
     except Exception as ex:
-        session.close()
         return str(ex)
 
     try:
@@ -104,8 +107,6 @@ def home(logonid,inputdate='n'):
                 unscheduled = True
                 break
 
-        session.close()
-
         return render_template('home.html', \
                             thisuser=thisuser, \
                             date=displaydate,\
@@ -125,7 +126,6 @@ def home(logonid,inputdate='n'):
         log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))
         message = ('Failed to execute %s with exception: %s. Try refreshing the page and trying again or contact camp administration.' % (request.method, ex))
         session.rollback()
-        session.close()
         if request.method == 'GET':
             return render_template('errorpage.html', \
                                         thisuser=thisuser, \
@@ -146,7 +146,6 @@ def requestschedule(logonid):
     #gets the data associated with this user
     thisuser = session.query(user).filter(user.logonid == logonid).first()
     if thisuser is None:
-        session.close()
         return jsonify(message = 'Your user does not exist. Something went wrong.', url = 'none', status_code = 400)
 
     schedule_serialized = []
@@ -172,7 +171,6 @@ def mark_absent(logonid,periodid,command):
         thisuser = getuser(session,logonid,True)
         log('ABSENTREQUEST: user firstname:%s lastname:%s method:%s' % (thisuser.firstname, thisuser.lastname, request.method))
     except Exception as ex:
-        session.close()
         return str(ex)
 
     try:
@@ -186,10 +184,8 @@ def mark_absent(logonid,periodid,command):
         log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))
         message = ('Failed to execute %s with exception: %s. Try refreshing the page and trying again or contact camp administration.' % (request.method, ex))
         session.rollback()
-        session.close()
     else:
         session.commit()
-        session.close()
         return jsonify(message = 'success', url = 'none')
 
 #The group page displays all the people in a given group, along with possible substitutes
@@ -201,7 +197,6 @@ def grouppage(logonid,groupid):
         thisuser = getuser(session,logonid,True)
         log('GROUPPAGE: user firstname:%s lastname:%s method:%s' % (thisuser.firstname, thisuser.lastname, request.method))
     except Exception as ex:
-        session.close()
         return str(ex)
 
     try:
@@ -209,6 +204,7 @@ def grouppage(logonid,groupid):
         thislocation = getlocation(session,thisgroup.locationid)
         thisperiod = getperiod(session,thisgroup.periodid)
         thisgrouprequestor = getuser(session,thisgroup.requesteduserid)
+
         if thisgroup.musicid is not None:
             thismusic = getmusic(session, thisgroup.musicid)
         else:
@@ -248,7 +244,6 @@ def grouppage(logonid,groupid):
         else:
             substitutes = None
 
-        session.close()
         return render_template('grouppage.html', \
                             thisperiod=thisperiod, \
                             campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
@@ -262,10 +257,9 @@ def grouppage(logonid,groupid):
                             )
     
     except Exception as ex:
-        log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))
+        handle_exception(request.method, thisuser.firstname, thisuser.lastname, ex)
         message = ('Failed to execute %s with exception: %s. Try refreshing the page and trying again or contact camp administration.' % (request.method, ex))
         session.rollback()
-        session.close()
         if request.method == 'GET':
             return render_template('errorpage.html', \
                                         thisuser=thisuser, \
@@ -284,12 +278,12 @@ def editgroup(logonid,groupid,periodid=None):
         thisuser = getuser(session,logonid,True)
         log('GROUPEDIT: user firstname:%s lastname:%s method:%s' % (thisuser.firstname, thisuser.lastname, request.method))
     except Exception as ex:
-        session.close()
+        
         return str(ex)
 
     try:
         if thisuser.isadmin != 1:
-            session.close()
+            
             raise Exception('You do not have permission to do this')
         if periodid == 'None':
             periodid = None
@@ -409,10 +403,6 @@ def editgroup(logonid,groupid,periodid=None):
             grouptemplates = session.query(grouptemplate).all()
             grouptemplates_serialized = [i.serialize for i in grouptemplates]
 
-            
-
-
-
             template = render_template('editgroup.html', \
                                 currentperiod=currentperiod, \
                                 selectedperiod=selectedperiod, \
@@ -437,7 +427,7 @@ def editgroup(logonid,groupid,periodid=None):
                                 groupmax=thisgroup.getmaxlevel(session), \
                                 requestor=requestor, \
                                 )
-            session.close()
+            
             return template
 
         if request.method == 'DELETE':
@@ -447,7 +437,7 @@ def editgroup(logonid,groupid,periodid=None):
                 message = 'none'
                 flash(u'Group Deleted','message')
                 debuglog('Sending user to URL: %s' % url)
-                session.close()
+                
                 return jsonify(message = message, url = url)
             else:
                 raise Exception('You must have a period selected before autofilling.')
@@ -541,7 +531,7 @@ def editgroup(logonid,groupid,periodid=None):
                         session.merge(thisgroup)
                         session.commit()
                         url = '/user/' + str(thisuser.logonid) + '/group/' + str(thisgroup.groupid) + '/edit/'
-                        session.close()
+                        
                         flash(u'Changes Partially Saved','message')
                         return jsonify(message = 'Your group is not confirmed because there are empty instrument slots or your location is blank. Your other changes have been saved.', url = url)
             thisgroup.version += 1
@@ -564,14 +554,14 @@ def editgroup(logonid,groupid,periodid=None):
                     flash(u'Group Confirmed and Scheduled','message')
                 else:
                     flash(u'Changes Saved','success')
-            session.close()
+            
             return jsonify(message = message, url = url)
     
     except Exception as ex:
-        log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))
+        handle_exception(request.method, thisuser.firstname, thisuser.lastname, ex)
         message = ('Failed to execute %s with exception: %s. Try refreshing the page and trying again or contact camp administration.' % (request.method, ex))
         session.rollback()
-        session.close()
+        
         if request.method == 'GET':
             return errorpage(thisuser,'Failed to display page. %s' % ex)
         else:
@@ -589,7 +579,7 @@ def grouphistory(logonid):
         thisuser = getuser(session,logonid,True)
         log('GROUPHISTORY: user firstname:%s lastname:%s method:%s' % (thisuser.firstname, thisuser.lastname, request.method))
     except Exception as ex:
-        session.close()
+        
         return str(ex)
 
     try:
@@ -610,7 +600,7 @@ def grouphistory(logonid):
             debuglog('Found total number of %s players to be %s and plays by all of them totalling %s giving an average of %s' % (thisuserprimary, number, total, average))
         else:
             average = None
-        session.close()
+        
         return render_template('grouphistory.html', \
                                 thisuser=thisuser, \
                                 groups = groups, \
@@ -624,7 +614,7 @@ def grouphistory(logonid):
         log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))
         message = ('Failed to execute %s with exception: %s. Try refreshing the page and trying again or contact camp administration.' % (request.method, ex))
         session.rollback()
-        session.close()
+        
         if request.method == 'GET':
             return errorpage(thisuser,'Failed to display page. %s' % ex)
         else:
@@ -638,13 +628,13 @@ def musiclibrary(logonid):
         thisuser = getuser(session,logonid,True)
         log('MUSICLIBRARY: user firstname:%s lastname:%s method:%s' % (thisuser.firstname, thisuser.lastname, request.method))
     except Exception as ex:
-        session.close()
+        
         return str(ex)
 
     try:
         musics = session.query(music).filter(music.isactive == 1).all()
         grouptemplates = session.query(grouptemplate).filter(grouptemplate.size == 'S').all()
-        session.close()
+        
         return render_template('musiclibrary.html', \
                                 thisuser=thisuser, \
                                 musics=musics, \
@@ -655,7 +645,7 @@ def musiclibrary(logonid):
         log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))
         message = ('Failed to execute %s with exception: %s. Try refreshing the page and trying again or contact camp administration.' % (request.method, ex))
         session.rollback()
-        session.close()
+        
         if request.method == 'GET':
             return errorpage(thisuser,'Failed to display page. %s.' % ex)
         else:
@@ -669,19 +659,19 @@ def syncToGoogleSheets(logonid):
         thisuser = getuser(session,logonid,True)
         log('MUSICLIBRARY: user firstname:%s lastname:%s method:%s' % (thisuser.firstname, thisuser.lastname, request.method))
         if thisuser.isconductor != 1:
-            session.close()
+            
             return 'You do not have permission to view this page'
         else:
             syncLibrary(getconfig('MusicLibrarySheetKey'), 'key.json', session)
             session.commit()
-            session.close()
+            
             flash(u'Sync Successful', 'success')
             return musiclibrary(logonid)
     except Exception as ex:
         log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))
         message = ('Failed to execute %s with exception: %s. Try refreshing the page and trying again or contact camp administration.' % (request.method, ex))
         session.rollback()
-        session.close()
+        
         if request.method == 'GET':
             return errorpage(thisuser,'Failed to display page. %s.' % ex)
         else:
@@ -695,13 +685,13 @@ def musicdetails(logonid,musicid):
         thisuser = getuser(session,logonid,True)
         log('MUSICDETAILS: user firstname:%s lastname:%s method:%s' % (thisuser.firstname, thisuser.lastname, request.method))
     except Exception as ex:
-        session.close()
+        
         return str(ex)
 
     try:
         thismusic = session.query(music).filter(music.musicid == musicid).first()
         if thismusic is None:
-            session.close()
+            
             return errorpage(thisuser,'The music you selected does not exist in the database.')
         thisuserinstruments = session.query(instrument).filter(instrument.userid == thisuser.userid, instrument.isactive == 1).all()
         canplay = False
@@ -717,7 +707,7 @@ def musicdetails(logonid,musicid):
         grouphistory = session.query(group.groupname, group.status, group.groupid, period.starttime
             ).join(period, group.periodid == period.periodid
             ).filter(group.musicid == thismusic.musicid).all()
-        session.close()
+        
         return render_template('musicdetails.html', \
                                 thisuser=thisuser, \
                                 now=datetime.datetime.now(), \
@@ -732,7 +722,7 @@ def musicdetails(logonid,musicid):
         log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))
         message = ('Failed to execute %s with exception: %s. Try refreshing the page and trying again or contact camp administration.' % (request.method, ex))
         session.rollback()
-        session.close()
+        
         if request.method == 'GET':
             return errorpage(thisuser,'Failed to display page. %s' % ex)
         else:
@@ -746,7 +736,7 @@ def newmusic(logonid):
         thisuser = getuser(session,logonid,True)
         log('NEWMUSIC: user firstname:%s lastname:%s method:%s' % (thisuser.firstname, thisuser.lastname, request.method))
     except Exception as ex:
-        session.close()
+        
         return str(ex)
 
     try:
@@ -770,18 +760,18 @@ def newmusic(logonid):
                     found_non_zero = True
             if not found_non_zero:
                 session.rollback()
-                session.close()
+                
                 return jsonify(message = 'You cannot submit music without instrumentation.', url = 'none')
             thismusic = music()
             debuglog('New Music: Submitted by user %s %s' % (thisuser.firstname, thisuser.lastname))
             for key,value in content.items():
                 if (value is None or value == 'null' or value == '') and key == 'composer':
                     session.rollback()
-                    session.close()
+                    
                     return jsonify(message = 'You must enter a composer', url = 'none')
                 if (value is None or value == 'null' or value == '') and key == 'name':
                     session.rollback()
-                    session.close()
+                    
                     return jsonify(message = 'You must enter a name', url = 'none')
                 debuglog('New Music: setting %s to be %s' % (key,value))
                 setattr(thismusic,key,value)
@@ -799,7 +789,7 @@ def newmusic(logonid):
             session.commit()
             debuglog('New Music: Successfully created')
             url = ('/user/' + str(thisuser.logonid) + '/musiclibrary/')
-            session.close()
+            
             flash(u'New Music Accepted', 'success')
             return jsonify(message = 'none', url = url)
 
@@ -807,7 +797,7 @@ def newmusic(logonid):
         log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))
         message = ('Failed to execute %s with exception: %s. Try refreshing the page and trying again or contact camp administration.' % (request.method, ex))
         session.rollback()
-        session.close()
+        
         if request.method == 'GET':
             return errorpage(thisuser,'Failed to display page. %s' % ex)
         else:
@@ -824,7 +814,7 @@ def grouprequest(logonid,periodid=None,musicid=None):
         thisuser = getuser(session,logonid,True)
         log('GROUPREQUEST: user firstname:%s lastname:%s method:%s' % (thisuser.firstname, thisuser.lastname, request.method))
     except Exception as ex:
-        session.close()
+        
         return str(ex)
 
     try:
@@ -834,10 +824,10 @@ def grouprequest(logonid,periodid=None,musicid=None):
         now = datetime.datetime.now() #get the time now
         #if this camper is inactive, has not arrived at camp yet, or is departing before the end of tomorrow
         if (thisuser.isactive != 1) and periodid is None:
-            session.close()
+            
             return errorpage(thisuser,'Your account is currently set to inactive. Inactive users cannot request groups. Is this is a mistake, contact your administrator.')
         if (thisuser.departure < intwodays) and periodid is None:
-            session.close()
+            
             return errorpage(thisuser,"You are set to depart camp in less than one days' time, so you cannot request a group. If this is incorrect, contact your administrator.")
         #find the instruments this user plays
         thisuserinstruments = session.query(instrument).filter(instrument.userid == thisuser.userid, instrument.isactive == 1).all()
@@ -850,7 +840,7 @@ def grouprequest(logonid,periodid=None,musicid=None):
             if thisperiod is None:
                 return ('Did not find period in database. Something has gone wrong.')
         elif thisuserinstruments is None:
-            session.close()
+            
             return errorpage(thisuser,'Failed to display page. %s' % ex)
         else:
             conductorpage = False
@@ -870,7 +860,7 @@ def grouprequest(logonid,periodid=None,musicid=None):
             debuglog('GROUPREQUEST: User is allowed total %s requests.' % (allowedRequests))
             if thisuser.grouprequestcount >= allowedRequests:
                 debuglog('GROUPREQUEST: This user is denied access to request another group.')
-                session.close()
+                
                 return errorpage(thisuser,"You have requested %s groups throughout the camp, and you're allowed %s per day (as well as %s welcome bonus requests!). You've reached your limit for today. Come back tomorrow!" % \
                     (thisuser.grouprequestcount, getconfig('DailyGroupRequestLimit'), getconfig('BonusGroupRequests')))
         
@@ -928,7 +918,7 @@ def grouprequest(logonid,periodid=None,musicid=None):
 
             #serialize the grouptemplates so the JS can read them properly
             grouptemplates_serialized = [i.serialize for i in grouptemplates]
-            session.close()
+            
             return render_template('grouprequest.html', \
                                 thisuser=thisuser, \
                                 thisuserinstruments=thisuserinstruments, \
@@ -958,11 +948,11 @@ def grouprequest(logonid,periodid=None,musicid=None):
             #if we received too many players, send the user an error
             if (content['musicid'] == '' or content['musicid'] is None or content['musicid'] == 'null') and (len(content['objects']) > int(getconfig('GroupRequestPlayerLimit'))) and conductorpage == False:
                 session.rollback()
-                session.close()
+                
                 return jsonify(message = 'You have entered too many players. You may only submit grouprequests of players %s or less.' % getconfig('GroupRequestPlayerLimit'), url = 'none')
             if len(content['objects']) == 0:
                 session.rollback()
-                session.close()
+                
                 return jsonify(message = 'You must have at least one player in the group', url = 'none')
             #establish the 'grouprequest' group object. This will be built up from the JSON packet, and then added to the database
             #a minimumlevel and maximumlevel of 0 indicates that they will be automatically be picked on group confirmation
@@ -978,7 +968,7 @@ def grouprequest(logonid,periodid=None,musicid=None):
             if conductorpage == True:
                 if content['locationid'] == '':
                     session.rollback()
-                    session.close()
+                    
                     return jsonify(message = 'You must select a location for this group', url = 'none')
                 grouprequest.locationid = content['locationid']
                 grouprequest.status = "Queued"
@@ -999,13 +989,13 @@ def grouprequest(logonid,periodid=None,musicid=None):
                             if puser is None:
                                 debuglog('Input error. user %s does not exist in the database.' % p['userid'])
                                 session.rollback()
-                                session.close()
+                                
                                 return jsonify(message = 'Input error. One of the sent users does not exist in the database.', url = 'none')
                             #if we find an inactive user, it's also a failure
                             elif puser.isactive != 1:
                                 debuglog('User %s %s is inactive. Cannot accept this group request.' % (puser.firstname, puser.lastname))
                                 session.rollback()
-                                session.close()
+                                
                                 return jsonify(message = 'A selected user is inactive. Cannot accept this group request.', url = 'none')
 
                         #increment the instrument counter
@@ -1113,7 +1103,7 @@ def grouprequest(logonid,periodid=None,musicid=None):
                 if (p['userid'] == 'null' or p['userid'] == '') and conductorpage == True:
                     url = ('/user/' + str(thisuser.logonid) + '/')
                     session.rollback()
-                    session.close()
+                    
                     return jsonify(message = 'You cannot have any empty player boxes in the group, because this is the conductor version of the group request page.', url = 'none')
                 #if the playerid is not null, we create a groupassignment for them and bind it to this group
                 if p['userid'] != 'null' and p['userid'] != '':
@@ -1124,7 +1114,7 @@ def grouprequest(logonid,periodid=None,musicid=None):
                     else:
                         url = ('/user/' + str(thisuser.logonid) + '/')
                         session.rollback()
-                        session.close()
+                        
                         return jsonify(message = 'Could not find one of your selected players in the database. Please refresh the page and try again.', url = url)
                 #if none of the above are satisfied - that's ok. you're allowed to submit null playernames in the user request page, these will be 
                 #allocated by the admin when the group is confirmed.
@@ -1136,7 +1126,7 @@ def grouprequest(logonid,periodid=None,musicid=None):
             #send the URL for the group that was just created to the user, and send them to that page
             url = ('/user/' + str(thisuser.logonid) + '/group/' + str(grouprequest.groupid) + '/')
             debuglog('Sending user to URL: %s' % url)
-            session.close()
+            
             flash(u'Request Successful', 'success')
             return jsonify(message = 'none', url = url)
 
@@ -1144,7 +1134,7 @@ def grouprequest(logonid,periodid=None,musicid=None):
         log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))
         message = ('Failed to execute %s with exception: %s. Try refreshing the page and trying again or contact camp administration.' % (request.method, ex))
         session.rollback()
-        session.close()
+        
         if request.method == 'GET':
             return errorpage(thisuser,'Failed to display page. %s' % ex)
         else:
@@ -1159,7 +1149,7 @@ def conductorgrouprequest(logonid,periodid):
         thisuser = getuser(session,logonid,True)
         log('CONDUCTORGROUPREQUEST: user firstname:%s lastname:%s method:%s' % (thisuser.firstname, thisuser.lastname, request.method))
     except Exception as ex:
-        session.close()
+        
         return str(ex)
 
     try:
@@ -1167,14 +1157,14 @@ def conductorgrouprequest(logonid,periodid):
             log('CONDUCTORGROUPREQUEST: user %s %s is not allowed to view this page' % (thisuser.firstname, thisuser.lastname))
             raise Exception('You are not a conductor and cannot visit this page.')
         else:
-            session.close()
+            
             return grouprequest(logonid,periodid,None)
 
     except Exception as ex:
         log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))
         message = ('Failed to execute %s with exception: %s. Try refreshing the page and trying again or contact camp administration.' % (request.method, ex))
         session.rollback()
-        session.close()
+        
         if request.method == 'GET':
             return errorpage(thisuser,'Failed to display page. %s' % ex)
         else:
@@ -1193,12 +1183,12 @@ def announcementpage(logonid):
         thisuser = getuser(session,logonid,True)
         log('ANNOUNCEMENT: user firstname:%s lastname:%s method:%s' % (thisuser.firstname, thisuser.lastname, request.method))
     except Exception as ex:
-        session.close()
+        
         return str(ex)
 
     try:
         if thisuser.isannouncer != 1:
-            session.close()
+            
             return 'You do not have permission to view this page'
         else:
         
@@ -1206,7 +1196,7 @@ def announcementpage(logonid):
             if request.method == 'GET':
                 #get the current announcement
                 currentannouncement = session.query(announcement).order_by(desc(announcement.creationtime)).first()
-                session.close()            
+                            
                 return render_template('announcement.html', \
                                         currentannouncement=currentannouncement, \
                                         thisuser=thisuser, \
@@ -1220,7 +1210,7 @@ def announcementpage(logonid):
                 session.add(newannouncement)
                 session.commit()
                 url = ('/user/' + str(thisuser.logonid) + '/')
-                session.close()
+                
                 #send the user back to their home
                 flash(u'Changes Saved', 'success')
                 return jsonify(message = 'none', url = url)
@@ -1229,7 +1219,7 @@ def announcementpage(logonid):
         log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))
         message = ('Failed to execute %s with exception: %s. Try refreshing the page and trying again or contact camp administration.' % (request.method, ex))
         session.rollback()
-        session.close()
+        
         if request.method == 'GET':
             return errorpage(thisuser,'Failed to display page. %s' % ex)
         else:
@@ -1244,13 +1234,13 @@ def groupscheduler(logonid):
         thisuser = getuser(session,logonid,True)
         log('GROUPSCHEDULER: user firstname:%s lastname:%s method:%s' % (thisuser.firstname, thisuser.lastname, request.method))
     except Exception as ex:
-        session.close()
+        
         return str(ex)
 
     try:
         if request.method == 'GET':
             if thisuser.isadmin != 1:
-                session.close()
+                
                 return 'You do not have permission to view this page'
             else:
                 #find the current date
@@ -1314,7 +1304,7 @@ def groupscheduler(logonid):
 
                 @after_this_request
                 def close_session(response):
-                    session.close()
+                    
                     return response
                 
                 return render_template('groupscheduler.html', \
@@ -1330,14 +1320,14 @@ def groupscheduler(logonid):
                 thisgroup = session.query(group).filter(group.groupid == request.json['groupid']).first()
                 if thisgroup is None:
                     session.rollback()
-                    session.close()
+                    
                     return jsonify(message = 'Could not find this group in the database. Refresh your page and try again.', success = 'false')
                 else:
                     thisgroup.periodid = None
                     thisgroup.locationid = None
                     session.merge(thisgroup)
                     session.commit()
-                    session.close()
+                    
                     return jsonify(message = 'none', success = 'true')
             elif request.json['submittype'] == 'fillall':
                 debuglog('FILLALL: Admin has initiated a fill_all action for period id:%s' % request.json['periodid'])
@@ -1404,7 +1394,7 @@ def groupscheduler(logonid):
                                 message = 'Fill-All failed at group "%s". Could not find a suitable location for this group. Try editing other groups in the period to make room, or reduce the number of players in the group.' % g.groupname
                                 url = 'refresh'
                                 session.commit()
-                                session.close()
+                                
                                 flash(u'Period Partially Filled', 'message')
                                 return jsonify(message = message, url = url )
                         else:
@@ -1416,7 +1406,7 @@ def groupscheduler(logonid):
                                 url = 'refresh'
                                 debuglog('FILLALL: Autofill failed to completely fill group name:%s id:%s totalinstrumentation:%s totalallocatedplayers:%s. Found only %s players to autofill. Sending an error to the admin.' % (g.groupname,g.groupid,g.totalinstrumentation,g.totalallocatedplayers,len(players)))
                                 session.commit()
-                                session.close()
+                                
                                 flash(u'Period Partially Filled', 'message')
                                 return jsonify(message = message, url = url)
                             #if this group doesn't have an assigned period and can't be assigned to the selected period - just skip it.
@@ -1437,7 +1427,7 @@ def groupscheduler(logonid):
                                 debuglog('FILLALL: Group confirmed - Status:%s Name:%s Locationid:%s Periodid:%s TotalPlayers:%s TotalSetInstrumentation:%s' % (g.status,g.groupname,g.locationid,g.periodid,g.totalallocatedplayers,g.totalinstrumentation))
                     
                 session.commit()
-                session.close()
+                
                 debuglog('FILLALL: Fill-all operitaion successful')
                 flash(u'Period Sucessfully Filled', 'success')
                 return jsonify(message = 'none', url = 'refresh')
@@ -1446,7 +1436,7 @@ def groupscheduler(logonid):
         log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))
         message = ('Failed to execute %s with exception: %s. Try refreshing the page and trying again or contact camp administration.' % (request.method, ex))
         session.rollback()
-        session.close()
+        
         if request.method == 'GET':
             return errorpage(thisuser,'Failed to display page. %s' % ex)
         else:
@@ -1461,7 +1451,7 @@ def publiceventpage(logonid,periodid):
         thisuser = getuser(session,logonid,True)
         log('PUBLICEVENT: user firstname:%s lastname:%s method:%s' % (thisuser.firstname, thisuser.lastname, request.method))
     except Exception as ex:
-        session.close()
+        
         return str(ex)
 
     try:
@@ -1476,7 +1466,7 @@ def publiceventpage(logonid,periodid):
                 locations = session.query(location).filter(~location.locationid.in_(locations_used_query)).all()
                 #get the period details to display to the user on the page
                 thisperiod = session.query(period).filter(period.periodid == periodid).first()
-                session.close()            
+                            
                 return render_template('publicevent.html', \
                                         locations=locations, \
                                         thisuser=thisuser, \
@@ -1495,7 +1485,7 @@ def publiceventpage(logonid,periodid):
                 session.add(event)
                 session.commit()
                 url = ('/user/' + str(thisuser.logonid) + '/group/' + str(event.groupid) + '/')
-                session.close()
+                
                 flash(u'Event Created', 'success')
                 return jsonify(message = 'none', url = url)
 
@@ -1503,7 +1493,7 @@ def publiceventpage(logonid,periodid):
         log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))
         message = ('Failed to execute %s with exception: %s. Try refreshing the page and trying again or contact camp administration.' % (request.method, ex))
         session.rollback()
-        session.close()
+        
         if request.method == 'GET':
             return errorpage(thisuser,'Failed to display page. %s' % ex)
         else:
@@ -1517,7 +1507,7 @@ def periodpage(logonid,periodid):
         thisuser = getuser(session,logonid,True)
         log('PERIODPAGE: user firstname:%s lastname:%s method:%s' % (thisuser.firstname, thisuser.lastname, request.method))
     except Exception as ex:
-        session.close()
+        
         return str(ex)
 
     try:
@@ -1572,7 +1562,7 @@ def periodpage(logonid,periodid):
         nextperiod = session.query(period).filter(period.starttime > thisperiod.starttime).order_by(period.starttime).first()
         previousperiod = session.query(period).filter(period.starttime < thisperiod.starttime).order_by(desc(period.starttime)).first()
         mealstats = thisperiod.getmealstats(session)
-        session.close()
+        
         return render_template('periodpage.html', \
                                 players=players, \
                                 unallocatedplayers=unallocatedplayers, \
@@ -1589,7 +1579,7 @@ def periodpage(logonid,periodid):
         log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))
         message = ('Failed to execute %s with exception: %s. Try refreshing the page and trying again or contact camp administration.' % (request.method, ex))
         session.rollback()
-        session.close()
+        
         if request.method == 'GET':
             return errorpage(thisuser,'Failed to display page. %s' % ex)
         else:
@@ -1604,7 +1594,7 @@ def useradmin(logonid):
         thisuser = getuser(session,logonid,True)
         log('USERADMIN: user firstname:%s lastname:%s method:%s' % (thisuser.firstname, thisuser.lastname, request.method))
     except Exception as ex:
-        session.close()
+        
         return str(ex)
 
     try:
@@ -1663,7 +1653,7 @@ def useradmin(logonid):
         log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))
         message = ('Failed to execute %s with exception: %s. Try refreshing the page and trying again or contact camp administration.' % (request.method, ex))
         session.rollback()
-        session.close()
+        
         if request.method == 'GET':
             return errorpage(thisuser,'Failed to display page. %s' % ex)
         else:
@@ -1678,17 +1668,17 @@ def edituser(logonid, targetuserid):
         thisuser = getuser(session,logonid,True)
         log('EDITUSER: user firstname:%s lastname:%s method:%s' % (thisuser.firstname, thisuser.lastname, request.method))
     except Exception as ex:
-        session.close()
+        
         return str(ex)
 
     try:
         if thisuser.isadmin != 1:
-            session.close()
+            
             return errorpage(thisuser,'You do not have permission to view this page.')
         if targetuserid is not None:
             targetuser = session.query(user).filter(user.userid == targetuserid).first()
             if targetuser is None:
-                    session.close()
+                    
                     return errorpage(thisuser,'Could not find requested user in database.')
             targetuserinstruments = session.query(instrument).filter(instrument.userid == targetuser.userid).all()
         else:
@@ -1716,7 +1706,7 @@ def edituser(logonid, targetuserid):
             else:
                 img_data = None
 
-            session.close()
+            
             return render_template('edituser.html', \
                                     thisuser=thisuser, \
                                     targetuser=targetuser, \
@@ -1742,18 +1732,18 @@ def edituser(logonid, targetuserid):
                 targetuser.logonid = str(uuid.uuid4())
                 session.merge(targetuser)
                 session.commit()
-                session.close()
+                
                 return jsonify(message = 'User logon reset.', url = 'none', success='true')
 
             if content['firstname'] == '' or content['firstname'] == 'null' or content['firstname'] == 'None' or \
                         content['lastname'] == '' or content['lastname'] == 'null' or content['lastname'] == 'None':
                 session.rollback()
-                session.close()
+                
                 return jsonify(message = 'You cannot save a user without a firstname and lastname.', url = 'none')
 
             if content['arrival'] >= content['departure']:
                         session.rollback()
-                        session.close()
+                        
                         return jsonify(message = 'Your departure time must be after your arrival time.', url = 'none')
             
             #add the content in the packet to this group's attributes
@@ -1775,11 +1765,11 @@ def edituser(logonid, targetuserid):
                     thisinstrument = session.query(instrument).filter(instrument.instrumentid == i['instrumentid']).first()
                     if thisinstrument is None:
                         session.rollback()
-                        session.close()
+                        
                         return jsonify(message = 'Instrument listing not found, could not modify the listing.', url = 'none')
                 else:
                     session.rollback()
-                    session.close()
+                    
                     return jsonify(message = 'You have submitted illegal parameters for your instrument. No changes have been made to your instrument listings.', url = 'none')
                 for key,value in i.items():
                     if key != 'instrumentid' and value != 'None':
@@ -1806,14 +1796,14 @@ def edituser(logonid, targetuserid):
             else:
                 url = 'none'
                 message = 'Incomplete request. Request failed.'
-            session.close()
+            
             #send the user back to their home
             return jsonify(message = message, url = url)
     except Exception as ex:
         log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))
         message = ('Failed to execute %s with exception: %s. Try refreshing the page and trying again or contact camp administration.' % (request.method, ex))
         session.rollback()
-        session.close()
+        
         if request.method == 'GET':
             return errorpage(thisuser,'Failed to display page. %s' % ex)
         else:
@@ -1832,12 +1822,12 @@ def sendlinkemail(logonid):
         thisuser = getuser(session,logonid,True)
         log('SENDLINKEMAIL: user firstname:%s lastname:%s method:%s' % (thisuser.firstname, thisuser.lastname, request.method))
     except Exception as ex:
-        session.close()
+        
         return str(ex)
 
     try:
         if thisuser.isadmin != 1:
-            session.close()
+            
             return errorpage(thisuser,'You do not have permission to view this page')
         content = request.json
         log('SENDLINKEMAIL: Content received: %s' % content)
@@ -1871,7 +1861,7 @@ Thanks!\n
                 message = send_email(targetuser.email, subject, body)
                 if message == 'Failed to Send Email':
                     errors = errors + ('Failed to send email to %s %s\n' % (targetuser.firstname, targetuser.lastname))
-        session.close()
+        
         if errors != '':
             message = 'Completed with errors:\n' + errors
             success = 'false'
@@ -1881,7 +1871,7 @@ Thanks!\n
         log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))
         message = ('Failed to execute %s with exception: %s. Try refreshing the page and trying again or contact camp administration.' % (request.method, ex))
         session.rollback()
-        session.close()
+        
         if request.method == 'GET':
             return errorpage(thisuser,'Failed to display page. %s' % ex)
         else:
@@ -1896,7 +1886,7 @@ def instrumentation(logonid,periodid):
         thisuser = getuser(session,logonid,True)
         log('INSTRUMENTATION: user firstname:%s lastname:%s method:%s' % (thisuser.firstname, thisuser.lastname, request.method))
     except Exception as ex:
-        session.close()
+        
         return str(ex)
 
     try:
@@ -1927,7 +1917,7 @@ def instrumentation(logonid,periodid):
                 #find all large group templates and serialize them to prepare to inject into the javascript
                 grouptemplates = session.query(grouptemplate).filter(grouptemplate.size == 'L').all()
                 grouptemplates_serialized = [i.serialize for i in grouptemplates]
-                session.close()
+                
                 return render_template('instrumentation.html', \
                                     thisuser=thisuser, \
                                     grouptemplates = grouptemplates, \
@@ -1980,7 +1970,7 @@ def instrumentation(logonid,periodid):
                 #send the URL for the group that was just created to the user, and send them to that page
                 url = ('/user/' + str(thisuser.logonid) + '/group/' + str(grouprequest.groupid) + '/')
                 log('Sending user to URL: %s' % url)
-                session.close()
+                
                 flash(u'Instrumentation Accepted', 'success')
                 return jsonify(message = 'none', url = url)
 
@@ -1988,7 +1978,7 @@ def instrumentation(logonid,periodid):
         log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))
         message = ('Failed to execute %s with exception: %s. Try refreshing the page and trying again or contact camp administration.' % (request.method, ex))
         session.rollback()
-        session.close()
+        
         if request.method == 'GET':
             return errorpage(thisuser,'Failed to display page. %s' % ex)
         else:
@@ -2003,7 +1993,7 @@ def setup(logonid):
         thisuser = getuser(session,logonid,True)
         log('SETUP: user firstname:%s lastname:%s method:%s' % (thisuser.firstname, thisuser.lastname, request.method))
     except Exception as ex:
-        session.close()
+        
         return str(ex)
 
     try:
@@ -2012,13 +2002,13 @@ def setup(logonid):
             return errorpage(thisuser,'You are not allowed to view this page.')
         else:
             if request.method == 'GET':
-                session.close()
+                
                 return render_template('setup.html', \
                                                 thisuser=thisuser, \
                                                 campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
                                                 )
             if request.method == 'POST':
-                session.close()
+                
                 # Get the name of the uploaded file
                 file_bytes = request.files['file']
                 filename = secure_filename(file_bytes.filename)
@@ -2045,7 +2035,7 @@ def setup(logonid):
         log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))
         message = ('Failed to execute %s with exception: %s. Try refreshing the page and trying again or contact camp administration.' % (request.method, ex))
         session.rollback()
-        session.close()
+        
         if request.method == 'GET':
             return errorpage(thisuser,'Failed to display page. %s' % ex)
         else:
@@ -2060,12 +2050,12 @@ def objecteditor(logonid, input, objectid=None):
         thisuser = getuser(session,logonid,True)
         log('OBJECTEDITOR: user firstname:%s lastname:%s method:%s' % (thisuser.firstname, thisuser.lastname, request.method))
     except Exception as ex:
-        session.close()
+        
         return str(ex)
 
     try:
         if thisuser.isadmin != 1:
-            session.close()
+            
             return render_template('errorpage.html', \
                                     thisuser=thisuser, \
                                     campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
@@ -2094,7 +2084,7 @@ def objecteditor(logonid, input, objectid=None):
             type = 'Group'
             objects_query = session.query(group)
         else:
-            session.close()
+            
             return render_template('errorpage.html', \
                                 thisuser=thisuser, \
                                 campname=getconfig('Name'), favicon=getconfig('Favicon_URL'), instrumentlist=getconfig('Instruments').split(","), supportemailaddress=getconfig('SupportEmailAddress'), \
@@ -2103,7 +2093,7 @@ def objecteditor(logonid, input, objectid=None):
         if request.method == 'GET':
                 object_dict = dict((col, getattr(objects_query.first(), col)) for col in objects_query.first().__table__.columns.keys())
                 objects = objects_query.all()
-                session.close()
+                
                 return render_template('objecteditor.html', \
                                     thisuser=thisuser, \
                                     object_dict=object_dict, \
@@ -2139,7 +2129,7 @@ def objecteditor(logonid, input, objectid=None):
                             object = objects_query.filter(getattr(globals()[table],(table + 'id')) == o[table + 'id']).first()
                             if object is None:
                                 session.rollback()
-                                session.close()
+                                
                                 return jsonify(message = 'Could not find one of your requested objects. This is a malformed request packet.', url = 'none')
                         for key, value in o.items():
                             if key != table + 'id':
@@ -2148,11 +2138,11 @@ def objecteditor(logonid, input, objectid=None):
                         session.merge(object)
                         url = '/user/' + thisuser.logonid + '/objecteditor/' + table + '/'
                         session.commit()
-                        session.close()
+                        
                         return jsonify(message = 'none', url = url)
             except Exception as ex:
                 session.rollback()
-                session.close()
+                
                 return jsonify(message = 'Failed to post update with exception: %s' % ex, url = url)
 
         if request.method == 'DELETE':
@@ -2160,18 +2150,18 @@ def objecteditor(logonid, input, objectid=None):
                 session.delete(objects_query.filter(getattr(globals()[table],(table + 'id')) == request.json).first())
                 url = '/user/' + thisuser.logonid + '/objecteditor/' + table + '/'
                 session.commit()
-                session.close()
+                
                 return jsonify(message = 'none', url = url)
             except Exception as ex:
                 session.rollback()
-                session.close()
+                
                 return jsonify(message = 'Failed to delete object with exception %s' % ex, url = 'none')
 
     except Exception as ex:
         log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))
         message = ('Failed to execute %s with exception: %s. Try refreshing the page and trying again or contact camp administration.' % (request.method, ex))
         session.rollback()
-        session.close()
+        
         if request.method == 'GET':
             return errorpage(thisuser,'Failed to display page. %s' % ex)
         else:
@@ -2186,7 +2176,7 @@ def cateringpage(logonid):
         thisuser = getuser(session,logonid,True)
         log('CATERINGPAGE: user firstname:%s lastname:%s method:%s' % (thisuser.firstname, thisuser.lastname, request.method))
     except Exception as ex:
-        session.close()
+        
         return str(ex)
     start = datetime.datetime.strptime(getconfig('StartTime').split(' ')[0], '%Y-%m-%d')
     end = datetime.datetime.strptime(getconfig('EndTime').split(' ')[0], '%Y-%m-%d')
@@ -2203,7 +2193,7 @@ def cateringpage(logonid):
                 meals.append(thisperiod.getmealstats(session))
             thisday['meals'] = meals
             days.append(thisday)
-        session.close()
+        
         return render_template('cateringpage.html', \
                                 thisuser=thisuser, \
                                 days=days, \
@@ -2213,7 +2203,7 @@ def cateringpage(logonid):
         log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))
         message = ('Failed to execute %s with exception: %s. Try refreshing the page and trying again or contact camp administration.' % (request.method, ex))
         session.rollback()
-        session.close()
+        
         if request.method == 'GET':
             return errorpage(thisuser,'Failed to display page. %s' % ex)
         else:
@@ -2236,7 +2226,7 @@ def billingpage(logonid):
         thisuser = getuser(session,logonid,True)
         log('CATERINGPAGE: user firstname:%s lastname:%s method:%s' % (thisuser.firstname, thisuser.lastname, request.method))
     except Exception as ex:
-        session.close()
+        
         return str(ex)
     start = datetime.datetime.strptime(getconfig('StartTime').split(' ')[0], '%Y-%m-%d')
     end = datetime.datetime.strptime(getconfig('EndTime').split(' ')[0], '%Y-%m-%d')
@@ -2255,7 +2245,7 @@ def billingpage(logonid):
                 meals.append(thisperiod.getmealstats(session))
             thisday['meals'] = meals
             days.append(thisday)
-        session.close()
+        
         return render_template('billingpage.html', \
                                 thisuser=thisuser, \
                                 days=days, \
@@ -2267,7 +2257,7 @@ def billingpage(logonid):
         log('Failed to execute %s for user %s %s with exception: %s.' % (request.method, thisuser.firstname, thisuser.lastname, ex))
         message = ('Failed to execute %s with exception: %s. Try refreshing the page and trying again or contact camp administration.' % (request.method, ex))
         session.rollback()
-        session.close()
+        
         if request.method == 'GET':
             return errorpage(thisuser,'Failed to display page. %s' % ex)
         else:

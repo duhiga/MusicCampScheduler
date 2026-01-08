@@ -136,7 +136,7 @@ tomlkit==0.11.6
     #   pylint
 untangle==1.2.1
     # via -r requirements.in
-urllib3==2.6.0
+urllib3==2.6.3
     # via
     #   -r requirements.in
     #   requests

@@ -91,7 +91,7 @@ packaging==25.0
     # via
     #   -r requirements.in
     #   gunicorn
-pillow==10.3.0
+pillow==12.1.1
     # via -r requirements.in
 platformdirs==2.6.0
     # via
